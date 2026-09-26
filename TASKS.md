@@ -84,7 +84,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T24e Agent · Environment
 - [x] T24f Agent · Control and cost
 - [x] T25a Generative · Prompt and settings
-- [ ] T25b Generative · Queue and results
+- [x] T25b Generative · Queue and results
 - [ ] T25c Generative · Canvas
 - [ ] T25d Generative · Sound and motion
 - [ ] T25e Generative · Models
@@ -294,3 +294,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25a | 1 | FAIL | Cmd-Enter generated only while a text field held focus; the form set no key context of its own |
 | T25a | 2 | PASS | |
 | T25b | 1 | FAIL | a done result with nothing to open still took focus on a press and drew a ring the keys could not reach |
+| T25b | 2 | PASS | |
