@@ -185,3 +185,99 @@ fn a_peak_past_full_fails_loud() {
     let _ =
         AudioGenerationPlayer::new("sound", "rain", "Orchid", vec![1.5], Duration::from_secs(1));
 }
+
+/// Four five-second shots in a strip 280 wide, and what they heard.
+struct Long(Heard);
+
+impl Render for Long {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let (chosen, extended) = (self.0.clone(), self.0.clone());
+        let shot = |key: &str| Shot {
+            key: key.to_string().into(),
+            prompt: "a pan".into(),
+            length: Duration::from_secs(5),
+            outcome: Outcome::Pending(None),
+        };
+        div().w(px(280.0)).child(
+            VideoGenerationTimeline::new("long", ["a", "b", "c", "d"].map(shot), Duration::ZERO)
+                .on_select(move |key, _, _| chosen.borrow_mut().push(format!("choose {key}")))
+                .on_extend(move |_, _| extended.borrow_mut().push("extend".into())),
+        )
+    }
+}
+
+fn long(cx: &mut TestAppContext) -> (Heard, &mut gpui::VisualTestContext) {
+    setup(cx);
+    let heard = Heard::default();
+    let store = heard.clone();
+    let (_, cx) = cx.add_window_view(|_, _| Long(store));
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    (heard, cx)
+}
+
+#[gpui::test]
+fn a_long_strip_scrolls_sideways(cx: &mut TestAppContext) {
+    let (heard, cx) = long(cx);
+    cx.simulate_event(gpui::ScrollWheelEvent {
+        position: point(px(140.0), px(50.0)),
+        delta: gpui::ScrollDelta::Pixels(point(px(-2000.0), px(0.0))),
+        modifiers: Modifiers::none(),
+        touch_phase: gpui::TouchPhase::Moved,
+    });
+    settle(cx);
+    cx.simulate_click(point(px(250.0), px(50.0)), Modifiers::none());
+    settle(cx);
+    assert_eq!(
+        *heard.borrow(),
+        ["choose d"],
+        "the last shot comes under the press"
+    );
+}
+
+#[gpui::test]
+fn tab_brings_a_hidden_shot_into_view_and_reaches_extend(cx: &mut TestAppContext) {
+    let (heard, cx) = long(cx);
+    tab(4, cx);
+    settle(cx);
+    cx.simulate_click(point(px(250.0), px(50.0)), Modifiers::none());
+    settle(cx);
+    tab(1, cx);
+    press("enter", cx);
+    assert_eq!(*heard.borrow(), ["choose d", "extend"]);
+}
+
+/// A voice with six tags in a list 280 wide.
+struct Tagged;
+
+impl Render for Tagged {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let voice = Voice {
+            key: "iris".into(),
+            name: "Iris".into(),
+            about: "a voice".into(),
+            tags: [
+                "English",
+                "American",
+                "Female",
+                "Adult",
+                "Warm",
+                "Narration",
+            ]
+            .map(gpui::SharedString::from)
+            .to_vec(),
+        };
+        div()
+            .w(px(280.0))
+            .child(TTSVoicePicker::new("voices", [voice]))
+    }
+}
+
+#[gpui::test]
+fn many_tags_wrap_inside_their_row(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Tagged);
+    settle(cx);
+    let tags = cx.debug_bounds("voice-tags-iris").expect("the tags draw");
+    assert!(tags.right() <= px(280.0), "{tags:?}");
+}

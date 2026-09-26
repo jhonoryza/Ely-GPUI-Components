@@ -1,12 +1,12 @@
 use gpui::{
     App, Bounds, Div, DragMoveEvent, ElementId, Entity, EntityId, FocusHandle, FontWeight,
     InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Rems, SharedString,
-    Stateful, StatefulInteractiveElement, Styled, Window, canvas, div, point, prelude::*,
+    Stateful, StatefulInteractiveElement, Styled, Window, canvas, div, prelude::*,
     transparent_black,
 };
 
 use super::{Column, table::View};
-use crate::layout::seeded::Seeded;
+use crate::layout::{bring_into_view, seeded::Seeded};
 use crate::{
     primitives::{DragGhost, FocusRing, Icon, IconName},
     theme::{ActiveTheme, IconSize, TextSize},
@@ -96,17 +96,8 @@ fn reveal(
         return;
     }
     let scroll = view.read(cx).sideways.clone();
-    let (frame, offset) = (scroll.bounds(), scroll.offset());
-    let shift = if head.left() < frame.left() {
-        frame.left() - head.left()
-    } else if head.right() > frame.right() {
-        (frame.right() - head.right()).max(frame.left() - head.left())
-    } else {
-        Pixels::ZERO
-    };
     view.update(cx, |view, _| view.revealed = Some(key.clone()));
-    if shift != Pixels::ZERO {
-        scroll.set_offset(point(offset.x + shift, offset.y));
+    if bring_into_view(&scroll, head) {
         log::info!("data table: header {key} scrolled into view");
         window.request_animation_frame();
     }

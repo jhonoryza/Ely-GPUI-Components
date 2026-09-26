@@ -215,7 +215,9 @@ impl RenderOnce for TTSVoicePicker {
                     )
                     .child(
                         div()
+                            .debug_selector(|| format!("voice-tags-{}", voice.key))
                             .flex_none()
+                            .max_w_full()
                             .flex()
                             .flex_wrap()
                             .gap_1()

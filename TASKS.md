@@ -297,3 +297,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25b | 2 | PASS | |
 | T25c | 1 | FAIL | a canvas with no handlers still took Tab, the pen and the ring; strokes from the host went unchecked |
 | T25c | 2 | PASS | |
+| T25d | 1 | FAIL | the timeline's strip never scrolled, its child stretched to the box; a focused shot past the edge stayed hidden; many voice tags ran past a 280px row |

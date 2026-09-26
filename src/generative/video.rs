@@ -2,8 +2,8 @@ use std::{rc::Rc, time::Duration};
 
 use gpui::{
     App, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*, relative,
-    transparent_black,
+    ScrollHandle, SharedString, StatefulInteractiveElement, Styled, Window, canvas, div,
+    prelude::*, relative, transparent_black,
 };
 
 use super::Outcome;
@@ -12,7 +12,7 @@ use crate::{
     debug::ruler,
     documents::source,
     forms::{OnValue, Run},
-    layout::on_axis,
+    layout::{bring_into_view, on_axis},
     motion::Skeleton,
     primitives::{Icon, IconName, Image, tab_stop},
     theme::{ActiveTheme, ControlSize, IconSize, TextSize},
@@ -97,6 +97,16 @@ impl RenderOnce for VideoGenerationTimeline {
             .is_none_or(|key| self.shots.iter().any(|shot| &shot.key == key));
         assert!(named, "the chosen shot is not listed");
         let pickable = self.on_select.is_some();
+        let scroll = window
+            .use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| ScrollHandle::new())
+            .read(cx)
+            .clone();
+        let revealed =
+            window.use_keyed_state(
+                (self.id.clone(), "revealed"),
+                cx,
+                |_, _| None::<SharedString>,
+            );
         let focuses: Vec<_> = self
             .shots
             .iter()
@@ -211,6 +221,36 @@ impl RenderOnce for VideoGenerationTimeline {
                     } else {
                         transparent_black()
                     })
+                    .when(pick.is_some(), |tile| {
+                        let (focus, revealed, scroll, key) =
+                            (focus.clone(), revealed.clone(), scroll.clone(), key.clone());
+                        tile.child(
+                            canvas(
+                                move |bounds, window, cx| {
+                                    let focused = focus.is_focused(window);
+                                    let held = revealed.read(cx).as_ref() == Some(&key);
+                                    if focused && !held {
+                                        revealed.update(cx, |revealed, _| {
+                                            *revealed = Some(key.clone())
+                                        });
+                                        if bring_into_view(&scroll, bounds) {
+                                            log::info!(
+                                                "video timeline: shot {key} scrolled into view"
+                                            );
+                                            window.request_animation_frame();
+                                        }
+                                    } else if !focused && held {
+                                        revealed.update(cx, |revealed, _| *revealed = None);
+                                    }
+                                },
+                                |_, _, _, _| {},
+                            )
+                            .absolute()
+                            .top_0()
+                            .left_0()
+                            .size_full(),
+                        )
+                    })
                     .when_some(pick, |tile, pick| {
                         tile.track_focus(&focus)
                             .cursor_pointer()
@@ -253,36 +293,40 @@ impl RenderOnce for VideoGenerationTimeline {
             .gap_2()
             .child(
                 on_axis(div().id((self.id.clone(), "sideways")))
+                    .track_scroll(&scroll)
                     .w_full()
+                    .flex()
                     .overflow_x_scroll()
+                    .pb_1()
                     .child(
                         div()
+                            .relative()
+                            .flex_none()
                             .flex()
-                            .items_end()
-                            .gap_3()
-                            .pb_1()
+                            .flex_col()
+                            .gap_1()
+                            .child(ruler_row)
+                            .child(div().flex().children(tiles))
                             .child(
                                 div()
-                                    .relative()
-                                    .flex_none()
-                                    .flex()
-                                    .flex_col()
-                                    .gap_1()
-                                    .child(ruler_row)
-                                    .child(div().flex().children(tiles))
-                                    .child(
-                                        div()
-                                            .absolute()
-                                            .top_0()
-                                            .bottom_0()
-                                            .left(relative(playhead))
-                                            .border_l_1()
-                                            .border_color(colors.accent),
-                                    ),
-                            )
-                            .children(extend.map(|extend| div().flex_none().child(extend))),
+                                    .absolute()
+                                    .top_0()
+                                    .bottom_0()
+                                    .left(relative(playhead))
+                                    .border_l_1()
+                                    .border_color(colors.accent),
+                            ),
                     ),
             )
-            .children(caption.map(Caption::new))
+            .when(caption.is_some() || extend.is_some(), |column| {
+                column.child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_3()
+                        .child(div().flex_1().min_w_0().children(caption.map(Caption::new)))
+                        .children(extend.map(|extend| div().flex_none().child(extend))),
+                )
+            })
     }
 }

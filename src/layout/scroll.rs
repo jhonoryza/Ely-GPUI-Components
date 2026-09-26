@@ -5,7 +5,7 @@ use std::{
 };
 
 use gpui::{
-    AnyElement, App, Axis, Div, ElementId, EmptyView, Entity, EntityId, InteractiveElement,
+    AnyElement, App, Axis, Bounds, Div, ElementId, EmptyView, Entity, EntityId, InteractiveElement,
     IntoElement, ParentElement, Pixels, Point, RenderOnce, ScrollHandle,
     StatefulInteractiveElement, StyleRefinement, Styled, Window, div, point, prelude::*,
 };
@@ -15,6 +15,22 @@ use super::ScrollShadow;
 use crate::{motion, theme::ActiveTheme};
 
 const IDLE: Duration = Duration::from_millis(900);
+
+/// Sets `scroll`'s sideways offset whole so `item`, as painted, sits inside the box, its start first when it is wider; true when it moved.
+pub(crate) fn bring_into_view(scroll: &ScrollHandle, item: Bounds<Pixels>) -> bool {
+    let (frame, offset) = (scroll.bounds(), scroll.offset());
+    let shift = if item.left() < frame.left() {
+        frame.left() - item.left()
+    } else if item.right() > frame.right() {
+        (frame.right() - item.right()).max(frame.left() - item.left())
+    } else {
+        Pixels::ZERO
+    };
+    if shift != Pixels::ZERO {
+        scroll.set_offset(point(offset.x + shift, offset.y));
+    }
+    shift != Pixels::ZERO
+}
 
 /// Keeps a scroll box's wheel to its own axes; gpui turns a wheel along the other axis onto a box that scrolls one way, while the page scrolls too.
 pub fn on_axis<E: Styled>(mut element: E) -> E {
