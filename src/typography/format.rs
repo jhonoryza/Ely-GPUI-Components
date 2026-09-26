@@ -136,6 +136,17 @@ pub fn duration(seconds: u64, style: DurationStyle) -> String {
     }
 }
 
+/// How long a step took: "340 ms", "1.2 s", "4m 5s".
+pub fn took(spent: std::time::Duration) -> String {
+    let ms = spent.as_millis() as u64;
+    let tenths = (ms + 50) / 100;
+    match ms {
+        0..1_000 => format!("{ms} ms"),
+        _ if tenths < 600 => format!("{}.{} s", tenths / 10, tenths % 10),
+        _ => duration((ms + 500) / 1_000, DurationStyle::Compact),
+    }
+}
+
 /// Digits kept past a step's first; float noise sits near the sixteenth.
 const DIGITS: usize = 6;
 
@@ -203,6 +214,17 @@ pub fn datetime(at: Timestamp, zone: &TimeZone, pattern: &str) -> Result<String,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn took_reads_in_the_unit_that_fits() {
+        let took = |ms| took(std::time::Duration::from_millis(ms));
+        assert_eq!(took(340), "340 ms");
+        assert_eq!(took(999), "999 ms");
+        assert_eq!(took(1_000), "1.0 s");
+        assert_eq!(took(12_449), "12.4 s");
+        assert_eq!(took(59_960), "1m 0s", "rounding never shows 60.0 s");
+        assert_eq!(took(65_000), "1m 5s");
+    }
 
     #[test]
     fn steps_read_to_the_places_they_need() {

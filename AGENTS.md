@@ -133,6 +133,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui 0.2.2 never clears `debug_bounds`: a test sees an element appear, not leave.
 - The system time zone comes from `typography::format::system_zone`, which fails loud; jiff's `TimeZone::system()` falls back to UTC in silence.
 - A list opens with its cursor on the current choice: Select on the chosen row, Combobox on its value, MultiSelect on the first one ticked.
+- A search step, a tool call or an agent's step says where it stands with `chat::StepState` and draws it with `chat::step_mark`.
 
 ## Decisions
 

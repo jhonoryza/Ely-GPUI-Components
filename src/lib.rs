@@ -1,3 +1,4 @@
+pub mod agent;
 mod assets;
 
 pub mod buttons;

@@ -1,9 +1,9 @@
 use std::{ops::Range, rc::Rc};
 
 use gpui::{
-    App, ElementId, FontWeight, HighlightStyle, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, StyledText,
-    Window, div, prelude::*, transparent_black,
+    AnyElement, App, ElementId, FontWeight, HighlightStyle, InteractiveElement, IntoElement,
+    MouseButton, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
+    StyledText, Window, div, prelude::*, transparent_black,
 };
 
 use super::cite::Source;
@@ -15,12 +15,43 @@ use crate::{
     typography::{Ellipsis, tabular},
 };
 
-/// Where a search step stands.
+/// Where a step stands: a search's, a tool call's or an agent's.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StepState {
     Waiting,
     Working,
     Done,
+    Failed,
+}
+
+/// A step's mark in an icon's box: a dot waiting, a spinner working, a check done, a cross failed.
+pub(crate) fn step_mark(id: ElementId, state: StepState, cx: &App) -> AnyElement {
+    let theme = cx.theme();
+    let colors = &theme.colors;
+    let mark = match state {
+        StepState::Done => Icon::new(IconName::Check)
+            .size(IconSize::Sm)
+            .color(colors.success)
+            .into_any_element(),
+        StepState::Failed => Icon::new(IconName::X)
+            .size(IconSize::Sm)
+            .color(colors.danger)
+            .into_any_element(),
+        StepState::Working => Spinner::new(id).size(IconSize::Sm).into_any_element(),
+        StepState::Waiting => div()
+            .size(theme.status_dot())
+            .rounded_full()
+            .bg(colors.fg_subtle)
+            .into_any_element(),
+    };
+    div()
+        .flex_none()
+        .size(theme.icon_size(IconSize::Sm))
+        .flex()
+        .items_center()
+        .justify_center()
+        .child(mark)
+        .into_any_element()
 }
 
 /// A search as it runs, step by step: what it looks for, what it reads, each step waiting, working or done.
@@ -59,41 +90,19 @@ impl RenderOnce for SearchProgress {
                     .into_iter()
                     .enumerate()
                     .map(|(ix, (label, state))| {
-                        let mark = match state {
-                            StepState::Done => Icon::new(IconName::Check)
-                                .size(IconSize::Sm)
-                                .color(colors.success)
-                                .into_any_element(),
-                            StepState::Working => {
-                                Spinner::new((self.id.clone(), format!("step-{ix}")))
-                                    .size(IconSize::Sm)
-                                    .into_any_element()
-                            }
-                            StepState::Waiting => div()
-                                .size(theme.status_dot())
-                                .rounded_full()
-                                .bg(colors.fg_subtle)
-                                .into_any_element(),
-                        };
+                        let id = (self.id.clone(), format!("step-{ix}")).into();
                         div()
                             .flex()
                             .items_center()
                             .gap_2()
-                            .child(
-                                div()
-                                    .flex_none()
-                                    .size(theme.icon_size(IconSize::Sm))
-                                    .flex()
-                                    .items_center()
-                                    .justify_center()
-                                    .child(mark),
-                            )
+                            .child(step_mark(id, state, cx))
                             .child(
                                 div()
                                     .text_color(match state {
                                         StepState::Waiting => colors.fg_subtle,
                                         StepState::Working => colors.fg,
                                         StepState::Done => colors.fg_muted,
+                                        StepState::Failed => colors.danger,
                                     })
                                     .child(label),
                             )

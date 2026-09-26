@@ -37,6 +37,7 @@ pub use play::{AudioMessage, VideoMessage};
 pub use projects::{
     ConversationExport, Project, ProjectKnowledgePanel, ProjectList, SharedConversationView,
 };
+pub(crate) use search::step_mark;
 pub use search::{DocumentChunkPreview, SearchProgress, StepState, WebResultCard};
 pub use status::{
     ErrorMessage, FeedbackForm, RateLimitNotice, ThinkingBlock, ThinkingDuration, ThinkingIndicator,

@@ -1,0 +1,34 @@
+mod tools;
+
+use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
+
+use super::Page;
+use crate::script::Step;
+
+pub const PAGE: Page = Page {
+    number: 24,
+    slug: "agent",
+    title: "Agent",
+    summary: "An assistant at work: the tools it calls and what it asks before it acts.",
+    render,
+    script: SCRIPT,
+};
+
+const SCRIPT: &[Step] = &[
+    Step::DownAt("agent-call", 60.0, 18.0),
+    Step::UpAt("agent-call", 60.0, 18.0),
+    Step::Wait(300),
+    Step::Shot("tool-call"),
+    Step::Click("agent-approve-open"),
+    Step::Wait(300),
+    Step::Shot("approval"),
+    Step::Key("escape"),
+    Step::Wait(200),
+];
+
+fn render(window: &mut Window, cx: &mut App) -> AnyElement {
+    div()
+        .child(tools::calls(window, cx))
+        .child(tools::approval(window, cx))
+        .into_any_element()
+}
