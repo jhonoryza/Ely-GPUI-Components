@@ -299,3 +299,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25c | 2 | PASS | |
 | T25d | 1 | FAIL | the timeline's strip never scrolled, its child stretched to the box; a focused shot past the edge stayed hidden; many voice tags ran past a 280px row |
 | T25d | 2 | PASS | |
+| T25e | 1 | FAIL | a description row never wrapped, so a 280px model card broke its facts mid-word; the fine-tune bar's share had no test |

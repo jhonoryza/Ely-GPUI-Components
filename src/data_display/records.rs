@@ -9,7 +9,7 @@ use crate::{
     theme::{ActiveTheme, ControlSize, TextSize},
 };
 
-/// Labels and their values, one pair a row with the labels in a quiet column, or stacked with each label above its value.
+/// Labels and their values, one pair a row with the labels in a quiet column, or stacked with each label above its value. A value short of room drops under its label.
 #[derive(IntoElement, Default)]
 pub struct DescriptionList {
     items: Vec<(SharedString, AnyElement)>,
@@ -59,7 +59,9 @@ impl RenderOnce for DescriptionList {
                         div()
                             .flex()
                             .when(stacked, |row| row.flex_col().gap_0p5())
-                            .when(!stacked, |row| row.items_baseline().gap_4())
+                            .when(!stacked, |row| {
+                                row.flex_wrap().items_baseline().gap_x_4().gap_y_0p5()
+                            })
                             .py_2()
                             .when(lined && ix < last, |row| {
                                 row.border_b_1().border_color(colors.border)
@@ -73,7 +75,8 @@ impl RenderOnce for DescriptionList {
                                 div()
                                     .flex()
                                     .flex_1()
-                                    .min_w_0()
+                                    .when(stacked, |value| value.min_w_0())
+                                    .when(!stacked, |value| value.min_w(theme.label_width() * 0.5))
                                     .text_color(colors.fg)
                                     .child(div().min_w_0().child(value)),
                             )

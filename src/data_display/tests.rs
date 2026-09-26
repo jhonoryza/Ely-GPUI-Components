@@ -5,11 +5,11 @@ use std::{
 };
 
 use gpui::{
-    Context, IntoElement, Modifiers, ParentElement, Pixels, Render, Styled, TestAppContext,
+    Bounds, Context, IntoElement, Modifiers, ParentElement, Pixels, Render, Styled, TestAppContext,
     VisualTestContext, Window, div, point, px,
 };
 
-use super::{Carousel, PropertyGrid, PropertyGroup};
+use super::{Carousel, DescriptionList, PropertyGrid, PropertyGroup};
 use crate::{primitives::Measure, theme::Theme};
 
 /// A property grid whose drawn height the test reads.
@@ -66,6 +66,54 @@ fn a_property_group_folds_from_its_header_and_stays_folded(cx: &mut TestAppConte
     cx.simulate_click(header, Modifiers::none());
     settle(cx);
     assert_eq!(height.get(), open, "a second press opens it");
+}
+
+/// A one-row description list, this wide, that reports where the list and its value sit.
+struct Facts(Pixels, Rc<Cell<[Bounds<Pixels>; 2]>>);
+
+impl Render for Facts {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let (list, value) = (self.1.clone(), self.1.clone());
+        let value = Measure::new("value", move |bounds, _, _| {
+            value.set([value.get()[0], bounds])
+        })
+        .child("Apache-2.0");
+        div().w(self.0).child(
+            Measure::new("list", move |bounds, _, _| {
+                list.set([bounds, list.get()[1]])
+            })
+            .child(DescriptionList::new().item("License", value)),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_value_drops_below_its_label_when_the_row_runs_short(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let mut place = |width: f32| {
+        let seen = Rc::new(Cell::new([Bounds::default(); 2]));
+        let shared = seen.clone();
+        let (_, cx) = cx.add_window_view(move |_, _| Facts(px(width), shared));
+        settle(cx);
+        let [list, value] = seen.get();
+        (value.left() - list.left(), value.top() - list.top())
+    };
+    let (wide_left, wide_top) = place(400.0);
+    let (narrow_left, narrow_top) = place(240.0);
+    assert_eq!(
+        wide_left,
+        px(176.0),
+        "wide, the value sits beside its label"
+    );
+    assert_eq!(
+        narrow_left,
+        Pixels::ZERO,
+        "narrow, the value starts under its label"
+    );
+    assert!(
+        narrow_top > wide_top,
+        "and a line lower: {wide_top:?} to {narrow_top:?}"
+    );
 }
 
 /// A three-slide carousel, 200 wide, that turns every five seconds; each slide reports where it sits.

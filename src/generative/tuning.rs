@@ -39,6 +39,16 @@ impl TunePhase {
     }
 }
 
+/// A running job's bar, whole epochs and the share of the one under way, and the line under it.
+pub(crate) fn progress(epoch: usize, epochs: usize, share: f32) -> (f32, String) {
+    let whole = ((epoch - 1) as f32 + share) / epochs as f32;
+    let line = format!(
+        "Epoch {epoch} of {epochs} · {}",
+        percent(f64::from(share), 0, false)
+    );
+    (whole, line)
+}
+
 /// A fine-tuning job: its name, the base model and data it learns from, where it stands, how far it has come by epoch, and its loss on training and held-out data. Cancel while it waits or trains; Open once done.
 #[derive(IntoElement)]
 pub struct FineTuneJobCard {
@@ -128,7 +138,7 @@ impl RenderOnce for FineTuneJobCard {
         };
         let progress = match &self.phase {
             TunePhase::Running(epoch, epochs, share) => {
-                let whole = ((*epoch - 1) as f32 + share) / *epochs as f32;
+                let (whole, line) = progress(*epoch, *epochs, *share);
                 Some(
                     div()
                         .flex()
@@ -143,10 +153,7 @@ impl RenderOnce for FineTuneJobCard {
                             tabular(div())
                                 .text_size(theme.text_size(TextSize::Xs))
                                 .text_color(colors.fg_muted)
-                                .child(format!(
-                                    "Epoch {epoch} of {epochs} · {}",
-                                    percent(f64::from(*share), 0, false)
-                                )),
+                                .child(line),
                         )
                         .into_any_element(),
                 )
@@ -226,5 +233,19 @@ impl RenderOnce for FineTuneJobCard {
             )
             .children(progress)
             .children(chart)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::progress;
+
+    #[test]
+    fn the_bar_counts_whole_epochs_and_the_share_of_the_one_under_way() {
+        let (whole, line) = progress(2, 3, 0.64);
+        assert!((whole - 0.5467).abs() < 1e-4, "{whole}");
+        assert_eq!(line, "Epoch 2 of 3 · 64%");
+        assert_eq!(progress(1, 1, 0.5), (0.5, "Epoch 1 of 1 · 50%".to_string()));
+        assert_eq!(progress(3, 3, 1.0).0, 1.0);
     }
 }
