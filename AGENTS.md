@@ -137,6 +137,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A flex line whose free space goes to an auto margin loses its gaps in taffy 0.9. A row that parts left and right groups its sides and uses `justify_between`; `ml_auto` is safe only beside a `flex_1` item that leaves no free space.
 - A header that holds a name beside counts and actions wraps: `flex_wrap`, the name `flex_1` with `min_w(label_width)`, the rest one `flex_none` group that drops below.
 - Every header, row and strip works at 280px: a name keeps its minimum width, the rest wraps below or scrolls, and nothing draws past its box.
+- The focus color belongs to the focus ring. A chosen or shown item takes accent, as `forms::glyphs` and `lists::ListItem` do.
+- A box that shows a host's picture takes the picture's shape from the host (`ratio`), so nothing is cropped and a point given as a share lands on the picture.
 
 ## Decisions
 

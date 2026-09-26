@@ -1,7 +1,7 @@
 # Tasks
 
 Progress truth. Work runs top to bottom. No item is skipped.
-Each `T` item ends with a codex review (`gpt-6-astra`, effort `max`, herdr split pane). Three rounds at most.
+Each `T` item ends with a review in a herdr split pane, three rounds at most: codex (`gpt-6-astra`, effort `max`) through T24d round 2; from T24d round 3, after codex ran out of quota on 2026-09-26, a Claude session on Fable 5.1 at max effort, at the user's word.
 
 Per-component lines live in `tasks/`. Tags there:
 
@@ -80,7 +80,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T24a Agent · Tool calls
 - [x] T24b Agent · Progress
 - [x] T24c Agent · Changes
-- [ ] T24d Agent · Previews
+- [x] T24d Agent · Previews
 - [ ] T24e Agent · Environment
 - [ ] T24f Agent · Control and cost
 - [ ] T25 Generative
@@ -281,3 +281,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24c | 2 | PASS | |
 | T24d | 1 | FAIL | at 280px eight thumbnails ran past the browser card; the artifact panel lost its title and its controls ran out of the box |
 | T24d | 2 | FAIL | Tab to a later thumbnail left the strip where it was, the focused frame and its ring clipped |
+| T24d | 3 | FAIL | reviewed by Claude Fable 5.1 max after codex ran out of quota: the shown thumbnail wore the focus color, so focus and choice looked alike; frames were forced to 16:10 and cropped, and a pointer's share missed its target. Fixed after the cap: the shown frame takes accent, and BrowserPreview and ComputerUseViewer take the host's ratio (test a_screen_takes_its_pictures_shape); no fourth review |

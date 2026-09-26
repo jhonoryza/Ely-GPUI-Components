@@ -16,17 +16,22 @@ use crate::{
     typography::Ellipsis,
 };
 
-/// Width over height of a frame from the host.
+/// Width over height of a frame from the host, unless it says.
 const FRAME: f32 = 16.0 / 10.0;
 
+fn checked(ratio: f32) -> f32 {
+    assert!(ratio.is_finite() && ratio > 0.0, "a frame ratio of {ratio}");
+    ratio
+}
+
 /// A box that keeps a frame's shape at the width it is given.
-fn framed(cx: &App) -> Div {
+fn framed(ratio: f32, cx: &App) -> Div {
     let mut frame = div()
         .relative()
         .w_full()
         .overflow_hidden()
         .bg(cx.theme().colors.sunken);
-    frame.style().aspect_ratio = Some(FRAME);
+    frame.style().aspect_ratio = Some(ratio);
     frame
 }
 
@@ -82,6 +87,7 @@ pub struct BrowserPreview {
     url: SharedString,
     frames: Vec<SharedString>,
     shown: usize,
+    ratio: f32,
     loading: bool,
     on_show: Option<Pick>,
 }
@@ -101,9 +107,16 @@ impl BrowserPreview {
             url: url.into(),
             frames,
             shown,
+            ratio: FRAME,
             loading: false,
             on_show: None,
         }
+    }
+
+    /// The frames' width over their height, 16:10 unless set, so the boxes take the pictures' shape.
+    pub fn ratio(mut self, width_over_height: f32) -> Self {
+        self.ratio = checked(width_over_height);
+        self
     }
 
     pub fn loading(mut self, loading: bool) -> Self {
@@ -174,7 +187,7 @@ impl RenderOnce for BrowserPreview {
                         .rounded(theme.radius(Radius::Sm))
                         .border_1()
                         .border_color(if ix == shown {
-                            colors.focus
+                            colors.accent
                         } else {
                             colors.border
                         })
@@ -183,7 +196,7 @@ impl RenderOnce for BrowserPreview {
                                 .rounded(theme.radius(Radius::Sm))
                                 .size_full(),
                         );
-                    tile.style().aspect_ratio = Some(FRAME);
+                    tile.style().aspect_ratio = Some(self.ratio);
                     tile.when_some(show, |tile, show| {
                         tile.track_focus(&handles[ix])
                             .focus_ring(cx)
@@ -204,7 +217,7 @@ impl RenderOnce for BrowserPreview {
         card(cx)
             .child(address_bar(&self.id, self.url, self.loading, None, cx))
             .child(
-                framed(cx)
+                framed(self.ratio, cx)
                     .when(strip.is_none(), |frame| {
                         frame.rounded_b(theme.radius(Radius::Lg))
                     })
@@ -228,6 +241,7 @@ impl RenderOnce for BrowserPreview {
 pub struct ComputerUseViewer {
     id: ElementId,
     frame: SharedString,
+    ratio: f32,
     pointer: Option<Point<f32>>,
     action: Option<SharedString>,
 }
@@ -238,9 +252,16 @@ impl ComputerUseViewer {
         Self {
             id: id.into(),
             frame: frame.into(),
+            ratio: FRAME,
             pointer: None,
             action: None,
         }
+    }
+
+    /// The frame's width over its height, 16:10 unless set, so the box takes the picture's shape.
+    pub fn ratio(mut self, width_over_height: f32) -> Self {
+        self.ratio = checked(width_over_height);
+        self
     }
 
     /// Where the agent points, each side a share of the frame from its top left.
@@ -302,7 +323,7 @@ impl RenderOnce for ComputerUseViewer {
         });
         card(cx)
             .child(
-                framed(cx)
+                framed(self.ratio, cx)
                     .rounded_t(theme.radius(Radius::Lg))
                     .when(self.action.is_none(), |frame| {
                         frame.rounded_b(theme.radius(Radius::Lg))

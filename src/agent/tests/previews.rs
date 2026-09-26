@@ -244,3 +244,47 @@ fn tab_brings_a_hidden_frame_into_view(cx: &mut TestAppContext) {
         "the eighth frame sits in view"
     );
 }
+
+/// A 4:3 screen in a 480px column, and its height as drawn.
+struct Screen {
+    height: Rc<Cell<Pixels>>,
+}
+
+impl Render for Screen {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let height = self.height.clone();
+        div()
+            .relative()
+            .w(px(480.0))
+            .child(
+                ComputerUseViewer::new("screen", "a.png")
+                    .ratio(4.0 / 3.0)
+                    .pointer(point(0.5, 0.95)),
+            )
+            .child(
+                canvas(
+                    move |bounds, _, _| height.set(bounds.size.height),
+                    |_, _, _, _| {},
+                )
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full(),
+            )
+    }
+}
+
+#[gpui::test]
+fn a_screen_takes_its_pictures_shape(cx: &mut TestAppContext) {
+    setup(cx);
+    let height = Rc::new(Cell::new(Pixels::ZERO));
+    let seen = height.clone();
+    let (_, cx) = cx.add_window_view(|_, _| Screen { height: seen });
+    settle(cx);
+    let expected = px(478.0 * 3.0 / 4.0 + 2.0);
+    assert!(
+        (height.get() - expected).abs() < px(1.0),
+        "478px inside the border at 4:3, plus the border: {:?} vs {expected:?}",
+        height.get()
+    );
+}
