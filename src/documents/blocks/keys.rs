@@ -18,7 +18,16 @@ impl BlockEditor {
                     BlockKind::Toggle(false) => 1,
                     _ => block.fields.len(),
                 };
-                (0..shown).map(move |field| (block.key, field))
+                let hidden: Vec<usize> = match &block.kind {
+                    BlockKind::Table { columns, merged } => merged
+                        .iter()
+                        .map(|(row, column)| row * columns + column)
+                        .collect(),
+                    _ => Vec::new(),
+                };
+                (0..shown)
+                    .filter(move |field| !hidden.contains(field))
+                    .map(move |field| (block.key, field))
             })
             .collect()
     }

@@ -76,6 +76,8 @@ pub struct BlockEditor {
     current: Snapshot,
     /// The field that last held focus, as block and field.
     caret: Option<(u64, usize)>,
+    /// The selection a key went down on, before its field changed.
+    typed_from: Option<(u64, usize, std::ops::Range<usize>)>,
     pub(crate) people: Vec<SharedString>,
     pub(crate) diagram: Option<RenderDiagram>,
     _synced: Subscription,
@@ -95,6 +97,7 @@ impl BlockEditor {
                 caret: None,
             },
             caret: None,
+            typed_from: None,
             people: Vec::new(),
             diagram: None,
             _synced: synced,

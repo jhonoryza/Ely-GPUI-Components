@@ -305,3 +305,42 @@ fn undoing_a_kind_change_brings_back_its_styling(cx: &mut TestAppContext) {
     );
     assert!(bold, "the paragraph styles its markdown again");
 }
+
+#[gpui::test]
+fn undo_of_typing_restores_the_selection_it_replaced(cx: &mut TestAppContext) {
+    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["abcdef"])], cx);
+    select(&editor, 0, 0, 2..4, cx);
+    cx.simulate_keystrokes("x");
+    settle(cx);
+    assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abxef")]);
+    cx.simulate_keystrokes("cmd-z");
+    settle(cx);
+    let selection = cx.update(|_, cx| editor.read(cx).blocks[0].fields[0].read(cx).selection());
+    assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abcdef")]);
+    assert_eq!(selection, 2..4, "undo selects what the typing replaced");
+}
+
+#[gpui::test]
+fn up_into_a_table_skips_its_hidden_cells(cx: &mut TestAppContext) {
+    let table = BlockKind::Table {
+        columns: 2,
+        merged: vec![(1, 1)],
+    };
+    let (editor, cx) = open(
+        vec![
+            BlockData::new(table, ["A", "B", "c", ""]),
+            BlockData::new(BlockKind::Paragraph, ["after"]),
+        ],
+        cx,
+    );
+    caret(&editor, 1, 0, cx);
+    cx.simulate_keystrokes("up");
+    settle(cx);
+    let key = cx.update(|_, cx| editor.read(cx).blocks[0].key);
+    let focused = cx.update(|window, cx| editor.read(cx).focused(window, cx));
+    assert_eq!(
+        focused,
+        Some((key, 2)),
+        "up lands on the cell that shows in the last row"
+    );
+}

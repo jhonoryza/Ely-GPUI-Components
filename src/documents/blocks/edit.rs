@@ -162,12 +162,24 @@ impl BlockEditor {
     /// Records what changed as one undo step, a burst of typing as one, and tells the owner.
     pub(super) fn settle(&mut self, typing: bool, cx: &mut Context<Self>) {
         let now = self.snapshot(cx);
+        let typed_from = self.typed_from.take();
         if now.blocks != self.current.blocks {
-            let before = std::mem::replace(&mut self.current, now);
+            let mut before = std::mem::replace(&mut self.current, now);
+            if typed_from.is_some() {
+                before.caret = typed_from;
+            }
             self.history.record(before, typing);
             cx.emit(BlockEvent::Changed);
             cx.notify();
         }
+    }
+
+    /// Where a key went down, before the field acts on it: the start a typing burst's undo goes back to.
+    pub(crate) fn note_key(&mut self, key: u64, field: usize, cx: &Context<Self>) {
+        let selection = self.blocks[self.index(key)].fields[field]
+            .read(cx)
+            .selection();
+        self.typed_from = Some((key, field, selection));
     }
 
     /// Records the document before a change to its blocks.
