@@ -173,16 +173,18 @@ impl RenderOnce for ABCompareView {
             .flex_col()
             .gap_3()
             .child(div().w_full().flex().flex_wrap().gap_3().children(sides))
-            .child(
-                div()
-                    .flex()
-                    .flex_wrap()
-                    .items_center()
-                    .gap_2()
-                    .text_size(theme.text_size(TextSize::Sm))
-                    .text_color(colors.fg_muted)
-                    .children(verdicts),
-            )
+            .when(!verdicts.is_empty(), |column| {
+                column.child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .items_center()
+                        .gap_2()
+                        .text_size(theme.text_size(TextSize::Sm))
+                        .text_color(colors.fg_muted)
+                        .children(verdicts),
+                )
+            })
     }
 }
 

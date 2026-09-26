@@ -1,6 +1,9 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
-use gpui::{Context, IntoElement, ParentElement, Render, Styled, TestAppContext, Window, div, px};
+use gpui::{
+    Context, IntoElement, Modifiers, ParentElement, Render, Styled, TestAppContext, Window, div,
+    point, px,
+};
 
 use super::{press, settle, setup, tab};
 use crate::generative::{
@@ -91,6 +94,33 @@ fn only_done_results_open_and_a_failure_retries(cx: &mut TestAppContext) {
         *heard.borrow(),
         ["open 1", "retry 2"],
         "the pending result takes no Tab"
+    );
+}
+
+/// A single picture with nothing to open it.
+struct Still;
+
+impl Render for Still {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div().w(px(420.0)).child(GenerationGrid::new(
+            "still",
+            [Outcome::Done("missing.jpg".into())],
+            1.5,
+        ))
+    }
+}
+
+#[gpui::test]
+fn a_picture_with_nothing_to_open_takes_no_focus(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Still);
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    cx.simulate_click(point(px(100.0), px(60.0)), Modifiers::none());
+    settle(cx);
+    assert!(
+        cx.update(|window, cx| window.focused(cx).is_none()),
+        "no ring on a picture the keys cannot use"
     );
 }
 

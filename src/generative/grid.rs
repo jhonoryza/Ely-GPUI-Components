@@ -128,9 +128,9 @@ impl RenderOnce for GenerationGrid {
                     Outcome::Done(picture) => {
                         let open = self.on_open.clone();
                         frame
-                            .track_focus(&focus)
                             .when_some(open, |tile, open| {
-                                tile.cursor_pointer()
+                                tile.track_focus(&focus)
+                                    .cursor_pointer()
                                     .on_mouse_down(MouseButton::Left, |_, window, _| {
                                         window.prevent_default()
                                     })

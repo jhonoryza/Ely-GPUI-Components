@@ -293,3 +293,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24f | 2 | PASS | |
 | T25a | 1 | FAIL | Cmd-Enter generated only while a text field held focus; the form set no key context of its own |
 | T25a | 2 | PASS | |
+| T25b | 1 | FAIL | a done result with nothing to open still took focus on a press and drew a ring the keys could not reach |
