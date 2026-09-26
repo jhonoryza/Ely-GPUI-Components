@@ -5,6 +5,8 @@ use gpui::{
     SharedString, Styled, Window, div, prelude::*, relative,
 };
 
+use similar::DiffableStr;
+
 use super::merging::{Region, RegionKind, Take, conflicts, resolve, result};
 use crate::{
     buttons::{Button, ButtonVariant},
@@ -238,7 +240,8 @@ impl RenderOnce for ThreeWayMerge {
                     .font_family(theme.mono_family.clone())
                     .text_size(theme.text_size(TextSize::Xs))
                     .text_color(colors.fg)
-                    .children(merged.lines().map(|line| {
+                    .children(merged.tokenize_lines().into_iter().map(|line| {
+                        let line = line.trim_end_matches(['\r', '\n']);
                         let marker = ["<<<<<<<", "=======", ">>>>>>>"]
                             .iter()
                             .any(|mark| line.starts_with(mark));
@@ -298,7 +301,8 @@ impl RenderOnce for ConflictResolver {
         });
         let (current, incoming) = (colors.success.opacity(0.1), colors.info.opacity(0.1));
         let mut rows: Vec<AnyElement> = Vec::new();
-        for (ix, line) in self.text.lines().enumerate() {
+        for (ix, line) in self.text.tokenize_lines().into_iter().enumerate() {
+            let line = line.trim_end_matches(['\r', '\n']);
             if let Some(at) = found.iter().position(|conflict| conflict.start == ix) {
                 rows.push(
                     takes(

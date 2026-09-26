@@ -243,4 +243,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T18 | 2 | FAIL | a folder it could not enter still started the shell elsewhere; links read cluster cells as spaces |
 | T18 | 3 | PASS | |
 | T19 | 1 | FAIL | a merge rewrote line endings and added a last newline; the split view numbered its right side from the old file; an empty side started its hunk a line late; the subject counter covered long subjects; clipped code rows had no line height |
-| T19 | 2 | — | pending review |
+| T19 | 2 | FAIL | a lone return split lines for similar but not for regions, so a change was lost; taking both sides added a newline to an empty side |
+| T19 | 3 | — | pending review |
