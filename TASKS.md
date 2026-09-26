@@ -66,7 +66,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T17d Editor · Panels
 - [x] T17e Editor · Status items
 - [x] T18 Terminal
-- [ ] T19 Git
+- [x] T19 Git
 - [ ] T20 Debug
 - [ ] T21a Documents · Editing — `tasks/ch21-30.md`
 - [ ] T21b Documents · Reading
@@ -244,4 +244,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T18 | 3 | PASS | |
 | T19 | 1 | FAIL | a merge rewrote line endings and added a last newline; the split view numbered its right side from the old file; an empty side started its hunk a line late; the subject counter covered long subjects; clipped code rows had no line height |
 | T19 | 2 | FAIL | a lone return split lines for similar but not for regions, so a change was lost; taking both sides added a newline to an empty side |
-| T19 | 3 | — | pending review |
+| T19 | 3 | PASS | |
