@@ -78,6 +78,7 @@ pub struct DiffViewer {
     open: Vec<usize>,
     on_open: Option<OnIndex>,
     on_layout: Option<OnLayout>,
+    headless: bool,
 }
 
 impl DiffViewer {
@@ -96,7 +97,14 @@ impl DiffViewer {
             open: Vec::new(),
             on_open: None,
             on_layout: None,
+            headless: false,
         }
+    }
+
+    /// Leaves the file's header, its path, counts and layout, to the owner, as a change card draws it.
+    pub fn headless(mut self) -> Self {
+        self.headless = true;
+        self
     }
 
     pub fn layout(mut self, layout: DiffLayout) -> Self {
@@ -308,26 +316,28 @@ impl RenderOnce for DiffViewer {
             .flex()
             .flex_col()
             .text_size(theme.text_size(TextSize::Sm))
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_3()
-                    .px_2()
-                    .py_1p5()
-                    .border_b_1()
-                    .border_color(colors.border)
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .font_weight(FontWeight::MEDIUM)
-                            .text_color(colors.fg)
-                            .child(self.path),
-                    )
-                    .child(DiffStat::new(self.stat.0, self.stat.1))
-                    .child(layout),
-            )
+            .when(!self.headless, |view| {
+                view.child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_3()
+                        .px_2()
+                        .py_1p5()
+                        .border_b_1()
+                        .border_color(colors.border)
+                        .child(
+                            div()
+                                .flex_1()
+                                .min_w_0()
+                                .font_weight(FontWeight::MEDIUM)
+                                .text_color(colors.fg)
+                                .child(self.path),
+                        )
+                        .child(DiffStat::new(self.stat.0, self.stat.1))
+                        .child(layout),
+                )
+            })
             .child(
                 div()
                     .flex_1()

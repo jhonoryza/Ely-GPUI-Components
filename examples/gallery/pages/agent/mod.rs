@@ -1,3 +1,4 @@
+mod changes;
 mod progress;
 mod tools;
 
@@ -10,7 +11,7 @@ pub const PAGE: Page = Page {
     number: 24,
     slug: "agent",
     title: "Agent",
-    summary: "An assistant at work: the tools it calls, what it asks before it acts, and how far it has come.",
+    summary: "An assistant at work: the tools it calls, what it asks before it acts, how far it has come and what it would change.",
     render,
     script: SCRIPT,
 };
@@ -31,6 +32,13 @@ const SCRIPT: &[Step] = &[
     Step::Click("agent-advance"),
     Step::Wait(300),
     Step::Shot("plan"),
+    Step::DownAt("agent-changes", 30.0, 51.0),
+    Step::UpAt("agent-changes", 30.0, 51.0),
+    Step::Wait(300),
+    Step::Shot("changes"),
+    Step::DownAt("agent-changes", 30.0, 51.0),
+    Step::UpAt("agent-changes", 30.0, 51.0),
+    Step::Wait(200),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
@@ -39,5 +47,6 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(tools::approval(window, cx))
         .child(progress::steps(window, cx))
         .child(progress::agents(window, cx))
+        .child(changes::changes_section(window, cx))
         .into_any_element()
 }

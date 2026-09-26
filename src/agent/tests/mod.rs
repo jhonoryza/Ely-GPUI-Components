@@ -3,6 +3,8 @@ use gpui::{
     TestAppContext, VisualTestContext, Window, div,
 };
 
+mod changes;
+
 use super::{AgentProgress, Permission, PermissionPrompt, ToolApprovalDialog};
 use crate::{forms, primitives::FocusNext, theme::Theme};
 
@@ -32,14 +34,14 @@ impl Render for Asking {
     }
 }
 
-fn settle(cx: &mut VisualTestContext) {
+pub(super) fn settle(cx: &mut VisualTestContext) {
     cx.run_until_parked();
     cx.update(|window, _| window.refresh());
     cx.run_until_parked();
 }
 
 /// Presses and releases `key`, a frame apart.
-fn press(key: &str, cx: &mut VisualTestContext) {
+pub(super) fn press(key: &str, cx: &mut VisualTestContext) {
     cx.simulate_keystrokes(key);
     settle(cx);
     cx.simulate_event(KeyUpEvent {

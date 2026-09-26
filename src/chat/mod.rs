@@ -28,6 +28,7 @@ pub use code::CodeBlock;
 pub use composer::{AttachmentButton, DragDropOverlay, InputHint, PromptInput, SendButton};
 pub use conversations::{Conversation, ConversationItem, ConversationList, new_chat_button};
 pub use list::{DateSeparator, MessageList, ScrollToBottomButton};
+pub(crate) use media::file_icon;
 pub use media::{FileMessage, ImageGrid, ImageMessage, LinkPreviewCard};
 pub use message::{
     ChatContainer, MessageAvatar, MessageBubble, MessageFooter, MessageHeader, Role,
