@@ -344,3 +344,30 @@ fn up_into_a_table_skips_its_hidden_cells(cx: &mut TestAppContext) {
         "up lands on the cell that shows in the last row"
     );
 }
+
+#[gpui::test]
+fn undo_of_a_delete_or_a_paste_restores_the_selection(cx: &mut TestAppContext) {
+    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["abcdef"])], cx);
+    let selection = |cx: &mut VisualTestContext| {
+        cx.update(|_, cx| editor.read(cx).blocks[0].fields[0].read(cx).selection())
+    };
+    select(&editor, 0, 0, 2..4, cx);
+    cx.simulate_keystrokes("backspace");
+    settle(cx);
+    assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abef")]);
+    cx.simulate_keystrokes("cmd-z");
+    settle(cx);
+    assert_eq!(selection(cx), 2..4, "undo of a delete selects what it took");
+    cx.update(|_, cx| cx.write_to_clipboard(gpui::ClipboardItem::new_string("xy".into())));
+    select(&editor, 0, 0, 2..4, cx);
+    cx.simulate_keystrokes("cmd-v");
+    settle(cx);
+    assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abxyef")]);
+    cx.simulate_keystrokes("cmd-z");
+    settle(cx);
+    assert_eq!(
+        selection(cx),
+        2..4,
+        "undo of a paste selects what it replaced"
+    );
+}

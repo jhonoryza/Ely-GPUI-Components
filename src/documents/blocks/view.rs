@@ -114,7 +114,6 @@ impl BlockEditor {
                 cx.stop_propagation();
                 editor.on_submit(key, window, cx);
             }))
-            .capture_key_down(cx.listener(move |editor, _, _, cx| editor.note_key(key, ix, cx)))
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             .child(field.clone());
         let slash = move |query: &str, at: usize, caret: usize| -> (Vec<Choice>, Pick) {

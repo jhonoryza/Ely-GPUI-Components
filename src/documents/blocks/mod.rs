@@ -76,7 +76,7 @@ pub struct BlockEditor {
     current: Snapshot,
     /// The field that last held focus, as block and field.
     caret: Option<(u64, usize)>,
-    /// The selection a key went down on, before its field changed.
+    /// The selection the last edit in a field replaced.
     typed_from: Option<(u64, usize, std::ops::Range<usize>)>,
     pub(crate) people: Vec<SharedString>,
     pub(crate) diagram: Option<RenderDiagram>,
@@ -288,6 +288,8 @@ impl BlockEditor {
                             .insert(name.clone(), text);
                     }
                 }
+                let at = self.blocks[ix].fields.iter().position(|each| each == field);
+                self.typed_from = at.map(|at| (key, at, field.read(cx).edited_from()));
                 self.settle(true, cx);
             }
             InputEvent::Focus => {

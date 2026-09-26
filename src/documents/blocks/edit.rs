@@ -174,14 +174,6 @@ impl BlockEditor {
         }
     }
 
-    /// Where a key went down, before the field acts on it: the start a typing burst's undo goes back to.
-    pub(crate) fn note_key(&mut self, key: u64, field: usize, cx: &Context<Self>) {
-        let selection = self.blocks[self.index(key)].fields[field]
-            .read(cx)
-            .selection();
-        self.typed_from = Some((key, field, selection));
-    }
-
     /// Records the document before a change to its blocks.
     pub(crate) fn before_change(&mut self, cx: &mut Context<Self>) {
         self.settle(true, cx);

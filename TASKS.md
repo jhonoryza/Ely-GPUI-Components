@@ -249,4 +249,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T20 | 2 | PASS | |
 | T21a | 1 | FAIL | Enter kept a selection; undo of a split left focus on a gone field; italic inside bold ate the bold; keys went into merged cells; undo kept a changed kind's highlighter |
 | T21a | 2 | FAIL | undo of typing lost the selection it replaced; Up from below a table landed in a hidden merged cell |
-| T21a | 3 | — | pending review |
+| T21a | 3 | FAIL | undo after a delete or a paste lost the selection they replaced; fixed after the cap by recording the replaced selection where every TextInput edit passes, verified by a red-green test, no fourth review |
