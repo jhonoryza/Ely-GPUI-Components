@@ -78,7 +78,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T23d AI Chat · Conversations
 - [x] T23e AI Chat · Welcome
 - [x] T24a Agent · Tool calls
-- [ ] T24b Agent · Progress
+- [x] T24b Agent · Progress
 - [ ] T24c Agent · Changes
 - [ ] T24d Agent · Previews
 - [ ] T24e Agent · Environment
@@ -276,3 +276,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24a | 2 | FAIL | a dialog body's children shrank to the capped column instead of scrolling: a 2000px body drew at 860px and a scroll moved nothing |
 | T24a | 3 | PASS | |
 | T24b | 1 | FAIL | a task of one step crashed at render: its bar asked for one segment, and a segmented bar needs two |
+| T24b | 2 | PASS | |
