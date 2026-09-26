@@ -1,9 +1,8 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    Animation, AnimationExt, App, ElementId, ImageSource, InteractiveElement, IntoElement,
-    ParentElement, RenderOnce, SharedString, Styled, Window, div, img, prelude::*,
-    transparent_black,
+    App, ElementId, ImageSource, InteractiveElement, IntoElement, ParentElement, RenderOnce,
+    SharedString, Styled, Window, div, img, prelude::*, transparent_black,
 };
 
 use super::scrubber::{OnTime, Scrubber, clock};
@@ -155,7 +154,13 @@ impl RenderOnce for VideoPlayer {
         let resting = self.playing
             && now.duration_since(watch.read(cx).moved) >= IDLE
             && !focus.contains_focused(window, cx);
-        let changes = crate::motion::changes((self.id.clone(), "shown"), !resting, window, cx);
+        let fading = crate::motion::since_change(
+            &(self.id.clone(), "fade").into(),
+            resting,
+            motion_duration(crate::motion::BASE, cx),
+            window,
+            cx,
+        );
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let light = colors.on_media;
@@ -294,18 +299,8 @@ impl RenderOnce for VideoPlayer {
         let bar = bar.when(resting, |bar| {
             bar.debug_selector(|| "video-controls-resting".into())
         });
-        let (from, to) = if resting { (1.0, 0.0) } else { (0.0, 1.0) };
-        let bar = if changes == 0 {
-            bar.opacity(to).into_any_element()
-        } else {
-            let fade = motion_duration(crate::motion::BASE, cx);
-            bar.with_animation(
-                (self.id.clone(), format!("controls-{changes}")),
-                Animation::new(fade),
-                move |bar, t| bar.opacity(crate::motion::lerp(from, to, t)),
-            )
-            .into_any_element()
-        };
+        let shown = if resting { 0.0 } else { 1.0 };
+        let bar = bar.opacity(fading.map_or(shown, |t| crate::motion::lerp(1.0 - shown, shown, t)));
         let controls = div()
             .absolute()
             .left_0()
@@ -333,7 +328,8 @@ impl RenderOnce for VideoPlayer {
             .bg(colors.media_backdrop)
             .border_1()
             .border_color(transparent_black())
-            .when(keys, |stage| stage.track_focus(&focus).focus_ring(cx))
+            .track_focus(&focus)
+            .when(keys, |stage| stage.focus_ring(cx))
             .children(frame)
             .child(controls)
             .on_mouse_move(move |_, window, cx| {

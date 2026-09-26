@@ -16,6 +16,7 @@ mod tests;
 
 pub(crate) use changes::changes;
 pub use curve::*;
+pub(crate) use effects::since_change;
 pub use effects::{Blink, Flash, Glow, Marquee, Pulse, Shake};
 pub use list::{AnimatePresence, Flip};
 pub use overlay::{LazyLoad, LoadingOverlay, Refresh, RefreshIndicator, TypingIndicator};

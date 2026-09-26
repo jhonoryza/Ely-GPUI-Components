@@ -1,11 +1,14 @@
 use std::path::PathBuf;
 
-use gpui::{KeyBinding, KeyUpEvent, Keystroke, TestAppContext, VisualTestContext};
+use gpui::{
+    KeyBinding, KeyUpEvent, Keystroke, Pixels, Point, TestAppContext, VisualTestContext, point,
+};
 
 use crate::{primitives::FocusNext, theme::Theme};
 
 mod edit;
 mod images;
+mod player;
 mod video;
 
 pub(super) fn setup(cx: &mut TestAppContext) {
@@ -40,4 +43,14 @@ pub(super) fn picture(name: &str, w: u32, h: u32) -> PathBuf {
         .save(&path)
         .expect("the picture writes");
     path
+}
+
+/// Where a share of a box sits in the window, halfway down.
+pub(super) fn across(
+    selector: &'static str,
+    share: f32,
+    cx: &mut VisualTestContext,
+) -> Point<Pixels> {
+    let bounds = cx.debug_bounds(selector).expect("the box draws");
+    point(bounds.left() + bounds.size.width * share, bounds.center().y)
 }

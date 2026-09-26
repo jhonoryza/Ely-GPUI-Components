@@ -39,7 +39,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - One component, one home. Duplicates point to it.
 - Fail fast. No silent fallbacks. Log state changes with `log`.
 - Files stay at or under 500 lines. Comments are one short line, and rare.
-- A repeating animation (spinner, breath, sweep) holds still under reduced motion instead of shortening, or it would spin at 1 ms a turn. An effect set off by a change (flash, shake) reads elapsed time rather than restarting an animation id, so what it holds keeps its state.
+- A repeating animation (spinner, breath, sweep) holds still under reduced motion instead of shortening, or it would spin at 1 ms a turn. An effect set off by a change (flash, shake, a bar that fades at rest) reads elapsed time through `motion::since_change` rather than restarting an animation id, so what it holds keeps its state: an animation's id passes to every descendant, and a new one rebuilds their focus, drags and hover.
 - `motion::duration()` honors reduced motion. Springs overshoot: use them inside animators, never as gpui easings, because gpui asserts eased values stay in `0..=1`.
 - `svg()` paints only with its own `text_color`. `Icon` always sets one.
 - Buttons stay out of focus on click (`prevent_default` on mouse down). Tab still reaches them.
