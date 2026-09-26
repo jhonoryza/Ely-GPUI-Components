@@ -1,4 +1,4 @@
-use std::{path::Path, rc::Rc, time::Duration};
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, FontWeight, Hsla, InteractiveElement,
@@ -10,6 +10,7 @@ use smallvec::SmallVec;
 use crate::{
     buttons::{Button, ButtonVariant},
     data_display::{Avatar, more, tucked},
+    documents::source,
     forms::{OnValue, Run},
     overlays::HoverCard,
     primitives::{FocusRing, hand_back, hold_focus},
@@ -53,7 +54,7 @@ impl Peer {
     pub(crate) fn avatar(&self, id: impl Into<ElementId>, size: AvatarSize) -> Avatar {
         let avatar = Avatar::new(id, self.name.clone()).size(size);
         match &self.picture {
-            Some(picture) => avatar.image(Path::new(picture.as_ref())),
+            Some(picture) => avatar.image(source(picture)),
             None => avatar,
         }
     }
@@ -116,6 +117,8 @@ impl RenderOnce for PresenceAvatars {
                 let face = tucked(ix == 0, size)
                     .id((self.id.clone(), format!("peer-{key}")))
                     .rounded_full()
+                    .border_1()
+                    .border_color(transparent_black())
                     .tab_index(0)
                     .focus_ring(cx)
                     .cursor_pointer()
@@ -145,7 +148,12 @@ impl RenderOnce for PresenceAvatars {
                                     .flex()
                                     .items_center()
                                     .gap_1p5()
-                                    .child(div().size_2().rounded_full().bg(color))
+                                    .child(
+                                        div()
+                                            .size(cx.theme().status_dot())
+                                            .rounded_full()
+                                            .bg(color),
+                                    )
                                     .child(
                                         div().font_weight(FontWeight::MEDIUM).child(name.clone()),
                                     ),
@@ -197,7 +205,7 @@ impl RenderOnce for LiveIndicator {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let live = self.others > 0;
-        let dot = div().size_2().rounded_full().bg(if live {
+        let dot = div().size(theme.status_dot()).rounded_full().bg(if live {
             colors.success
         } else {
             colors.fg_subtle
@@ -303,7 +311,7 @@ impl RenderOnce for FollowMode {
                     .rounded_t(theme.radius(Radius::Md))
                     .bg(color.opacity(TINT))
                     .text_size(theme.text_size(TextSize::Sm))
-                    .child(div().size_2().rounded_full().bg(color))
+                    .child(div().size(theme.status_dot()).rounded_full().bg(color))
                     .child(
                         div()
                             .flex_1()

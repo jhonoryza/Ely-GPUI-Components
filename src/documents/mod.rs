@@ -25,6 +25,7 @@ mod viewer;
 
 use gpui::App;
 
+pub(crate) use blocks::source;
 pub use blocks::{Align, BlockData, BlockEditor, BlockEvent, BlockKind, Media};
 pub use counts::{ReadingTime, WordCount};
 pub use epub::{Chapter, EpubReader};

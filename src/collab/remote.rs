@@ -1,8 +1,8 @@
 use std::ops::Range;
 
 use gpui::{
-    App, ContentMask, Entity, FontWeight, IntoElement, RenderOnce, SharedString, Styled, TextRun,
-    Window, canvas, fill, point, size,
+    App, Bounds, ContentMask, Entity, FontWeight, IntoElement, Pixels, RenderOnce, SharedString,
+    Styled, TextRun, Window, canvas, fill, point, size,
 };
 
 use super::peers::Peer;
@@ -14,6 +14,14 @@ use crate::{
 
 /// How strongly a peer's color washes their selection.
 const WASH: f32 = 0.2;
+
+/// Whether a caret shows inside the field's box.
+pub(crate) fn in_view(field: Bounds<Pixels>, caret: Bounds<Pixels>) -> bool {
+    caret.bottom() > field.top()
+        && caret.top() < field.bottom()
+        && caret.left() >= field.left()
+        && caret.left() < field.right()
+}
 
 /// Someone else's caret in a shared field: a bar in their color, their name on a flag above. Lay it over the field, in a box its size; it reads where `offset` sits as the field paints.
 #[derive(IntoElement)]
@@ -49,7 +57,7 @@ impl RenderOnce for RemoteCursor {
                 let Some(caret) = input.read(cx).bounds_for(offset) else {
                     return;
                 };
-                if caret.bottom() <= bounds.top() || caret.top() >= bounds.bottom() {
+                if !in_view(bounds, caret) {
                     return;
                 }
                 window.with_content_mask(Some(ContentMask { bounds }), |window| {
@@ -131,5 +139,29 @@ impl RenderOnce for RemoteSelection {
         )
         .absolute()
         .inset_0()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use gpui::{Bounds, point, px, size};
+
+    use super::in_view;
+
+    #[test]
+    fn a_caret_outside_the_field_hides() {
+        let field = Bounds::new(point(px(100.0), px(100.0)), size(px(200.0), px(60.0)));
+        let caret = |x: f32, y: f32| Bounds::new(point(px(x), px(y)), size(px(0.0), px(18.0)));
+        assert!(in_view(field, caret(150.0, 110.0)));
+        assert!(!in_view(field, caret(150.0, 200.0)), "below");
+        assert!(
+            !in_view(field, caret(40.0, 110.0)),
+            "scrolled off to the left"
+        );
+        assert!(
+            !in_view(field, caret(320.0, 110.0)),
+            "scrolled off to the right"
+        );
+        assert!(in_view(field, caret(100.0, 110.0)), "at the left edge");
     }
 }

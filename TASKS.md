@@ -254,3 +254,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T21c | 1 | FAIL | the gallery's page properties dropped a new due date and tags |
 | T21b | 2 | PASS | |
 | T21c | 2 | PASS | |
+| T22 | 1 | FAIL | a remote cursor scrolled out sideways still drew its flag; presence avatars showed no focus ring; the access list hid roles it could not change; status dots used a fixed size |

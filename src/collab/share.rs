@@ -1,4 +1,4 @@
-use std::{path::Path, rc::Rc};
+use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, FontWeight, IntoElement, ParentElement, RenderOnce, SharedString,
@@ -8,6 +8,7 @@ use gpui::{
 use crate::{
     buttons::{Button, ButtonVariant, CopyButton, IconButton},
     data_display::Avatar,
+    documents::source,
     forms::{Choice, OnValues, Pick, Run, Select, TagInput, is_email},
     overlays::Dialog,
     primitives::{Icon, IconName},
@@ -30,6 +31,15 @@ const ROLES: [(Role, &str, &str); 3] = [
 ];
 
 type OnRole = Rc<dyn Fn(Role, &mut Window, &mut App)>;
+
+/// The words for what `role` may do.
+fn role_label(role: Role) -> &'static str {
+    let (_, _, label) = ROLES
+        .into_iter()
+        .find(|(listed, ..)| *listed == role)
+        .expect("every role is listed");
+    label
+}
 
 /// Picks what someone may do: view, comment or edit.
 #[derive(IntoElement)]
@@ -136,7 +146,7 @@ impl RenderOnce for AccessList {
                 let id = |what: &str| (self.id.clone(), format!("{what}-{ix}"));
                 let avatar = Avatar::new(id("avatar"), member.name.clone()).size(AvatarSize::Sm);
                 let avatar = match &member.picture {
-                    Some(picture) => avatar.image(Path::new(picture.as_ref())),
+                    Some(picture) => avatar.image(source(picture)),
                     None => avatar,
                 };
                 let access: AnyElement = if member.owner {
@@ -152,13 +162,20 @@ impl RenderOnce for AccessList {
                         .flex()
                         .items_center()
                         .gap_1()
-                        .children(on_role.map(|on_role| {
-                            PermissionSelect::new(
+                        .child(match on_role {
+                            Some(on_role) => PermissionSelect::new(
                                 id("role"),
                                 member.role,
                                 move |role, window, cx| on_role(ix, role, window, cx),
                             )
-                        }))
+                            .into_any_element(),
+                            None => div()
+                                .px_2()
+                                .text_size(theme.text_size(TextSize::Sm))
+                                .text_color(colors.fg_muted)
+                                .child(role_label(member.role))
+                                .into_any_element(),
+                        })
                         .children(on_remove.map(|on_remove| {
                             IconButton::new(id("remove"), IconName::X)
                                 .variant(ButtonVariant::Ghost)
