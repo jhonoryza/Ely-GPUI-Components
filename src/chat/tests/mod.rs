@@ -10,6 +10,7 @@ use gpui::{
 mod cite;
 mod compose;
 mod history;
+mod welcome;
 
 use super::{
     ImageMessage, MessageAvatar, MessageBubble, MessageEditor, MessageList, Role, ThinkingBlock,

@@ -4,6 +4,7 @@ mod compose;
 mod controls;
 mod history;
 mod talk;
+mod welcome;
 
 use ely_gpui_component::feedback::{ToastViewport, Toaster};
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
@@ -64,6 +65,9 @@ const SCRIPT: &[Step] = &[
     Step::Shot("export"),
     Step::Key("escape"),
     Step::Wait(200),
+    Step::Click("chat-follow-ups"),
+    Step::Wait(300),
+    Step::Shot("follow-up"),
     Step::DownAt("chat-sources", 20.0, 10.0),
     Step::UpAt("chat-sources", 20.0, 10.0),
 ];
@@ -72,6 +76,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
     let draft = compose::draft(window, cx);
     let history = history::history(window, cx);
     let toaster = keep("chat-toaster", Toaster::default, window, cx);
+    let opening = welcome::welcome_draft(window, cx);
     div()
         .child(talk::conversation(window, cx))
         .child(talk::streaming(window, cx))
@@ -89,6 +94,9 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(history::conversations_section(&history, window, cx))
         .child(history::projects_section(window, cx))
         .child(history::shared_section(&history, &toaster, window, cx))
+        .child(welcome::welcome_section(&opening, &toaster, window, cx))
+        .child(welcome::follow_ups_section(window, cx))
+        .child(welcome::library_section(&opening, window, cx))
         .child(ToastViewport::new("chat-toasts", &toaster))
         .into_any_element()
 }

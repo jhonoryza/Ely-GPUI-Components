@@ -16,6 +16,7 @@ mod stream;
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
 mod voice;
+mod welcome;
 
 pub use actions::{
     BranchNavigator, MessageActions, MessageEditor, QuoteReply, continue_button, regenerate_button,
@@ -42,3 +43,4 @@ pub use status::{
 };
 pub use stream::{StreamingCursor, StreamingMarkdown, StreamingText};
 pub use voice::{VoiceInputButton, VoiceWaveform};
+pub use welcome::{CapabilityCards, FollowUpSuggestions, SuggestionChips, WelcomeScreen};
