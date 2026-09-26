@@ -5,7 +5,7 @@ mod downloads;
 mod embed;
 mod grid;
 mod hardware;
-mod lens;
+pub(crate) mod lens;
 mod mask;
 mod models;
 mod playground;

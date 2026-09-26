@@ -87,6 +87,14 @@ pub fn keep<T: 'static>(
     window.use_keyed_state(key, cx, move |_, _| init())
 }
 
+/// Edits a demo's state in place and redraws.
+pub fn change<T: 'static>(state: &Entity<T>, cx: &mut App, edit: impl FnOnce(&mut T)) {
+    state.update(cx, |state, cx| {
+        edit(state);
+        cx.notify();
+    });
+}
+
 /// Replaces a demo's state and redraws.
 pub fn set<T: 'static>(state: &Entity<T>, value: T, cx: &mut App) {
     state.update(cx, |state, cx| {

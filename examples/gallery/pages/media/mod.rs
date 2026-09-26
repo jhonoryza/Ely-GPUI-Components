@@ -1,6 +1,8 @@
 mod audio;
+mod devices;
 mod edit;
 mod images;
+mod sculpt;
 mod video;
 
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
@@ -89,6 +91,21 @@ const SCRIPT: &[Step] = &[
     Step::DownAt("media-transport", 180.0, 20.0),
     Step::UpAt("media-transport", 180.0, 20.0),
     Step::Wait(300),
+    Step::DownAt("media-recorder", 45.0, 18.0),
+    Step::UpAt("media-recorder", 45.0, 18.0),
+    Step::Wait(1500),
+    Step::Shot("recording"),
+    Step::DownAt("media-devices", 140.0, 18.0),
+    Step::UpAt("media-devices", 140.0, 18.0),
+    Step::Wait(300),
+    Step::Shot("devices"),
+    Step::Key("escape"),
+    Step::DownAt("media-model", 240.0, 160.0),
+    Step::DragTo("media-model", 360.0, 200.0),
+    Step::UpAt("media-model", 360.0, 200.0),
+    Step::Key("="),
+    Step::Wait(300),
+    Step::Shot("orbited"),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
@@ -109,5 +126,10 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(audio::speed(window, cx))
         .child(audio::transport(window, cx))
         .child(audio::playlist(window, cx))
+        .child(devices::recorder(window, cx))
+        .child(devices::camera(cx))
+        .child(devices::mic(cx))
+        .child(devices::selectors(window, cx))
+        .child(devices::model(window, cx))
         .into_any_element()
 }

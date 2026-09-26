@@ -299,7 +299,7 @@ impl Select {
 impl RenderOnce for Select {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         assert!(
-            !self.choices.is_empty(),
+            self.disabled || !self.choices.is_empty(),
             "select {:?} has no choices",
             self.id
         );

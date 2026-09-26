@@ -419,3 +419,30 @@ fn a_free_combobox_keeps_the_text_it_mounts_with(cx: &mut TestAppContext) {
         "custom label"
     );
 }
+
+/// A select with nothing to pick, open or shut.
+struct Empty(bool);
+
+impl Render for Empty {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        Select::new("empty", [])
+            .placeholder("Nothing yet")
+            .disabled(self.0)
+    }
+}
+
+#[gpui::test]
+fn a_shut_select_may_be_empty(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Empty(true));
+    cx.run_until_parked();
+    cx.update(|window, _| window.focus_next());
+    assert!(cx.update(|window, cx| window.focused(cx).is_none()));
+}
+
+#[gpui::test]
+#[should_panic(expected = "has no choices")]
+fn an_open_select_with_nothing_to_pick_fails(cx: &mut TestAppContext) {
+    setup(cx);
+    cx.add_window_view(|_, _| Empty(false));
+}

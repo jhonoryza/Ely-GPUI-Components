@@ -5,24 +5,13 @@ use gpui::{
     Styled, TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
-use super::{across, press, settle, setup};
+use super::{across, press, settle, setup, tab_to};
 use crate::media::{
     AudioPlayer, AudioWaveform, MediaControls, PlaybackSpeedControl, Playlist, Repeat, Track,
     VolumeControl,
 };
 
 const SECOND: Duration = Duration::from_secs(1);
-
-/// Moves focus to the `nth` Tab stop from none.
-fn tab_to(nth: usize, cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
-        for _ in 0..nth {
-            window.focus_next();
-        }
-    });
-    settle(cx);
-}
 
 /// A waveform of a hundred seconds, 400 wide, and the times it was sent to.
 struct Waving {

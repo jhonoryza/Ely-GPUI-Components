@@ -39,6 +39,11 @@ fn tones(colors: &Palette) -> [Hsla; 3] {
     [colors.fg, colors.warning, colors.danger]
 }
 
+/// A share's color against its limits: plain, amber past the first, red past the second.
+pub(crate) fn tone(share: f32, limits: (f32, f32), colors: &Palette) -> Hsla {
+    tones(colors)[Level::of(share, thresholds(limits.0, limits.1)) as usize]
+}
+
 fn thresholds(warn: f32, danger: f32) -> (f32, f32) {
     assert!(
         0.0 < warn && warn <= danger && danger <= 1.0,
@@ -411,7 +416,17 @@ impl RenderOnce for UsageBar {
 
 #[cfg(test)]
 mod tests {
-    use super::{Level, UsageBar};
+    use super::{Level, UsageBar, tone};
+    use crate::theme::Palette;
+
+    #[test]
+    fn a_tone_follows_the_share_past_each_limit() {
+        let colors = Palette::light(false);
+        let limits = (0.8, 0.95);
+        assert_eq!(tone(0.5, limits, &colors), colors.fg);
+        assert_eq!(tone(0.85, limits, &colors), colors.warning);
+        assert_eq!(tone(0.97, limits, &colors), colors.danger);
+    }
 
     #[test]
     fn parts_that_sum_to_the_total_fill_it_despite_float_error() {

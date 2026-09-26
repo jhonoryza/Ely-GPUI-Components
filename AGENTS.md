@@ -113,6 +113,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Set an explicit line height on any box that clips text. gpui's default leading is taller than a tight box, and the clip eats descenders.
 - gpui's `img` takes its picture's pixel size for any `Auto` side, and its aspect ratio beats percent heights in flow. `Image` pins it absolute at full size, so an `Image` needs a sized box.
 - Badges, tags and avatars live in `data_display`; forms and shell draw theirs from there, and `data_display` imports neither. Avatars take square pictures.
+- A picture drawn in code reaches gpui as a `RenderImage`. A host that replaces one frees the old through `App::drop_image`, or every frame stays in the sprite atlas (the gallery's model).
 - `img()` keeps loading state, and moves an animated picture's frames, only with an id. Content masks are rectangles, so rounded corners survive only when the image fills its box without cropping.
 - gpui reads a `&str` picture source as a web address. A file goes through `Path` (`documents::source` in the crate, `Path::new` in the gallery).
 - Taffy 0.9's grid rows overgrow tiles that keep a ratio. Tiles in a picture's shape sit in flex rows of `flex_1` cells (`generative::GenerationGrid`).
@@ -143,6 +144,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui styles a drag-over only on an element with its own hitbox. A veil that shows while files hover takes the drop itself (`chat::DragDropOverlay`).
 - gpui 0.2.2 never clears `debug_bounds`: a test sees an element appear, not leave.
 - The system time zone comes from `typography::format::system_zone`, which fails loud; jiff's `TimeZone::system()` falls back to UTC in silence.
+- A Select with nothing to pick stays shut: disabled, it shows its placeholder; open, it fails (`media::DeviceSelector` says no device was found).
 - A list opens with its cursor on the current choice: Select on the chosen row, Combobox on its value, MultiSelect on the first one ticked, SelectableList on its first selected row. A selection the owner makes, not the echo of the list's own pick, moves SelectableList's cursor there.
 - A search step, a tool call or an agent's step says where it stands with `chat::StepState` and draws it with `chat::step_mark`.
 - A flex line whose free space goes to an auto margin loses its gaps in taffy 0.9. A row that parts left and right groups its sides and uses `justify_between`; `ml_auto` is safe only beside a `flex_1` item that leaves no free space.

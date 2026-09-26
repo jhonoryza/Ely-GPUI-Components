@@ -92,7 +92,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T26a Media · Images
 - [x] T26b Media · Crop and annotate
 - [x] T26c Media · Video
-- [ ] T26d Media · Audio and controls
+- [x] T26d Media · Audio and controls
 - [ ] T26e Media · Capture and devices
 - [ ] T27 Files
 - [ ] T28 Messaging
@@ -315,3 +315,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T26c | 2 | FAIL | the bar's fade restarted an animation id per rest and wake, which rebuilt the scrubber's drag, hover and focus under it |
 | T26c | 3 | PASS | |
 | T26d | 1 | FAIL | the playlist's keys started from the first row, not the song under way; the waveform's bar fit sat untested in paint |
+| T26d | 2 | PASS | |

@@ -8,7 +8,7 @@ use gpui::{App, Entity, IntoElement, ParentElement, SharedString, Styled, Window
 
 use crate::{
     probe::probe,
-    ui::{keep, noise, section},
+    ui::{change, keep, noise, section},
 };
 
 const COVER: &str = concat!(
@@ -137,14 +137,6 @@ fn state(window: &mut Window, cx: &mut App) -> Entity<Listening> {
         window,
         cx,
     )
-}
-
-/// Changes the demo's listening and redraws.
-fn change(state: &Entity<Listening>, cx: &mut App, edit: impl FnOnce(&mut Listening)) {
-    state.update(cx, |now, cx| {
-        edit(now);
-        cx.notify();
-    });
 }
 
 fn controls(id: &'static str, state: &Entity<Listening>, now: &Listening) -> MediaControls {

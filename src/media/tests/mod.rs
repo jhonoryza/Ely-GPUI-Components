@@ -7,6 +7,7 @@ use gpui::{
 use crate::{primitives::FocusNext, theme::Theme};
 
 mod audio;
+mod devices;
 mod edit;
 mod images;
 mod player;
@@ -54,4 +55,15 @@ pub(super) fn across(
 ) -> Point<Pixels> {
     let bounds = cx.debug_bounds(selector).expect("the box draws");
     point(bounds.left() + bounds.size.width * share, bounds.center().y)
+}
+
+/// Moves focus to the `nth` Tab stop from none.
+pub(super) fn tab_to(nth: usize, cx: &mut VisualTestContext) {
+    cx.update(|window, _| {
+        window.blur();
+        for _ in 0..nth {
+            window.focus_next();
+        }
+    });
+    settle(cx);
 }
