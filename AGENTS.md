@@ -110,6 +110,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Ids inside a reusable component carry its owner's id or `EntityId`, animation ids too. Twin ids share focus, click and animation state.
 - Text wraps at the width its box had when measured. A cross-axis `max_w` comes too late, and a flex column counts wrapped text as one line. Put prose in a plain block inside a flex row with `flex_1().max_w(..)` (`feedback::states`).
 - gpui 0.2.2 keeps a no-wrap line's first measure, taken at full width inside flex and scroll boxes, so `.truncate()` clips there instead of ending in an ellipsis. A line that may overflow is a `typography::Ellipsis`.
+- gpui 0.2.2's `line_clamp` wraps once and lays the rest on the last line, cut hard; centered, it loses both ends. A name whose ends matter is a `typography::MiddleEllipsis` on one line (`files::FileGrid`).
 - Set an explicit line height on any box that clips text. gpui's default leading is taller than a tight box, and the clip eats descenders.
 - gpui's `img` takes its picture's pixel size for any `Auto` side, and its aspect ratio beats percent heights in flow. `Image` pins it absolute at full size, so an `Image` needs a sized box.
 - A file's icon comes from `primitives::file_icon`, one map from name to icon for every chapter; `files::FileIcon` draws it. What fits across a width comes from `layout::columns_for`, and `layout::fit` adds the inset that centers it.

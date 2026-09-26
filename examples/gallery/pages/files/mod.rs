@@ -44,6 +44,11 @@ fn entries() -> Vec<DirEntry> {
         DirEntry::file("Walkthrough.mov", 184_000_000, ago(120)),
         DirEntry::file("main.rs", 9_200, ago(1)),
         DirEntry::file("Archive.zip", 48_000_000, ago(700)),
+        DirEntry::file(
+            "Quarterly review with the design team, final.pdf",
+            820_000,
+            ago(6),
+        ),
     ]
 }
 

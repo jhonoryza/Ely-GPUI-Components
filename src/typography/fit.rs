@@ -1,7 +1,7 @@
 use gpui::{
-    App, ElementId, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce, ShapedLine,
-    SharedString, StatefulInteractiveElement, Styled, TextRun, Window, canvas, div, prelude::*,
-    relative, transparent_black,
+    App, Div, ElementId, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce,
+    ShapedLine, SharedString, StatefulInteractiveElement, Styled, TextRun, Window, canvas, div,
+    prelude::*, relative, transparent_black,
 };
 
 use crate::{
@@ -108,7 +108,33 @@ fn fit_end(text: &str, width: Pixels, window: &mut Window) -> String {
     cut(low)
 }
 
-/// One line in the text style around it, cut at the end with an ellipsis when its box is too narrow. gpui 0.2.2 keeps a line's first measure, so its own `truncate` clips instead in flex boxes.
+/// One line in the text style around it, cut by `fit` to its box. gpui 0.2.2 keeps a line's first measure, so its own `truncate` clips instead in flex boxes.
+fn cut_line(text: SharedString, fit: fn(&str, Pixels, &mut Window) -> String) -> Div {
+    let line = text.clone();
+    div()
+        .relative()
+        .min_w_0()
+        .overflow_hidden()
+        .whitespace_nowrap()
+        .child(div().text_color(transparent_black()).child(text))
+        .child(
+            canvas(
+                move |bounds, window, _| shape(&fit(&line, bounds.size.width, window), window),
+                |bounds, shaped, window, cx| {
+                    let line = window.text_style().line_height_in_pixels(window.rem_size());
+                    shaped
+                        .paint(bounds.origin, line, window, cx)
+                        .expect("a cut line paints");
+                },
+            )
+            .absolute()
+            .top_0()
+            .left_0()
+            .size_full(),
+        )
+}
+
+/// One line in the text style around it, cut at the end with an ellipsis when its box is too narrow.
 #[derive(IntoElement)]
 pub struct Ellipsis {
     text: SharedString,
@@ -122,34 +148,11 @@ impl Ellipsis {
 
 impl RenderOnce for Ellipsis {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        let text = self.text.clone();
-        div()
-            .relative()
-            .min_w_0()
-            .overflow_hidden()
-            .whitespace_nowrap()
-            .child(div().text_color(transparent_black()).child(self.text))
-            .child(
-                canvas(
-                    move |bounds, window, _| {
-                        shape(&fit_end(&text, bounds.size.width, window), window)
-                    },
-                    |bounds, shaped, window, cx| {
-                        let line = window.text_style().line_height_in_pixels(window.rem_size());
-                        shaped
-                            .paint(bounds.origin, line, window, cx)
-                            .expect("an ellipsis line paints");
-                    },
-                )
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full(),
-            )
+        cut_line(self.text, fit_end)
     }
 }
 
-/// Shortens in the middle, keeping both ends. Paths, hashes.
+/// One line in the text style around it, cut in the middle when its box is too narrow, so both ends stay: paths, file names, hashes.
 #[derive(IntoElement)]
 pub struct MiddleEllipsis {
     text: SharedString,
@@ -162,31 +165,8 @@ impl MiddleEllipsis {
 }
 
 impl RenderOnce for MiddleEllipsis {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.theme();
-        let size = theme.text_size(TextSize::Base);
-        let line = size.to_pixels(window.rem_size()) * LEADING;
-        let text = self.text;
-        div()
-            .w_full()
-            .h(line)
-            .overflow_hidden()
-            .text_size(size)
-            .text_color(theme.colors.fg)
-            .child(
-                canvas(
-                    move |bounds, window, _| {
-                        let shown = fit_middle(&text, bounds.size.width, window);
-                        shape(&shown, window)
-                    },
-                    move |bounds, shaped, window, cx| {
-                        shaped
-                            .paint(bounds.origin, line, window, cx)
-                            .expect("middle ellipsis failed to paint");
-                    },
-                )
-                .size_full(),
-            )
+    fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
+        cut_line(self.text, fit_middle)
     }
 }
 
@@ -268,7 +248,19 @@ mod tests {
 mod fits {
     use gpui::{Pixels, TestAppContext};
 
-    use super::{fit_end, width_of};
+    use super::{fit_end, fit_middle, width_of};
+
+    #[gpui::test]
+    fn a_middle_cut_keeps_the_front_and_the_extension(cx: &mut TestAppContext) {
+        let cx = cx.add_empty_window();
+        cx.update(|window, _| {
+            let text = "A very long file name that keeps going.pdf";
+            let room = width_of("A very long…going.pdf", window);
+            let cut = fit_middle(text, room, window);
+            assert!(cut.starts_with("A very") && cut.ends_with(".pdf"), "{cut}");
+            assert!(width_of(&cut, window) <= room && cut.contains('…'), "{cut}");
+        });
+    }
 
     #[gpui::test]
     fn an_ellipsis_keeps_the_longest_front_that_fits(cx: &mut TestAppContext) {

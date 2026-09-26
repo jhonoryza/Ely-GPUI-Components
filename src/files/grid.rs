@@ -13,7 +13,7 @@ use crate::{
     lists::DirEntry,
     primitives::{FocusRing, tab_stop},
     theme::{ActiveTheme, IconSize, Radius, TextSize},
-    typography::LEADING,
+    typography::{LEADING, MiddleEllipsis},
 };
 
 type OnEntry = Rc<dyn Fn(&DirEntry, &mut Window, &mut App)>;
@@ -157,13 +157,14 @@ impl RenderOnce for FileGrid {
                 .child(FileIcon::entry(entry).size(IconSize::Xxl))
                 .child(
                     div()
+                        .debug_selector(|| format!("file-name {ix}"))
                         .w_full()
-                        .text_center()
+                        .flex()
+                        .justify_center()
                         .text_size(theme.text_size(TextSize::Sm))
                         .line_height(relative(LEADING))
                         .text_color(colors.fg)
-                        .line_clamp(2)
-                        .child(entry.name().clone()),
+                        .child(MiddleEllipsis::new(entry.name().clone())),
                 )
                 .on_click(move |event, window, cx| {
                     pick(ix, window, cx);

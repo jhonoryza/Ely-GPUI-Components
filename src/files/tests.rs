@@ -156,3 +156,31 @@ fn a_name_is_listed_once() {
 fn the_pick_is_one_of_the_entries() {
     let _ = FileGrid::new("grid", [DirEntry::file("a", 1, then())]).selected("z");
 }
+
+/// One tile whose name runs long.
+struct Named;
+
+impl Render for Named {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let name = "A very long file name that keeps going past two whole lines.pdf";
+        div()
+            .w(px(280.0))
+            .child(FileGrid::new("grid", [DirEntry::file(name, 10, then())]))
+    }
+}
+
+#[gpui::test]
+fn a_long_name_takes_one_line_inside_its_tile(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Named);
+    settle(cx);
+    let (name, grid) = (
+        cx.debug_bounds("file-name 0").expect("the name draws"),
+        cx.debug_bounds("file-grid").expect("the grid draws"),
+    );
+    assert!(name.size.height < px(24.0), "one line: {name:?}");
+    assert!(
+        name.left() >= grid.left() && name.right() <= grid.right(),
+        "{name:?} in {grid:?}"
+    );
+}

@@ -321,3 +321,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T26d | 2 | PASS | |
 | T26e | 1 | FAIL | an option list had no width limit, so a long device name ran it past the window |
 | T26e | 2 | PASS | |
+| T27a | 1 | FAIL | a tile's long name leaned on gpui's line_clamp, which cut its second line at both ends and lost the extension |
