@@ -95,6 +95,7 @@ pub use rating::Rating;
 pub use search::SearchInput;
 pub use select::Select;
 pub(crate) use select::{Listing, field_button, field_text, listing};
+pub(crate) use signature::{Drawing, pen};
 pub use signature::{SignaturePad, Stroke};
 pub use slider::{RangeSlider, Slider};
 pub use stepper::Stepper;

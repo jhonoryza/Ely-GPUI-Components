@@ -1,3 +1,4 @@
+mod canvas;
 mod panel;
 mod results;
 
@@ -28,6 +29,10 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("gen-ab", 181.0, 147.0),
     Step::Wait(300),
     Step::Shot("verdict"),
+    Step::DownAt("gen-canvas", 300.0, 70.0),
+    Step::UpAt("gen-canvas", 390.0, 220.0),
+    Step::Wait(300),
+    Step::Shot("masked"),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
@@ -36,5 +41,6 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(results::queue(window, cx))
         .child(results::results(window, cx))
         .child(results::variations(window, cx))
+        .child(canvas::canvas(window, cx))
         .into_any_element()
 }

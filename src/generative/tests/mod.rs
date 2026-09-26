@@ -2,6 +2,7 @@ use gpui::{KeyBinding, KeyUpEvent, Keystroke, TestAppContext, VisualTestContext}
 
 use crate::{forms, primitives::FocusNext, theme::Theme};
 
+mod canvas;
 mod results;
 mod settings;
 

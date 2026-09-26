@@ -1,9 +1,10 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Bounds, Corners, DragMoveEvent, ElementId, EmptyView, EntityId, Hsla, InteractiveElement,
-    IntoElement, MouseButton, ParentElement, Path, PathBuilder, Pixels, Point, RenderOnce,
-    StatefulInteractiveElement, Styled, Window, canvas, div, fill, point, prelude::*, size,
+    App, Bounds, Corners, Div, DragMoveEvent, ElementId, EmptyView, Entity, EntityId, Hsla,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, Path, PathBuilder, Pixels, Point,
+    RenderOnce, Stateful, StatefulInteractiveElement, Styled, Window, canvas, div, fill, point,
+    prelude::*, size,
 };
 
 use crate::{
@@ -16,17 +17,17 @@ use crate::{
 pub type Stroke = Vec<Point<Pixels>>;
 
 type OnStrokes = Rc<dyn Fn(&[Stroke], &mut Window, &mut App)>;
-type Lift = Rc<dyn Fn(Point<Pixels>, &mut Window, &mut App)>;
+type Lift = Rc<dyn Fn(Stroke, &mut Window, &mut App)>;
 
 struct Pen {
     owner: EntityId,
 }
 
-/// Where the pad sits, and the stroke under the pen.
+/// Where a pad sits, and the stroke under the pen.
 #[derive(Default)]
-struct Drawing {
-    bounds: Bounds<Pixels>,
-    stroke: Stroke,
+pub(crate) struct Drawing {
+    pub bounds: Bounds<Pixels>,
+    pub stroke: Stroke,
 }
 
 impl Drawing {
@@ -65,6 +66,63 @@ fn ink(points: &[Point<Pixels>], origin: Point<Pixels>, width: Pixels) -> Option
     }
     path.line_to(at(*last));
     Some(path.build().expect("a stroke is a simple open path"))
+}
+
+/// Turns a press and drag on `pad` into a stroke of points from its corner, kept inside it; `lift` gets the stroke as the pen leaves. The pad's owner keeps `drawing`'s bounds.
+pub(crate) fn pen(
+    pad: Stateful<Div>,
+    drawing: &Entity<Drawing>,
+    lift: impl Fn(Stroke, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let owner = drawing.entity_id();
+    let lift: Lift = Rc::new(lift);
+    let finish = {
+        let drawing = drawing.clone();
+        move |at: Point<Pixels>, window: &mut Window, cx: &mut App| {
+            let stroke = drawing.update(cx, |drawing, cx| {
+                if !drawing.stroke.is_empty() {
+                    drawing.reach(at);
+                }
+                cx.notify();
+                std::mem::take(&mut drawing.stroke)
+            });
+            if !stroke.is_empty() {
+                lift(stroke, window, cx);
+            }
+        }
+    };
+    let (press, start, moving) = (drawing.clone(), drawing.clone(), drawing.clone());
+    let up = Rc::new(finish);
+    let leave = up.clone();
+    pad.on_mouse_down(MouseButton::Left, move |event, _, cx| {
+        press.update(cx, |drawing, cx| {
+            drawing.stroke = vec![local(drawing.bounds, event.position)];
+            cx.notify();
+        })
+    })
+    .on_drag(Pen { owner }, move |_, _, window, cx| {
+        let at = window.mouse_position();
+        start.update(cx, |drawing, cx| {
+            drawing.reach(at);
+            cx.notify();
+        });
+        cx.new(|_| EmptyView)
+    })
+    .on_drag_move(move |event: &DragMoveEvent<Pen>, _, cx| {
+        if event.drag(cx).owner != owner {
+            return;
+        }
+        moving.update(cx, |drawing, cx| {
+            drawing.reach(event.event.position);
+            cx.notify();
+        })
+    })
+    .on_mouse_up(MouseButton::Left, move |event, window, cx| {
+        up(event.position, window, cx)
+    })
+    .on_mouse_up_out(MouseButton::Left, move |event, window, cx| {
+        leave(event.position, window, cx)
+    })
 }
 
 fn paint(
@@ -120,7 +178,6 @@ impl RenderOnce for SignaturePad {
         let strokes = use_seeded((self.id.clone(), "strokes"), self.strokes, window, cx);
         let drawing =
             window.use_keyed_state((self.id.clone(), "drawing"), cx, |_, _| Drawing::default());
-        let owner = drawing.entity_id();
         let set: OnStrokes = {
             let (id, strokes, on_change) = (self.id.clone(), strokes.clone(), self.on_change);
             Rc::new(move |next, window, cx| {
@@ -134,22 +191,13 @@ impl RenderOnce for SignaturePad {
                 }
             })
         };
-        let lift: Lift = {
-            let (strokes, drawing, set) = (strokes.clone(), drawing.clone(), set.clone());
-            Rc::new(move |at, window, cx| {
-                let stroke = drawing.update(cx, |drawing, _| {
-                    if !drawing.stroke.is_empty() {
-                        drawing.reach(at);
-                    }
-                    std::mem::take(&mut drawing.stroke)
-                });
-                if stroke.is_empty() {
-                    return;
-                }
+        let lift = {
+            let (strokes, set) = (strokes.clone(), set.clone());
+            move |stroke: Stroke, window: &mut Window, cx: &mut App| {
                 let mut next = strokes.read(cx).value.clone();
                 next.push(stroke);
                 set(&next, window, cx);
-            })
+            }
         };
         let theme = cx.theme();
         let colors = &theme.colors;
@@ -158,9 +206,7 @@ impl RenderOnce for SignaturePad {
         let empty = strokes.read(cx).value.is_empty();
         let mut shown = strokes.read(cx).value.clone();
         shown.push(drawing.read(cx).stroke.clone());
-        let (measure, press, start, pen) =
-            (drawing.clone(), drawing.clone(), drawing.clone(), drawing);
-        let (up, out) = (lift.clone(), lift);
+        let measure = drawing.clone();
         let color = colors.fg;
         let pad = div()
             .id(self.id.clone())
@@ -203,36 +249,8 @@ impl RenderOnce for SignaturePad {
                 .top_0()
                 .left_0()
                 .size_full(),
-            )
-            .on_mouse_down(MouseButton::Left, move |event, _, cx| {
-                press.update(cx, |drawing, cx| {
-                    drawing.stroke = vec![local(drawing.bounds, event.position)];
-                    cx.notify();
-                })
-            })
-            .on_drag(Pen { owner }, move |_, _, window, cx| {
-                let at = window.mouse_position();
-                start.update(cx, |drawing, cx| {
-                    drawing.reach(at);
-                    cx.notify();
-                });
-                cx.new(|_| EmptyView)
-            })
-            .on_drag_move(move |event: &DragMoveEvent<Pen>, _, cx| {
-                if event.drag(cx).owner != owner {
-                    return;
-                }
-                pen.update(cx, |drawing, cx| {
-                    drawing.reach(event.event.position);
-                    cx.notify();
-                })
-            })
-            .on_mouse_up(MouseButton::Left, move |event, window, cx| {
-                up(event.position, window, cx)
-            })
-            .on_mouse_up_out(MouseButton::Left, move |event, window, cx| {
-                out(event.position, window, cx)
-            });
+            );
+        let pad = pen(pad, &drawing, lift);
         div()
             .flex()
             .flex_col()
