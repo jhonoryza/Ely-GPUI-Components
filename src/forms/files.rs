@@ -35,6 +35,53 @@ pub(crate) fn dropped(paths: &[PathBuf], multiple: bool) -> Result<Vec<PathBuf>,
     Ok(paths.to_vec())
 }
 
+/// Files a picture may be, by extension.
+pub const PICTURES: [&str; 5] = ["png", "jpg", "jpeg", "gif", "webp"];
+
+/// The files a drop or a dialog brings when each is of one of `kinds`, by extension in any case, or why they are refused; no kinds takes any file.
+pub(crate) fn taken(
+    paths: &[PathBuf],
+    multiple: bool,
+    kinds: &[&str],
+) -> Result<Vec<PathBuf>, &'static str> {
+    let paths = dropped(paths, multiple)?;
+    let fits = |path: &PathBuf| {
+        path.extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| {
+                kinds
+                    .iter()
+                    .any(|kind| kind.eq_ignore_ascii_case(extension))
+            })
+    };
+    if !kinds.is_empty() && !paths.iter().all(fits) {
+        return Err("not a kind this takes");
+    }
+    Ok(paths)
+}
+
+/// Opens the file dialog; what it brings goes to `then` once `taken` lets it through.
+pub(crate) fn browse(
+    what: SharedString,
+    multiple: bool,
+    kinds: &'static [&'static str],
+    window: &mut Window,
+    cx: &mut App,
+    then: impl Fn(Vec<PathBuf>, &mut Window, &mut App) + 'static,
+) {
+    let refused = what.clone();
+    choose(
+        what,
+        files(multiple),
+        window,
+        cx,
+        move |paths, window, cx| match taken(&paths, multiple, kinds) {
+            Ok(paths) => then(paths, window, cx),
+            Err(reason) => log::info!("{refused}: refused a choice: {reason}"),
+        },
+    );
+}
+
 /// A drop target while files hover: focus-tinted when it takes them, danger-tinted when not.
 pub(super) fn hovering(style: StyleRefinement, takes: bool, cx: &App) -> StyleRefinement {
     let colors = &cx.theme().colors;
@@ -49,19 +96,19 @@ pub(super) fn hovering(style: StyleRefinement, takes: bool, cx: &App) -> StyleRe
 fn target(
     element: Stateful<Div>,
     what: SharedString,
-    multiple: bool,
+    (multiple, kinds): (bool, &'static [&'static str]),
     take: OnPaths,
 ) -> Stateful<Div> {
     element
         .drag_over::<ExternalPaths>(move |style, paths, _, cx| {
-            hovering(style, dropped(paths.paths(), multiple).is_ok(), cx)
+            hovering(style, taken(paths.paths(), multiple, kinds).is_ok(), cx)
         })
-        .on_drop(
-            move |paths: &ExternalPaths, window, cx| match dropped(paths.paths(), multiple) {
+        .on_drop(move |paths: &ExternalPaths, window, cx| {
+            match taken(paths.paths(), multiple, kinds) {
                 Ok(paths) => take(paths, window, cx),
                 Err(reason) => log::info!("{what}: refused a drop: {reason}"),
-            },
-        )
+            }
+        })
 }
 
 fn files(multiple: bool) -> PathPromptOptions {
@@ -177,7 +224,7 @@ impl RenderOnce for FileInput {
                         }),
                 )
             });
-        target(field, what, multiple, set)
+        target(field, what, (multiple, &[]), set)
     }
 }
 
@@ -187,6 +234,7 @@ pub struct DropZone {
     id: ElementId,
     hint: Option<SharedString>,
     multiple: bool,
+    kinds: &'static [&'static str],
     on_drop: Option<OnPaths>,
 }
 
@@ -196,8 +244,15 @@ impl DropZone {
             id: id.into(),
             hint: None,
             multiple: false,
+            kinds: &[],
             on_drop: None,
         }
+    }
+
+    /// Takes only files of these kinds, by extension, such as `PICTURES`.
+    pub fn kinds(mut self, kinds: &'static [&'static str]) -> Self {
+        self.kinds = kinds;
+        self
     }
 
     /// A line under the prompt, such as the kinds and sizes taken.
@@ -235,7 +290,8 @@ impl RenderOnce for DropZone {
         };
         let theme = cx.theme();
         let colors = &theme.colors;
-        let (multiple, browse, browse_what) = (self.multiple, take.clone(), what.clone());
+        let (multiple, kinds, chosen, browse_what) =
+            (self.multiple, self.kinds, take.clone(), what.clone());
         let zone = div()
             .id(self.id.clone())
             .flex()
@@ -272,18 +328,19 @@ impl RenderOnce for DropZone {
                     Button::new((self.id, "browse"), "Browse…")
                         .size(ControlSize::Sm)
                         .on_click(move |_, window, cx| {
-                            let browse = browse.clone();
-                            choose(
+                            let take = chosen.clone();
+                            browse(
                                 browse_what.clone(),
-                                files(multiple),
+                                multiple,
+                                kinds,
                                 window,
                                 cx,
-                                move |paths, window, cx| browse(paths, window, cx),
+                                move |paths, window, cx| take(paths, window, cx),
                             );
                         }),
                 ),
             );
-        target(zone, what, multiple, take)
+        target(zone, what, (multiple, kinds), take)
     }
 }
 
@@ -291,7 +348,7 @@ impl RenderOnce for DropZone {
 mod tests {
     use std::fs;
 
-    use super::dropped;
+    use super::{PICTURES, dropped, taken};
 
     #[test]
     fn drops_take_files_and_refuse_folders_extras_and_nothing() {
@@ -312,6 +369,28 @@ mod tests {
             Err("files only, not folders")
         );
         assert_eq!(dropped(&[], true), Err("nothing was dropped"));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_zone_of_pictures_takes_pictures_in_any_case_and_refuses_the_rest() {
+        let dir = std::env::temp_dir().join(format!("ely-kinds-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let [photo, loud, note] = ["dunes.jpg", "STAIR.PNG", "notes.txt"].map(|name| {
+            let path = dir.join(name);
+            fs::write(&path, "x").unwrap();
+            path
+        });
+        let both = [photo.clone(), loud.clone()];
+        assert_eq!(taken(&both, true, &PICTURES), Ok(both.to_vec()));
+        let mixed = [photo, note.clone()];
+        assert_eq!(taken(&mixed, true, &PICTURES), Err("not a kind this takes"));
+        let lone = std::slice::from_ref(&note);
+        assert_eq!(
+            taken(lone, false, &[]),
+            Ok(lone.to_vec()),
+            "no kinds takes any file"
+        );
         fs::remove_dir_all(dir).unwrap();
     }
 }

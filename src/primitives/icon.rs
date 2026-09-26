@@ -209,6 +209,7 @@ icons! {
     PanelRight => "panel-right",
     Paperclip => "paperclip",
     Pause => "pause",
+    PenLine => "pen-line",
     PenTool => "pen-tool",
     Pencil => "pencil",
     PhoneOff => "phone-off",

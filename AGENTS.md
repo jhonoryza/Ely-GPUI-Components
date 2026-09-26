@@ -51,7 +51,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A drag that pans, turns or slides goes through gpui's drag, whose moves reach the owner in or out of its box; `on_mouse_move` stops at the box's edge. gpui sends a drag's moves to every listener of its type, so each payload carries its owner's `EntityId` and handlers check it.
 - gpui 0.2.2 paints pictures without a transform, so a picture turns by its pixels: `media::turn` turns decoded frames by quarter turns off the main thread, an asset keyed by the picture and the turn.
 - A component that takes a starting value from its owner keeps it in `layout::seeded`: a new value from the owner replaces local drags.
-- The capture harness turns on reduced motion, so shots are still: repeating motion rests on one frame, and a shimmer shows no band.
+- The capture harness turns on reduced motion, so shots are still: repeating motion rests on one frame, and a shimmer shows no band. gpui's mac window stops its display link while occluded, so a capture advances a moving picture only on the draws the harness forces.
 - Each capture pass starts its page fresh (`Gallery::fresh`): page state lives under the pass, so the dark pass runs its script from the same start as the light one.
 - The capture harness finds gpui windows by handle through `raw-window-handle`. AppKit popups, which gpui does not own, come from the window list by process and level.
 - Posted events cannot move a macOS window, so window drags are not scripted. `drag_region` follows Zed's title bar.
@@ -79,11 +79,11 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A picker hands focus to its popup on open and back to its trigger on pick or Escape; it closes once focus leaves both (`forms::date::picker`).
 - Motion for a value change keys its animation on `motion::changes`, so it replays per change and stays still on first paint. Key only the part that moves: a keyed ancestor gives every descendant a new id, and focused buttons lose focus.
 - A spotlight or tour takes its target's box from `primitives::Measure`; the lit box glides between targets.
-- Thumbs stay inside their component's box: the track is padded by half a thumb (`Slider`, `ColorPicker`, `GradientEditor`).
+- Thumbs stay inside their component's box: the track is padded by half a thumb (`Slider`, `ColorPicker`, `GradientEditor`, `media::ImageCropper`).
 - gpui's `Hsla::opacity` scales alpha; `alpha` sets it.
 - A rounded box does not clip its children. Each layer inside takes the radius itself; `checker` takes one.
 - A window keeps one `feedback::Toaster` and renders one `ToastViewport`; anything holding the entity pushes to it. Messages share `primitives::Severity`.
-- Only gpui can build `ExternalPaths` with paths, so drop rules live in `forms::files::dropped`, where tests reach them.
+- Only gpui can build `ExternalPaths` with paths, so drop rules live in `forms::files::dropped`, where tests reach them. `taken` adds file kinds by extension, for drops and the dialog alike (`DropZone::kinds`).
 - A stroke drawn with the pointer goes through `forms::pen`: a press starts it, a drag extends it, and the lift hands it over, in or out of the pad (`SignaturePad`, `generative::InpaintCanvas`).
 - gpui runs key bindings before key listeners. A container takes a child's bound key through the action with `capture_action`, as `Form` takes `Submit`.
 - `ScrollHandle::scroll_to_item` runs in the container's prepaint against last frame's bounds and overflow, so a call before a list's first frame does nothing. Call it from a child's prepaint once the handle has bounds, then request one frame (`navigation::editor_tabs`). A floating list reveals its cursor, and a strip its focused item, through `forms::options::reveal` and `revealer`. A focused Tab stop deeper in a scroll box sets the box's offset whole from its own painted bounds in prepaint, once per focus, through `layout::bring_into_view`. Never poll layout with `request_animation_frame`.
@@ -146,7 +146,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui takes a scroll box's reach from its direct children's bounds, and a block child stretches to the box. Content that scrolls sideways sets its least width on that child (`tables::body::least`).
 - gpui turns a wheel along the other axis onto a box that scrolls one way, and the page around it scrolls too. A box inside a scrolling page keeps its wheel to its axis with `layout::on_axis`, and so does the page.
 - The focus color belongs to the focus ring. A chosen or shown item takes accent, as `forms::glyphs` and `lists::ListItem` do.
-- A box that shows a host's picture takes the picture's shape from the host (`ratio`), so nothing is cropped and a point given as a share lands on the picture.
+- A box that shows a host's picture takes the picture's shape from the host (`ratio`), so nothing is cropped and a point given as a share lands on the picture. A focusable one keeps its focus border on an outer box, so the picture keeps that shape exactly (`media::ImageCropper`).
+- A default only the component can work out, such as a crop fitted to a picture it decodes, reaches the owner once through `window.defer` after render (`media::ImageUpload`).
 
 ## Decisions
 

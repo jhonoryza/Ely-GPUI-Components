@@ -1,48 +1,13 @@
 use std::{cell::Cell, path::PathBuf, rc::Rc};
 
 use gpui::{
-    Bounds, Context, InteractiveElement, IntoElement, KeyBinding, KeyUpEvent, Keystroke, Modifiers,
-    MouseButton, MouseDownEvent, MouseUpEvent, ParentElement, Pixels, Render, ScrollDelta,
-    ScrollWheelEvent, Styled, TestAppContext, TouchPhase, VisualTestContext, Window, div, point,
-    px,
+    Bounds, Context, InteractiveElement, IntoElement, Modifiers, MouseButton, MouseDownEvent,
+    MouseUpEvent, ParentElement, Pixels, Render, ScrollDelta, ScrollWheelEvent, Styled,
+    TestAppContext, TouchPhase, VisualTestContext, Window, div, point, px,
 };
 
-use super::{ImageThumbnail, ImageViewer};
-use crate::{primitives::FocusNext, theme::Theme};
-
-fn setup(cx: &mut TestAppContext) {
-    cx.update(|cx| {
-        Theme::init(cx);
-        Theme::update(cx, |theme| theme.reduced_motion = true);
-        cx.bind_keys([KeyBinding::new("tab", FocusNext, None)]);
-    });
-}
-
-fn settle(cx: &mut VisualTestContext) {
-    for _ in 0..4 {
-        cx.run_until_parked();
-        cx.update(|window, _| window.refresh());
-    }
-    cx.run_until_parked();
-}
-
-fn press(key: &str, cx: &mut VisualTestContext) {
-    cx.simulate_keystrokes(key);
-    settle(cx);
-    cx.simulate_event(KeyUpEvent {
-        keystroke: Keystroke::parse(key).expect("a key"),
-    });
-    settle(cx);
-}
-
-/// A picture `w` by `h` written to a file named for its test, the same file each run.
-fn picture(name: &str, w: u32, h: u32) -> PathBuf {
-    let path = std::env::temp_dir().join(format!("ely-media-{name}.png"));
-    image::RgbaImage::from_pixel(w, h, image::Rgba([90, 120, 150, 255]))
-        .save(&path)
-        .expect("the picture writes");
-    path
-}
+use super::{picture, press, settle, setup};
+use crate::media::{ImageThumbnail, ImageViewer};
 
 /// A viewer 400 by 300 over a picture the test may change.
 struct Viewing(PathBuf);
@@ -287,7 +252,7 @@ fn a_picture_that_cannot_open_says_so(cx: &mut TestAppContext) {
     assert!(focused.is_none(), "with nothing to show, nothing takes Tab");
 }
 
-/// Two thumbnails, the second with no handler; the opens the first heard.
+/// Two thumbnails, the second with no handler, and how often the first opened.
 struct Strip(Rc<Cell<usize>>, PathBuf);
 
 impl Render for Strip {

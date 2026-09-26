@@ -53,7 +53,11 @@ fn local(bounds: Bounds<Pixels>, at: Point<Pixels>) -> Point<Pixels> {
 }
 
 /// A line through `points`, bent through their midpoints so it reads smooth.
-fn ink(points: &[Point<Pixels>], origin: Point<Pixels>, width: Pixels) -> Option<Path<Pixels>> {
+pub(crate) fn ink(
+    points: &[Point<Pixels>],
+    origin: Point<Pixels>,
+    width: Pixels,
+) -> Option<Path<Pixels>> {
     let [first, .., last] = points else {
         return None;
     };

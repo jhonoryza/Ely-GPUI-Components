@@ -63,8 +63,8 @@ pub use date::{
     WeekPicker, YearPicker,
 };
 pub use expression::{ExpressionInput, evaluate, expression_highlights};
-pub(crate) use files::dropped;
-pub use files::{DropZone, FileInput};
+pub use files::{DropZone, FileInput, PICTURES};
+pub(crate) use files::{browse, dropped};
 pub(crate) use glyphs::emoji_found;
 pub use glyphs::{EmojiPicker, IconPicker};
 pub use group::{InputAddon, InputGroup};
@@ -95,7 +95,7 @@ pub use rating::Rating;
 pub use search::SearchInput;
 pub use select::Select;
 pub(crate) use select::{Listing, field_button, field_text, listing};
-pub(crate) use signature::{Drawing, pen};
+pub(crate) use signature::{Drawing, ink, pen};
 pub use signature::{SignaturePad, Stroke};
 pub use slider::{RangeSlider, Slider};
 pub use stepper::Stepper;
