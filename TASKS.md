@@ -265,3 +265,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T23c | 2 | FAIL | a slash inside a path read as a new trigger, closing the file suggestions; a list whose first rows were disabled opened with its cursor out of view |
 | T23c | 3 | PASS | |
 | T23d | 1 | FAIL | the list grouped days in a silent UTC fallback when the system zone was unknown; Combobox and MultiSelect opened a long list at its top, away from the choice |
+| T23d | 2 | PASS | |
