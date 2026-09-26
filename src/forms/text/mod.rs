@@ -1,18 +1,20 @@
 mod actions;
 mod edit;
 mod element;
+mod highlight;
 mod ime;
 
 use std::{ops::Range, rc::Rc, time::Duration};
 
 use gpui::{
-    App, Bounds, Context, EventEmitter, FocusHandle, Focusable, Hsla, Pixels, Point, SharedString,
+    App, Bounds, Context, EventEmitter, FocusHandle, Focusable, Pixels, Point, SharedString,
     Subscription, Task, Window, WrappedLine,
 };
 
-pub(crate) use actions::{Backspace, Down, Enter, Submit, Up, bind_keys};
+pub(crate) use actions::{Backspace, Down, Enter, Redo, Submit, Undo, Up, bind_keys};
 use edit::Snapshot;
 pub(crate) use edit::{History, from_utf16, to_utf16};
+pub use highlight::Highlight;
 
 use crate::theme::ActiveTheme;
 
@@ -24,13 +26,6 @@ pub enum InputEvent {
     Submit,
     Focus,
     Blur,
-}
-
-/// Colors a span of the text: foreground, and an optional wash behind it.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Highlight {
-    pub color: Hsla,
-    pub background: Option<Hsla>,
 }
 
 type Highlighter = Rc<dyn Fn(&str, &App) -> Vec<(Range<usize>, Highlight)>>;

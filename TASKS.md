@@ -68,7 +68,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T18 Terminal
 - [x] T19 Git
 - [x] T20 Debug
-- [ ] T21a Documents · Editing — `tasks/ch21-30.md`
+- [x] T21a Documents · Editing — `tasks/ch21-30.md`
 - [ ] T21b Documents · Reading
 - [ ] T21c Documents · Knowledge
 - [ ] T22 Collaboration
@@ -247,3 +247,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T19 | 3 | PASS | |
 | T20 | 1 | FAIL | the demo picked past memory's end; an empty gutter had no height to press; a breakpoint's box also opened it; zoomed ticks lost their places; docs promised bound keys and batch actions |
 | T20 | 2 | PASS | |
+| T21a | 1 | — | pending review |

@@ -338,7 +338,7 @@ impl RenderOnce for IconPicker {
 }
 
 /// Emoji whose name or shortcode holds `query`, a lowercase string; all for an empty one.
-fn emoji_found(query: &str) -> Vec<&'static emojis::Emoji> {
+pub(crate) fn emoji_found(query: &str) -> Vec<&'static emojis::Emoji> {
     emojis::iter()
         .filter(|emoji| {
             query.is_empty()

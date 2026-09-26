@@ -1,11 +1,11 @@
 use gpui::{
     App, AvailableSpace, Bounds, ContentMask, DispatchPhase, Element, ElementId,
-    ElementInputHandler, Entity, GlobalElementId, Hsla, InspectorElementId, IntoElement, LayoutId,
-    MouseMoveEvent, Pixels, Point, SharedString, Style, TextAlign, TextRun, UnderlineStyle, Window,
-    WrappedLine, fill, point, relative, size,
+    ElementInputHandler, Entity, FontStyle, GlobalElementId, Hsla, InspectorElementId, IntoElement,
+    LayoutId, MouseMoveEvent, Pixels, Point, SharedString, StrikethroughStyle, Style, TextAlign,
+    TextRun, UnderlineStyle, Window, WrappedLine, fill, point, relative, size,
 };
 
-use super::{Layout, TextInput};
+use super::{Highlight, Layout, TextInput};
 use crate::theme::ActiveTheme;
 
 pub(crate) struct TextElement {
@@ -54,11 +54,11 @@ fn plain_run(len: usize, window: &Window, color: Hsla) -> TextRun {
     }
 }
 
-/// Splits `len` bytes into runs: highlights and the marked range over a base color.
+/// Splits `len` bytes into runs: highlights, and the underlined marked range, over a base run.
 fn runs(
     len: usize,
     base: TextRun,
-    spans: Vec<(std::ops::Range<usize>, Hsla, Option<Hsla>, bool)>,
+    spans: Vec<(std::ops::Range<usize>, Highlight, bool)>,
     thickness: Pixels,
 ) -> Vec<TextRun> {
     let mut cuts: Vec<usize> = vec![0, len];
@@ -74,15 +74,27 @@ fn runs(
                 len: end - start,
                 ..base.clone()
             };
-            for (range, color, background, underline) in &spans {
+            for (range, highlight, underline) in &spans {
                 if range.start <= start && end <= range.end {
-                    run.color = *color;
-                    if background.is_some() {
-                        run.background_color = *background;
+                    run.color = highlight.color;
+                    if highlight.background.is_some() {
+                        run.background_color = highlight.background;
+                    }
+                    if let Some(weight) = highlight.weight {
+                        run.font.weight = weight;
+                    }
+                    if highlight.italic {
+                        run.font.style = FontStyle::Italic;
+                    }
+                    if highlight.strike {
+                        run.strikethrough = Some(StrikethroughStyle {
+                            thickness,
+                            color: Some(highlight.color),
+                        });
                     }
                     if *underline {
                         run.underline = Some(UnderlineStyle {
-                            color: Some(*color),
+                            color: Some(highlight.color),
                             thickness,
                             wavy: false,
                         });
@@ -93,6 +105,34 @@ fn runs(
         })
         .filter(|run| run.len > 0)
         .collect()
+}
+
+/// What to show, whether it is the placeholder, and its runs, the same for measure and paint.
+fn shown_runs(input: &TextInput, window: &Window, cx: &App) -> (String, bool, Vec<TextRun>) {
+    let theme = cx.theme();
+    let (text, placeholder) = shown(input);
+    let color = window.text_style().color;
+    let base = plain_run(
+        text.len(),
+        window,
+        if placeholder {
+            theme.colors.fg_subtle
+        } else {
+            color
+        },
+    );
+    let mut spans = Vec::new();
+    if !placeholder {
+        for (range, highlight) in input.highlights(cx) {
+            spans.push((range, highlight, false));
+        }
+        if let Some(marked) = input.marked() {
+            let marked = input.display_offset(marked.start)..input.display_offset(marked.end);
+            spans.push((marked, Highlight::new(color), true));
+        }
+    }
+    let runs = runs(text.len(), base, spans, theme.underline_thickness());
+    (text, placeholder, runs)
 }
 
 /// Starts of the hard lines in `text`.
@@ -129,9 +169,8 @@ impl Element for TextElement {
             style.size.height = line_height.into();
             return (window.request_layout(style, [], cx), ());
         };
-        let (text, _) = shown(input);
+        let (text, _, runs) = shown_runs(input, window, cx);
         let font_size = window.text_style().font_size.to_pixels(window.rem_size());
-        let run = plain_run(text.len(), window, Hsla::default());
         let layout = window.request_measured_layout(style, move |known, available, window, _| {
             let width = known.width.or(match available.width {
                 AvailableSpace::Definite(width) => Some(width),
@@ -142,7 +181,7 @@ impl Element for TextElement {
                 .shape_text(
                     SharedString::from(text.clone()),
                     font_size,
-                    std::slice::from_ref(&run),
+                    &runs,
                     width,
                     None,
                 )
@@ -169,47 +208,16 @@ impl Element for TextElement {
         cx: &mut App,
     ) -> Prepaint {
         let theme = cx.theme();
-        let (selection_color, caret_color, subtle) = (
-            theme.colors.selection,
-            theme.colors.focus,
-            theme.colors.fg_subtle,
-        );
+        let (selection_color, caret_color) = (theme.colors.selection, theme.colors.focus);
         let caret_width = theme.caret_width().to_pixels(window.rem_size());
-        let thickness = theme.underline_thickness();
         let input = self.input.read(cx);
-        let (text, placeholder) = shown(input);
-        let base = plain_run(
-            text.len(),
-            window,
-            if placeholder {
-                subtle
-            } else {
-                window.text_style().color
-            },
-        );
-        let mut spans = Vec::new();
-        if !placeholder {
-            for (range, highlight) in input.highlights(cx) {
-                spans.push((range, highlight.color, highlight.background, false));
-            }
-            if let Some(marked) = input.marked() {
-                let color = window.text_style().color;
-                let marked = input.display_offset(marked.start)..input.display_offset(marked.end);
-                spans.push((marked, color, None, true));
-            }
-        }
+        let (text, placeholder, runs) = shown_runs(input, window, cx);
         let font_size = window.text_style().font_size.to_pixels(window.rem_size());
         let line_height = window.line_height();
         let wrap = input.rows().map(|_| bounds.size.width);
         let shaped = window
             .text_system()
-            .shape_text(
-                text.clone().into(),
-                font_size,
-                &runs(text.len(), base, spans, thickness),
-                wrap,
-                None,
-            )
+            .shape_text(text.clone().into(), font_size, &runs, wrap, None)
             .expect("text input shaping failed");
         let lines: Vec<(usize, WrappedLine)> = line_starts(&text).into_iter().zip(shaped).collect();
         let focused = input.focus().is_focused(window);
@@ -400,7 +408,55 @@ fn selection_rects(
 
 #[cfg(test)]
 mod tests {
-    use super::line_starts;
+    use gpui::{FontWeight, font, hsla, px};
+
+    use super::*;
+
+    #[test]
+    fn a_highlight_sets_weight_slant_and_strike_on_its_runs() {
+        let base = TextRun {
+            len: 3,
+            font: font("Inter"),
+            color: hsla(0., 0., 0., 1.),
+            background_color: None,
+            underline: None,
+            strikethrough: None,
+        };
+        let bold = Highlight {
+            weight: Some(FontWeight::SEMIBOLD),
+            ..Highlight::new(hsla(0., 0., 0.5, 1.))
+        };
+        let slanted = Highlight {
+            italic: true,
+            strike: true,
+            ..Highlight::new(hsla(0., 0., 0.2, 1.))
+        };
+        let split = runs(
+            3,
+            base,
+            vec![(0..2, bold, false), (1..3, slanted, false)],
+            px(1.),
+        );
+        let styles: Vec<_> = split
+            .iter()
+            .map(|run| {
+                (
+                    run.len,
+                    run.font.weight,
+                    run.font.style,
+                    run.strikethrough.is_some(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            styles,
+            [
+                (1, FontWeight::SEMIBOLD, FontStyle::Normal, false),
+                (1, FontWeight::SEMIBOLD, FontStyle::Italic, true),
+                (1, FontWeight::NORMAL, FontStyle::Italic, true),
+            ]
+        );
+    }
 
     #[test]
     fn line_starts_follow_newlines() {

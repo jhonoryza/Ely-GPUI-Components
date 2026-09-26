@@ -4,6 +4,7 @@ pub mod buttons;
 pub mod charts;
 pub mod data_display;
 pub mod debug;
+pub mod documents;
 pub mod editor;
 pub mod feedback;
 pub mod finance;
@@ -44,4 +45,5 @@ pub fn init(cx: &mut App) {
     forms::bind_keys(cx);
     editor::bind_keys(cx);
     terminal::bind_keys(cx);
+    documents::bind_keys(cx);
 }

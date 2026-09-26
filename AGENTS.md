@@ -6,12 +6,13 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 
 - Rust 1.95, edition 2024. One crate: `ely-gpui-component`.
 - gpui 0.2.2 from crates.io. Feature `runtime_shaders` is on by default: machines without Xcode lack the Metal compiler.
-- Assets, embedded with `rust-embed`: Lucide 1.48.0 icons (ISC), Inter 4.1 and JetBrains Mono 2.304 (OFL).
+- Assets, embedded with `rust-embed`: Lucide 1.48.0 icons (ISC), Inter 4.1 (regular, medium, semibold, italic) and JetBrains Mono 2.304 (OFL).
 - Catalog data: `emojis` (Unicode emoji), `isolang` (ISO 639, native names), `isocountry` (ISO 3166), `iso_currency` (ISO 4217, also minor units for money).
 - Codes: `qrcode` (QR) and `barcoders` (Code 128, EAN-13), both MIT OR Apache-2.0, default features off.
 - macOS extras (tray icon, Dock badge) call AppKit through `cocoa` 0.26 and `objc` 0.2, the crates gpui already links.
 - Terminal: `alacritty_terminal` 0.26 (Apache-2.0, default features off) for the grid, its parser and the pseudo-terminal; `futures` carries its events.
 - Diffs: `similar` 3.2 (Apache-2.0) for line and word diffs and three-way merges; its `unicode` feature splits words at punctuation.
+- Markdown: `pulldown-cmark` 0.13 (MIT, default features off) for CommonMark with tables, tasks, strikethrough, footnotes and math.
 - Gallery: `examples/gallery`. Website: `frontend/` (Vite 8, pnpm), built after the components.
 
 ## Commands
@@ -110,6 +111,9 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A label pinned to a point sits in a zero-size absolute box that centers it with flex (`charts::axes`), so no offset guesses at text size.
 - Tokens live in `src/theme`; the raw `px()` scan skips that folder only.
 - A callback field holds a named `type` alias; clippy's type_complexity rejects `Option<Rc<dyn Fn(..)>>`. A chapter shares one alias per shape.
+- A component that fills its container says `w_full` on its root. As a window's root, or in a flex row, it would shrink to its text's narrowest width.
+- A field's `Highlight` sets color, wash, weight, slant and strike per span; measuring and painting share one set of runs, so wrapped heights match.
+- A block editor keeps one undo for the document: text and structure together, as snapshots through `forms::History`; it takes Undo and Redo before its fields do.
 - A terminal takes Tab and Shift-Tab through bindings under `ElyTerminal`, ahead of focus moves; other keys go through `terminal::keys` in a key listener, and typed text through its input handler.
 - A shell in the gallery starts without startup files and with a fixed prompt, so captures show no user or host.
 - gpui 0.2.2 has no `(ElementId, usize)` id. A child id names its index: `(self.id.clone(), format!("row-{ix}"))`.

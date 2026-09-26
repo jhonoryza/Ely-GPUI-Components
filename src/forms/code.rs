@@ -83,13 +83,7 @@ pub(crate) fn lex(source: &str) -> Vec<(Range<usize>, Kind)> {
 
 fn painted(spans: impl Iterator<Item = (Range<usize>, Hsla)>) -> Vec<(Range<usize>, Highlight)> {
     spans
-        .map(|(range, color)| {
-            let highlight = Highlight {
-                color,
-                background: None,
-            };
-            (range, highlight)
-        })
+        .map(|(range, color)| (range, Highlight::new(color)))
         .collect()
 }
 

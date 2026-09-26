@@ -1,13 +1,13 @@
 use std::{ops::Range, rc::Rc};
 
 use gpui::{
-    App, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, RenderOnce,
-    SharedString, Styled, Window, div, prelude::*,
+    App, Div, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, RenderOnce,
+    SharedString, Stateful, Styled, Window, div, prelude::*,
 };
 
 use super::{
     Highlight, Input, TextInput,
-    options::{Choice, Popup},
+    options::{Choice, Pick, Popup},
     text::{Down, Enter, Up},
 };
 use crate::theme::ActiveTheme;
@@ -72,8 +72,8 @@ pub fn mention_highlights(text: &str, cx: &App) -> Vec<(Range<usize>, Highlight)
             (
                 range,
                 Highlight {
-                    color: link,
                     background: Some(link.opacity(0.08)),
+                    ..Highlight::new(link)
                 },
             )
         })
@@ -84,6 +84,94 @@ pub fn mention_highlights(text: &str, cx: &App) -> Vec<(Range<usize>, Highlight)
 struct Picking {
     highlighted: usize,
     dismissed: Option<usize>,
+}
+
+/// Rows offered at a trigger in a field's text, and what a pick does: arrows choose, Enter or a press picks, Escape dismisses until the trigger ends.
+pub(crate) struct Suggestions {
+    pub id: ElementId,
+    pub state: Entity<TextInput>,
+    /// Where the trigger being typed starts.
+    pub trigger: Option<usize>,
+    pub rows: Vec<Choice>,
+    pub pick: Pick,
+}
+
+impl Suggestions {
+    /// Wraps the element that shows the field, with the rows under the trigger while it is typed.
+    pub fn wrap(self, field: impl IntoElement, window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let picking = window.use_keyed_state(self.id.clone(), cx, |_, _| Picking::default());
+        let input = self.state.read(cx);
+        let focused = input.focus().is_focused(window);
+        let anchor = self.trigger.and_then(|ix| input.bounds_for(ix));
+        let dismissed = dismissal(picking.read(cx).dismissed, self.trigger);
+        if dismissed != picking.read(cx).dismissed {
+            picking.update(cx, |picking, _| picking.dismissed = dismissed);
+        }
+        let open = focused
+            && !self.rows.is_empty()
+            && self.trigger.is_some_and(|ix| dismissed != Some(ix));
+        let count = self.rows.len();
+        let highlighted = picking.read(cx).highlighted.min(count.saturating_sub(1));
+        log::debug!(
+            "suggestions {:?}: open {open}, {count} rows, anchor {anchor:?}",
+            self.id
+        );
+        let (up, down, escape) = (picking.clone(), picking.clone(), picking);
+        let (enter, trigger) = (self.pick.clone(), self.trigger);
+        div()
+            .id(self.id)
+            .relative()
+            .w_full()
+            .capture_action(move |_: &Up, _, cx| {
+                if open {
+                    cx.stop_propagation();
+                    up.update(cx, |picking, cx| {
+                        picking.highlighted = (picking.highlighted + count - 1) % count;
+                        cx.notify();
+                    });
+                }
+            })
+            .capture_action(move |_: &Down, _, cx| {
+                if open {
+                    cx.stop_propagation();
+                    down.update(cx, |picking, cx| {
+                        picking.highlighted = (picking.highlighted + 1) % count;
+                        cx.notify();
+                    });
+                }
+            })
+            .capture_action(move |_: &Enter, window, cx| {
+                if open {
+                    cx.stop_propagation();
+                    enter(highlighted, window, cx);
+                }
+            })
+            .on_key_down(move |event, _, cx| {
+                if open && event.keystroke.key == "escape" {
+                    cx.stop_propagation();
+                    escape.update(cx, |picking, cx| {
+                        picking.dismissed = trigger;
+                        cx.notify();
+                    });
+                }
+            })
+            .child(field)
+            .when_some(anchor.filter(|_| open), |field, anchor| {
+                field.child(
+                    Popup {
+                        id: "suggestions".into(),
+                        anchor,
+                        rows: &self.rows,
+                        highlighted: Some(highlighted),
+                        checked: None,
+                        pick: self.pick,
+                        dismiss: None,
+                        scroll: None,
+                    }
+                    .render(window, cx),
+                )
+            })
+    }
 }
 
 /// A field where `@` or `#` opens suggestions at the caret. Arrows choose; Enter picks.
@@ -122,46 +210,34 @@ impl MentionInput {
     }
 }
 
+/// The handles after `trigger` that hold the typed query, a few at most.
+pub(crate) fn handles_matching(handles: &[SharedString], query: &str) -> Vec<SharedString> {
+    let query = query.to_lowercase();
+    handles
+        .iter()
+        .filter(|name| name.to_lowercase().contains(&query))
+        .take(SHOWN)
+        .cloned()
+        .collect()
+}
+
 impl RenderOnce for MentionInput {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let picking = window.use_keyed_state(self.id.clone(), cx, |_, _| Picking::default());
         let input = self.state.read(cx);
         let (text, caret) = (input.text().to_string(), input.cursor());
-        let focused = input.focus().is_focused(window);
         let marks: Vec<char> = self.triggers.iter().map(|(trigger, _)| *trigger).collect();
         let active = active_trigger(&text, caret, &marks);
-        let anchor = active.and_then(|(ix, _)| input.bounds_for(ix));
         let matches: Vec<SharedString> = active
             .map(|(ix, trigger)| {
-                let query = text[ix + trigger.len_utf8()..caret].to_lowercase();
                 let names = &self
                     .triggers
                     .iter()
                     .find(|(mark, _)| *mark == trigger)
                     .expect("from triggers")
                     .1;
-                names
-                    .iter()
-                    .filter(|name| name.to_lowercase().contains(&query))
-                    .take(SHOWN)
-                    .cloned()
-                    .collect()
+                handles_matching(names, &text[ix + trigger.len_utf8()..caret])
             })
             .unwrap_or_default();
-        let dismissed = dismissal(picking.read(cx).dismissed, active.map(|(ix, _)| ix));
-        if dismissed != picking.read(cx).dismissed {
-            picking.update(cx, |picking, _| picking.dismissed = dismissed);
-        }
-        let open =
-            focused && !matches.is_empty() && active.is_some_and(|(ix, _)| dismissed != Some(ix));
-        let highlighted = picking
-            .read(cx)
-            .highlighted
-            .min(matches.len().saturating_sub(1));
-        log::debug!(
-            "mention input: open {open}, {} matches, caret {anchor:?}",
-            matches.len()
-        );
         let rows: Vec<Choice> = matches
             .iter()
             .map(|name| {
@@ -171,8 +247,8 @@ impl RenderOnce for MentionInput {
                 Choice::new(name.clone(), label)
             })
             .collect();
-        let insert = {
-            let (state, matches) = (self.state.clone(), matches.clone());
+        let insert: Pick = {
+            let state = self.state.clone();
             Rc::new(move |pick: usize, _: &mut Window, cx: &mut App| {
                 let Some((ix, trigger)) = active else {
                     return;
@@ -185,66 +261,14 @@ impl RenderOnce for MentionInput {
                 });
             })
         };
-        let count = matches.len();
-        let (up, down, enter, escape) = (
-            picking.clone(),
-            picking.clone(),
-            insert.clone(),
-            picking.clone(),
-        );
-        div()
-            .id(self.id)
-            .relative()
-            .w_full()
-            .capture_action(move |_: &Up, _, cx| {
-                if open {
-                    cx.stop_propagation();
-                    up.update(cx, |picking, cx| {
-                        picking.highlighted = (picking.highlighted + count - 1) % count;
-                        cx.notify();
-                    });
-                }
-            })
-            .capture_action(move |_: &Down, _, cx| {
-                if open {
-                    cx.stop_propagation();
-                    down.update(cx, |picking, cx| {
-                        picking.highlighted = (picking.highlighted + 1) % count;
-                        cx.notify();
-                    });
-                }
-            })
-            .capture_action(move |_: &Enter, window, cx| {
-                if open {
-                    cx.stop_propagation();
-                    enter(highlighted, window, cx);
-                }
-            })
-            .on_key_down(move |event, _, cx| {
-                if open && event.keystroke.key == "escape" {
-                    cx.stop_propagation();
-                    escape.update(cx, |picking, cx| {
-                        picking.dismissed = active.map(|(ix, _)| ix);
-                        cx.notify();
-                    });
-                }
-            })
-            .child(Input::new(&self.state))
-            .when_some(anchor.filter(|_| open), |field, anchor| {
-                field.child(
-                    Popup {
-                        id: "mentions".into(),
-                        anchor,
-                        rows: &rows,
-                        highlighted: Some(highlighted),
-                        checked: None,
-                        pick: insert,
-                        dismiss: None,
-                        scroll: None,
-                    }
-                    .render(window, cx),
-                )
-            })
+        Suggestions {
+            id: self.id,
+            state: self.state.clone(),
+            trigger: active.map(|(ix, _)| ix),
+            rows,
+            pick: insert,
+        }
+        .wrap(Input::new(&self.state), window, cx)
     }
 }
 

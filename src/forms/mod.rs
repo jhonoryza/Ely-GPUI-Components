@@ -64,6 +64,7 @@ pub use date::{
 };
 pub use expression::{ExpressionInput, evaluate, expression_highlights};
 pub use files::{DropZone, FileInput};
+pub(crate) use glyphs::emoji_found;
 pub use glyphs::{EmojiPicker, IconPicker};
 pub use group::{InputAddon, InputGroup};
 pub use hotkey::HotkeyInput;
@@ -74,6 +75,7 @@ pub use knob::Knob;
 pub use listbox::ListBox;
 pub use masked::{COUNTRIES, MaskedInput, PhoneInput};
 pub use mention::{MentionInput, mention_highlights};
+pub(crate) use mention::{Suggestions, active_trigger, handles_matching};
 pub use multi::MultiSelect;
 pub use number::{NumberInput, ScrubInput};
 pub use options::Choice;
@@ -95,7 +97,9 @@ pub use structure::{
 };
 pub use switch::Switch;
 pub use tags::TagInput;
-pub(crate) use text::{Down, Enter, History, Submit, Up, bind_keys, from_utf16, to_utf16};
+pub(crate) use text::{
+    Backspace, Down, Enter, History, Redo, Submit, Undo, Up, bind_keys, from_utf16, to_utf16,
+};
 pub use text::{Highlight, InputEvent, TextInput};
 pub use transfer::TransferList;
 pub use unit::UnitInput;

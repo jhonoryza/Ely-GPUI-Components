@@ -90,13 +90,7 @@ pub fn regex_highlights(pattern: &str, cx: &App) -> Vec<(Range<usize>, Highlight
                 Part::Anchor => syntax.constant,
                 Part::Alternation => syntax.operator,
             };
-            (
-                range,
-                Highlight {
-                    color,
-                    background: None,
-                },
-            )
+            (range, Highlight::new(color))
         })
         .collect()
 }

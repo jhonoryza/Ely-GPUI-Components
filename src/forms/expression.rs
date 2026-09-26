@@ -237,13 +237,7 @@ pub fn expression_highlights(source: &str, cx: &App) -> Vec<(Range<usize>, Highl
                 Token::Op(_) => syntax.operator,
                 Token::Open | Token::Close | Token::Comma => syntax.punctuation,
             };
-            (
-                range.clone(),
-                Highlight {
-                    color,
-                    background: None,
-                },
-            )
+            (range.clone(), Highlight::new(color))
         })
         .collect()
 }
