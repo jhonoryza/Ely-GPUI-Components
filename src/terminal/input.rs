@@ -144,11 +144,26 @@ impl Terminal {
     }
 
     /// The link a row shows at `column`: its columns and target.
-    fn link_at(&self, row: usize, column: usize) -> Option<(usize, Range<usize>, Target)> {
-        let text = &self.shown.rows.get(row)?.text;
-        links(text).into_iter().find_map(|(bytes, target)| {
-            let start = text[..bytes.start].chars().count();
-            let end = start + text[bytes].chars().count();
+    pub(crate) fn link_at(
+        &self,
+        row: usize,
+        column: usize,
+    ) -> Option<(usize, Range<usize>, Target)> {
+        let cells = self.shown.rows.get(row)?.cells();
+        let text = cells.concat();
+        let column_of = |byte: usize| {
+            let mut from = 0;
+            cells
+                .iter()
+                .position(|cell| {
+                    let past = from >= byte;
+                    from += cell.len();
+                    past
+                })
+                .unwrap_or(cells.len())
+        };
+        links(&text).into_iter().find_map(|(bytes, target)| {
+            let (start, end) = (column_of(bytes.start), column_of(bytes.end));
             (start..end)
                 .contains(&column)
                 .then_some((row, start..end, target))

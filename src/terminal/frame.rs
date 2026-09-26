@@ -49,19 +49,24 @@ pub(crate) struct Frame {
     pub cursor: Option<(usize, usize, CursorShape)>,
 }
 
+impl Row {
+    /// Each cell's text, a combining cluster whole.
+    pub(crate) fn cells(&self) -> Vec<String> {
+        let mut cells: Vec<String> = self.text.chars().map(String::from).collect();
+        for (column, cluster, _) in &self.clusters {
+            cells[*column] = cluster.clone();
+        }
+        cells
+    }
+}
+
 impl Frame {
     /// The screen's text, trailing spaces gone.
     pub(crate) fn text(&self) -> String {
         let lines: Vec<String> = self
             .rows
             .iter()
-            .map(|row| {
-                let mut cells: Vec<String> = row.text.chars().map(String::from).collect();
-                for (column, cluster, _) in &row.clusters {
-                    cells[*column] = cluster.clone();
-                }
-                cells.concat().trim_end().to_string()
-            })
+            .map(|row| row.cells().concat().trim_end().to_string())
             .collect();
         lines.join("\n").trim_end().to_string()
     }

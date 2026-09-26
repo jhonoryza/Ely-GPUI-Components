@@ -1,6 +1,6 @@
 use gpui::{Entity, TestAppContext, VisualTestContext};
 
-use super::Terminal;
+use super::{Target, Terminal};
 use crate::{editor::FindOptions, theme::Theme};
 
 fn replayed<'a>(
@@ -67,5 +67,15 @@ fn clearing_drops_the_matches(cx: &mut TestAppContext) {
         assert_eq!(terminal.find("one", FindOptions::default(), cx), Ok(2));
         terminal.clear(cx);
         assert_eq!(terminal.matches(), (0, None));
+    });
+}
+
+#[gpui::test]
+fn a_link_keeps_its_combining_marks(cx: &mut TestAppContext) {
+    let (terminal, cx) = replayed("a https://e.dev/cafe\u{301}/x".as_bytes(), cx);
+    terminal.read_with(cx, |terminal, _| {
+        let (_, columns, target) = terminal.link_at(0, 10).expect("a link under column 10");
+        assert_eq!(columns, 2..22);
+        assert_eq!(target, Target::Url("https://e.dev/cafe\u{301}/x".into()));
     });
 }

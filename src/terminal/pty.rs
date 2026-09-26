@@ -55,6 +55,10 @@ pub(crate) fn spawn(launch: &Launch, size: TermSize, cell: (u16, u16)) -> anyhow
             "a terminal cannot start in {}: no such folder",
             cwd.display()
         );
+        #[cfg(unix)]
+        rustix::fs::access(cwd, rustix::fs::Access::EXEC_OK).map_err(|error| {
+            anyhow::anyhow!("a terminal cannot enter {}: {error}", cwd.display())
+        })?;
     }
     let (sender, events) = unbounded();
     let listener = Listener(sender);
@@ -109,6 +113,26 @@ mod tests {
     use futures::StreamExt;
 
     use super::*;
+
+    #[test]
+    fn a_folder_that_cannot_be_entered_stops_the_start() {
+        use std::os::unix::fs::PermissionsExt;
+        let folder = std::env::temp_dir().join(format!("ely-shut-{}", std::process::id()));
+        std::fs::create_dir_all(&folder).expect("a temp folder");
+        std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o600))
+            .expect("mode 600");
+        let launch = Launch {
+            program: Some(("/bin/sh".into(), vec!["-c".into(), "true".into()])),
+            cwd: Some(folder.clone()),
+            ..Launch::default()
+        };
+        let started = spawn(&launch, TermSize::new(20, 4), (8, 16));
+        std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o700))
+            .expect("mode 700");
+        std::fs::remove_dir(&folder).expect("the temp folder goes");
+        let error = started.err().expect("a folder it cannot enter is an error");
+        assert!(error.to_string().contains("ely-shut"));
+    }
 
     #[test]
     fn a_missing_folder_stops_the_start() {
