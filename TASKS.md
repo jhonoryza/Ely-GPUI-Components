@@ -79,7 +79,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T23e AI Chat · Welcome
 - [x] T24a Agent · Tool calls
 - [x] T24b Agent · Progress
-- [ ] T24c Agent · Changes
+- [x] T24c Agent · Changes
 - [ ] T24d Agent · Previews
 - [ ] T24e Agent · Environment
 - [ ] T24f Agent · Control and cost
@@ -278,3 +278,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24b | 1 | FAIL | a task of one step crashed at render: its bar asked for one segment, and a segmented bar needs two |
 | T24b | 2 | PASS | |
 | T24c | 1 | FAIL | at 280px the path vanished and Accept all drew outside the box; the diff's fold rows took presses but no Tab |
+| T24c | 2 | PASS | |
