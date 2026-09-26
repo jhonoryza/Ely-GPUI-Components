@@ -82,7 +82,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T24c Agent · Changes
 - [x] T24d Agent · Previews
 - [x] T24e Agent · Environment
-- [ ] T24f Agent · Control and cost
+- [x] T24f Agent · Control and cost
 - [ ] T25 Generative
 - [ ] T26 Media
 - [ ] T27 Files
@@ -285,3 +285,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24e | 1 | FAIL | cpu() clamped a share past 1 in silence; the registry's grouping by source had no test |
 | T24e | 2 | PASS | |
 | T24f | 1 | FAIL | Tab to a sortable header past a narrow table's edge left it out of view; a virtualized table still drew past its box at 280px |
+| T24f | 2 | PASS | |
