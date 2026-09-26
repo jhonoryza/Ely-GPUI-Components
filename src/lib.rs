@@ -7,6 +7,7 @@ pub mod editor;
 pub mod feedback;
 pub mod finance;
 pub mod forms;
+pub mod git;
 pub mod layout;
 pub mod lists;
 pub mod menus;

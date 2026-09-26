@@ -135,6 +135,8 @@ icons! {
     GitCommitHorizontal => "git-commit-horizontal",
     GitMerge => "git-merge",
     GitPullRequest => "git-pull-request",
+    GitPullRequestClosed => "git-pull-request-closed",
+    GitPullRequestDraft => "git-pull-request-draft",
     Globe => "globe",
     GripHorizontal => "grip-horizontal",
     GripVertical => "grip-vertical",

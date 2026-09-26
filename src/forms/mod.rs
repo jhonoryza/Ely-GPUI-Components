@@ -95,7 +95,7 @@ pub use structure::{
 };
 pub use switch::Switch;
 pub use tags::TagInput;
-pub(crate) use text::{Down, Enter, History, Up, bind_keys, from_utf16, to_utf16};
+pub(crate) use text::{Down, Enter, History, Submit, Up, bind_keys, from_utf16, to_utf16};
 pub use text::{Highlight, InputEvent, TextInput};
 pub use transfer::TransferList;
 pub use unit::UnitInput;

@@ -47,6 +47,7 @@ pub use hints::{CompletionItem, CompletionMenu, Signature, SignatureHelp, comple
 pub use hover::HoverInfo;
 pub use keybindings::{KeySource, Keybinding, KeybindingsEditor, conflicts};
 pub(crate) use keys::bind_keys;
+pub(crate) use layout::stack;
 pub use preview::ThemePreview;
 pub use problems::{Problem, ProblemsPanel};
 pub use refactor::{ActionKind, CodeAction, CodeActionMenu, RenameInput};
@@ -58,5 +59,6 @@ pub use status::{
     LspStatus, NotificationBell,
 };
 pub use symbols::{Call, CallHierarchy, GoToSymbol, Symbol, SymbolKind, SymbolOutline};
+pub(crate) use syntax::colors as code_colors;
 pub use tasks::{Task, TaskRunner, TaskState};
 pub use welcome::{Project, ProjectSwitcher, RecentProjects, WelcomePage};

@@ -25,7 +25,18 @@ pub enum GitStatus {
 }
 
 impl GitStatus {
-    fn letter(self) -> &'static str {
+    pub(crate) fn word(self) -> &'static str {
+        match self {
+            Self::Modified => "Modified",
+            Self::Added => "Added",
+            Self::Deleted => "Deleted",
+            Self::Untracked => "Untracked",
+            Self::Renamed => "Renamed",
+            Self::Conflicted => "Conflicted",
+        }
+    }
+
+    pub(crate) fn letter(self) -> &'static str {
         match self {
             Self::Modified => "M",
             Self::Added => "A",
@@ -36,7 +47,7 @@ impl GitStatus {
         }
     }
 
-    fn tone(self) -> Tone {
+    pub(crate) fn tone(self) -> Tone {
         match self {
             Self::Modified => Tone::Warning,
             Self::Added | Self::Untracked => Tone::Success,
