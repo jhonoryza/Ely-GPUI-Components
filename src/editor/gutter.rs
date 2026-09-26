@@ -23,10 +23,17 @@ pub(crate) enum Cell {
 impl CodeEditor {
     /// Columns the gutter spans: a slot for a breakpoint or a problem, the number, a fold chevron and the git bar.
     pub(crate) fn gutter_columns(&self) -> usize {
-        let digits = self.buffer.lines().to_string().len().max(2);
         match self.options.numbers {
             LineNumbers::Hidden => 5,
-            _ => digits + 6,
+            _ => self.digits() + 6,
+        }
+    }
+
+    /// Columns the numbers take: none when hidden.
+    fn digits(&self) -> usize {
+        match self.options.numbers {
+            LineNumbers::Hidden => 0,
+            _ => self.buffer.lines().to_string().len().max(2),
         }
     }
 
@@ -83,7 +90,7 @@ impl CodeEditor {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let advance = self.frame.advance;
-        let digits = self.gutter_columns() - 6;
+        let digits = self.digits();
         let frame = || {
             div()
                 .flex_none()

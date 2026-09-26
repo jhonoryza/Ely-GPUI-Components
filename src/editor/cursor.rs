@@ -37,9 +37,12 @@ impl Selection {
     }
 }
 
-/// Sorted by where they start, with overlapping selections joined into one.
+/// Sorted by where they start, overlapping selections joined into one; the last given, the primary, stays last.
 pub(crate) fn merged(mut all: Vec<Selection>) -> Vec<Selection> {
-    assert!(!all.is_empty(), "an editor keeps at least one cursor");
+    let primary = all
+        .last()
+        .expect("an editor keeps at least one cursor")
+        .range();
     all.sort_by_key(|selection| selection.range().start);
     let mut out: Vec<Selection> = Vec::with_capacity(all.len());
     for next in all {
@@ -59,6 +62,15 @@ pub(crate) fn merged(mut all: Vec<Selection>) -> Vec<Selection> {
             _ => out.push(next),
         }
     }
+    let lead = out
+        .iter()
+        .position(|selection| {
+            let range = selection.range();
+            range.start <= primary.start && primary.end <= range.end
+        })
+        .expect("a merge keeps every cursor inside one");
+    let lead = out.remove(lead);
+    out.push(lead);
     out
 }
 

@@ -33,8 +33,19 @@ impl CodeEditor {
             log::debug!("code editor: read only, edit dropped");
             return;
         }
+        if edits.is_empty() {
+            return;
+        }
         let before = self.snapshot();
-        let carets = replace_each(&mut self.buffer, joined(edits));
+        let primary = self.primary().range().start;
+        let edits = joined(edits);
+        let lead = edits
+            .iter()
+            .rposition(|(range, _)| range.start <= primary)
+            .unwrap_or(0);
+        let mut carets = replace_each(&mut self.buffer, edits);
+        let lead = carets.remove(lead);
+        carets.push(lead);
         self.selections = merged(carets);
         self.marked = None;
         self.commit(before, typing, cx);
@@ -43,6 +54,9 @@ impl CodeEditor {
 
     /// Types text at each cursor; an opener brings its closer, and a closer already there is stepped over.
     pub(crate) fn type_text(&mut self, text: &str, cx: &mut Context<Self>) {
+        if !self.editable() {
+            return;
+        }
         let mut chars = text.chars();
         let (Some(ch), None) = (chars.next(), chars.next()) else {
             return self.insert(text, true, cx);
@@ -87,6 +101,9 @@ impl CodeEditor {
         reach: fn(&Buffer, usize) -> Range<usize>,
         cx: &mut Context<Self>,
     ) {
+        if !self.editable() {
+            return;
+        }
         let edits = self
             .selections
             .iter()
@@ -104,6 +121,9 @@ impl CodeEditor {
 
     /// A new line at each cursor, indented like its own; one step deeper after an opener, with the closer on a line of its own.
     pub(crate) fn newline(&mut self, cx: &mut Context<Self>) {
+        if !self.editable() {
+            return;
+        }
         let tab = self.options.tab;
         let edits = self
             .selections
@@ -166,12 +186,16 @@ impl CodeEditor {
                 self.buffer.line_of(range.start)..=self.buffer.line_of(last)
             })
             .collect();
+        lines.sort_unstable();
         lines.dedup();
         lines
     }
 
     /// Tab: takes ghost text when there is some, indents touched lines when a selection spans lines, or fills to the next tab stop.
     pub(crate) fn indent(&mut self, cx: &mut Context<Self>) {
+        if !self.editable() {
+            return;
+        }
         if let Some(ghost) = self.marks.ghost.take() {
             log::info!("code editor: ghost text taken");
             self.set_selections(vec![Selection::caret(ghost.offset)], cx);
@@ -208,6 +232,9 @@ impl CodeEditor {
 
     /// Shift-Tab: takes one tab stop of indent off each touched line.
     pub(crate) fn outdent(&mut self, cx: &mut Context<Self>) {
+        if !self.editable() {
+            return;
+        }
         let tab = self.options.tab;
         let kept = self.selections.clone();
         let edits = self
@@ -260,6 +287,9 @@ impl CodeEditor {
 
     /// Comments the touched lines with `//`, or takes the comment off when every one has it.
     pub(crate) fn toggle_comment(&mut self, cx: &mut Context<Self>) {
+        if !self.editable() {
+            return;
+        }
         let lines: Vec<usize> = self
             .touched()
             .into_iter()
@@ -295,12 +325,18 @@ impl CodeEditor {
     }
 
     pub(crate) fn undo(&mut self, cx: &mut Context<Self>) {
+        if !self.editable() {
+            return;
+        }
         if let Some(previous) = self.history.undo(self.snapshot()) {
             self.restore(previous, cx);
         }
     }
 
     pub(crate) fn redo(&mut self, cx: &mut Context<Self>) {
+        if !self.editable() {
+            return;
+        }
         if let Some(next) = self.history.redo(self.snapshot()) {
             self.restore(next, cx);
         }
@@ -308,7 +344,7 @@ impl CodeEditor {
 
     /// Each selection's text, a line apiece; the whole line for a bare caret.
     fn copied(&self) -> Vec<(Range<usize>, String)> {
-        self.selections
+        self.in_order()
             .iter()
             .map(|selection| {
                 let range = if selection.is_empty() {
@@ -329,6 +365,9 @@ impl CodeEditor {
     }
 
     pub(crate) fn cut(&mut self, cx: &mut Context<Self>) {
+        if !self.editable() {
+            return;
+        }
         let copied = self.copied();
         let text: Vec<String> = copied.iter().map(|(_, text)| text.clone()).collect();
         cx.write_to_clipboard(ClipboardItem::new_string(text.join("\n")));
@@ -344,12 +383,15 @@ impl CodeEditor {
 
     /// Pastes one line at each cursor when the counts match, else the whole text at every one.
     pub(crate) fn paste(&mut self, cx: &mut Context<Self>) {
+        if !self.editable() {
+            return;
+        }
         let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) else {
             return;
         };
         let lines: Vec<&str> = text.split('\n').collect();
         let edits = if lines.len() == self.selections.len() && lines.len() > 1 {
-            self.selections
+            self.in_order()
                 .iter()
                 .zip(lines)
                 .map(|(selection, line)| (selection.range(), line.to_string()))
@@ -361,6 +403,15 @@ impl CodeEditor {
                 .collect()
         };
         self.apply(edits, false, cx);
+    }
+}
+
+impl CodeEditor {
+    /// The selections from the top of the text down; the primary one is otherwise last.
+    fn in_order(&self) -> Vec<Selection> {
+        let mut all = self.selections.clone();
+        all.sort_by_key(|selection| selection.range().start);
+        all
     }
 }
 

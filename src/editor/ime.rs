@@ -19,7 +19,7 @@ impl CodeEditor {
     /// Notes set into a line: inlay hints, and the ghost text's first line.
     pub(crate) fn notes(&self, line: usize, cx: &App) -> Vec<(usize, String, HighlightStyle)> {
         let colors = &cx.theme().colors;
-        let range = self.buffer.line_range(line);
+        let range = self.row_range(line);
         let hint = HighlightStyle {
             color: Some(colors.fg_subtle),
             background_color: Some(colors.hover),
@@ -59,6 +59,15 @@ impl CodeEditor {
 
     pub(crate) fn row_text(&self, line: usize) -> &str {
         &self.buffer.text()[self.row_range(line)]
+    }
+
+    /// Ends a composition: all of it, from its first mark, is one undo step.
+    fn end_composition(&mut self) {
+        if let Some(start) = self.composing.take()
+            && start.text != self.buffer.text()
+        {
+            self.history.record(start, false);
+        }
     }
 
     /// The offset under a window point, when a row of code is there.
@@ -129,6 +138,7 @@ impl EntityInputHandler for CodeEditor {
 
     fn unmark_text(&mut self, _: &mut Window, cx: &mut Context<Self>) {
         self.marked = None;
+        self.end_composition();
         cx.notify();
     }
 
@@ -149,6 +159,7 @@ impl EntityInputHandler for CodeEditor {
             }
             None => self.type_text(text, cx),
         }
+        self.end_composition();
     }
 
     fn replace_and_mark_text_in_range(
@@ -166,6 +177,9 @@ impl EntityInputHandler for CodeEditor {
             .map(|range| self.byte_range(&range))
             .or(self.marked.clone())
             .unwrap_or(self.primary().range());
+        if self.composing.is_none() {
+            self.composing = Some(self.snapshot());
+        }
         self.apply(vec![(range.clone(), text.to_string())], true, cx);
         self.marked = (!text.is_empty()).then(|| range.start..range.start + text.len());
         let caret = match selected_utf16 {

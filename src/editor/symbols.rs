@@ -362,8 +362,13 @@ impl CallHierarchy {
     }
 }
 
+/// A call's node key: its callers' keys, its name and its place, so two calls of one name stay apart.
+fn call_key(call: &Call, path: &str) -> String {
+    format!("{path}/{}@{}", call.name, call.place)
+}
+
 fn call_node(call: &Call, path: &str) -> TreeNode {
-    let key = format!("{path}/{}", call.name);
+    let key = call_key(call, path);
     let node = TreeNode::new(key.clone(), call.name.clone())
         .icon(call.kind.icon())
         .note(call.place.clone());
@@ -374,7 +379,7 @@ fn call_node(call: &Call, path: &str) -> TreeNode {
 }
 
 fn keys(call: &Call, path: &str, out: &mut Vec<SharedString>) {
-    let key = format!("{path}/{}", call.name);
+    let key = call_key(call, path);
     for inner in &call.calls {
         keys(inner, &key, out);
     }
@@ -419,6 +424,26 @@ impl RenderOnce for CallHierarchy {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn calls_of_one_name_from_two_places_keep_their_own_keys() {
+        let call = |name: &str, place: &str| Call {
+            name: name.to_string().into(),
+            kind: SymbolKind::Function,
+            place: place.to_string().into(),
+            calls: Vec::new(),
+        };
+        let root = Call {
+            calls: vec![call("draw", "a.rs:1"), call("draw", "b.rs:9")],
+            ..call("main", "main.rs:1")
+        };
+        let mut all = Vec::new();
+        keys(&root, "", &mut all);
+        let mut unique = all.clone();
+        unique.sort();
+        unique.dedup();
+        assert_eq!(unique.len(), all.len());
+    }
 
     #[test]
     fn the_innermost_symbol_above_a_line_holds_it() {

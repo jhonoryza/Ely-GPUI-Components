@@ -1,6 +1,8 @@
-use gpui::{Entity, TestAppContext, VisualTestContext};
+use std::time::Duration;
 
-use super::{CodeEditor, GhostText, layout::Row};
+use gpui::{Entity, EntityInputHandler, TestAppContext, VisualTestContext};
+
+use super::{CodeEditor, GhostText, InlayHint, LineNumbers, layout::Row};
 use crate::theme::Theme;
 
 fn editor<'a>(
@@ -98,6 +100,97 @@ fn a_selection_inside_a_fold_opens_it(cx: &mut TestAppContext) {
         let body = 13..13;
         editor.select([body], cx);
         assert!(editor.frame_shows(1), "a cursor inside unfolds it");
+    });
+}
+
+#[gpui::test]
+fn hidden_numbers_draw(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("a\nb", cx);
+    editor.update(cx, |editor, cx| {
+        editor.set_line_numbers(LineNumbers::Hidden, cx)
+    });
+    cx.run_until_parked();
+    assert_eq!(editor.read_with(cx, |editor, _| editor.gutter_columns()), 5);
+}
+
+#[gpui::test]
+fn edits_with_nothing_to_change_leave_the_text(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("a\n\nb", cx);
+    editor.update(cx, |editor, cx| {
+        editor.outdent(cx);
+        let blank = 2..2;
+        editor.select([blank], cx);
+        editor.toggle_comment(cx);
+        assert_eq!(editor.text(), "a\n\nb");
+    });
+}
+
+#[gpui::test]
+fn a_read_only_editor_ignores_typing_and_undo(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("x", cx);
+    editor.update(cx, |editor, cx| {
+        let end = 1..1;
+        editor.select([end], cx);
+        editor.type_text("y", cx);
+        editor.set_read_only(true, cx);
+        editor.type_text("(", cx);
+        assert_eq!(editor.primary().head, 2, "the caret stays");
+        editor.undo(cx);
+        assert_eq!(editor.text(), "xy");
+    });
+}
+
+#[gpui::test]
+fn a_hint_past_a_multi_line_ghost_stays_in_its_row(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("call(x)\nnext", cx);
+    editor.update(cx, |editor, cx| {
+        editor.set_inlay_hints(
+            vec![InlayHint {
+                offset: 6,
+                text: ": i32".into(),
+            }],
+            cx,
+        );
+        editor.set_ghost_text(
+            Some(GhostText {
+                offset: 5,
+                text: "a,\n".into(),
+            }),
+            cx,
+        );
+        let row = editor.row_text(0).len();
+        assert!(editor.notes(0, cx).iter().all(|(at, ..)| *at <= row));
+    });
+    cx.run_until_parked();
+}
+
+#[gpui::test]
+fn cursors_added_above_keep_climbing(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("a\nb\nc\nd", cx);
+    editor.update(cx, |editor, cx| {
+        let last = 6..6;
+        editor.select([last], cx);
+        editor.add_cursor(false, cx);
+        editor.add_cursor(false, cx);
+        assert_eq!(editor.selections().len(), 3);
+        assert_eq!(editor.position().0, 2, "the newest cursor leads");
+    });
+}
+
+#[gpui::test]
+fn a_slow_composition_undoes_in_one_step(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("", cx);
+    for pinyin in ["n", "ni"] {
+        editor.update_in(cx, |editor, window, cx| {
+            editor.replace_and_mark_text_in_range(None, pinyin, None, window, cx)
+        });
+        std::thread::sleep(Duration::from_millis(950));
+    }
+    editor.update_in(cx, |editor, window, cx| {
+        editor.replace_text_in_range(None, "你", window, cx);
+        assert_eq!(editor.text(), "你");
+        editor.undo(cx);
+        assert_eq!(editor.text(), "", "the pinyin was never a step");
     });
 }
 

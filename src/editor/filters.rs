@@ -22,7 +22,11 @@ pub fn passes(path: &str, include: &str, exclude: &str) -> bool {
                     match ch {
                         '*' if chars.peek() == Some(&'*') => {
                             chars.next();
-                            pattern.push_str(".*");
+                            if chars.next_if_eq(&'/').is_some() {
+                                pattern.push_str("(?:.*/)?");
+                            } else {
+                                pattern.push_str(".*");
+                            }
                         }
                         '*' => pattern.push_str("[^/]*"),
                         '?' => pattern.push_str("[^/]"),
@@ -129,6 +133,10 @@ mod tests {
     #[test]
     fn globs_take_includes_then_drop_excludes() {
         assert!(passes("src/editor/view.rs", "src/**/*.rs", ""));
+        assert!(
+            passes("src/main.rs", "src/**/*.rs", ""),
+            "** takes no folders too"
+        );
         assert!(!passes("examples/main.rs", "src/**", ""));
         assert!(!passes(
             "src/editor/tests.rs",

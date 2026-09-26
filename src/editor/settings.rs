@@ -10,6 +10,7 @@ use crate::{
     forms::{Choice, JsonInput, NumberInput, Select, Switch, TextInput},
     primitives::IconName,
     theme::{ActiveTheme, ControlSize, Radius, TextSize},
+    typography::format::decimals,
 };
 
 /// A setting's value and the form it takes.
@@ -241,6 +242,7 @@ impl RenderOnce for SettingsEditor {
                                 NumberInput::new(id.clone(), *value)
                                     .range(min, max)
                                     .step(step)
+                                    .precision(places(*value, step))
                                     .size(ControlSize::Sm)
                                     .on_change(move |value, window, cx| {
                                         tell(
@@ -371,9 +373,27 @@ impl RenderOnce for SettingsEditor {
     }
 }
 
+/// Places a number setting shows: enough for its step and its value.
+fn places(value: f64, step: f64) -> usize {
+    let own = if value == 0.0 {
+        0
+    } else {
+        decimals(value.abs())
+    };
+    decimals(step).max(own)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn numbers_show_the_places_their_value_and_step_need() {
+        assert_eq!(places(0.5, 0.1), 1);
+        assert_eq!(places(14.0, 1.0), 0);
+        assert_eq!(places(0.25, 0.05), 2);
+        assert_eq!(places(0.0, 0.5), 1);
+    }
 
     #[test]
     fn json_holds_only_what_changed() {

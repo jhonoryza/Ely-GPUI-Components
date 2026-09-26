@@ -165,7 +165,7 @@ impl RenderOnce for DepthChart {
             })
             .collect();
         let (_, price_ticks) = nice(mid - reach, mid + reach, 5);
-        let digits = super::stage::decimals(
+        let digits = crate::typography::format::decimals(
             price_ticks
                 .get(1)
                 .zip(price_ticks.first())

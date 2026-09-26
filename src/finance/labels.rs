@@ -6,16 +6,15 @@ use gpui::{
 };
 use jiff::tz::TimeZone;
 
-use super::{
-    candles::Candle,
-    series::Drawn,
-    stage::{Visible, decimals},
-    tools::Drawing,
-};
+use super::{candles::Candle, series::Drawn, stage::Visible, tools::Drawing};
 use crate::{
     charts::{Linear, Rect, tint},
     theme::{ActiveTheme, Radius, TextSize},
-    typography::{LEADING, format, tabular},
+    typography::{
+        LEADING,
+        format::{self, decimals},
+        tabular,
+    },
 };
 
 /// Where a market chart's words go: its panes and their scales, what is in view, the candle and row under the pointer, the zone its times read in, its title, and a compared symbol's name.

@@ -10,7 +10,7 @@ use jiff::tz::TimeZone;
 use super::{
     candles::{Candle, point_and_figure, renko},
     quotes::moves,
-    stage::{decimals, fit},
+    stage::fit,
 };
 use crate::{
     charts::{
@@ -18,7 +18,7 @@ use crate::{
     },
     theme::{ActiveTheme, TextSize},
     typography::{
-        format::{self, system_zone},
+        format::{self, decimals, system_zone},
         tabular,
     },
 };

@@ -90,7 +90,10 @@ impl RenderOnce for RecentProjects {
                     .size(ControlSize::Sm)
                     .tooltip(words)
                     .when_some(action, move |button, action| {
-                        button.on_click(move |_, window, cx| action(ix, window, cx))
+                        button.on_click(move |_, window, cx| {
+                            cx.stop_propagation();
+                            action(ix, window, cx)
+                        })
                     })
             };
             div()
@@ -215,16 +218,10 @@ impl RenderOnce for ProjectSwitcher {
         let mut found: Vec<(i32, Row)> = ordered(&self.projects)
             .into_iter()
             .filter_map(|(ix, project)| {
-                let fit = if query.is_empty() {
-                    None
+                let (score, hits) = if query.is_empty() {
+                    (0, Vec::new())
                 } else {
-                    Some(fuzzy(&query, &project.name).or_else(|| fuzzy(&query, &project.path))?)
-                };
-                let (score, hits) = fit.map_or((0, Vec::new()), |fit| (fit.score, fit.hits));
-                let hits = if hits.iter().all(|hit| hit.end <= project.name.len()) {
-                    hits
-                } else {
-                    Vec::new()
+                    fit(&query, project)?
                 };
                 Some((
                     score,
@@ -280,6 +277,14 @@ impl RenderOnce for ProjectSwitcher {
         }
         .overlay(window, cx)
     }
+}
+
+/// How well `query` fits a project, by name or else by path, and the name's letters it marks; a path match marks none.
+fn fit(query: &str, project: &Project) -> Option<(i32, Vec<std::ops::Range<usize>>)> {
+    if let Some(fit) = fuzzy(query, &project.name) {
+        return Some((fit.score, fit.hits));
+    }
+    fuzzy(query, &project.path).map(|fit| (fit.score, Vec::new()))
 }
 
 /// A way to start from the welcome page: its icon, words and keys.
@@ -453,6 +458,19 @@ impl RenderOnce for WelcomePage {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_a_name_match_marks_the_name() {
+        let project = Project {
+            name: "中文".into(),
+            path: "foo".into(),
+            branch: None,
+            opened: "now".into(),
+            pinned: false,
+        };
+        assert_eq!(fit("oo", &project).map(|(_, hits)| hits), Some(Vec::new()));
+        assert!(fit("zz", &project).is_none());
+    }
 
     #[test]
     fn pinned_projects_lead_and_keep_their_places() {

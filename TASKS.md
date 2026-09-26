@@ -64,7 +64,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [ ] T17b Editor · Intelligence
 - [ ] T17c Editor · Search
 - [ ] T17d Editor · Panels
-- [ ] T17e Editor · Status items
+- [x] T17e Editor · Status items
 - [ ] T18 Terminal
 - [ ] T19 Git
 - [ ] T20 Debug
@@ -229,8 +229,12 @@ Per-component lines live in `tasks/`. Tags there:
 | T16d | 2 | PASS | |
 | T16e | 1 | FAIL | a smaller loss than expected read as a miss |
 | T16e | 2 | PASS | |
-| T17a | 1 | — | pending review |
-| T17b | 1 | — | pending review |
-| T17c | 1 | — | pending review |
-| T17d | 1 | — | pending review |
-| T17e | 1 | — | pending review |
+| T17a | 1 | FAIL | hidden numbers crashed the gutter; an edit with nothing to change tripped an assert; a read-only editor moved its caret and undid; a hint past a multi-line ghost fell off its row; the newest cursor lost the lead on merge; a slow composition left its pinyin in undo; gpui tests broke a featureless test build |
+| T17a | 2 | — | pending review |
+| T17b | 1 | FAIL | two calls of one name shared a tree key; references counted lines, not matches |
+| T17b | 2 | — | pending review |
+| T17c | 1 | FAIL | a match on trailing spaces ran past its trimmed line; `**/` needed a folder |
+| T17c | 2 | — | pending review |
+| T17d | 1 | FAIL | a path match marked a project name mid-character; pin and remove also opened the row; number settings showed no places |
+| T17d | 2 | — | pending review |
+| T17e | 1 | PASS | |

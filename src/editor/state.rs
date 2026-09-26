@@ -107,6 +107,8 @@ pub struct CodeEditor {
     pub(crate) options: Options,
     pub(crate) marks: Marks,
     pub(crate) marked: Option<Range<usize>>,
+    /// The text before an input method's composition began, while it runs.
+    pub(crate) composing: Option<Snapshot>,
     pub(crate) metrics: Metrics,
     pub(crate) dragging: bool,
     pub(crate) caret_on: bool,
@@ -172,6 +174,7 @@ impl CodeEditor {
             },
             marks: Marks::default(),
             marked: None,
+            composing: None,
             metrics: Metrics::default(),
             dragging: false,
             caret_on: true,
@@ -435,6 +438,7 @@ impl CodeEditor {
         self.buffer = Buffer::new(snapshot.text);
         self.selections = snapshot.selections;
         self.marked = None;
+        self.composing = None;
         cx.emit(EditorEvent::Changed);
         self.restart_blink(cx);
     }
@@ -442,7 +446,9 @@ impl CodeEditor {
     /// Makes `before` one undo step when the text moved on from it.
     pub(crate) fn commit(&mut self, before: Snapshot, typing: bool, cx: &mut Context<Self>) {
         if before.text != self.buffer.text() {
-            self.history.record(before, typing);
+            if self.composing.is_none() {
+                self.history.record(before, typing);
+            }
             self.marks.ghost = None;
             self.folded.retain(|line| *line < self.buffer.lines());
             cx.emit(EditorEvent::Changed);

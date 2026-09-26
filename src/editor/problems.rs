@@ -9,7 +9,7 @@ use crate::{
     buttons::{ToggleButton, ToggleItem},
     primitives::{Icon, IconName, Severity},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
-    typography::Ellipsis,
+    typography::{Ellipsis, format},
 };
 
 /// A problem the tools found: where, how bad, what, and which tool said so.
@@ -116,14 +116,13 @@ impl RenderOnce for ProblemsPanel {
                 .count()
         };
         let filters = [
-            (Severity::Danger, "errors", "Error"),
-            (Severity::Warning, "warnings", "Warning"),
-            (Severity::Info, "notes", "Note"),
+            (Severity::Danger, "errors", ("Error", "Errors")),
+            (Severity::Warning, "warnings", ("Warning", "Warnings")),
+            (Severity::Info, "notes", ("Note", "Notes")),
         ]
-        .map(|(severity, key, words)| {
+        .map(|(severity, key, (one, other))| {
             let (shown, on_shown) = (self.shown.clone(), self.on_shown.clone());
-            let found = count(severity);
-            let label = format!("{found} {words}{}", if found == 1 { "" } else { "s" });
+            let label = format::plural(count(severity) as u64, one, other);
             ToggleButton::new(
                 (self.id.clone(), key),
                 ToggleItem::new(key).icon(severity.icon()).label(label),

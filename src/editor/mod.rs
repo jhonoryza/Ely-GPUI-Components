@@ -27,7 +27,7 @@ mod status;
 mod symbols;
 mod syntax;
 mod tasks;
-#[cfg(test)]
+#[cfg(all(test, feature = "test-support"))]
 mod tests;
 mod view;
 mod welcome;

@@ -9,6 +9,7 @@ use gpui::{
 use crate::{
     primitives::{Disclosure, Icon, IconName},
     theme::{ActiveTheme, IconSize, Radius, TextSize},
+    typography::format,
 };
 
 /// A line that matched: its number, its text, and where in it the matches lie.
@@ -33,7 +34,8 @@ const LEAD: usize = 24;
 fn trimmed(hit: &Hit) -> (String, Vec<Range<usize>>) {
     let first = hit.ranges.first().map_or(0, |range| range.start);
     let before = hit.text[..first].chars().count();
-    let text = hit.text.trim_end();
+    let last = hit.ranges.iter().map(|range| range.end).max().unwrap_or(0);
+    let text = &hit.text[..hit.text.trim_end().len().max(last)];
     if before <= LEAD {
         let start = text.len() - text.trim_start().len();
         let start = start.min(first);
@@ -57,6 +59,15 @@ fn trimmed(hit: &Hit) -> (String, Vec<Range<usize>>) {
         .map(|range| range.start - cut + shift..range.end - cut + shift)
         .collect();
     (shown, ranges)
+}
+
+/// How many places the files name the symbol: every match, two on one line counting twice.
+fn references(files: &[FileHits]) -> usize {
+    files
+        .iter()
+        .flat_map(|file| &file.hits)
+        .map(|hit| hit.ranges.len())
+        .sum()
 }
 
 type OnOpen = Rc<dyn Fn(&SharedString, usize, &mut Window, &mut App)>;
@@ -397,7 +408,7 @@ impl RenderOnce for ReferencesPanel {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let count: usize = self.files.iter().map(|file| file.hits.len()).sum();
+        let count = references(&self.files);
         let rows = results(&self.id, &self.files, &[], None, self.on_open, None, cx);
         div()
             .flex()
@@ -420,7 +431,7 @@ impl RenderOnce for ReferencesPanel {
                         div()
                             .text_size(theme.text_size(TextSize::Xs))
                             .text_color(colors.fg_subtle)
-                            .child(format!("{count} references")),
+                            .child(format::plural(count as u64, "reference", "references")),
                     ),
             )
             .children(rows)
@@ -430,6 +441,31 @@ impl RenderOnce for ReferencesPanel {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_match_on_trailing_spaces_keeps_them() {
+        let spaces = 6..8;
+        let hit = Hit {
+            line: 0,
+            text: "let a;  ".into(),
+            ranges: vec![spaces],
+        };
+        let (text, ranges) = trimmed(&hit);
+        assert_eq!(&text[ranges[0].clone()], "  ");
+    }
+
+    #[test]
+    fn references_count_every_match_on_a_line() {
+        let both = FileHits {
+            path: "a.rs".into(),
+            hits: vec![Hit {
+                line: 0,
+                text: "f(f(1))".into(),
+                ranges: vec![0..1, 2..3],
+            }],
+        };
+        assert_eq!(references(&[both]), 2);
+    }
 
     #[test]
     fn long_lines_start_near_their_first_match() {

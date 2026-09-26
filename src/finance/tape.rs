@@ -9,13 +9,15 @@ use jiff::tz::TimeZone;
 use super::{
     book::{Side, Trade, cell, heading, level},
     quotes::{moves, price},
-    stage::decimals,
 };
 use crate::{
     charts::compact,
     motion::Flash,
     theme::{ActiveTheme, Density, TextSize},
-    typography::{format::system_zone, tabular},
+    typography::{
+        format::{decimals, system_zone},
+        tabular,
+    },
 };
 
 /// Trades as they print, newest on top: the time, price and size tinted by the side that took them; trades of at least `large` stand bold, and the newest flashes in.
