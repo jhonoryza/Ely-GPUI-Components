@@ -3,11 +3,13 @@ mod attach;
 mod cite;
 mod code;
 mod composer;
+mod conversations;
 mod list;
 mod media;
 mod message;
 mod params;
 mod play;
+mod projects;
 mod search;
 mod status;
 mod stream;
@@ -23,6 +25,7 @@ pub use attach::{Attachment, AttachmentChip, ContextChips};
 pub use cite::{CitationBadge, Source, SourceCard, SourceList};
 pub use code::CodeBlock;
 pub use composer::{AttachmentButton, DragDropOverlay, InputHint, PromptInput, SendButton};
+pub use conversations::{Conversation, ConversationItem, ConversationList, new_chat_button};
 pub use list::{DateSeparator, MessageList, ScrollToBottomButton};
 pub use media::{FileMessage, ImageGrid, ImageMessage, LinkPreviewCard};
 pub use message::{
@@ -30,6 +33,9 @@ pub use message::{
 };
 pub use params::{CostEstimator, Parameter, ParameterPanel, SystemPromptEditor, TokenCounter};
 pub use play::{AudioMessage, VideoMessage};
+pub use projects::{
+    ConversationExport, Project, ProjectKnowledgePanel, ProjectList, SharedConversationView,
+};
 pub use search::{DocumentChunkPreview, SearchProgress, StepState, WebResultCard};
 pub use status::{
     ErrorMessage, FeedbackForm, RateLimitNotice, ThinkingBlock, ThinkingDuration, ThinkingIndicator,

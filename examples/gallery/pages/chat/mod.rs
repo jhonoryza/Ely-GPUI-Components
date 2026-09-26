@@ -2,12 +2,14 @@ mod blocks;
 mod cite;
 mod compose;
 mod controls;
+mod history;
 mod talk;
 
+use ely_gpui_component::feedback::{ToastViewport, Toaster};
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
 
 use super::Page;
-use crate::script::Step;
+use crate::{script::Step, ui::keep};
 
 pub const PAGE: Page = Page {
     number: 23,
@@ -54,12 +56,22 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("chat-system", 548.0, 12.0),
     Step::Wait(200),
     Step::Shot("reset"),
+    Step::HoverAt("chat-history", 150.0, 124.0),
+    Step::Wait(300),
+    Step::Shot("history"),
+    Step::Click("chat-export-open"),
+    Step::Wait(300),
+    Step::Shot("export"),
+    Step::Key("escape"),
+    Step::Wait(200),
     Step::DownAt("chat-sources", 20.0, 10.0),
     Step::UpAt("chat-sources", 20.0, 10.0),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
     let draft = compose::draft(window, cx);
+    let history = history::history(window, cx);
+    let toaster = keep("chat-toaster", Toaster::default, window, cx);
     div()
         .child(talk::conversation(window, cx))
         .child(talk::streaming(window, cx))
@@ -74,5 +86,9 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(compose::composer(&draft, window, cx))
         .child(compose::pickers(&draft, window, cx))
         .child(compose::tuning(window, cx))
+        .child(history::conversations_section(&history, window, cx))
+        .child(history::projects_section(window, cx))
+        .child(history::shared_section(&history, &toaster, window, cx))
+        .child(ToastViewport::new("chat-toasts", &toaster))
         .into_any_element()
 }
