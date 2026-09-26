@@ -260,3 +260,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T23a | 2 | PASS | |
 | T23b | 1 | FAIL | source cards and web results with a handler were no Tab stops; in a narrow column the sources row and a passage's header ran past their edge |
 | T23b | 2 | FAIL | the gallery's narrow passage built a vec of one range, which clippy refuses, so the checks failed |
+| T23b | 3 | PASS | |
