@@ -1,6 +1,7 @@
 mod buttons;
 mod charts;
 mod data;
+mod debug;
 mod editor;
 mod feedback;
 mod finance;
@@ -53,6 +54,7 @@ pub const ALL: &[Page] = &[
     editor::PAGE,
     terminal::PAGE,
     git::PAGE,
+    debug::PAGE,
     theme::PAGE,
 ];
 

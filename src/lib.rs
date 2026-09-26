@@ -3,6 +3,7 @@ mod assets;
 pub mod buttons;
 pub mod charts;
 pub mod data_display;
+pub mod debug;
 pub mod editor;
 pub mod feedback;
 pub mod finance;
