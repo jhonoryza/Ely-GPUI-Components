@@ -98,6 +98,7 @@ impl RenderOnce for ToolCallCard {
         let open = *state.read(cx);
         let opens = self.arguments.is_some() || self.result.is_some();
         let failed = self.status == StepState::Failed;
+        let mark = step_mark((self.id.clone(), "mark").into(), self.status, window, cx);
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let label = |text: &'static str| {
@@ -120,7 +121,7 @@ impl RenderOnce for ToolCallCard {
                     opens.then_some(state),
                     cx,
                 )
-                .child(step_mark((self.id.clone(), "mark").into(), self.status, cx))
+                .child(mark)
                 .child(
                     div()
                         .min_w_0()

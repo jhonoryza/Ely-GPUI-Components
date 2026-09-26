@@ -1,15 +1,15 @@
 use std::{ops::Range, rc::Rc};
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, HighlightStyle, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
-    StyledText, Window, div, prelude::*, transparent_black,
+    Animation, AnimationExt, AnyElement, App, ElementId, FontWeight, HighlightStyle, Hsla,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
+    StatefulInteractiveElement, Styled, StyledText, Window, div, prelude::*, transparent_black,
 };
 
 use super::cite::Source;
 use crate::{
     forms::Run,
-    motion::Spinner,
+    motion::{self, Spinner},
     primitives::{FocusRing, Icon, IconName},
     theme::{ActiveTheme, IconSize, Radius, TextSize},
     typography::{Ellipsis, tabular},
@@ -24,19 +24,31 @@ pub enum StepState {
     Failed,
 }
 
-/// A step's mark in an icon's box: a dot waiting, a spinner working, a check done, a cross failed.
-pub(crate) fn step_mark(id: ElementId, state: StepState, cx: &App) -> AnyElement {
+/// A step's mark in an icon's box: a dot waiting, a spinner working, a check done, a cross failed. A check or cross that arrives pops in.
+pub(crate) fn step_mark(
+    id: ElementId,
+    state: StepState,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let changes = motion::changes((id.clone(), "changes"), state, window, cx);
     let theme = cx.theme();
     let colors = &theme.colors;
+    let pop = |icon: IconName, ink: Hsla| {
+        let icon = Icon::new(icon).size(IconSize::Sm).color(ink);
+        if changes == 0 {
+            return icon.into_any_element();
+        }
+        icon.with_animation(
+            (id.clone(), format!("pop-{changes}")),
+            Animation::new(motion::duration(motion::FAST, cx)).with_easing(motion::ease_out_cubic),
+            move |icon, t| icon.scale(0.6 + 0.4 * t).color(ink.opacity(t)),
+        )
+        .into_any_element()
+    };
     let mark = match state {
-        StepState::Done => Icon::new(IconName::Check)
-            .size(IconSize::Sm)
-            .color(colors.success)
-            .into_any_element(),
-        StepState::Failed => Icon::new(IconName::X)
-            .size(IconSize::Sm)
-            .color(colors.danger)
-            .into_any_element(),
+        StepState::Done => pop(IconName::Check, colors.success),
+        StepState::Failed => pop(IconName::X, colors.danger),
         StepState::Working => Spinner::new(id).size(IconSize::Sm).into_any_element(),
         StepState::Waiting => div()
             .size(theme.status_dot())
@@ -77,7 +89,17 @@ impl SearchProgress {
 }
 
 impl RenderOnce for SearchProgress {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let marks: Vec<AnyElement> = (self.steps.iter().enumerate())
+            .map(|(ix, (_, state))| {
+                step_mark(
+                    (self.id.clone(), format!("step-{ix}")).into(),
+                    *state,
+                    window,
+                    cx,
+                )
+            })
+            .collect();
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
@@ -88,24 +110,18 @@ impl RenderOnce for SearchProgress {
             .children(
                 self.steps
                     .into_iter()
-                    .enumerate()
-                    .map(|(ix, (label, state))| {
-                        let id = (self.id.clone(), format!("step-{ix}")).into();
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap_2()
-                            .child(step_mark(id, state, cx))
-                            .child(
-                                div()
-                                    .text_color(match state {
-                                        StepState::Waiting => colors.fg_subtle,
-                                        StepState::Working => colors.fg,
-                                        StepState::Done => colors.fg_muted,
-                                        StepState::Failed => colors.danger,
-                                    })
-                                    .child(label),
-                            )
+                    .zip(marks)
+                    .map(|((label, state), mark)| {
+                        div().flex().items_center().gap_2().child(mark).child(
+                            div()
+                                .text_color(match state {
+                                    StepState::Waiting => colors.fg_subtle,
+                                    StepState::Working => colors.fg,
+                                    StepState::Done => colors.fg_muted,
+                                    StepState::Failed => colors.danger,
+                                })
+                                .child(label),
+                        )
                     }),
             )
     }

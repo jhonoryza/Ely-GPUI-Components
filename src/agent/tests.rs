@@ -3,7 +3,7 @@ use gpui::{
     TestAppContext, VisualTestContext, Window, div,
 };
 
-use super::{Permission, PermissionPrompt, ToolApprovalDialog};
+use super::{AgentProgress, Permission, PermissionPrompt, ToolApprovalDialog};
 use crate::{forms, primitives::FocusNext, theme::Theme};
 
 /// An approval dialog while open, and the answers it gave.
@@ -122,4 +122,10 @@ fn the_prompt_walks_deny_always_then_once(cx: &mut TestAppContext) {
         view.read_with(cx, |prompting, _| prompting.answers.clone()),
         [Permission::Once]
     );
+}
+
+#[test]
+#[should_panic(expected = "progress of 6 in 5")]
+fn progress_past_its_total_fails_loud() {
+    let _ = AgentProgress::new("progress", "Writing", 6, 5);
 }

@@ -1,3 +1,4 @@
+mod progress;
 mod tools;
 
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
@@ -9,7 +10,7 @@ pub const PAGE: Page = Page {
     number: 24,
     slug: "agent",
     title: "Agent",
-    summary: "An assistant at work: the tools it calls and what it asks before it acts.",
+    summary: "An assistant at work: the tools it calls, what it asks before it acts, and how far it has come.",
     render,
     script: SCRIPT,
 };
@@ -27,11 +28,16 @@ const SCRIPT: &[Step] = &[
     Step::DownAt("agent-call", 60.0, 18.0),
     Step::UpAt("agent-call", 60.0, 18.0),
     Step::Wait(200),
+    Step::Click("agent-advance"),
+    Step::Wait(300),
+    Step::Shot("plan"),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
     div()
         .child(tools::calls(window, cx))
         .child(tools::approval(window, cx))
+        .child(progress::steps(window, cx))
+        .child(progress::agents(window, cx))
         .into_any_element()
 }
