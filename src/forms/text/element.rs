@@ -358,7 +358,7 @@ fn keep_in_view(
 }
 
 /// Boxes covering display offsets `start..end`, relative to the text origin.
-fn selection_rects(
+pub(super) fn selection_rects(
     lines: &[(usize, WrappedLine)],
     start: usize,
     end: usize,

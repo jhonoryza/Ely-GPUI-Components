@@ -1,9 +1,8 @@
 use std::{collections::BTreeMap, rc::Rc};
 
 use gpui::{
-    AnyElement, App, Bounds, ElementId, FocusHandle, FontWeight, InteractiveElement, IntoElement,
-    ParentElement, RenderOnce, ScrollHandle, SharedString, Styled, Window, canvas, div, fill,
-    prelude::*, size,
+    AnyElement, App, Bounds, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement,
+    RenderOnce, ScrollHandle, SharedString, Styled, Window, canvas, div, fill, prelude::*, size,
 };
 use smallvec::SmallVec;
 
@@ -11,6 +10,7 @@ use crate::{
     forms::Run,
     layout::Collapsible,
     overlays::HoverCard,
+    primitives::{hand_back, hold_focus},
     theme::{ActiveTheme, ContainerSize, TextSize},
 };
 
@@ -272,31 +272,11 @@ impl ParentElement for ZenMode {
     }
 }
 
-/// Zen's own focus, where focus was before zen took it, and whether zen was on last frame.
-struct Quiet {
-    focus: FocusHandle,
-    previous: Option<FocusHandle>,
-    was_on: bool,
-}
-
 impl RenderOnce for ZenMode {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let (on, exit) = (self.on, self.on_exit);
-        let quiet = window.use_keyed_state((self.id.clone(), "quiet"), cx, |_, cx| Quiet {
-            focus: cx.focus_handle(),
-            previous: None,
-            was_on: false,
-        });
-        let (focus, was_on) = (quiet.read(cx).focus.clone(), quiet.read(cx).was_on);
-        if on && !was_on && !focus.contains_focused(window, cx) {
-            log::info!("zen mode: takes focus, so Escape reaches it");
-            let previous = window.focused(cx);
-            window.focus(&focus);
-            quiet.update(cx, |quiet, _| quiet.previous = previous);
-        }
-        if on != was_on {
-            quiet.update(cx, |quiet, _| quiet.was_on = on);
-        }
+        let held = hold_focus((self.id.clone(), "held"), on, window, cx);
+        let focus = held.read(cx).focus.clone();
         let theme = cx.theme();
         div()
             .id(self.id.clone())
@@ -310,9 +290,7 @@ impl RenderOnce for ZenMode {
                 {
                     cx.stop_propagation();
                     log::info!("zen mode: leaves");
-                    if let Some(previous) = quiet.update(cx, |quiet, _| quiet.previous.take()) {
-                        window.focus(&previous);
-                    }
+                    hand_back(&held, window, cx);
                     exit(window, cx);
                 }
             })

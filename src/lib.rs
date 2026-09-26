@@ -2,6 +2,7 @@ mod assets;
 
 pub mod buttons;
 pub mod charts;
+pub mod collab;
 pub mod data_display;
 pub mod debug;
 pub mod documents;

@@ -7,7 +7,7 @@ mod upload;
 
 use gpui::{
     AppContext as _, Context, Entity, EntityInputHandler, IntoElement, KeyUpEvent, Keystroke,
-    ParentElement, Render, TestAppContext, VisualTestContext, Window, div,
+    ParentElement, Render, TestAppContext, VisualTestContext, Window, div, px,
 };
 
 use super::{Input, MaskedInput, NumberInput, PinInput, TextInput, bind_keys};
@@ -278,4 +278,24 @@ fn a_composition_inside_a_masked_field_fits_from_where_it_began(cx: &mut TestApp
         })
     });
     assert_eq!(text(&state, cx), "(192) 345");
+}
+
+#[gpui::test]
+fn a_range_gives_a_box_per_line_it_spans(cx: &mut TestAppContext) {
+    let (fields, cx) = open_with(1, false, |input| input.multi_line(2, 4), cx);
+    fields[0].update(cx, |input, cx| input.set_text("lift\ntone", cx));
+    cx.run_until_parked();
+    cx.update(|window, _| window.refresh());
+    cx.run_until_parked();
+    let (one, two) = fields[0].read_with(cx, |input, _| {
+        (input.bounds_for_range(1..3), input.bounds_for_range(2..7))
+    });
+    assert_eq!(one.len(), 1);
+    assert!(one[0].size.width > px(0.0));
+    assert_eq!(two.len(), 2, "{two:?}");
+    assert!(two[1].top() > two[0].top());
+    assert!(
+        two[1].left() < two[0].left(),
+        "the second line starts at the edge"
+    );
 }

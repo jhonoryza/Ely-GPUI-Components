@@ -71,7 +71,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T21a Documents · Editing — `tasks/ch21-30.md`
 - [x] T21b Documents · Reading
 - [x] T21c Documents · Knowledge
-- [ ] T22 Collaboration
+- [x] T22 Collaboration
 - [ ] T23a AI Chat · Messages
 - [ ] T23b AI Chat · Citations
 - [ ] T23c AI Chat · Input

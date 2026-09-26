@@ -1,6 +1,8 @@
+use std::ops::Range;
+
 use gpui::{Bounds, Pixels, Point};
 
-use super::TextInput;
+use super::{TextInput, element::selection_rects};
 
 impl TextInput {
     /// The caret's box in window coordinates, once laid out.
@@ -20,6 +22,34 @@ impl TextInput {
             layout.bounds.origin + at - self.scroll,
             gpui::size(Pixels::ZERO, layout.line_height),
         ))
+    }
+
+    /// A range's boxes in the window, a line each, from the last layout; later offsets clamp to its end.
+    pub fn bounds_for_range(&self, range: Range<usize>) -> Vec<Bounds<Pixels>> {
+        let Some(layout) = self.layout.as_ref() else {
+            return Vec::new();
+        };
+        if layout.placeholder {
+            return Vec::new();
+        }
+        let laid = layout
+            .lines
+            .last()
+            .map_or(0, |(start, line)| start + line.len());
+        let (start, end) = (
+            self.display_offset(range.start).min(laid),
+            self.display_offset(range.end).min(laid),
+        );
+        selection_rects(
+            &layout.lines,
+            start,
+            end,
+            layout.line_height,
+            layout.bounds.size.width,
+        )
+        .into_iter()
+        .map(|rect| Bounds::new(rect.origin + layout.bounds.origin - self.scroll, rect.size))
+        .collect()
     }
 
     /// Top-left of a display offset, relative to the text's origin.

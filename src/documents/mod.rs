@@ -29,6 +29,7 @@ pub use blocks::{Align, BlockData, BlockEditor, BlockEvent, BlockKind, Media};
 pub use counts::{ReadingTime, WordCount};
 pub use epub::{Chapter, EpubReader};
 pub use format::{Format, format};
+pub(crate) use history::Change;
 pub use history::{PageHistoryDiff, Version, VersionHistory};
 pub use knowledge::{Backlink, Backlinks, Favorite, Favorites, TrashBin, Trashed};
 pub use link::LinkEditor;

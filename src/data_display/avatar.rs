@@ -1,5 +1,5 @@
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, Hsla, ImageSource, IntoElement, ObjectFit,
+    AnyElement, App, Div, ElementId, FontWeight, Hsla, ImageSource, IntoElement, ObjectFit,
     ParentElement, RenderOnce, SharedString, Styled, Window, div, prelude::*,
 };
 
@@ -57,6 +57,7 @@ pub struct Avatar {
     size: AvatarSize,
     square: bool,
     ring: bool,
+    ring_color: Option<Hsla>,
     presence: Option<Presence>,
 }
 
@@ -71,6 +72,7 @@ impl Avatar {
             size: AvatarSize::default(),
             square: false,
             ring: false,
+            ring_color: None,
             presence: None,
         }
     }
@@ -106,6 +108,13 @@ impl Avatar {
     /// A ring in the page color, so avatars that overlap stay apart.
     pub fn ring(mut self) -> Self {
         self.ring = true;
+        self
+    }
+
+    /// A ring in `color`, as someone's own color marks them.
+    pub fn ring_color(mut self, color: Hsla) -> Self {
+        self.ring = true;
+        self.ring_color = Some(color);
         self
     }
 
@@ -177,11 +186,42 @@ impl RenderOnce for Avatar {
                     .text_color(tone)
                     .text_size(theme.text_size(text))
                     .font_weight(FontWeight::SEMIBOLD)
-                    .when(self.ring, |face| face.border_2().border_color(colors.bg))
+                    .when(self.ring, |face| {
+                        face.border_2()
+                            .border_color(self.ring_color.unwrap_or(colors.bg))
+                    })
                     .child(face),
             )
             .children(dot)
     }
+}
+
+/// An avatar's slot in a row, tucked under the one before unless `first`.
+pub(crate) fn tucked(first: bool, size: AvatarSize) -> Div {
+    match (first, size) {
+        (true, _) => div(),
+        (false, AvatarSize::Xs | AvatarSize::Sm) => div().ml_neg_1(),
+        (false, AvatarSize::Md) => div().ml_neg_2(),
+        (false, AvatarSize::Lg | AvatarSize::Xl) => div().ml_neg_3(),
+    }
+}
+
+/// The count that stands for `rest` people past the ones shown.
+pub(crate) fn more(rest: usize, size: AvatarSize, cx: &App) -> Div {
+    let theme = cx.theme();
+    div()
+        .flex()
+        .items_center()
+        .justify_center()
+        .size(theme.avatar_size(size))
+        .rounded_full()
+        .border_2()
+        .border_color(theme.colors.bg)
+        .bg(theme.colors.hover)
+        .text_size(theme.text_size(TextSize::Xs))
+        .font_weight(FontWeight::MEDIUM)
+        .text_color(theme.colors.fg_muted)
+        .child(format!("+{rest}"))
 }
 
 /// People side by side, each tucked under the next, and a count of the rest.
@@ -216,39 +256,16 @@ impl AvatarGroup {
 
 impl RenderOnce for AvatarGroup {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.theme();
         let rest = self.people.len().saturating_sub(self.max);
         let size = self.size;
-        let tuck = |element: gpui::Div, first: bool| match (first, size) {
-            (true, _) => element,
-            (false, AvatarSize::Xs | AvatarSize::Sm) => element.ml_neg_1(),
-            (false, AvatarSize::Md) => element.ml_neg_2(),
-            (false, AvatarSize::Lg | AvatarSize::Xl) => element.ml_neg_3(),
-        };
         let shown = self
             .people
             .into_iter()
             .take(self.max)
             .enumerate()
-            .map(|(ix, person)| tuck(div(), ix == 0).child(person.size(size).ring()));
-        let more = (rest > 0).then(|| {
-            tuck(div(), false).child(
-                div()
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .size(theme.avatar_size(size))
-                    .rounded_full()
-                    .border_2()
-                    .border_color(theme.colors.bg)
-                    .bg(theme.colors.hover)
-                    .text_size(theme.text_size(TextSize::Xs))
-                    .font_weight(FontWeight::MEDIUM)
-                    .text_color(theme.colors.fg_muted)
-                    .child(format!("+{rest}")),
-            )
-        });
-        div().flex().items_center().children(shown).children(more)
+            .map(|(ix, person)| tucked(ix == 0, size).child(person.size(size).ring()));
+        let extra = (rest > 0).then(|| tucked(false, size).child(more(rest, size, cx)));
+        div().flex().items_center().children(shown).children(extra)
     }
 }
 

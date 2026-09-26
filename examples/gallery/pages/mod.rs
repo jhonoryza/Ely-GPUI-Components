@@ -1,5 +1,6 @@
 mod buttons;
 mod charts;
+mod collab;
 mod data;
 mod debug;
 mod documents;
@@ -57,6 +58,7 @@ pub const ALL: &[Page] = &[
     git::PAGE,
     debug::PAGE,
     documents::PAGE,
+    collab::PAGE,
     theme::PAGE,
 ];
 

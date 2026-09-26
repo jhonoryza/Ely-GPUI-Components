@@ -7,7 +7,7 @@ use gpui::{
 
 use super::{InputEvent, TextInput, text::Backspace};
 use crate::{
-    data_display::Tag,
+    data_display::{Tag, Tone},
     theme::{ActiveTheme, ControlSize, Radius, TextSize},
 };
 
@@ -50,6 +50,7 @@ pub struct TagInput {
     id: ElementId,
     tags: Vec<SharedString>,
     placeholder: SharedString,
+    check: Option<fn(&str) -> bool>,
     on_change: Option<OnChange>,
 }
 
@@ -62,12 +63,19 @@ impl TagInput {
             id: id.into(),
             tags: tags.into_iter().map(Into::into).collect(),
             placeholder: "Add a tag".into(),
+            check: None,
             on_change: None,
         }
     }
 
     pub fn placeholder(mut self, text: impl Into<SharedString>) -> Self {
         self.placeholder = text.into();
+        self
+    }
+
+    /// Marks each tag that fails `check` as danger, as text that is not an address.
+    pub fn check(mut self, check: fn(&str) -> bool) -> Self {
+        self.check = Some(check);
         self
     }
 
@@ -112,16 +120,17 @@ impl RenderOnce for TagInput {
         let owner = self.id.clone();
         let chips = self.tags.iter().enumerate().map(|(ix, tag)| {
             let (tags, on_change) = (self.tags.clone(), self.on_change.clone());
-            Tag::new((owner.clone(), format!("tag-{ix}")), tag.clone()).on_remove(
-                move |window, cx| {
+            let failed = self.check.is_some_and(|check| !check(tag));
+            Tag::new((owner.clone(), format!("tag-{ix}")), tag.clone())
+                .when(failed, |tag| tag.tone(Tone::Danger))
+                .on_remove(move |window, cx| {
                     let mut next = tags.clone();
                     next.remove(ix);
                     log::info!("tag input: removed one, {} left", next.len());
                     if let Some(on_change) = &on_change {
                         on_change(next, window, cx);
                     }
-                },
-            )
+                })
         });
         let (tags, on_change, empty_check) =
             (self.tags.clone(), self.on_change.clone(), input.clone());

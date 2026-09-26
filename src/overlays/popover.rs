@@ -7,6 +7,7 @@ use crate::{
     buttons::{Button, ButtonVariant},
     forms::{float_height, surface},
     primitives::{FocusScope, IconName, Takeover, give_back, take_focus},
+    theme::ControlSize,
 };
 
 type Content = Box<dyn FnOnce(&mut Window, &mut App) -> AnyElement>;
@@ -39,6 +40,7 @@ pub struct Popover {
     label: SharedString,
     icon: Option<IconName>,
     variant: ButtonVariant,
+    size: ControlSize,
     content: Content,
 }
 
@@ -54,6 +56,7 @@ impl Popover {
             label: label.into(),
             icon: None,
             variant: ButtonVariant::Secondary,
+            size: ControlSize::default(),
             content: Box::new(move |window, cx| content(window, cx).into_any_element()),
         }
     }
@@ -68,6 +71,11 @@ impl Popover {
         self.variant = variant;
         self
     }
+
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.size = size;
+        self
+    }
 }
 
 impl RenderOnce for Popover {
@@ -77,6 +85,7 @@ impl RenderOnce for Popover {
         let toggle = state.clone();
         let trigger = Button::new((self.id.clone(), "trigger"), self.label)
             .variant(self.variant)
+            .size(self.size)
             .when_some(self.icon, |button, icon| button.icon(icon))
             .on_click(move |_, window, cx| {
                 if open {

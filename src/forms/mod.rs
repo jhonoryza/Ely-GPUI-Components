@@ -79,7 +79,9 @@ pub(crate) use mention::{Suggestions, active_trigger, handles_matching};
 pub use multi::MultiSelect;
 pub use number::{NumberInput, ScrubInput};
 pub use options::Choice;
-pub(crate) use options::{OnFlag, OnValue, Pick, Run, float, float_height, step, surface};
+pub(crate) use options::{
+    OnFlag, OnValue, OnValues, Pick, Run, float, float_height, step, surface,
+};
 pub use pairs::{FieldArray, KeyValueInput, ListInput};
 pub use path::PathInput;
 pub use pattern::{RegexInput, regex_highlights};
