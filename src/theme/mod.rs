@@ -1,4 +1,5 @@
 mod chart;
+mod generative;
 mod palette;
 mod tokens;
 
@@ -8,6 +9,7 @@ use gpui::{App, Global, SharedString, WindowAppearance};
 
 use crate::motion;
 pub use chart::ChartSizes;
+pub use generative::GenerativeSizes;
 pub use palette::{Mix, Palette, Syntax};
 pub use tokens::{
     AvatarSize, ContainerSize, ControlSize, Density, Elevation, IconSize, Radius, TextSize,

@@ -12,6 +12,7 @@ pub mod editor;
 pub mod feedback;
 pub mod finance;
 pub mod forms;
+pub mod generative;
 pub mod git;
 pub mod layout;
 pub mod lists;

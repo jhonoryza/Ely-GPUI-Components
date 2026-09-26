@@ -83,7 +83,12 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T24d Agent · Previews
 - [x] T24e Agent · Environment
 - [x] T24f Agent · Control and cost
-- [ ] T25 Generative
+- [ ] T25a Generative · Prompt and settings
+- [ ] T25b Generative · Queue and results
+- [ ] T25c Generative · Canvas
+- [ ] T25d Generative · Sound and motion
+- [ ] T25e Generative · Models
+- [ ] T25f Generative · Data and prompts
 - [ ] T26 Media
 - [ ] T27 Files
 - [ ] T28 Messaging

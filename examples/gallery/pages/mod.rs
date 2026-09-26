@@ -10,6 +10,7 @@ mod editor;
 mod feedback;
 mod finance;
 mod forms;
+mod generative;
 mod git;
 mod layout;
 mod lists;
@@ -63,6 +64,7 @@ pub const ALL: &[Page] = &[
     collab::PAGE,
     chat::PAGE,
     agent::PAGE,
+    generative::PAGE,
     theme::PAGE,
 ];
 
