@@ -85,7 +85,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T24f Agent · Control and cost
 - [x] T25a Generative · Prompt and settings
 - [x] T25b Generative · Queue and results
-- [ ] T25c Generative · Canvas
+- [x] T25c Generative · Canvas
 - [ ] T25d Generative · Sound and motion
 - [ ] T25e Generative · Models
 - [ ] T25f Generative · Data and prompts
@@ -296,3 +296,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25b | 1 | FAIL | a done result with nothing to open still took focus on a press and drew a ring the keys could not reach |
 | T25b | 2 | PASS | |
 | T25c | 1 | FAIL | a canvas with no handlers still took Tab, the pen and the ring; strokes from the host went unchecked |
+| T25c | 2 | PASS | |
