@@ -6,12 +6,12 @@ use std::{
 use gpui::{
     AnyElement, App, Div, ElementId, Entity, FontWeight, InteractiveElement, IntoElement,
     ParentElement, Pixels, RenderOnce, SharedString, StatefulInteractiveElement, StyleRefinement,
-    Styled, UniformListScrollHandle, Window, div, prelude::*, uniform_list,
+    Styled, UniformListScrollHandle, Window, div, prelude::*, transparent_black, uniform_list,
 };
 
 use super::{
     Aggregate, Cell, Column, FilterRule,
-    body::{Body, Detail, Line, OnEdit, Select, sized},
+    body::{Body, Detail, Line, OnEdit, Select, sideways, sized},
     header::header,
     model::{figure, filtered, page, range},
     rules::{groups, kept, sorted_by},
@@ -380,7 +380,12 @@ impl RenderOnce for DataTable {
                                     )
                                     .child(value)
                             });
-                            let cell = div().px_3().flex().items_center();
+                            let cell = div()
+                                .px_3()
+                                .border_x_1()
+                                .border_color(transparent_black())
+                                .flex()
+                                .items_center();
                             match widths[*col] {
                                 Some(width) => cell.w(width).flex_none(),
                                 None => sized(cell, column, narrowest),
@@ -400,64 +405,68 @@ impl RenderOnce for DataTable {
                 .children(lines)
                 .children(figures(cols, lead, cx))
         };
-        let table: AnyElement = if total == 0 {
-            let theme = cx.theme();
-            div()
-                .flex()
-                .flex_col()
-                .child(heads(&shown_columns, true, cx))
-                .child(
-                    div()
-                        .flex()
-                        .justify_center()
-                        .py_6()
-                        .text_size(theme.text_size(TextSize::Sm))
-                        .text_color(theme.colors.fg_subtle)
-                        .child("Nothing matches."),
-                )
-                .into_any_element()
-        } else if self.virtualized {
-            let (scroll, count, cols, drawn) = (
-                view.read(cx).scroll.clone(),
-                body.lines.len(),
-                shown_columns.clone(),
-                body.clone(),
-            );
-            div()
-                .flex()
-                .flex_col()
-                .size_full()
-                .child(heads(&shown_columns, true, cx))
-                .child(
-                    uniform_list((id.clone(), "rows"), count, move |range, window, cx| {
-                        range
-                            .map(|at| drawn.line(at, &cols, true, window, cx))
-                            .collect()
-                    })
-                    .track_scroll(scroll)
-                    .flex_1()
-                    .min_h_0(),
-                )
-                .children(figures(&shown_columns, true, cx))
-                .into_any_element()
-        } else if pinned_any {
-            let (held, moving): (Vec<usize>, Vec<usize>) =
-                shown_columns.iter().partition(|col| columns[**col].pinned);
-            div()
-                .flex()
-                .child(part(&held, true, window, cx).flex_none())
-                .child(
-                    div()
-                        .id((id.clone(), "sideways"))
+        let table: AnyElement =
+            if total == 0 {
+                let theme = cx.theme();
+                let least = body.least(&shown_columns, true, rem);
+                sideways(&id)
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .min_w(least)
+                            .child(heads(&shown_columns, true, cx))
+                            .child(
+                                div()
+                                    .flex()
+                                    .justify_center()
+                                    .py_6()
+                                    .text_size(theme.text_size(TextSize::Sm))
+                                    .text_color(theme.colors.fg_subtle)
+                                    .child("Nothing matches."),
+                            ),
+                    )
+                    .into_any_element()
+            } else if self.virtualized {
+                let (scroll, count, cols, drawn) = (
+                    view.read(cx).scroll.clone(),
+                    body.lines.len(),
+                    shown_columns.clone(),
+                    body.clone(),
+                );
+                div()
+                    .flex()
+                    .flex_col()
+                    .size_full()
+                    .child(heads(&shown_columns, true, cx))
+                    .child(
+                        uniform_list((id.clone(), "rows"), count, move |range, window, cx| {
+                            range
+                                .map(|at| drawn.line(at, &cols, true, window, cx))
+                                .collect()
+                        })
+                        .track_scroll(scroll)
                         .flex_1()
-                        .min_w_0()
-                        .overflow_x_scroll()
-                        .child(part(&moving, false, window, cx)),
-                )
-                .into_any_element()
-        } else {
-            part(&shown_columns, true, window, cx).into_any_element()
-        };
+                        .min_h_0(),
+                    )
+                    .children(figures(&shown_columns, true, cx))
+                    .into_any_element()
+            } else if pinned_any {
+                let (held, moving): (Vec<usize>, Vec<usize>) =
+                    shown_columns.iter().partition(|col| columns[**col].pinned);
+                div()
+                    .flex()
+                    .child(part(&held, true, window, cx).flex_none())
+                    .child(sideways(&id).flex_1().min_w_0().child(
+                        part(&moving, false, window, cx).min_w(body.least(&moving, false, rem)),
+                    ))
+                    .into_any_element()
+            } else {
+                let least = body.least(&shown_columns, true, rem);
+                sideways(&id)
+                    .child(part(&shown_columns, true, window, cx).min_w(least))
+                    .into_any_element()
+            };
         let pager = pages.filter(|pages| *pages > 1).map(|pages| {
             let size = self.page_size.expect("pages come from a page size");
             let (first, last) = (page_at * size + 1, ((page_at + 1) * size).min(total));

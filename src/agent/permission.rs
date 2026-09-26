@@ -8,12 +8,11 @@ use gpui::{
 use crate::{
     buttons::{Button, ButtonVariant},
     chat::CodeBlock,
+    forms::OnFlag,
     overlays::Dialog,
     primitives::{Icon, IconName},
     theme::{ActiveTheme, IconSize, Radius, TextSize},
 };
-
-type OnAnswer = Rc<dyn Fn(bool, &mut Window, &mut App)>;
 
 /// Asks before a tool runs: what it will do and its arguments, then Deny or Run. Escape, the scrim and Deny refuse it. Render it while the call waits.
 #[derive(IntoElement)]
@@ -22,7 +21,7 @@ pub struct ToolApprovalDialog {
     tool: SharedString,
     arguments: SharedString,
     detail: Option<SharedString>,
-    on_answer: OnAnswer,
+    on_answer: OnFlag,
 }
 
 impl ToolApprovalDialog {

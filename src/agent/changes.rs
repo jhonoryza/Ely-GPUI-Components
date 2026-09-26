@@ -10,6 +10,7 @@ use crate::{
     buttons::{Button, ButtonVariant},
     chat::file_icon,
     collab::Decision,
+    forms::OnFlag,
     git::{DiffStat, DiffViewer, stat},
     primitives::{Disclosure, FocusRing, Icon, IconName},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
@@ -33,16 +34,10 @@ pub struct FileChange {
     pub state: ChangeState,
 }
 
-type OnVerdict = Rc<dyn Fn(bool, &mut Window, &mut App)>;
 type OnDecision = Rc<dyn Fn(Decision, &mut Window, &mut App)>;
 
 /// Reject and Accept while the change is proposed; after, a quiet word for how it ended.
-fn verdict(
-    id: &ElementId,
-    state: ChangeState,
-    on_decide: Option<OnVerdict>,
-    cx: &App,
-) -> AnyElement {
+fn verdict(id: &ElementId, state: ChangeState, on_decide: Option<OnFlag>, cx: &App) -> AnyElement {
     let colors = &cx.theme().colors;
     let said = |icon: IconName, word: &'static str, color| {
         div()
@@ -87,7 +82,7 @@ fn verdict(
 pub struct FileChangeCard {
     id: ElementId,
     change: FileChange,
-    on_decide: Option<OnVerdict>,
+    on_decide: Option<OnFlag>,
 }
 
 impl FileChangeCard {
@@ -113,7 +108,7 @@ impl RenderOnce for FileChangeCard {
         let (open, unfolded) = (*state.read(cx), folds.read(cx).clone());
         let (added, removed) = stat(&self.change.old, &self.change.new);
         let path = self.change.path.clone();
-        let decide = self.on_decide.map(|decide| -> OnVerdict {
+        let decide = self.on_decide.map(|decide| -> OnFlag {
             Rc::new(move |accepted, window, cx| {
                 log::info!(
                     "file change {path}: {}",

@@ -4,6 +4,7 @@ use gpui::{
 };
 
 mod changes;
+mod control;
 mod environment;
 mod previews;
 

@@ -1,11 +1,11 @@
 use std::{cell::RefCell, rc::Rc};
 
 use gpui::{
-    Context, IntoElement, Modifiers, ParentElement, Render, Styled, TestAppContext,
-    VisualTestContext, Window, div, point, px,
+    Context, IntoElement, KeyUpEvent, Keystroke, Modifiers, ParentElement, Render, Styled,
+    TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
-use super::{Breakpoint, BreakpointList, Disassembly, Instruction};
+use super::{Breakpoint, BreakpointList, Disassembly, Instruction, Span, TimelineProfiler};
 use crate::theme::Theme;
 
 fn settle(cx: &mut VisualTestContext) {
@@ -94,4 +94,47 @@ fn a_breakpoints_box_toggles_without_opening_it(cx: &mut TestAppContext) {
     cx.simulate_click(point(px(200.0), px(12.0)), Modifiers::none());
     settle(cx);
     assert_eq!(*opens.borrow(), [0], "the row still opens");
+}
+
+/// Two spans on one track; it keeps the spans picked.
+struct Spans(Rc<RefCell<Vec<usize>>>);
+
+impl Render for Spans {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let store = self.0.clone();
+        let span = |name: &str, start, end| Span {
+            track: 0,
+            name: name.to_string().into(),
+            start,
+            end,
+        };
+        let spans = vec![span("a", 0.0, 4.0), span("b", 5.0, 9.0)];
+        div().w(px(400.0)).child(
+            TimelineProfiler::new("spans", ["Main"], spans, (0.0, 10.0))
+                .on_select(move |ix, _, _| store.borrow_mut().push(ix)),
+        )
+    }
+}
+
+#[gpui::test]
+fn tab_reaches_each_span_and_enter_picks_it(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let picked = Rc::new(RefCell::new(Vec::new()));
+    let store = picked.clone();
+    let (_, cx) = cx.add_window_view(|_, _| Spans(store));
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    cx.update(|window, _| window.focus_next());
+    cx.update(|window, _| window.focus_next());
+    cx.simulate_keystrokes("enter");
+    settle(cx);
+    cx.simulate_event(KeyUpEvent {
+        keystroke: Keystroke::parse("enter").expect("a key"),
+    });
+    settle(cx);
+    assert_eq!(
+        *picked.borrow(),
+        [1],
+        "the second Tab stands on the second span"
+    );
 }

@@ -1,9 +1,9 @@
 use std::{collections::HashSet, rc::Rc};
 
 use gpui::{
-    AnyElement, App, ElementId, Entity, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, Pixels, Rems, SharedString, StatefulInteractiveElement, Styled, Window, div,
-    prelude::*,
+    AnyElement, App, Div, ElementId, Entity, InteractiveElement, IntoElement, MouseButton,
+    ParentElement, Pixels, Rems, SharedString, Stateful, StatefulInteractiveElement, Styled,
+    Window, div, prelude::*, transparent_black,
 };
 
 use super::{Align, Column, Row, cell::draw, model::tint, table::View};
@@ -30,6 +30,13 @@ pub(super) fn sized<E: Styled>(cell: E, column: &Column, narrowest: Rems) -> E {
     } else {
         cell
     }
+}
+
+/// A box a table's columns scroll sideways in; a plain wheel passes to the page.
+pub(super) fn sideways(id: &ElementId) -> Stateful<Div> {
+    let mut sideways = div().id((id.clone(), "sideways")).overflow_x_scroll();
+    sideways.style().restrict_scroll_to_axis = Some(true);
+    sideways
 }
 
 /// What the body draws, one after another.
@@ -74,6 +81,21 @@ impl Body {
     /// How wide the leading cells stand: a box to select, a disclosure to expand.
     pub(super) fn lead_width(&self) -> Rems {
         self.lead * (usize::from(self.select.is_some()) + usize::from(self.detail.is_some())) as f32
+    }
+
+    /// The least width columns `cols` draw in: fixed widths, the narrowest share for the rest, and the leading cells.
+    pub(super) fn least(&self, cols: &[usize], lead: bool, rem: Pixels) -> Pixels {
+        let start = match lead {
+            true => self.lead_width().to_pixels(rem),
+            false => Pixels::ZERO,
+        };
+        cols.iter().fold(start, |sum, col| {
+            sum + match (self.widths[*col], self.columns[*col].width) {
+                (Some(width), _) => width,
+                (None, Some(width)) => width.to_pixels(rem),
+                (None, None) => self.narrowest.to_pixels(rem),
+            }
+        })
     }
 
     /// Line `at` over columns `cols`; `lead` draws the leading cells.
@@ -266,7 +288,9 @@ impl Body {
             .h_full()
             .flex()
             .items_center()
-            .px_3();
+            .px_3()
+            .border_x_1()
+            .border_color(transparent_black());
         let frame = match self.widths[col] {
             Some(width) => frame
                 .w(width)

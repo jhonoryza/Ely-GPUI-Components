@@ -1,13 +1,13 @@
 use gpui::{
     App, DragMoveEvent, ElementId, Entity, EntityId, FontWeight, InteractiveElement, IntoElement,
-    ParentElement, Pixels, Rems, SharedString, StatefulInteractiveElement, Styled, canvas, div,
-    prelude::*,
+    MouseButton, ParentElement, Pixels, Rems, SharedString, StatefulInteractiveElement, Styled,
+    canvas, div, prelude::*, transparent_black,
 };
 
 use super::{Column, body::sized, table::View};
 use crate::layout::seeded::Seeded;
 use crate::{
-    primitives::{DragGhost, Icon, IconName},
+    primitives::{DragGhost, FocusRing, Icon, IconName},
     theme::{ActiveTheme, IconSize, TextSize},
 };
 
@@ -111,6 +111,8 @@ pub(crate) fn header(
         .items_center()
         .gap_1()
         .px_3()
+        .border_1()
+        .border_color(transparent_black())
         .text_size(theme.text_size(TextSize::Xs))
         .font_weight(FontWeight::MEDIUM)
         .text_color(colors.fg_muted);
@@ -120,8 +122,11 @@ pub(crate) fn header(
     };
     cell.when(column.sortable, |cell| {
         let key = key.clone();
-        cell.cursor_pointer()
+        cell.tab_index(0)
+            .focus_ring(cx)
+            .cursor_pointer()
             .hover(|style| style.text_color(colors.fg))
+            .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
             .on_click(move |event, _, cx| {
                 let join = event.modifiers().shift;
                 sorter.update(cx, |sorting, cx| {

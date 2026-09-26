@@ -1,4 +1,5 @@
 mod changes;
+mod control;
 mod environment;
 mod previews;
 mod progress;
@@ -44,6 +45,13 @@ const SCRIPT: &[Step] = &[
     Step::Click("agent-pointer-next"),
     Step::Wait(400),
     Step::Shot("pointer"),
+    Step::Click("agent-stop"),
+    Step::Wait(300),
+    Step::Shot("interrupted"),
+    Step::DownAt("agent-ask", 57.0, 79.0),
+    Step::UpAt("agent-ask", 57.0, 79.0),
+    Step::Wait(300),
+    Step::Shot("answered"),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
@@ -58,5 +66,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(environment::sandbox_section(window, cx))
         .child(environment::connectors_section(window, cx))
         .child(environment::memory_section(window, cx))
+        .child(control::interrupt_section(window, cx))
+        .child(control::cost_section(window, cx))
+        .child(control::trace_section(window, cx))
         .into_any_element()
 }

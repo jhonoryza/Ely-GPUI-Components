@@ -1,4 +1,7 @@
-use std::f32::consts::{FRAC_PI_4, TAU};
+use std::{
+    f32::consts::{FRAC_PI_4, TAU},
+    rc::Rc,
+};
 
 use gpui::{
     Animation, AnimationExt, App, ElementId, FontWeight, Hsla, IntoElement, ParentElement,
@@ -282,11 +285,14 @@ impl RenderOnce for Gauge {
     }
 }
 
-/// How a whole divides: one bar of colored parts with the free rest as track, and a legend of each part's share.
+type Amounts = Rc<dyn Fn(f64) -> String>;
+
+/// How a whole divides: one bar of colored parts with the free rest as track, and a legend of each part's share or amount.
 #[derive(IntoElement)]
 pub struct UsageBar {
     total: f64,
     parts: Vec<(SharedString, f64)>,
+    amounts: Option<Amounts>,
 }
 
 impl UsageBar {
@@ -299,7 +305,14 @@ impl UsageBar {
         Self {
             total,
             parts: Vec::new(),
+            amounts: None,
         }
+    }
+
+    /// Shows each part's amount, as `write` puts it, in place of its share.
+    pub fn amounts(mut self, write: impl Fn(f64) -> String + 'static) -> Self {
+        self.amounts = Some(Rc::new(write));
+        self
     }
 
     pub fn part(mut self, name: impl Into<SharedString>, amount: f64) -> Self {
@@ -319,6 +332,14 @@ impl UsageBar {
             self.total
         );
         (used, used >= self.total * (1.0 - 1e-9))
+    }
+
+    /// A part's figure in the legend: its amount as `amounts` writes it, or its share.
+    fn figure(&self, amount: f64) -> String {
+        match &self.amounts {
+            Some(write) => write(amount),
+            None => format::percent(amount / self.total, 0, false),
+        }
     }
 }
 
@@ -372,7 +393,7 @@ impl RenderOnce for UsageBar {
                 .child(
                     tabular(div())
                         .text_color(colors.fg_muted)
-                        .child(format::percent(amount / total, 0, false)),
+                        .child(self.figure(*amount)),
                 )
         });
         div().flex().flex_col().gap_2().child(bar).child(
@@ -396,6 +417,14 @@ mod tests {
     fn parts_that_sum_to_the_total_fill_it_despite_float_error() {
         assert!(UsageBar::new(0.3).part("a", 0.1).part("b", 0.2).used().1);
         assert!(!UsageBar::new(1.0).part("a", 0.5).used().1);
+    }
+
+    #[test]
+    fn a_part_reads_as_its_share_or_as_written() {
+        let bar = UsageBar::new(4.0).part("a", 1.0);
+        assert_eq!(bar.figure(1.0), "25%");
+        let bar = bar.amounts(|amount| format!("{amount} GB"));
+        assert_eq!(bar.figure(1.0), "1 GB");
     }
 
     #[test]

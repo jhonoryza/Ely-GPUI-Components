@@ -9,6 +9,8 @@ use gpui::{
     Styled, TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
+mod columns;
+
 use super::{Column, DataTable, FilterBuilder, FilterRule, Row};
 use crate::{
     primitives::{FocusNext, FocusPrev, FocusScope},
@@ -37,6 +39,29 @@ fn settle(cx: &mut VisualTestContext) {
     cx.run_until_parked();
     cx.update(|window, _| window.refresh());
     cx.run_until_parked();
+}
+
+/// Edits the cell at `at`: a double press, then `text` and Enter.
+fn edit_at(at: gpui::Point<gpui::Pixels>, text: &str, cx: &mut VisualTestContext) {
+    for count in [1, 2] {
+        cx.simulate_event(gpui::MouseDownEvent {
+            button: gpui::MouseButton::Left,
+            position: at,
+            modifiers: Modifiers::none(),
+            click_count: count,
+            first_mouse: false,
+        });
+        cx.simulate_event(gpui::MouseUpEvent {
+            button: gpui::MouseButton::Left,
+            position: at,
+            modifiers: Modifiers::none(),
+            click_count: count,
+        });
+    }
+    settle(cx);
+    cx.simulate_input(text);
+    cx.simulate_keystrokes("enter");
+    settle(cx);
 }
 
 fn picks(seen: &Rc<RefCell<Vec<SharedString>>>) -> Vec<String> {
@@ -159,26 +184,11 @@ fn a_row_opens_its_detail_and_a_double_press_edits_a_cell(cx: &mut TestAppContex
     cx.simulate_click(point(px(14.0), px(54.0)), Modifiers::none());
     settle(cx);
     assert_eq!(heard.borrow().last().map(String::as_str), Some("detail a"));
-    let name = point(px(120.0), px(54.0 + 36.0 + 40.0 + 24.0));
-    for count in [1, 2] {
-        cx.simulate_event(gpui::MouseDownEvent {
-            button: gpui::MouseButton::Left,
-            position: name,
-            modifiers: Modifiers::none(),
-            click_count: count,
-            first_mouse: false,
-        });
-        cx.simulate_event(gpui::MouseUpEvent {
-            button: gpui::MouseButton::Left,
-            position: name,
-            modifiers: Modifiers::none(),
-            click_count: count,
-        });
-    }
-    settle(cx);
-    cx.simulate_input("Alan Kay");
-    cx.simulate_keystrokes("enter");
-    settle(cx);
+    edit_at(
+        point(px(120.0), px(54.0 + 36.0 + 40.0 + 24.0)),
+        "Alan Kay",
+        cx,
+    );
     assert_eq!(
         heard
             .borrow()

@@ -1,6 +1,8 @@
 mod artifact;
 mod changes;
+mod control;
 mod environment;
+mod line;
 mod memory;
 mod permission;
 mod previews;
@@ -12,6 +14,7 @@ mod tools;
 
 pub use artifact::ArtifactPanel;
 pub use changes::{ChangeState, FileChange, FileChangeCard, MultiFileDiffReview};
+pub use control::{CostBreakdown, HumanInputRequest};
 pub use environment::{McpServer, McpServerList, SandboxState, SandboxStatus, ServerState};
 pub use memory::{Checkpoint, CheckpointList, Memory, MemoryPanel};
 pub use permission::{Permission, PermissionPrompt, ToolApprovalDialog};

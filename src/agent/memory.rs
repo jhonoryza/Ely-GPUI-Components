@@ -1,15 +1,16 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, Entity, FontWeight, InteractiveElement, IntoElement, ParentElement, RenderOnce,
-    SharedString, Styled, Window, div, prelude::*,
+    App, ElementId, Entity, FontWeight, IntoElement, ParentElement, RenderOnce, SharedString,
+    Styled, Window, div, prelude::*,
 };
 use jiff::Timestamp;
 
+use super::line::{OnText, send_line};
 use crate::{
     buttons::{Button, ButtonVariant, IconButton},
     data_display::{Timeline, TimelineItem, Tone},
-    forms::{Enter, Input, Pick, TextInput},
+    forms::{Pick, TextInput},
     primitives::IconName,
     theme::{ActiveTheme, ControlSize, TextSize},
     typography::{RelativeTime, format::plural},
@@ -24,7 +25,6 @@ pub struct Memory {
     pub at: Timestamp,
 }
 
-type OnAdd = Rc<dyn Fn(&str, &mut Window, &mut App)>;
 type OnForget = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
 /// What an agent keeps between conversations: a field to add a memory, then each one with where it came from, when, and a way to forget it.
@@ -33,7 +33,7 @@ pub struct MemoryPanel {
     id: ElementId,
     field: Entity<TextInput>,
     memories: Vec<Memory>,
-    on_add: Option<OnAdd>,
+    on_add: Option<OnText>,
     on_forget: Option<OnForget>,
 }
 
@@ -69,46 +69,19 @@ impl MemoryPanel {
     }
 }
 
-/// Hands the field's words to `add` and empties it; blank words are kept out.
-fn keep(field: &Entity<TextInput>, add: &OnAdd, window: &mut Window, cx: &mut App) {
-    let text = field.read(cx).text().trim().to_string();
-    if text.is_empty() {
-        return;
-    }
-    log::info!("memory: kept {} characters", text.len());
-    add(&text, window, cx);
-    field.update(cx, |input, cx| input.set_text("", cx));
-}
-
 impl RenderOnce for MemoryPanel {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let ready = !self.field.read(cx).text().trim().is_empty();
         let count = self.memories.len();
         let adding = self.on_add.map(|add| {
-            let (enter, press, typed, pressed) =
-                (add.clone(), add, self.field.clone(), self.field.clone());
-            div()
-                .flex()
-                .items_center()
-                .gap_2()
-                .child(
-                    div()
-                        .flex_1()
-                        .min_w_0()
-                        .capture_action(move |_: &Enter, window, cx| {
-                            cx.stop_propagation();
-                            keep(&typed, &enter, window, cx)
-                        })
-                        .child(Input::new(&self.field)),
-                )
-                .child(
-                    Button::new((self.id.clone(), "add"), "Remember")
-                        .variant(ButtonVariant::Secondary)
-                        .disabled(!ready)
-                        .on_click(move |_, window, cx| keep(&pressed, &press, window, cx)),
-                )
+            send_line(
+                &self.field,
+                Button::new((self.id.clone(), "add"), "Remember").variant(ButtonVariant::Secondary),
+                add,
+                "memory",
+                cx,
+            )
         });
         div()
             .w_full()

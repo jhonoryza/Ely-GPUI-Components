@@ -1,14 +1,15 @@
-use std::{cell::Cell, rc::Rc};
+use std::rc::Rc;
 
 use gpui::{
-    App, Bounds, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement, MouseButton,
+    App, Bounds, ElementId, Entity, FontWeight, Hsla, InteractiveElement, IntoElement, MouseButton,
     ParentElement, Pixels, RenderOnce, ScrollWheelEvent, SharedString, StatefulInteractiveElement,
-    Styled, Window, canvas, div, prelude::*, relative,
+    Styled, Window, div, prelude::*, relative,
 };
 
 use super::OnIndex;
 use crate::{
-    charts::nice_step,
+    charts::{measure, nice_step},
+    primitives::FocusRing,
     theme::{ActiveTheme, ControlSize, Radius, TextSize},
     typography::{Ellipsis, LEADING, format::decimals},
 };
@@ -30,8 +31,25 @@ fn tick_label(time: f64, step: f64) -> String {
     format!("{time:.*} ms", decimals(step))
 }
 
-/// Ticks along the ruler, about.
+/// Ticks along the ruler, at most.
 const TICKS: usize = 6;
+
+/// The ruler's step and ticks: as many as leave `room` for each label across `width`, each with room before the end.
+fn ruler(range: (f64, f64), width: f32, room: f32) -> (f64, Vec<f64>) {
+    let length = range.1 - range.0;
+    let across = move |span: f64| (span / length) as f32 * width;
+    let step = (2..=TICKS)
+        .rev()
+        .map(|count| nice_step(length, count))
+        .find(|step| across(*step) >= room)
+        .unwrap_or_else(|| nice_step(length, 1));
+    let first = (range.0 / step).ceil() as i64;
+    let ticks = (first..)
+        .map(|n| n as f64 * step)
+        .take_while(|time| across(range.1 - time) >= room)
+        .collect();
+    (step, ticks)
+}
 
 /// `range` scaled by `factor` around the point at `at` across it, from 0 to 1; above 1 widens, below narrows.
 pub fn zoomed(range: (f64, f64), at: f64, factor: f64) -> (f64, f64) {
@@ -108,6 +126,8 @@ impl TimelineProfiler {
 
 impl RenderOnce for TimelineProfiler {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let lane: Entity<Bounds<Pixels>> =
+            window.use_keyed_state((self.id.clone(), "lane"), cx, |_, _| Bounds::default());
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let line = theme
@@ -116,14 +136,10 @@ impl RenderOnce for TimelineProfiler {
         let (from, to) = self.range;
         let length = to - from;
         let at = move |time: f64| ((time - from) / length) as f32;
-        let step = nice_step(length, TICKS);
-        let first = (from / step).ceil() as i64;
-        let ticks: Vec<f64> = (first..)
-            .map(|n| n as f64 * step)
-            .take_while(|time| *time < to)
-            .collect();
-        let lane = Rc::new(Cell::new(Bounds::<Pixels>::default()));
-        let (measure, wheel_lane) = (lane.clone(), lane);
+        let room = (theme.label_width() * 0.4).to_pixels(window.rem_size());
+        let width = lane.read(cx).size.width;
+        let (step, ticks) = ruler(self.range, f32::from(width), f32::from(room));
+        let wheel_lane = lane.clone();
         let on_range = self.on_range.clone();
         let label = theme.label_width() * 0.6;
         let row = theme.control_height(ControlSize::Md);
@@ -166,7 +182,7 @@ impl RenderOnce for TimelineProfiler {
                         let Some(on_range) = &on_range else {
                             return;
                         };
-                        let bounds = wheel_lane.get();
+                        let bounds = *wheel_lane.read(cx);
                         let delta = event.delta.pixel_delta(line);
                         let (x, y) = (f64::from(f32::from(delta.x)), f64::from(f32::from(delta.y)));
                         cx.stop_propagation();
@@ -208,17 +224,19 @@ impl RenderOnce for TimelineProfiler {
                                     .bg(if lit { color } else { color.opacity(0.55) })
                                     .border_1()
                                     .border_color(if lit {
-                                        colors.focus
+                                        colors.accent
                                     } else {
                                         color.opacity(0.0)
                                     })
                                     .text_color(colors.fg)
-                                    .cursor_pointer()
                                     .on_mouse_down(MouseButton::Left, |_, window, _| {
                                         window.prevent_default()
                                     })
                                     .when_some(pick, |bar, pick| {
-                                        bar.on_click(move |_, window, cx| pick(ix, window, cx))
+                                        bar.tab_index(0)
+                                            .focus_ring(cx)
+                                            .cursor_pointer()
+                                            .on_click(move |_, window, cx| pick(ix, window, cx))
                                     })
                                     .child(Ellipsis::new(span.name.clone()))
                             });
@@ -241,18 +259,8 @@ impl RenderOnce for TimelineProfiler {
                                     .h_full()
                                     .overflow_hidden()
                                     .bg(colors.hover.opacity(0.5))
-                                    .when(track == 0, |lane| {
-                                        let measure = measure.clone();
-                                        lane.child(
-                                            canvas(
-                                                move |bounds, _, _| measure.set(bounds),
-                                                |_, _, _, _| {},
-                                            )
-                                            .absolute()
-                                            .top_0()
-                                            .left_0()
-                                            .size_full(),
-                                        )
+                                    .when(track == 0, |row| {
+                                        row.child(measure(lane.clone(), |bounds| bounds))
                                     })
                                     .children(bars),
                             )
@@ -289,5 +297,21 @@ mod tests {
             "zooming at the start keeps the start"
         );
         assert_eq!(zoomed((10.0, 20.0), 1.0, 2.0), (0.0, 20.0));
+    }
+
+    #[test]
+    fn the_ruler_keeps_a_label_of_room_between_ticks() {
+        let narrow = ruler((0.0, 4_400.0), 184.0, 64.0);
+        assert_eq!(
+            narrow,
+            (2_000.0, vec![0.0, 2_000.0]),
+            "4000 has no room before the end"
+        );
+        let wide = ruler((0.0, 4_600.0), 664.0, 64.0).1;
+        assert_eq!(wide, [0.0, 1_000.0, 2_000.0, 3_000.0, 4_000.0]);
+        assert!(
+            ruler((0.0, 4_400.0), 0.0, 64.0).1.is_empty(),
+            "an unmeasured lane holds none"
+        );
     }
 }
