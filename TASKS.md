@@ -307,3 +307,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25e | 2 | PASS | |
 | T25f | 1 | FAIL | a drag on the turned embedding froze past the plot's edge; which version a diff sets against, and its heading, had no test |
 | T25f | 2 | PASS | |
+| T26a | 1 | FAIL | the viewer's picture had no id, so an animated picture never left its first frame |

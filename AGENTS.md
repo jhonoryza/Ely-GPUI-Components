@@ -109,7 +109,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Set an explicit line height on any box that clips text. gpui's default leading is taller than a tight box, and the clip eats descenders.
 - gpui's `img` takes its picture's pixel size for any `Auto` side, and its aspect ratio beats percent heights in flow. `Image` pins it absolute at full size, so an `Image` needs a sized box.
 - Badges, tags and avatars live in `data_display`; forms and shell draw theirs from there, and `data_display` imports neither. Avatars take square pictures.
-- `img()` keeps loading state only with an id. Content masks are rectangles, so rounded corners survive only when the image fills its box without cropping.
+- `img()` keeps loading state, and moves an animated picture's frames, only with an id. Content masks are rectangles, so rounded corners survive only when the image fills its box without cropping.
 - gpui reads a `&str` picture source as a web address. A file goes through `Path` (`documents::source` in the crate, `Path::new` in the gallery).
 - Taffy 0.9's grid rows overgrow tiles that keep a ratio. Tiles in a picture's shape sit in flex rows of `flex_1` cells (`generative::GenerationGrid`).
 - Rise reads green and fall red unless a component's `red_up` swaps them, as markets in East Asia read. `finance::quotes::moves` picks the pair.

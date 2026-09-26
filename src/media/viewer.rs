@@ -119,7 +119,6 @@ impl RenderOnce for ImageViewer {
                 }
             });
         }
-        let focus = tab_stop((self.id.clone(), "focus").into(), true, window, cx);
         let decoded = window.use_asset::<ImageAssetLoader>(&self.source, cx);
         let turns = view.read(cx).turns;
         let picture: Option<Arc<RenderImage>> = match decoded {
@@ -143,6 +142,12 @@ impl RenderOnce for ImageViewer {
             let size = image.size(0);
             (size.width.0 as f32, size.height.0 as f32)
         });
+        let focus = tab_stop(
+            (self.id.clone(), "focus").into(),
+            pixels.is_some(),
+            window,
+            cx,
+        );
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let (zoom, offset, stage) = {
@@ -252,6 +257,7 @@ impl RenderOnce for ImageViewer {
         });
         let body = match (picture, shown) {
             (Some(image), Some((size, left, top))) => img(ImageSource::Render(image))
+                .id((self.id.clone(), "picture"))
                 .debug_selector(|| "image-viewer-picture".into())
                 .absolute()
                 .left(Pixels::from(left))
@@ -305,8 +311,9 @@ impl RenderOnce for ImageViewer {
             .bg(colors.sunken)
             .border_1()
             .border_color(transparent_black())
-            .track_focus(&focus)
-            .focus_ring(cx)
+            .when(pixels.is_some(), |stage| {
+                stage.track_focus(&focus).focus_ring(cx)
+            })
             .when(overhangs, |stage| stage.cursor_grab())
             .child(
                 canvas(

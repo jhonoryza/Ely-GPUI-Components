@@ -282,6 +282,9 @@ fn a_picture_that_cannot_open_says_so(cx: &mut TestAppContext) {
     let cx = viewing(std::env::temp_dir().join("ely-media-missing.png"), cx);
     assert!(cx.debug_bounds("image-viewer-failed").is_some());
     assert!(cx.debug_bounds("image-viewer-picture").is_none());
+    cx.update(|window, _| window.focus_next());
+    let focused = cx.update(|window, cx| window.focused(cx));
+    assert!(focused.is_none(), "with nothing to show, nothing takes Tab");
 }
 
 /// Two thumbnails, the second with no handler; the opens the first heard.
