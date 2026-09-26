@@ -118,6 +118,23 @@ pub fn search(_: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     vec![more..more + "more lift".len(), louder..louder + "looks louder".len()],
                 )
                 .score(0.86),
+            )
+            .child(
+                div()
+                    .w(px(280.))
+                    .flex()
+                    .flex_col()
+                    .gap_3()
+                    .child(SourceList::new("chat-sources-narrow", all.clone()))
+                    .child(
+                        DocumentChunkPreview::new(
+                            "a-long-name-for-the-lift-notes.pdf",
+                            "Page 1 · Dark is not inverted",
+                            PASSAGE,
+                            vec![more..more + "more lift".len()],
+                        )
+                        .score(0.86),
+                    ),
             ),
     )
 }

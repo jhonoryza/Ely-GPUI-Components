@@ -82,7 +82,7 @@ fn lines(number: Option<usize>, source: &Source, cx: &App) -> Div {
                         .size(IconSize::Xs)
                         .color(colors.fg_subtle),
                 )
-                .child(source.site.clone()),
+                .child(div().min_w_0().child(Ellipsis::new(source.site.clone()))),
         )
         .child(
             div()
@@ -112,7 +112,9 @@ impl RenderOnce for SourceCard {
             .border_color(colors.border)
             .bg(colors.surface)
             .when_some(open, |card, open| {
-                card.cursor_pointer()
+                card.tab_index(0)
+                    .focus_ring(cx)
+                    .cursor_pointer()
                     .hover(|card| card.bg(colors.hover))
                     .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
                     .on_click(move |_, window, cx| {
@@ -246,14 +248,25 @@ impl RenderOnce for SourceList {
                             cx.notify();
                         })
                     })
-                    .child(div().font_weight(FontWeight::MEDIUM).child(match count {
-                        1 => "1 source".to_string(),
-                        n => format!("{n} sources"),
-                    }))
-                    .child(div().text_color(colors.fg_subtle).child(sites.join(" · ")))
                     .child(
+                        div()
+                            .flex_none()
+                            .font_weight(FontWeight::MEDIUM)
+                            .child(match count {
+                                1 => "1 source".to_string(),
+                                n => format!("{n} sources"),
+                            }),
+                    )
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .text_color(colors.fg_subtle)
+                            .child(Ellipsis::new(sites.join(" · "))),
+                    )
+                    .child(div().flex_none().child(
                         Disclosure::new((self.id.clone(), "chevron"), opened).size(IconSize::Sm),
-                    ),
+                    )),
             )
             .when(opened, |list| {
                 list.child(div().flex().flex_col().gap_2().children(

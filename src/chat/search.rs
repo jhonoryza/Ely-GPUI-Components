@@ -3,14 +3,14 @@ use std::{ops::Range, rc::Rc};
 use gpui::{
     App, ElementId, FontWeight, HighlightStyle, InteractiveElement, IntoElement, MouseButton,
     ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, StyledText,
-    Window, div, prelude::*,
+    Window, div, prelude::*, transparent_black,
 };
 
 use super::cite::Source;
 use crate::{
     forms::Run,
     motion::Spinner,
-    primitives::{Icon, IconName},
+    primitives::{FocusRing, Icon, IconName},
     theme::{ActiveTheme, IconSize, Radius, TextSize},
     typography::{Ellipsis, tabular},
 };
@@ -145,7 +145,13 @@ impl RenderOnce for WebResultCard {
             .gap_0p5()
             .py_2()
             .when_some(open, |card, open| {
-                card.cursor_pointer()
+                card.px_1()
+                    .rounded(theme.radius(Radius::Md))
+                    .border_1()
+                    .border_color(transparent_black())
+                    .tab_index(0)
+                    .focus_ring(cx)
+                    .cursor_pointer()
                     .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
                     .on_click(move |_, window, cx| open(window, cx))
             })
@@ -167,7 +173,7 @@ impl RenderOnce for WebResultCard {
                             .min_w_0()
                             .child(Ellipsis::new(self.source.url.clone())),
                     )
-                    .children(self.date.map(|date| div().child(date))),
+                    .children(self.date.map(|date| div().flex_none().child(date))),
             )
             .child(
                 div()
@@ -265,16 +271,15 @@ impl RenderOnce for DocumentChunkPreview {
                     )
                     .child(
                         div()
+                            .min_w_0()
                             .font_weight(FontWeight::MEDIUM)
                             .text_color(colors.fg_muted)
-                            .child(self.document),
+                            .child(Ellipsis::new(self.document)),
                     )
-                    .child(div().flex_1().child(self.place))
-                    .children(
-                        self.score.map(|score| {
-                            tabular(div()).child(format!("{:.0}% match", score * 100.0))
-                        }),
-                    ),
+                    .child(div().flex_1().min_w_0().child(Ellipsis::new(self.place)))
+                    .children(self.score.map(|score| {
+                        tabular(div().flex_none()).child(format!("{:.0}% match", score * 100.0))
+                    })),
             )
             .child(
                 div()
