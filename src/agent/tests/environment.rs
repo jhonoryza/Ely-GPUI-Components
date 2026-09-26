@@ -168,3 +168,9 @@ fn every_checkpoint_but_the_current_rewinds(cx: &mut TestAppContext) {
 fn memory_past_its_limit_fails_loud() {
     let _ = SandboxStatus::new("box", "python", SandboxState::Ready).memory(5, 4);
 }
+
+#[test]
+#[should_panic(expected = "cpu 1.8 of 1")]
+fn cpu_past_full_fails_loud() {
+    let _ = SandboxStatus::new("box", "python", SandboxState::Ready).cpu(1.8);
+}

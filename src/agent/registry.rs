@@ -55,6 +55,19 @@ pub(crate) fn found(tools: &[RegisteredTool], query: &str) -> Vec<usize> {
         .collect()
 }
 
+/// The kept tools gathered by source, sources in the order they first appear.
+pub(crate) fn grouped(tools: &[RegisteredTool], kept: &[usize]) -> Vec<(SharedString, Vec<usize>)> {
+    let mut groups: Vec<(SharedString, Vec<usize>)> = Vec::new();
+    for &ix in kept {
+        let source = &tools[ix].source;
+        match groups.iter_mut().find(|(name, _)| name == source) {
+            Some((_, items)) => items.push(ix),
+            None => groups.push((source.clone(), vec![ix])),
+        }
+    }
+    groups
+}
+
 type OnAccess = Rc<dyn Fn(usize, ToolAccess, &mut Window, &mut App)>;
 
 /// Every tool the agent may call, grouped by where it comes from and found by the owner's query: each allowed, asked for first, or denied.
@@ -96,15 +109,7 @@ impl RenderOnce for ToolRegistry {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let kept = found(&self.tools, &self.query);
-        let mut groups: Vec<(SharedString, Vec<usize>)> = Vec::new();
-        for ix in kept {
-            let source = &self.tools[ix].source;
-            match groups.iter_mut().find(|(name, _)| name == source) {
-                Some((_, items)) => items.push(ix),
-                None => groups.push((source.clone(), vec![ix])),
-            }
-        }
+        let groups = grouped(&self.tools, &found(&self.tools, &self.query));
         let empty = groups.is_empty();
         div()
             .w_full()
@@ -183,7 +188,9 @@ impl RenderOnce for ToolRegistry {
 
 #[cfg(test)]
 mod tests {
-    use super::{RegisteredTool, ToolAccess, found};
+    use gpui::SharedString;
+
+    use super::{RegisteredTool, ToolAccess, found, grouped};
 
     fn tool(name: &str, description: &str) -> RegisteredTool {
         RegisteredTool {
@@ -205,5 +212,20 @@ mod tests {
         assert_eq!(found(&tools, "FILE"), [0, 1]);
         assert_eq!(found(&tools, "writes file"), [1]);
         assert_eq!(found(&tools, "web file"), Vec::<usize>::new());
+    }
+
+    #[test]
+    fn kept_tools_gather_by_source_in_first_seen_order() {
+        let from = |source: &str| RegisteredTool {
+            source: source.to_string().into(),
+            ..tool("tool", "")
+        };
+        let tools = [from("A"), from("B"), from("A")];
+        let (a, b) = (SharedString::from("A"), SharedString::from("B"));
+        assert_eq!(
+            grouped(&tools, &[0, 1, 2]),
+            [(a.clone(), vec![0, 2]), (b.clone(), vec![1])]
+        );
+        assert_eq!(grouped(&tools, &[1, 2]), [(b, vec![1]), (a, vec![2])]);
     }
 }

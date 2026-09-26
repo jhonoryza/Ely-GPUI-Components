@@ -282,3 +282,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24d | 1 | FAIL | at 280px eight thumbnails ran past the browser card; the artifact panel lost its title and its controls ran out of the box |
 | T24d | 2 | FAIL | Tab to a later thumbnail left the strip where it was, the focused frame and its ring clipped |
 | T24d | 3 | FAIL | reviewed by Claude Fable 5.1 max after codex ran out of quota: the shown thumbnail wore the focus color, so focus and choice looked alike; frames were forced to 16:10 and cropped, and a pointer's share missed its target. Fixed after the cap: the shown frame takes accent, and BrowserPreview and ComputerUseViewer take the host's ratio (test a_screen_takes_its_pictures_shape); no fourth review |
+| T24e | 1 | FAIL | cpu() clamped a share past 1 in silence; the registry's grouping by source had no test |

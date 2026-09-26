@@ -92,6 +92,7 @@ impl SandboxStatus {
 
     /// The share of its processors in use, 0 to 1.
     pub fn cpu(mut self, share: f32) -> Self {
+        assert!((0.0..=1.0).contains(&share), "cpu {share} of 1");
         self.cpu = Some(share);
         self
     }
@@ -165,13 +166,10 @@ impl RenderOnce for SandboxStatus {
                             })),
                     ),
             )
-            .children(self.cpu.map(|share| {
-                Meter::new(
-                    (self.id.clone(), "cpu"),
-                    "Processors",
-                    share.clamp(0.0, 1.0),
-                )
-            }))
+            .children(
+                self.cpu
+                    .map(|share| Meter::new((self.id.clone(), "cpu"), "Processors", share)),
+            )
             .children(self.memory.map(|(used, limit)| {
                 Meter::new(
                     (self.id.clone(), "memory"),
