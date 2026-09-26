@@ -44,6 +44,7 @@ async fn shoot_all(
         for (choice, name) in [(Choice::Light, "light"), (Choice::Dark, "dark")] {
             window.update(cx, |gallery, window, cx| {
                 gallery.select(ix, cx);
+                gallery.fresh(cx);
                 gallery.choose(choice, window, cx);
             })?;
             script::park(window, cx)?;

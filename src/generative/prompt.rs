@@ -14,7 +14,7 @@ use crate::{
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
 };
 
-type OnText = Rc<dyn Fn(&str, &mut Window, &mut App)>;
+pub(super) type OnText = Rc<dyn Fn(&str, &mut Window, &mut App)>;
 
 /// Byte ranges of `new` that `old` lacks, word by word: neighbors joined, and anything but letters and digits trimmed from each end.
 pub(crate) fn added_words(old: &str, new: &str) -> Vec<Range<usize>> {

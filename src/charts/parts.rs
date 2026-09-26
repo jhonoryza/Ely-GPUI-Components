@@ -1,18 +1,19 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement, RenderOnce, SharedString,
-    StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    App, ElementId, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
+    SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*, transparent_black,
 };
 
 use crate::{
+    primitives::FocusRing,
     theme::{ActiveTheme, Elevation, Radius, TextSize},
     typography::tabular,
 };
 
 type OnToggle = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
-/// A chart's key: a dot in each series' color and its name; with `on_toggle`, a press hides or shows one.
+/// A chart's key: a dot in each series' color and its name; with `on_toggle`, a press or Enter hides or shows one.
 #[derive(IntoElement)]
 pub struct ChartLegend {
     id: ElementId,
@@ -68,7 +69,16 @@ impl RenderOnce for ChartLegend {
                             .when(hidden, |entry| entry.opacity(0.4))
                             .when_some(on_toggle, |entry, on_toggle| {
                                 entry
+                                    .px_1()
+                                    .rounded(theme.radius(Radius::Sm))
+                                    .border_1()
+                                    .border_color(transparent_black())
+                                    .tab_index(0)
+                                    .focus_ring(cx)
                                     .cursor_pointer()
+                                    .on_mouse_down(MouseButton::Left, |_, window, _| {
+                                        window.prevent_default()
+                                    })
                                     .on_click(move |_, window, cx| on_toggle(&key, window, cx))
                             })
                             .child(div().size(theme.status_dot()).rounded_full().bg(color))

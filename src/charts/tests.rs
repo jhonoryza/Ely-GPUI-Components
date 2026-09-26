@@ -1,15 +1,18 @@
-use std::{cell::Cell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 
 use gpui::{
-    Context, IntoElement, Modifiers, MouseMoveEvent, ParentElement, Render, Styled, TestAppContext,
-    VisualTestContext, Window, div, point, px,
+    Context, IntoElement, KeyUpEvent, Keystroke, Modifiers, MouseMoveEvent, ParentElement, Render,
+    SharedString, Styled, TestAppContext, VisualTestContext, Window, black, div, point, px,
 };
 use jiff::civil::date;
 
 use super::{
-    BarChart, Bullet, BulletChart, CalendarHeatmap, ChordDiagram, FunnelChart, GanttChart,
-    HeatmapChart, LineChart, NetworkGraph, ParallelCoordinates, ProgressChart, RadarChart,
-    SankeyChart, Series, Task, Treemap,
+    BarChart, Bullet, BulletChart, CalendarHeatmap, ChartLegend, ChordDiagram, FunnelChart,
+    GanttChart, HeatmapChart, LineChart, NetworkGraph, ParallelCoordinates, ProgressChart,
+    RadarChart, SankeyChart, Series, Task, Treemap,
 };
 use crate::theme::Theme;
 
@@ -168,4 +171,40 @@ fn a_part_under_the_pointer_lets_go_when_its_data_shrinks(cx: &mut TestAppContex
             }
         }
     }
+}
+
+/// A legend of two series that hears which one is toggled.
+struct Keyed(Rc<RefCell<Vec<SharedString>>>);
+
+impl Render for Keyed {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let heard = self.0.clone();
+        div().child(
+            ChartLegend::new("legend")
+                .entry(black(), "Training", false)
+                .entry(black(), "Held out", true)
+                .on_toggle(move |name, _, _| heard.borrow_mut().push(name.clone())),
+        )
+    }
+}
+
+#[gpui::test]
+fn tab_reaches_a_legend_entry_and_enter_toggles_it(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let heard = Rc::new(RefCell::new(Vec::new()));
+    let seen = heard.clone();
+    let (_, cx) = cx.add_window_view(|_, _| Keyed(seen));
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    cx.update(|window, _| {
+        window.focus_next();
+        window.focus_next();
+    });
+    settle(cx);
+    cx.simulate_keystrokes("enter");
+    cx.simulate_event(KeyUpEvent {
+        keystroke: Keystroke::parse("enter").expect("a key"),
+    });
+    settle(cx);
+    assert_eq!(*heard.borrow(), ["Held out"]);
 }

@@ -21,6 +21,8 @@ pub enum Choice {
 
 pub struct Gallery {
     page: usize,
+    /// Counts fresh starts; the page's state lives under it.
+    pass: usize,
     choice: Choice,
     focus: FocusHandle,
     scroll: ScrollHandle,
@@ -38,6 +40,7 @@ impl Gallery {
         window.focus(&focus);
         Self {
             page,
+            pass: 0,
             choice: Choice::Light,
             focus,
             scroll: ScrollHandle::new(),
@@ -49,6 +52,12 @@ impl Gallery {
         log::info!("gallery: page -> {}", pages::ALL[page].slug);
         self.page = page;
         self.scroll.set_offset(point(px(0.0), px(0.0)));
+        cx.notify();
+    }
+
+    /// Drops the page's state, so it draws as new.
+    pub fn fresh(&mut self, cx: &mut Context<Self>) {
+        self.pass += 1;
         cx.notify();
     }
 
@@ -192,7 +201,7 @@ impl Gallery {
 impl Render for Gallery {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let page = &pages::ALL[self.page];
-        let body = (page.render)(window, cx);
+        let body = window.with_id(("pass", self.pass), |window| (page.render)(window, cx));
         let sidebar = self.sidebar(cx);
         let switcher = self.switcher(cx);
         let theme = cx.theme();
@@ -208,7 +217,7 @@ impl Render for Gallery {
             .text_size(theme.text_size(TextSize::Base))
             .child(sidebar)
             .child(
-                on_axis(div().id("page"))
+                on_axis(div().id(("page", self.pass)))
                     .flex_1()
                     .h_full()
                     .overflow_y_scroll()

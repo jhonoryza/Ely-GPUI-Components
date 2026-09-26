@@ -50,6 +50,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui sends a drag's moves to every listener of its type. Each drag payload carries its owner's `EntityId`, and handlers check it.
 - A component that takes a starting value from its owner keeps it in `layout::seeded`: a new value from the owner replaces local drags.
 - The capture harness turns on reduced motion, so shots are still: repeating motion rests on one frame, and a shimmer shows no band.
+- Each capture pass starts its page fresh (`Gallery::fresh`): page state lives under the pass, so the dark pass runs its script from the same start as the light one.
 - The capture harness finds gpui windows by handle through `raw-window-handle`. AppKit popups, which gpui does not own, come from the window list by process and level.
 - Posted events cannot move a macOS window, so window drags are not scripted. `drag_region` follows Zed's title bar.
 - An overlay takes focus with `primitives::take_focus` and returns it with `give_back` on every close path. While open, it takes focus back whenever the focused element leaves the tree (gpui's `on_focus_lost`).
