@@ -38,14 +38,14 @@ impl Selection {
 }
 
 /// Sorted by where they start, overlapping selections joined into one; the last given, the primary, stays last.
-pub(crate) fn merged(mut all: Vec<Selection>) -> Vec<Selection> {
-    let primary = all
-        .last()
-        .expect("an editor keeps at least one cursor")
-        .range();
-    all.sort_by_key(|selection| selection.range().start);
+pub(crate) fn merged(all: Vec<Selection>) -> Vec<Selection> {
+    assert!(!all.is_empty(), "an editor keeps at least one cursor");
+    let primary = all.len() - 1;
+    let mut all: Vec<(usize, Selection)> = all.into_iter().enumerate().collect();
+    all.sort_by_key(|(_, selection)| selection.range().start);
     let mut out: Vec<Selection> = Vec::with_capacity(all.len());
-    for next in all {
+    let mut lead = 0;
+    for (given, next) in all {
         match out.last_mut() {
             Some(last)
                 if next.range().start < last.range().end
@@ -61,14 +61,10 @@ pub(crate) fn merged(mut all: Vec<Selection>) -> Vec<Selection> {
             }
             _ => out.push(next),
         }
+        if given == primary {
+            lead = out.len() - 1;
+        }
     }
-    let lead = out
-        .iter()
-        .position(|selection| {
-            let range = selection.range();
-            range.start <= primary.start && primary.end <= range.end
-        })
-        .expect("a merge keeps every cursor inside one");
     let lead = out.remove(lead);
     out.push(lead);
     out
@@ -173,6 +169,19 @@ pub(crate) fn replace_each(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_last_cursor_given_leads_even_beside_a_touching_selection() {
+        let all = merged(vec![
+            Selection {
+                anchor: 0,
+                head: 1,
+                goal: None,
+            },
+            Selection::caret(1),
+        ]);
+        assert_eq!(all.last(), Some(&Selection::caret(1)));
+    }
 
     #[test]
     fn overlapping_selections_join_and_carets_on_one_spot_become_one() {

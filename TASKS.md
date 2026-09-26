@@ -61,9 +61,9 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T16d Finance · Trading
 - [x] T16e Finance · Markets & assets
 - [ ] T17a Editor · Core
-- [ ] T17b Editor · Intelligence
-- [ ] T17c Editor · Search
-- [ ] T17d Editor · Panels
+- [x] T17b Editor · Intelligence
+- [x] T17c Editor · Search
+- [x] T17d Editor · Panels
 - [x] T17e Editor · Status items
 - [ ] T18 Terminal
 - [ ] T19 Git
@@ -230,11 +230,12 @@ Per-component lines live in `tasks/`. Tags there:
 | T16e | 1 | FAIL | a smaller loss than expected read as a miss |
 | T16e | 2 | PASS | |
 | T17a | 1 | FAIL | hidden numbers crashed the gutter; an edit with nothing to change tripped an assert; a read-only editor moved its caret and undid; a hint past a multi-line ghost fell off its row; the newest cursor lost the lead on merge; a slow composition left its pinyin in undo; gpui tests broke a featureless test build |
-| T17a | 2 | — | pending review |
+| T17a | 2 | FAIL | a selection touching the newest caret took the lead; a composition cleared to nothing stayed open and kept later edits out of undo |
+| T17a | 3 | — | pending review |
 | T17b | 1 | FAIL | two calls of one name shared a tree key; references counted lines, not matches |
-| T17b | 2 | — | pending review |
+| T17b | 2 | PASS | |
 | T17c | 1 | FAIL | a match on trailing spaces ran past its trimmed line; `**/` needed a folder |
-| T17c | 2 | — | pending review |
+| T17c | 2 | PASS | |
 | T17d | 1 | FAIL | a path match marked a project name mid-character; pin and remove also opened the row; number settings showed no places |
-| T17d | 2 | — | pending review |
+| T17d | 2 | PASS | |
 | T17e | 1 | PASS | |

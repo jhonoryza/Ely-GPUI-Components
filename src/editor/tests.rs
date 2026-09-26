@@ -194,6 +194,18 @@ fn a_slow_composition_undoes_in_one_step(cx: &mut TestAppContext) {
     });
 }
 
+#[gpui::test]
+fn a_composition_cleared_to_nothing_ends(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("", cx);
+    editor.update_in(cx, |editor, window, cx| {
+        editor.replace_and_mark_text_in_range(None, "n", None, window, cx);
+        editor.replace_and_mark_text_in_range(None, "", None, window, cx);
+        editor.type_text("x", cx);
+        editor.undo(cx);
+        assert_eq!(editor.text(), "", "typing after the cleared mark undoes");
+    });
+}
+
 impl CodeEditor {
     /// Whether line `line` has a row now.
     fn frame_shows(&self, line: usize) -> bool {

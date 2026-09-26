@@ -182,6 +182,9 @@ impl EntityInputHandler for CodeEditor {
         }
         self.apply(vec![(range.clone(), text.to_string())], true, cx);
         self.marked = (!text.is_empty()).then(|| range.start..range.start + text.len());
+        if self.marked.is_none() {
+            self.end_composition();
+        }
         let caret = match selected_utf16 {
             Some(inner) => range.start + from_utf16(text, inner.end),
             None => range.start + text.len(),
