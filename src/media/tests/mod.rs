@@ -6,6 +6,7 @@ use gpui::{
 
 use crate::{primitives::FocusNext, theme::Theme};
 
+mod audio;
 mod edit;
 mod images;
 mod player;

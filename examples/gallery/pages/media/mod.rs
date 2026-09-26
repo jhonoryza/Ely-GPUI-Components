@@ -1,3 +1,4 @@
+mod audio;
 mod edit;
 mod images;
 mod video;
@@ -68,6 +69,26 @@ const SCRIPT: &[Step] = &[
     Step::Key("enter"),
     Step::Wait(300),
     Step::Shot("retimed"),
+    Step::HoverAt("media-waveform", 400.0, 48.0),
+    Step::Wait(200),
+    Step::Shot("wave-tip"),
+    Step::DownAt("media-speed", 30.0, 16.0),
+    Step::UpAt("media-speed", 30.0, 16.0),
+    Step::Wait(300),
+    Step::Shot("speeds"),
+    Step::Key("escape"),
+    Step::DownAt("media-volume", 14.0, 14.0),
+    Step::UpAt("media-volume", 14.0, 14.0),
+    Step::Wait(200),
+    Step::Shot("muted"),
+    Step::DownAt("media-playlist", 200.0, 124.0),
+    Step::UpAt("media-playlist", 200.0, 124.0),
+    Step::Key("enter"),
+    Step::Wait(300),
+    Step::Shot("played"),
+    Step::DownAt("media-transport", 180.0, 20.0),
+    Step::UpAt("media-transport", 180.0, 20.0),
+    Step::Wait(300),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
@@ -81,5 +102,12 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(video::scrubber(window, cx))
         .child(video::strip(window, cx))
         .child(video::subtitles(window, cx))
+        .child(audio::player(window, cx))
+        .child(audio::waveform(window, cx))
+        .child(audio::spectrum(window, cx))
+        .child(audio::volume_control(window, cx))
+        .child(audio::speed(window, cx))
+        .child(audio::transport(window, cx))
+        .child(audio::playlist(window, cx))
         .into_any_element()
 }

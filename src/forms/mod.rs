@@ -83,7 +83,8 @@ pub use multi::MultiSelect;
 pub use number::{NumberInput, ScrubInput};
 pub use options::Choice;
 pub(crate) use options::{
-    OnFlag, OnValue, OnValues, Pick, Run, float, float_height, reveal, revealer, step, surface,
+    OnFlag, OnNumber, OnValue, OnValues, Pick, Run, float, float_height, reveal, revealer, step,
+    surface,
 };
 pub use pairs::{FieldArray, KeyValueInput, ListInput};
 pub use path::PathInput;

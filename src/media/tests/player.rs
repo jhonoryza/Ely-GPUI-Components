@@ -258,7 +258,7 @@ fn the_first_move_onto_a_resting_bar_shows_the_tip(cx: &mut TestAppContext) {
     let half = across("scrubber-rail", 0.5, cx);
     cx.simulate_mouse_move(half, None, Modifiers::none());
     settle(cx);
-    assert!(cx.debug_bounds("scrubber-tip").is_some());
+    assert!(cx.debug_bounds("time-tip").is_some());
 }
 
 /// A playing player whose only control is its speed.
@@ -293,4 +293,53 @@ fn the_bar_stays_up_while_a_button_in_it_has_focus(cx: &mut TestAppContext) {
     cx.executor().advance_clock(Duration::from_millis(2600));
     settle(cx);
     assert!(cx.debug_bounds("video-controls-resting").is_none());
+}
+
+#[gpui::test]
+fn a_focused_stage_lets_the_bar_rest(cx: &mut TestAppContext) {
+    let (view, cx) = watching(cx);
+    view.update(cx, |view, cx| {
+        view.playing = true;
+        cx.notify();
+    });
+    let frame = cx.debug_bounds("video-player").expect("the player draws");
+    cx.simulate_mouse_move(frame.center(), None, Modifiers::none());
+    settle(cx);
+    cx.executor().advance_clock(Duration::from_millis(2600));
+    settle(cx);
+    assert!(cx.debug_bounds("video-controls-resting").is_some());
+}
+
+#[gpui::test]
+fn a_press_on_a_resting_bar_wakes_it_before_a_button_runs(cx: &mut TestAppContext) {
+    let (view, cx) = watching(cx);
+    let frame = cx.debug_bounds("video-player").expect("the player draws");
+    rest(frame.origin + point(px(8.0), px(8.0)), &view, cx);
+    let play = cx.debug_bounds("media-button play").expect("a play button");
+    cx.simulate_click(play.center(), Modifiers::none());
+    settle(cx);
+    let plays = view.read_with(cx, |view, _| view.plays.clone());
+    assert!(plays.is_empty(), "the press woke it: {plays:?}");
+    cx.simulate_click(play.center(), Modifiers::none());
+    settle(cx);
+    assert_eq!(view.read_with(cx, |view, _| view.plays.clone()), [false]);
+}
+
+#[gpui::test]
+fn a_key_wakes_a_resting_bar(cx: &mut TestAppContext) {
+    let (view, cx) = watching(cx);
+    view.update(cx, |view, cx| {
+        view.playing = true;
+        cx.notify();
+    });
+    let frame = cx.debug_bounds("video-player").expect("the player draws");
+    cx.simulate_mouse_move(frame.center(), None, Modifiers::none());
+    settle(cx);
+    cx.executor().advance_clock(Duration::from_millis(2600));
+    settle(cx);
+    press("l", cx);
+    let play = cx.debug_bounds("media-button play").expect("a play button");
+    cx.simulate_click(play.center(), Modifiers::none());
+    settle(cx);
+    assert_eq!(view.read_with(cx, |view, _| view.plays.clone()), [false]);
 }

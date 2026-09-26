@@ -1,8 +1,8 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    App, ElementId, ImageSource, InteractiveElement, IntoElement, ParentElement, RenderOnce,
-    SharedString, Styled, Window, div, img, prelude::*, transparent_black,
+    App, ElementId, Entity, ImageSource, InteractiveElement, IntoElement, ParentElement,
+    RenderOnce, SharedString, Styled, Window, div, img, prelude::*, transparent_black,
 };
 
 use super::scrubber::{OnTime, Scrubber, clock};
@@ -138,6 +138,36 @@ impl VideoPlayer {
     }
 }
 
+/// Wakes the bar, as a move or a key just now; a timer lets it rest once all is still again.
+fn wake(watch: &Entity<Watch>, window: &mut Window, cx: &mut App) {
+    let arm = watch.update(cx, |watch, cx| {
+        watch.moved = cx.background_executor().now();
+        cx.notify();
+        !std::mem::replace(&mut watch.waking, true)
+    });
+    if !arm {
+        return;
+    }
+    let watch = watch.clone();
+    window
+        .spawn(cx, async move |cx| {
+            loop {
+                let wait = watch.read_with(cx, |watch, cx| {
+                    IDLE.saturating_sub(cx.background_executor().now().duration_since(watch.moved))
+                })?;
+                if wait.is_zero() {
+                    break;
+                }
+                cx.background_executor().timer(wait).await;
+            }
+            watch.update(cx, |watch, cx| {
+                watch.waking = false;
+                cx.notify();
+            })
+        })
+        .detach_and_log_err(cx);
+}
+
 impl RenderOnce for VideoPlayer {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let started = cx.background_executor().now();
@@ -151,9 +181,8 @@ impl RenderOnce for VideoPlayer {
             || (self.on_captions.is_some() && self.captions.is_some());
         let focus = tab_stop((self.id.clone(), "focus").into(), keys, window, cx);
         let now = cx.background_executor().now();
-        let resting = self.playing
-            && now.duration_since(watch.read(cx).moved) >= IDLE
-            && !focus.contains_focused(window, cx);
+        let in_bar = focus.contains_focused(window, cx) && !focus.is_focused(window);
+        let resting = self.playing && now.duration_since(watch.read(cx).moved) >= IDLE && !in_bar;
         let fading = crate::motion::since_change(
             &(self.id.clone(), "fade").into(),
             resting,
@@ -166,12 +195,16 @@ impl RenderOnce for VideoPlayer {
         let light = colors.on_media;
         let (length, at, playing, speed) = (self.length, self.at, self.playing, self.speed);
         let button = |key: &'static str, icon: IconName, run: Run| {
+            let watch = watch.clone();
             media_button(
                 (self.id.clone(), key),
                 icon,
                 ControlSize::Sm,
                 true,
-                move |window, cx| run(window, cx),
+                move |window, cx| match resting {
+                    true => wake(&watch, window, cx),
+                    false => run(window, cx),
+                },
                 cx,
             )
         };
@@ -244,7 +277,13 @@ impl RenderOnce for VideoPlayer {
             .loaded(self.loaded)
             .over_media();
         let scrubber = match self.on_seek.clone() {
-            Some(seek) => scrubber.on_seek(move |time, window, cx| seek(time, window, cx)),
+            Some(seek) => {
+                let watch = watch.clone();
+                scrubber.on_seek(move |time, window, cx| match resting {
+                    true => wake(&watch, window, cx),
+                    false => seek(time, window, cx),
+                })
+            }
             None => scrubber,
         };
         let bar = div()
@@ -315,7 +354,7 @@ impl RenderOnce for VideoPlayer {
         let frame = self
             .frame
             .map(|frame| img(frame).id((self.id.clone(), "frame")).size_full());
-        let moved = watch.clone();
+        let (moved, pressed) = (watch.clone(), watch.clone());
         let keyed = (
             toggle,
             self.on_seek.clone(),
@@ -332,35 +371,7 @@ impl RenderOnce for VideoPlayer {
             .when(keys, |stage| stage.focus_ring(cx))
             .children(frame)
             .child(controls)
-            .on_mouse_move(move |_, window, cx| {
-                let arm = moved.update(cx, |watch, cx| {
-                    watch.moved = cx.background_executor().now();
-                    cx.notify();
-                    !std::mem::replace(&mut watch.waking, true)
-                });
-                if arm {
-                    let watch = moved.clone();
-                    window
-                        .spawn(cx, async move |cx| {
-                            loop {
-                                let wait = watch.read_with(cx, |watch, cx| {
-                                    IDLE.saturating_sub(
-                                        cx.background_executor().now().duration_since(watch.moved),
-                                    )
-                                })?;
-                                if wait.is_zero() {
-                                    break;
-                                }
-                                cx.background_executor().timer(wait).await;
-                            }
-                            watch.update(cx, |watch, cx| {
-                                watch.waking = false;
-                                cx.notify();
-                            })
-                        })
-                        .detach_and_log_err(cx);
-                }
-            })
+            .on_mouse_move(move |_, window, cx| wake(&moved, window, cx))
             .on_key_down(move |event, window, cx| {
                 let held = &event.keystroke.modifiers;
                 if held.platform || held.control {
@@ -400,6 +411,7 @@ impl RenderOnce for VideoPlayer {
                     _ => return,
                 }
                 cx.stop_propagation();
+                wake(&pressed, window, cx);
             })
     }
 }

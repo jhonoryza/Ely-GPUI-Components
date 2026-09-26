@@ -76,7 +76,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A dialog goes through `overlays::Dialog`: scrim, focus trap, Escape and focus return live there. AlertDialog, ConfirmDialog and PromptDialog build on it; a fullscreen dialog fills the window below its title bar. A dialog's card fits the window, a title bar's height clear at each end; its body scrolls and its actions stay.
 - Controls on a dark layer over pictures are `overlays::media_button`, light icons that dim when they have nowhere to go, for the lightbox and a video player's bar alike.
 - A component's letter keys step aside while Command or Control is held, so the app's shortcuts reach the app (`media::ImageAnnotator`, `VideoPlayer`, `VideoThumbnailStrip`).
-- A tip over a track splits the free width around it by the pointer's share: it stays inside the track and under the pointer, and nothing is measured (`media::Scrubber`).
+- A tip over a track splits the free width around it by the pointer's share: it stays inside the track and under the pointer, and nothing is measured (`media::scrubber::time_tip`, for the scrubber and the waveform).
 - `primitives::Severity` names info, success, warning and danger with their colors and icons, for alerts and feedback alike.
 - Rows that move are keyed. `motion::Flip` places them absolutely from last frame's heights, so no frame shows a row at its new place before it glides there, and drives the glide from elapsed time: an animation id that changes per move would rebuild the row's keyed state. `Reorder` holds a row by key, drags with an empty ghost and moves the held row itself.
 - A marker that slides between items (segment thumb, tab line) measures them with `motion::slide` and eases with `glide`.
@@ -126,6 +126,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A mode that leaves on Escape holds its own focus through `primitives::hold_focus`: turned on while focus is elsewhere, it takes focus so Escape reaches it, and `hand_back` returns it (`documents::ZenMode`, `collab::FollowMode`).
 - A chat holds at its newest message through gpui's `list` with `ListAlignment::Bottom`: it sticks while scrolled to the end, and `scroll_to` one past the last item sticks it again; that call sends no scroll event, so the owner clears its own away state (`chat::MessageList`).
 - Anything pressable is a Tab stop: a row, card or toggle takes `tab_index(0)` and `focus_ring`, with a 1px border that stays transparent where it shows none; gpui presses it on the release of Enter or Space.
+- A list of pressable rows goes through `lists::SelectableList`, whose cursor reaches them by key: Up and Down move, Enter or a double press activates (`media::Playlist`). A bare `ListItem` press is the pointer's only.
 - A row that holds text beside fixed parts lets the text give way: the text takes `flex_1().min_w_0()` and an `Ellipsis`; counts, icons, dates and chevrons take `flex_none`.
 - A mark over a text field reads the field at paint time, from a canvas laid over it (`collab::RemoteCursor`): by then `TextInput::bounds_for` holds this frame's layout, and a still page never renders again to catch up.
 - A callback field holds a named `type` alias; clippy's type_complexity rejects `Option<Rc<dyn Fn(..)>>`. A chapter shares one alias per shape.

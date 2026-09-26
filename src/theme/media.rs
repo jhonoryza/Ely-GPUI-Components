@@ -17,6 +17,14 @@ pub struct MediaSizes {
     pub strip: Rems,
     /// A trim's handle, wide.
     pub trim_handle: Rems,
+    /// A waveform's bar, wide.
+    pub wave_bar: Rems,
+    /// The gap between a waveform's bars.
+    pub wave_gap: Rems,
+    /// A waveform or a spectrum, tall.
+    pub waveform: Rems,
+    /// A song's cover, square.
+    pub artwork: Rems,
 }
 
 impl Theme {
@@ -28,6 +36,10 @@ impl Theme {
             pin: px_to_rems(20.0),
             strip: px_to_rems(48.0),
             trim_handle: px_to_rems(8.0),
+            wave_bar: px_to_rems(3.0),
+            wave_gap: px_to_rems(2.0),
+            waveform: px_to_rems(48.0),
+            artwork: px_to_rems(64.0),
         }
     }
 }

@@ -1,8 +1,8 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    App, Bounds, DragMoveEvent, ElementId, EmptyView, EntityId, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, Pixels, Point, RenderOnce, SharedString,
+    App, Bounds, Div, DragMoveEvent, ElementId, EmptyView, EntityId, InteractiveElement,
+    IntoElement, MouseButton, ParentElement, Pixels, Point, Rems, RenderOnce, SharedString,
     StatefulInteractiveElement, Styled, Window, canvas, div, prelude::*, relative,
     transparent_black,
 };
@@ -36,6 +36,39 @@ pub(crate) fn chapter_at(starts: &[Duration], at: Duration) -> Option<usize> {
 /// A time as the crate's clock reads it.
 pub(crate) fn clock(at: Duration) -> String {
     duration(at.as_secs(), DurationStyle::Clock)
+}
+
+/// The time under the pointer over a track. The free width splits by the pointer's share, so the tip stays inside the track and under the pointer.
+pub(crate) fn time_tip(share: f32, text: String, cx: &App) -> Div {
+    let theme = cx.theme();
+    let side = |share: f32| div().flex_basis(relative(share));
+    div()
+        .absolute()
+        .left_0()
+        .bottom_full()
+        .w_full()
+        .flex()
+        .items_end()
+        .child(side(share))
+        .child(
+            tabular(div())
+                .flex_none()
+                .max_w_full()
+                .mb_1()
+                .px_1p5()
+                .rounded(theme.radius(Radius::Sm))
+                .bg(theme.colors.tooltip_bg)
+                .text_color(theme.colors.tooltip_fg)
+                .text_size(theme.text_size(TextSize::Xs))
+                .debug_selector(|| "time-tip".into())
+                .child(Ellipsis::new(text)),
+        )
+        .child(side(1.0 - share))
+}
+
+/// The scrubber's knob, round; its track is padded by half of it.
+pub(crate) fn knob(cx: &App) -> Rems {
+    cx.theme().slider_thumb() * 0.75
 }
 
 /// A seeking drag, marked with its scrubber.
@@ -131,7 +164,7 @@ impl RenderOnce for Scrubber {
             true => (colors.on_media, colors.on_media.opacity(0.25)),
             false => (colors.fg, colors.border),
         };
-        let (line, thumb) = (theme.slider_track(), theme.slider_thumb() * 0.75);
+        let (line, thumb) = (theme.slider_track(), knob(cx));
         let mut bounds: Vec<Duration> = if starts.first() == Some(&Duration::ZERO) {
             starts.clone()
         } else {
@@ -181,29 +214,7 @@ impl RenderOnce for Scrubber {
                 Some(name) => format!("{} · {name}", clock(time)),
                 None => clock(time),
             };
-            let side = |share: f32| div().flex_basis(relative(share));
-            div()
-                .absolute()
-                .left_0()
-                .bottom_full()
-                .w_full()
-                .flex()
-                .items_end()
-                .child(side(hovered))
-                .child(
-                    tabular(div())
-                        .flex_none()
-                        .max_w_full()
-                        .mb_1()
-                        .px_1p5()
-                        .rounded(theme.radius(Radius::Sm))
-                        .bg(colors.tooltip_bg)
-                        .text_color(colors.tooltip_fg)
-                        .text_size(theme.text_size(TextSize::Xs))
-                        .debug_selector(|| "scrubber-tip".into())
-                        .child(Ellipsis::new(text)),
-                )
-                .child(side(1.0 - hovered))
+            time_tip(hovered, text, cx)
         });
         let knob = (hover.is_some() || focused).then(|| {
             div()

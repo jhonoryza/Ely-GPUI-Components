@@ -91,7 +91,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T25f Generative · Data and prompts
 - [x] T26a Media · Images
 - [x] T26b Media · Crop and annotate
-- [ ] T26c Media · Video
+- [x] T26c Media · Video
 - [ ] T26d Media · Audio and controls
 - [ ] T26e Media · Capture and devices
 - [ ] T27 Files
@@ -313,3 +313,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T26b | 2 | PASS | |
 | T26c | 1 | FAIL | the caption faded with the controls; Space on a focused bar button acted twice; Command letters fired the player and the strip; a long caption, cue words and the scrubber's tip ran past their boxes at 280px |
 | T26c | 2 | FAIL | the bar's fade restarted an animation id per rest and wake, which rebuilt the scrubber's drag, hover and focus under it |
+| T26c | 3 | PASS | |

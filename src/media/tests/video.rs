@@ -76,13 +76,11 @@ fn the_arrows_step_five_seconds_and_end_goes_to_the_end(cx: &mut TestAppContext)
 #[gpui::test]
 fn the_pointer_shows_its_time_over_the_track(cx: &mut TestAppContext) {
     let (_, cx) = scrubbing(cx);
-    assert!(cx.debug_bounds("scrubber-tip").is_none());
+    assert!(cx.debug_bounds("time-tip").is_none());
     let half = across("scrubber-rail", 0.5, cx);
     cx.simulate_mouse_move(half, None, Modifiers::none());
     settle(cx);
-    let tip = cx
-        .debug_bounds("scrubber-tip")
-        .expect("a tip over the track");
+    let tip = cx.debug_bounds("time-tip").expect("a tip over the track");
     assert!(
         (tip.center().x - half.x).abs() < px(1.0),
         "centered on the pointer: {tip:?}"
@@ -97,9 +95,7 @@ fn the_tip_stays_over_the_track_at_its_ends(cx: &mut TestAppContext) {
         cx.simulate_mouse_move(at, None, Modifiers::none());
         settle(cx);
         settle(cx);
-        let tip = cx
-            .debug_bounds("scrubber-tip")
-            .expect("a tip over the track");
+        let tip = cx.debug_bounds("time-tip").expect("a tip over the track");
         let rail = cx.debug_bounds("scrubber-rail").expect("the rail draws");
         let inside = tip.left() >= rail.left() - px(0.5) && tip.right() <= rail.right() + px(0.5);
         assert!(inside, "at {share}: {tip:?} over {rail:?}");

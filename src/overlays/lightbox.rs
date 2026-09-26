@@ -44,6 +44,7 @@ pub(crate) fn media_button(
     let theme = cx.theme();
     let light = theme.colors.on_media;
     div()
+        .debug_selector(|| format!("media-button {}", id.1))
         .id(id)
         .flex()
         .flex_none()
