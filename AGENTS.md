@@ -20,7 +20,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - `cargo run --example gallery` opens the gallery. `-- --page <slug>` starts on a page.
 - `cargo run --example gallery -- --capture <dir>` writes PNGs of every page, light and dark, top to bottom, then each page's scripted states, including windows the demos open. macOS only.
 - `cargo test --lib --features test-support`, `cargo clippy --all-targets --features test-support -- -D warnings`, `cargo fmt --check`. `scripts/check.sh` runs them with the house rules.
-- `rm -rf target/debug/incremental` after each task item keeps the disk lean.
+- `rm -rf target/debug/incremental` and `cargo clean -p ely-gpui-component` after each task item keep the disk lean. Cargo keeps every old build of the crate and its tests under a new hash; by T25 they had filled the disk.
 - `scripts/icons.sh <lucide-name>...` adds icons. Then add a line to `IconName` in `src/primitives/icon.rs`.
 
 ## Layout
@@ -83,7 +83,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Only gpui can build `ExternalPaths` with paths, so drop rules live in `forms::files::dropped`, where tests reach them.
 - A stroke drawn with the pointer goes through `forms::pen`: a press starts it, a drag extends it, and the lift hands it over, in or out of the pad (`SignaturePad`, `generative::InpaintCanvas`).
 - gpui runs key bindings before key listeners. A container takes a child's bound key through the action with `capture_action`, as `Form` takes `Submit`.
-- `ScrollHandle::scroll_to_item` runs in the container's prepaint against last frame's bounds and overflow, so a call before a list's first frame does nothing. Call it from a child's prepaint once the handle has bounds, then request one frame (`navigation::editor_tabs`). A floating list reveals its cursor, and a strip its focused item, through `forms::options::reveal` and `revealer`. A focused Tab stop deeper in a scroll box sets the box's offset whole from its own painted bounds in prepaint, once per focus (`tables::header`). Never poll layout with `request_animation_frame`.
+- `ScrollHandle::scroll_to_item` runs in the container's prepaint against last frame's bounds and overflow, so a call before a list's first frame does nothing. Call it from a child's prepaint once the handle has bounds, then request one frame (`navigation::editor_tabs`). A floating list reveals its cursor, and a strip its focused item, through `forms::options::reveal` and `revealer`. A focused Tab stop deeper in a scroll box sets the box's offset whole from its own painted bounds in prepaint, once per focus, through `layout::bring_into_view`. Never poll layout with `request_animation_frame`.
 - gpui animations run on the wall clock; timers run on the executor's clock, which tests advance by hand. A test that needs an animation settled turns on the theme's reduced motion. Clocks read `background_executor().now()` and wake only their own view.
 - Machine-read marks, QR codes and barcodes, paint `ink` on `paper`: dark on light in both themes, so cameras read them.
 - A layer over pressable content that must still pass scrolls to its ancestors uses `block_mouse_except_scroll`; `occlude` hides them from scrolls too.

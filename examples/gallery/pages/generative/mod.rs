@@ -1,4 +1,5 @@
 mod canvas;
+mod models;
 mod panel;
 mod results;
 mod sound;
@@ -47,5 +48,9 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(sound::audio(window, cx))
         .child(sound::voice(window, cx))
         .child(sound::video(window, cx))
+        .child(models::cards(window, cx))
+        .child(models::downloads_section(window, cx))
+        .child(models::machine(window, cx))
+        .child(models::tuning(window, cx))
         .into_any_element()
 }
