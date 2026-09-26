@@ -88,7 +88,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T25c Generative · Canvas
 - [x] T25d Generative · Sound and motion
 - [x] T25e Generative · Models
-- [ ] T25f Generative · Data and prompts
+- [x] T25f Generative · Data and prompts
 - [ ] T26 Media
 - [ ] T27 Files
 - [ ] T28 Messaging
@@ -302,3 +302,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25e | 1 | FAIL | a description row never wrapped, so a 280px model card broke its facts mid-word; the fine-tune bar's share had no test |
 | T25e | 2 | PASS | |
 | T25f | 1 | FAIL | a drag on the turned embedding froze past the plot's edge; which version a diff sets against, and its heading, had no test |
+| T25f | 2 | PASS | |
