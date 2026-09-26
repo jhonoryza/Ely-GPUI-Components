@@ -163,11 +163,20 @@ pub fn knowledge(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
     let icon = keep("know-icon", || SharedString::from("☀️"), window, cx);
     let status = keep("know-status", || SharedString::from("Drafting"), window, cx);
     let done = keep("know-done", || false, window, cx);
-    let (now_cover, now_icon, now_status, now_done) = (
+    let due = keep("know-due", || jiff::civil::date(2026, 10, 12), window, cx);
+    let tags = keep(
+        "know-tags",
+        || vec![SharedString::from("color"), SharedString::from("theme")],
+        window,
+        cx,
+    );
+    let (now_cover, now_icon, now_status, now_done, now_due, now_tags) = (
         cover.read(cx).clone(),
         icon.read(cx).clone(),
         status.read(cx).clone(),
         *done.read(cx),
+        *due.read(cx),
+        tags.read(cx).clone(),
     );
     let trash = keep(
         "know-trash",
@@ -310,8 +319,8 @@ pub fn knowledge(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
                                                 .selected(now_status)
                                                 .on_change(move |next, _, cx| set(&status, next.clone(), cx)),
                                         )
-                                        .row("Due", DatePicker::new("know-due", Some(jiff::civil::date(2026, 10, 12))))
-                                        .row("Tags", TagInput::new("know-tags", ["color", "theme"]))
+                                        .row("Due", DatePicker::new("know-due", Some(now_due)).on_change(move |next, _, cx| set(&due, next, cx)))
+                                        .row("Tags", TagInput::new("know-tags", now_tags).on_change(move |next, _, cx| set(&tags, next, cx)))
                                         .row("Published", Checkbox::new("know-published", now_done).on_change(move |on, _, cx| set(&done, on, cx))),
                                 ),
                             ),

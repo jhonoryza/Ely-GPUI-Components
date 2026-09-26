@@ -104,8 +104,10 @@ impl RenderOnce for EpubReader {
         let shown = &self.chapters[chapter];
         let listed = contents.then(|| {
             div()
+                .id((self.id.clone(), "chapters"))
                 .flex_none()
                 .w(theme.sidebar_width(false))
+                .overflow_y_scroll()
                 .flex()
                 .flex_col()
                 .gap_0p5()

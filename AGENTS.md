@@ -112,6 +112,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Tokens live in `src/theme`; the raw `px()` scan skips that folder only.
 - `ScrollHandle` keeps its children's bounds unscrolled: a child paints at its bounds plus the offset. A press on a scrolled child subtracts both, and an offset that brings a child to a place is set whole, not added (`documents::find::reveal`).
 - A find box is `editor::FindWidget`, over code, a terminal or a document's pages. It shows the replace fold and the option toggles only when the owner handles them.
+- Taffy 0.9 hands negative free space to auto margins and centering alike, so a centered child wider than its scroll box starts past the scroll's reach. Center only what fits the measured box (`documents::DocumentViewer`).
+- A mode that leaves on Escape keeps its own focus handle: turned on while focus is elsewhere, it takes focus so Escape reaches it, and hands focus back when it leaves (`documents::ZenMode`).
 - A callback field holds a named `type` alias; clippy's type_complexity rejects `Option<Rc<dyn Fn(..)>>`. A chapter shares one alias per shape.
 - A component that fills its container says `w_full` on its root. As a window's root, or in a flex row, it would shrink to its text's narrowest width.
 - A field's `Highlight` sets color, wash, weight, slant and strike per span; measuring and painting share one set of runs, so wrapped heights match.

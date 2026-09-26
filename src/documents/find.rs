@@ -10,12 +10,11 @@ pub(crate) struct Find {
     pub current: Option<usize>,
 }
 
-/// Scrolls `hit` a third of the way down the view; before the pages are laid out, its page to the top.
+/// Scrolls `hit` a third of the way down the view; runs after the pages' prepaint, so their bounds are this frame's.
 pub(crate) fn reveal(scroll: &ScrollHandle, hit: &PageHit, zoom: f32) {
-    let Some(page) = scroll.bounds_for_item(hit.page) else {
-        scroll.scroll_to_top_of_item(hit.page);
-        return;
-    };
+    let page = scroll
+        .bounds_for_item(hit.page)
+        .expect("the hit's page is laid out");
     let view = scroll.bounds();
     let target = page.top() + Pixels::from(hit.bounds.origin.y * zoom);
     let offset = scroll.offset();

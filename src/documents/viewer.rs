@@ -146,6 +146,10 @@ impl DocumentViewer {
             "hit {current:?} of {}",
             hits.len()
         );
+        assert!(
+            hits.iter().all(|hit| hit.page < self.pages.len()),
+            "a hit lies past the last page"
+        );
         self.find = Some(Find {
             widget,
             hits,
@@ -173,7 +177,7 @@ struct Desk {
     page: usize,
     width: f32,
     pinning: bool,
-    shown_hit: Option<usize>,
+    shown_hit: Option<PageHit>,
 }
 
 impl RenderOnce for DocumentViewer {
@@ -184,18 +188,6 @@ impl RenderOnce for DocumentViewer {
             (desk.scroll.clone(), desk.page, desk.width, desk.pinning)
         };
         let zoom = self.zoom;
-        if let Some(Find {
-            hits,
-            current: Some(current),
-            ..
-        }) = &self.find
-            && desk.read(cx).shown_hit != Some(*current)
-        {
-            let hit = &hits[*current];
-            log::info!("document viewer: hit {current} on page {}", hit.page);
-            reveal(&scroll, hit, zoom);
-            desk.update(cx, |desk, _| desk.shown_hit = Some(*current));
-        }
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let count = self.pages.len();
@@ -294,12 +286,16 @@ impl RenderOnce for DocumentViewer {
             }) => (Some(widget), hits, current),
             None => (None, Vec::new(), None),
         };
+        let target = current.map(|current| hits[current].clone());
         let pages = self.pages.iter().enumerate().map(|(ix, page)| {
             let (on_note, scroll) = (self.on_note.clone().filter(|_| pinning), scroll.clone());
             div()
                 .id((self.id.clone(), format!("page-{ix}")))
                 .relative()
                 .flex_none()
+                .when(width == 0.0 || page.width * zoom <= width, |page| {
+                    page.mx_auto()
+                })
                 .w(Pixels::from(page.width * zoom))
                 .h(Pixels::from(page.height * zoom))
                 .bg(colors.paper)
@@ -406,7 +402,6 @@ impl RenderOnce for DocumentViewer {
                             .track_scroll(&scroll)
                             .flex()
                             .flex_col()
-                            .items_center()
                             .gap_4()
                             .p_6()
                             .children(pages),
@@ -429,6 +424,14 @@ impl RenderOnce for DocumentViewer {
                                         cx.notify();
                                     });
                                     window.request_animation_frame();
+                                }
+                                if tracked.read(cx).shown_hit != target {
+                                    if let Some(hit) = &target {
+                                        log::info!("document viewer: hit on page {}", hit.page);
+                                        reveal(&tracked.read(cx).scroll, hit, zoom);
+                                        window.request_animation_frame();
+                                    }
+                                    measured.update(cx, |desk, _| desk.shown_hit = target.clone());
                                 }
                             },
                             |_, _, _, _| {},
