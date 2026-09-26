@@ -1,5 +1,6 @@
 mod buttons;
 mod charts;
+mod chat;
 mod collab;
 mod data;
 mod debug;
@@ -59,6 +60,7 @@ pub const ALL: &[Page] = &[
     debug::PAGE,
     documents::PAGE,
     collab::PAGE,
+    chat::PAGE,
     theme::PAGE,
 ];
 

@@ -17,6 +17,7 @@ use crate::{
 };
 
 type OnLink = Rc<dyn Fn(&str, &mut Window, &mut App)>;
+type DrawCode = Rc<dyn Fn(ElementId, Option<SharedString>, SharedString) -> AnyElement>;
 
 /// Markdown as a document: headings, prose with its styles and links, lists and tasks, quotes, code colored as code, tables, rules, math and footnotes. A press on a link opens it, or hands it to the host.
 #[derive(IntoElement)]
@@ -26,6 +27,7 @@ pub struct MarkdownRenderer {
     on_link: Option<OnLink>,
     size: TextSize,
     sections: Option<Entity<Sections>>,
+    code: Option<DrawCode>,
 }
 
 impl MarkdownRenderer {
@@ -36,6 +38,7 @@ impl MarkdownRenderer {
             on_link: None,
             size: TextSize::Base,
             sections: None,
+            code: None,
         }
     }
 
@@ -48,6 +51,15 @@ impl MarkdownRenderer {
     /// Marks each heading for a table of contents over `sections`; `outline` gives its entries.
     pub fn sections(mut self, sections: &Entity<Sections>) -> Self {
         self.sections = Some(sections.clone());
+        self
+    }
+
+    /// Draws code blocks with the owner's element, given an id, the language and the code.
+    pub fn code(
+        mut self,
+        draw: impl Fn(ElementId, Option<SharedString>, SharedString) -> AnyElement + 'static,
+    ) -> Self {
+        self.code = Some(Rc::new(draw));
         self
     }
 
@@ -65,6 +77,7 @@ struct Draw<'a> {
     next: std::cell::Cell<usize>,
     sections: &'a Option<Entity<Sections>>,
     headings: std::cell::Cell<usize>,
+    code: &'a Option<DrawCode>,
 }
 
 impl Draw<'_> {
@@ -192,6 +205,13 @@ impl Draw<'_> {
                 .children(self.nodes(inner, cx))
                 .into_any_element(),
             Node::Code { language, text } => {
+                if let Some(draw) = self.code {
+                    return draw(
+                        self.key("code"),
+                        language.clone().map(Into::into),
+                        text.clone().into(),
+                    );
+                }
                 let styles = code_colors(text, cx);
                 div()
                     .flex()
@@ -406,6 +426,7 @@ impl RenderOnce for MarkdownRenderer {
             next: std::cell::Cell::new(0),
             sections: &self.sections,
             headings: std::cell::Cell::new(0),
+            code: &self.code,
         };
         div()
             .flex()
