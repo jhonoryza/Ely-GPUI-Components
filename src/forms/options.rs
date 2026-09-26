@@ -212,6 +212,20 @@ pub(crate) fn float_height(
         .into_any_element()
 }
 
+/// Scrolls child `ix` of `handle`'s box into view once the box has its bounds, asks one more frame, then runs `done`. Put it inside the box.
+pub(crate) fn revealer(handle: &ScrollHandle, ix: usize, done: Run) -> impl IntoElement + use<> {
+    let handle = handle.clone();
+    canvas(
+        move |_, window, cx| {
+            handle.scroll_to_item(ix);
+            window.request_animation_frame();
+            done(window, cx);
+        },
+        |_, _, _, _| {},
+    )
+    .absolute()
+}
+
 /// The row a list scrolls into view: `at` while `shown` and not yet revealed there. A hidden list forgets.
 pub(crate) fn reveal<T: 'static>(
     state: &Entity<T>,
@@ -288,20 +302,7 @@ impl Popup<'_> {
             .children(rows)
             .when_some(
                 self.scroll.zip(self.reveal),
-                |list, (handle, (ix, done))| {
-                    let handle = handle.clone();
-                    list.child(
-                        canvas(
-                            move |_, window, cx| {
-                                handle.scroll_to_item(ix);
-                                window.request_animation_frame();
-                                done(window, cx);
-                            },
-                            |_, _, _, _| {},
-                        )
-                        .absolute(),
-                    )
-                },
+                |list, (handle, (ix, done))| list.child(revealer(handle, ix, done)),
             );
         float(anchor, self.rows.len(), list, window, cx)
     }

@@ -280,3 +280,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24c | 1 | FAIL | at 280px the path vanished and Accept all drew outside the box; the diff's fold rows took presses but no Tab |
 | T24c | 2 | PASS | |
 | T24d | 1 | FAIL | at 280px eight thumbnails ran past the browser card; the artifact panel lost its title and its controls ran out of the box |
+| T24d | 2 | FAIL | Tab to a later thumbnail left the strip where it was, the focused frame and its ring clipped |

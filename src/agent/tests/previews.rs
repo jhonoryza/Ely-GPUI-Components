@@ -212,3 +212,35 @@ fn a_narrow_panel_wraps_its_header(cx: &mut TestAppContext) {
         top.get()
     );
 }
+
+#[gpui::test]
+fn tab_brings_a_hidden_frame_into_view(cx: &mut TestAppContext) {
+    setup(cx);
+    let height = Rc::new(Cell::new(Pixels::ZERO));
+    let seen = height.clone();
+    let (view, cx) = cx.add_window_view(|_, _| Strip {
+        height: seen,
+        asked: Vec::new(),
+    });
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    for _ in 0..8 {
+        cx.update(|window, _| window.focus_next());
+        settle(cx);
+    }
+    settle(cx);
+    let thumb = cx.update(|window, cx| {
+        cx.theme()
+            .avatar_size(AvatarSize::Lg)
+            .to_pixels(window.rem_size())
+    });
+    let last = point(px(280.0 - 24.0), height.get() - px(9.0) - thumb / 2.0);
+    cx.simulate_mouse_move(last, None, Modifiers::none());
+    cx.simulate_click(last, Modifiers::none());
+    settle(cx);
+    assert_eq!(
+        view.read_with(cx, |strip, _| strip.asked.clone()),
+        [7],
+        "the eighth frame sits in view"
+    );
+}

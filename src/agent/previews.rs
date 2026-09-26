@@ -1,17 +1,17 @@
 use std::rc::Rc;
 
 use gpui::{
-    Animation, AnimationExt, AnyElement, App, Div, ElementId, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, Point, RenderOnce, SharedString, StatefulInteractiveElement,
-    Styled, Window, div, prelude::*, relative,
+    Animation, AnimationExt, AnyElement, App, Div, ElementId, FocusHandle, InteractiveElement,
+    IntoElement, MouseButton, ParentElement, Point, RenderOnce, ScrollHandle, SharedString,
+    StatefulInteractiveElement, Styled, Window, div, prelude::*, relative,
 };
 
 use crate::{
     buttons::{ButtonVariant, IconButton},
     documents::source,
-    forms::{Pick, Run},
+    forms::{Pick, Run, reveal, revealer},
     motion::{self, Spinner},
-    primitives::{FocusRing, Icon, IconName, Image},
+    primitives::{FocusRing, Icon, IconName, Image, tab_stop},
     theme::{ActiveTheme, AvatarSize, ControlSize, IconSize, Radius, TextSize},
     typography::Ellipsis,
 };
@@ -118,8 +118,38 @@ impl BrowserPreview {
     }
 }
 
+/// A frame strip's scroll, and the frame it last brought into view.
+#[derive(Default)]
+struct Strip {
+    scroll: ScrollHandle,
+    revealed: Option<usize>,
+}
+
 impl RenderOnce for BrowserPreview {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let pressable = self.on_show.is_some();
+        let handles: Vec<FocusHandle> = (0..self.frames.len())
+            .map(|ix| {
+                tab_stop(
+                    (self.id.clone(), format!("frame-focus-{ix}")).into(),
+                    pressable,
+                    window,
+                    cx,
+                )
+            })
+            .collect();
+        let focused = handles.iter().position(|handle| handle.is_focused(window));
+        let state = window.use_keyed_state((self.id.clone(), "strip-state"), cx, |_, _| {
+            Strip::default()
+        });
+        let reveal = reveal(
+            &state,
+            |strip| &mut strip.revealed,
+            focused.is_some(),
+            focused.unwrap_or(0),
+            cx,
+        );
+        let scroll = state.read(cx).scroll.clone();
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let thumb = theme.avatar_size(AvatarSize::Lg);
@@ -127,6 +157,7 @@ impl RenderOnce for BrowserPreview {
         let strip = (self.frames.len() > 1).then(|| {
             div()
                 .id((self.id.clone(), "strip"))
+                .track_scroll(&scroll)
                 .overflow_x_scroll()
                 .flex()
                 .gap_1p5()
@@ -154,7 +185,7 @@ impl RenderOnce for BrowserPreview {
                         );
                     tile.style().aspect_ratio = Some(FRAME);
                     tile.when_some(show, |tile, show| {
-                        tile.tab_index(0)
+                        tile.track_focus(&handles[ix])
                             .focus_ring(cx)
                             .cursor_pointer()
                             .on_mouse_down(MouseButton::Left, |_, window, _| {
@@ -166,6 +197,9 @@ impl RenderOnce for BrowserPreview {
                             })
                     })
                 }))
+                .when_some(reveal, |strip, (ix, done)| {
+                    strip.child(revealer(&scroll, ix, done))
+                })
         });
         card(cx)
             .child(address_bar(&self.id, self.url, self.loading, None, cx))
