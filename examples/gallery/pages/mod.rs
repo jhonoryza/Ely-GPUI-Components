@@ -14,6 +14,7 @@ mod overlays;
 mod primitives;
 mod shell;
 mod tables;
+mod terminal;
 mod theme;
 mod typography;
 
@@ -49,6 +50,7 @@ pub const ALL: &[Page] = &[
     charts::PAGE,
     finance::PAGE,
     editor::PAGE,
+    terminal::PAGE,
     theme::PAGE,
 ];
 

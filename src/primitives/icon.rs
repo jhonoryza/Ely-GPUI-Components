@@ -43,6 +43,7 @@ icons! {
     AppWindow => "app-window",
     Archive => "archive",
     ArrowDownLeft => "arrow-down-left",
+    ArrowDownToLine => "arrow-down-to-line",
     ArrowDownWideNarrow => "arrow-down-wide-narrow",
     ArrowDown => "arrow-down",
     ArrowLeft => "arrow-left",

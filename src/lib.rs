@@ -16,6 +16,7 @@ pub mod overlays;
 pub mod primitives;
 pub mod shell;
 pub mod tables;
+pub mod terminal;
 pub mod theme;
 pub mod typography;
 
@@ -40,4 +41,5 @@ pub fn init(cx: &mut App) {
     ]);
     forms::bind_keys(cx);
     editor::bind_keys(cx);
+    terminal::bind_keys(cx);
 }

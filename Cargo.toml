@@ -14,9 +14,11 @@ runtime_shaders = ["gpui/runtime_shaders"]
 test-support = ["gpui/test-support"]
 
 [dependencies]
+alacritty_terminal = { version = "0.26", default-features = false }
 anyhow = "1"
 barcoders = { version = "2", default-features = false, features = ["std"] }
 emojis = "0.9"
+futures = "0.3"
 gpui = "0.2.2"
 iso_currency = { version = "0.7", features = ["iterator"] }
 isocountry = "0.3"

@@ -10,6 +10,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Catalog data: `emojis` (Unicode emoji), `isolang` (ISO 639, native names), `isocountry` (ISO 3166), `iso_currency` (ISO 4217, also minor units for money).
 - Codes: `qrcode` (QR) and `barcoders` (Code 128, EAN-13), both MIT OR Apache-2.0, default features off.
 - macOS extras (tray icon, Dock badge) call AppKit through `cocoa` 0.26 and `objc` 0.2, the crates gpui already links.
+- Terminal: `alacritty_terminal` 0.26 (Apache-2.0, default features off) for the grid, its parser and the pseudo-terminal; `futures` carries its events.
 - Gallery: `examples/gallery`. Website: `frontend/` (Vite 8, pnpm), built after the components.
 
 ## Commands
@@ -107,6 +108,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Charts lay out in `f32` pixels of their own box, tested without gpui, and paint through `charts::paint::at`: a canvas's paint gets window coordinates, and `with_element_offset` works only in prepaint. Their sizes come from `theme.chart()`.
 - A label pinned to a point sits in a zero-size absolute box that centers it with flex (`charts::axes`), so no offset guesses at text size.
 - Tokens live in `src/theme`; the raw `px()` scan skips that folder only.
+- A terminal takes Tab and Shift-Tab through bindings under `ElyTerminal`, ahead of focus moves; other keys go through `terminal::keys` in a key listener, and typed text through its input handler.
+- A shell in the gallery starts without startup files and with a fixed prompt, so captures show no user or host.
 - gpui 0.2.2 has no `(ElementId, usize)` id. A child id names its index: `(self.id.clone(), format!("row-{ix}"))`.
 - Clippy's `single_range_in_vec_init` rejects `[a..b]` and `vec![a..b]`; bind the range first.
 - A component built on `lists::Tree` fills its box; the host gives it a height. A fixed-width column beside a `flex_1` one takes `flex_none`, or it shrinks.
@@ -123,3 +126,4 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - 2026-09-25: an entry built from a later chapter's parts lands with that chapter; its line points there. MenuBar goes to Menus, QuickLauncher to Navigation.
 - 2026-09-25: SystemNotification is blocked. An unbundled app has no notification center (probed on macOS 27.2), and gpui 0.2.2 has no API.
 - 2026-09-25: `unexpected_cfgs` declares `feature = "cargo-clippy"`, which the objc 0.2 macros test.
+- 2026-09-26: Terminal proven with `alacritty_terminal` 0.26: its grid, parser and pseudo-terminal, drawn by Ely. A replayed grid serves recorded output and tests.
