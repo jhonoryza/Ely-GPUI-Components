@@ -86,6 +86,7 @@ pub fn search(_: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let more = PASSAGE
         .find("more lift")
         .expect("the passage holds its match");
+    let lifted = more..more + "more lift".len();
     section(
         "SearchProgress / WebResultCard / DocumentChunkPreview",
         "A search as it runs, step by step; a result as the web gives it; and a passage found in a document, the words that matched washed.",
@@ -131,7 +132,7 @@ pub fn search(_: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                             "a-long-name-for-the-lift-notes.pdf",
                             "Page 1 · Dark is not inverted",
                             PASSAGE,
-                            vec![more..more + "more lift".len()],
+                            vec![lifted],
                         )
                         .score(0.86),
                     ),

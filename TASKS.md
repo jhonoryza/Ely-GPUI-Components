@@ -259,3 +259,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T23a | 1 | FAIL | a long message of yours overflowed a narrow column; pictures and video sized to the theme, not their column; a finished stream kept revealing; avatar pictures from the web were read as files; the list stayed away after it fit again; the reasoning toggle had no Tab stop; a link's thumbnail lost its corners |
 | T23a | 2 | PASS | |
 | T23b | 1 | FAIL | source cards and web results with a handler were no Tab stops; in a narrow column the sources row and a passage's header ran past their edge |
+| T23b | 2 | FAIL | the gallery's narrow passage built a vec of one range, which clippy refuses, so the checks failed |

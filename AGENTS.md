@@ -115,6 +115,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Taffy 0.9 hands negative free space to auto margins and centering alike, so a centered child wider than its scroll box starts past the scroll's reach. Center only what fits the measured box (`documents::DocumentViewer`).
 - A mode that leaves on Escape holds its own focus through `primitives::hold_focus`: turned on while focus is elsewhere, it takes focus so Escape reaches it, and `hand_back` returns it (`documents::ZenMode`, `collab::FollowMode`).
 - A chat holds at its newest message through gpui's `list` with `ListAlignment::Bottom`: it sticks while scrolled to the end, and `scroll_to` one past the last item sticks it again; that call sends no scroll event, so the owner clears its own away state (`chat::MessageList`).
+- Anything pressable is a Tab stop: a row, card or toggle takes `tab_index(0)` and `focus_ring`, with a 1px border that stays transparent where it shows none; gpui presses it on the release of Enter or Space.
+- A row that holds text beside fixed parts lets the text give way: the text takes `flex_1().min_w_0()` and an `Ellipsis`; counts, icons, dates and chevrons take `flex_none`.
 - A mark over a text field reads the field at paint time, from a canvas laid over it (`collab::RemoteCursor`): by then `TextInput::bounds_for` holds this frame's layout, and a still page never renders again to catch up.
 - A callback field holds a named `type` alias; clippy's type_complexity rejects `Option<Rc<dyn Fn(..)>>`. A chapter shares one alias per shape.
 - A component that fills its container says `w_full` on its root. As a window's root, or in a flex row, it would shrink to its text's narrowest width.
