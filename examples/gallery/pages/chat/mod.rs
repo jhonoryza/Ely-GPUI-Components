@@ -1,4 +1,5 @@
 mod blocks;
+mod cite;
 mod controls;
 mod talk;
 
@@ -29,6 +30,15 @@ const SCRIPT: &[Step] = &[
     Step::Shot("editing"),
     Step::Key("escape"),
     Step::Wait(200),
+    Step::HoverAt("chat-cite-1", 8.0, 8.0),
+    Step::Wait(700),
+    Step::Shot("citation"),
+    Step::DownAt("chat-sources", 20.0, 10.0),
+    Step::UpAt("chat-sources", 20.0, 10.0),
+    Step::Wait(300),
+    Step::Shot("sources"),
+    Step::DownAt("chat-sources", 20.0, 10.0),
+    Step::UpAt("chat-sources", 20.0, 10.0),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
@@ -41,5 +51,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(controls::actions(window, cx))
         .child(controls::status(window, cx))
         .child(controls::thinking(window, cx))
+        .child(cite::citations(window, cx))
+        .child(cite::search(window, cx))
         .into_any_element()
 }
