@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gpui::{
     AnyElement, App, ElementId, Entity, FontWeight, Hsla, InteractiveElement, IntoElement,
     ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div,
-    prelude::*,
+    prelude::*, relative,
 };
 
 use super::badges::DiffStat;
@@ -13,7 +13,7 @@ use crate::{
     forms::{Input, TextInput},
     primitives::{Icon, IconName},
     theme::{ActiveTheme, AvatarSize, ControlSize, IconSize, Palette, Radius, TextSize},
-    typography::{Ellipsis, format},
+    typography::{Ellipsis, LEADING, format},
 };
 
 type Run = Rc<dyn Fn(&mut Window, &mut App)>;
@@ -359,6 +359,7 @@ impl RenderOnce for ReviewComment {
                     .text_size(theme.text_size(TextSize::Xs))
                     .whitespace_nowrap()
                     .overflow_hidden()
+                    .line_height(relative(LEADING))
                     .child(format!("{}  {}", self.line, self.code)),
             )
             .children(notes)

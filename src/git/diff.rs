@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use gpui::SharedString;
-use similar::{ChangeTag, TextDiff};
+use similar::{ChangeTag, TextDiff, udiff::UnifiedHunkHeader};
 
 /// Whether a diff line stayed, came in, or went.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -95,13 +95,7 @@ pub fn diff(old: &str, new: &str, context: usize) -> Vec<Stretch> {
                 });
             }
         }
-        let header = format!(
-            "@@ -{},{} +{},{} @@",
-            old_start + 1,
-            old_end - old_start,
-            new_start + 1,
-            new_end - new_start
-        );
+        let header = UnifiedHunkHeader::new(&group).to_string();
         out.push(Stretch::Hunk {
             header: header.into(),
             lines,
@@ -155,6 +149,17 @@ pub fn pairs(lines: &[DiffLine]) -> Vec<(Option<&DiffLine>, Option<&DiffLine>)> 
         }
     }
     out
+}
+
+/// The numbers a side-by-side row shows: the old file's on the left, the new file's on the right.
+pub(crate) fn side_numbers(
+    left: Option<&DiffLine>,
+    right: Option<&DiffLine>,
+) -> (Option<usize>, Option<usize>) {
+    (
+        left.and_then(|line| line.old),
+        right.and_then(|line| line.new),
+    )
 }
 
 #[cfg(test)]
@@ -213,5 +218,30 @@ mod tests {
             .map(|(left, right)| (left.is_some(), right.is_some()))
             .collect();
         assert_eq!(sides, [(true, true), (true, true), (false, true)]);
+    }
+
+    #[test]
+    fn each_side_numbers_its_own_file() {
+        let stretches = diff("a\nb\n", "x\na\nb\n", 3);
+        let [Stretch::Hunk { lines, .. }] = stretches.as_slice() else {
+            panic!("one hunk, not {stretches:?}");
+        };
+        let numbers: Vec<_> = pairs(lines)
+            .into_iter()
+            .map(|(left, right)| side_numbers(left, right))
+            .collect();
+        assert_eq!(
+            numbers,
+            [(None, Some(1)), (Some(1), Some(2)), (Some(2), Some(3))]
+        );
+    }
+
+    #[test]
+    fn an_empty_side_starts_before_its_range() {
+        let stretches = diff("", "a\n", 3);
+        let [Stretch::Hunk { header, .. }] = stretches.as_slice() else {
+            panic!("one hunk, not {stretches:?}");
+        };
+        assert_eq!(header.as_ref(), "@@ -0,0 +1 @@");
     }
 }

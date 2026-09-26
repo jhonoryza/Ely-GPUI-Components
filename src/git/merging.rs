@@ -28,12 +28,32 @@ pub struct Region {
     pub theirs: Vec<String>,
 }
 
+/// Lines with their own endings, so a merge gives back each byte it keeps.
 fn lines(text: &str, range: std::ops::Range<usize>) -> Vec<String> {
-    text.lines()
+    text.split_inclusive('\n')
         .skip(range.start)
         .take(range.len())
         .map(str::to_string)
         .collect()
+}
+
+/// The line ending the merged texts use: the first one found, or a newline.
+fn ending(regions: &[Region]) -> &'static str {
+    let line = regions
+        .iter()
+        .flat_map(|region| region.base.iter().chain(&region.ours).chain(&region.theirs))
+        .find(|line| line.ends_with('\n'));
+    match line {
+        Some(line) if line.ends_with("\r\n") => "\r\n",
+        _ => "\n",
+    }
+}
+
+/// Ends the last line when it has no ending, so what follows starts a line.
+fn break_line(out: &mut String, ending: &str) {
+    if !out.is_empty() && !out.ends_with('\n') {
+        out.push_str(ending);
+    }
 }
 
 /// `ours` and `theirs` merged against `base`, region by region.
@@ -59,41 +79,42 @@ pub fn regions(base: &str, ours: &str, theirs: &str) -> Vec<Region> {
 
 /// The merged text with each conflict as taken, and how many are still open; an open one keeps its markers.
 pub fn result(regions: &[Region], takes: &[Option<Take>]) -> (String, usize) {
-    let mut out: Vec<String> = Vec::new();
+    let ending = ending(regions);
+    let mut out = String::new();
     let mut conflicts = 0;
     let mut open = 0;
     for region in regions {
+        let (ours, theirs) = (region.ours.concat(), region.theirs.concat());
         match region.kind {
-            RegionKind::Unchanged | RegionKind::Ours | RegionKind::Both => {
-                out.extend(region.ours.iter().cloned())
-            }
-            RegionKind::Theirs => out.extend(region.theirs.iter().cloned()),
+            RegionKind::Unchanged | RegionKind::Ours | RegionKind::Both => out.push_str(&ours),
+            RegionKind::Theirs => out.push_str(&theirs),
             RegionKind::Conflict => {
                 match takes.get(conflicts).copied().flatten() {
-                    Some(Take::Ours) => out.extend(region.ours.iter().cloned()),
-                    Some(Take::Theirs) => out.extend(region.theirs.iter().cloned()),
+                    Some(Take::Ours) => out.push_str(&ours),
+                    Some(Take::Theirs) => out.push_str(&theirs),
                     Some(Take::Both) => {
-                        out.extend(region.ours.iter().cloned());
-                        out.extend(region.theirs.iter().cloned());
+                        out.push_str(&ours);
+                        break_line(&mut out, ending);
+                        out.push_str(&theirs);
                     }
                     None => {
                         open += 1;
-                        out.push("<<<<<<< ours".into());
-                        out.extend(region.ours.iter().cloned());
-                        out.push("=======".into());
-                        out.extend(region.theirs.iter().cloned());
-                        out.push(">>>>>>> theirs".into());
+                        for (marker, side) in [("<<<<<<< ours", &ours), ("=======", &theirs)] {
+                            break_line(&mut out, ending);
+                            out.push_str(marker);
+                            out.push_str(ending);
+                            out.push_str(side);
+                        }
+                        break_line(&mut out, ending);
+                        out.push_str(">>>>>>> theirs");
+                        out.push_str(ending);
                     }
                 }
                 conflicts += 1;
             }
         }
     }
-    let mut text = out.join("\n");
-    if !out.is_empty() {
-        text.push('\n');
-    }
-    (text, open)
+    (out, open)
 }
 
 /// A conflict in marked text: the lines of its markers, from zero.
@@ -126,26 +147,24 @@ pub fn conflicts(text: &str) -> Vec<Conflict> {
     found
 }
 
-/// `text` with conflict `ix` settled as taken.
+/// `text` with conflict `ix` settled as taken; every other byte stays.
 pub fn resolve(text: &str, ix: usize, take: Take) -> String {
     let conflict = conflicts(text)[ix];
-    let lines: Vec<&str> = text.lines().collect();
-    let ours = &lines[conflict.start + 1..conflict.middle];
-    let theirs = &lines[conflict.middle + 1..conflict.end];
-    let kept: Vec<&str> = match take {
-        Take::Ours => ours.to_vec(),
-        Take::Theirs => theirs.to_vec(),
-        Take::Both => ours.iter().chain(theirs).copied().collect(),
+    let lines: Vec<&str> = text.split_inclusive('\n').collect();
+    let ours = lines[conflict.start + 1..conflict.middle].concat();
+    let theirs = lines[conflict.middle + 1..conflict.end].concat();
+    let kept = match take {
+        Take::Ours => ours,
+        Take::Theirs => theirs,
+        Take::Both => ours + &theirs,
     };
-    let mut out: Vec<&str> = lines[..conflict.start].to_vec();
-    out.extend(kept);
-    out.extend(&lines[conflict.end + 1..]);
-    let mut settled = out.join("\n");
-    if text.ends_with('\n') {
-        settled.push('\n');
-    }
     log::info!("conflict {ix} took {take:?}");
-    settled
+    [
+        lines[..conflict.start].concat(),
+        kept,
+        lines[conflict.end + 1..].concat(),
+    ]
+    .concat()
 }
 
 #[cfg(test)]
@@ -167,6 +186,22 @@ mod tests {
         let (taken, count) = result(&all, &[Some(Take::Theirs)]);
         assert_eq!(count, 0);
         assert_eq!(taken, "fn lift() {\n    0.75\n}\nfn keep() { log() }\n");
+    }
+
+    #[test]
+    fn merges_keep_line_endings_and_the_last_newline() {
+        assert_eq!(result(&regions("x", "x", "x"), &[]), ("x".into(), 0));
+        let crlf = regions("a\r\nb\r\n", "a\r\nB\r\n", "a\r\nb\r\n");
+        assert_eq!(result(&crlf, &[]).0, "a\r\nB\r\n");
+        let held = regions("a\r\n", "b\r\n", "c\r\n");
+        assert_eq!(
+            result(&held, &[]).0,
+            "<<<<<<< ours\r\nb\r\n=======\r\nc\r\n>>>>>>> theirs\r\n"
+        );
+        let bare = regions("a", "b", "c");
+        assert_eq!(result(&bare, &[Some(Take::Both)]).0, "b\nc");
+        let marked = "a\r\n<<<<<<< HEAD\r\nours\r\n=======\r\ntheirs\r\n>>>>>>> topic\r\nz";
+        assert_eq!(resolve(marked, 0, Take::Ours), "a\r\nours\r\nz");
     }
 
     #[test]

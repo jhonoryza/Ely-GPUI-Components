@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, Div, ElementId, FontWeight, Hsla, IntoElement, ParentElement, RenderOnce,
-    SharedString, Styled, Window, div, prelude::*,
+    SharedString, Styled, Window, div, prelude::*, relative,
 };
 
 use super::merging::{Region, RegionKind, Take, conflicts, resolve, result};
@@ -10,7 +10,7 @@ use crate::{
     buttons::{Button, ButtonVariant},
     primitives::{Icon, IconName},
     theme::{ActiveTheme, ControlSize, IconSize, Palette, Radius, TextSize},
-    typography::format,
+    typography::{LEADING, format},
 };
 
 type OnTake = Rc<dyn Fn(usize, Take, &mut Window, &mut App)>;
@@ -26,10 +26,14 @@ fn column(lines: &[String], rows: usize, wash: Option<Hsla>) -> Div {
         .px_2()
         .when_some(wash, |column, wash| column.bg(wash))
         .children((0..rows).map(|ix| {
+            let line = lines
+                .get(ix)
+                .map_or("", |line| line.trim_end_matches(['\r', '\n']));
             div()
                 .whitespace_nowrap()
                 .overflow_hidden()
-                .child(lines.get(ix).cloned().unwrap_or_default())
+                .line_height(relative(LEADING))
+                .child(line.to_string())
         }))
 }
 

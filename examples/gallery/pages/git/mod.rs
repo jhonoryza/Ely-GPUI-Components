@@ -16,7 +16,20 @@ pub const PAGE: Page = Page {
     script: SCRIPT,
 };
 
-const SCRIPT: &[Step] = &[Step::Rest];
+const SCRIPT: &[Step] = &[
+    Step::Rest,
+    Step::DownAt("git-diff", 800.0, 21.0),
+    Step::UpAt("git-diff", 800.0, 21.0),
+    Step::Wait(300),
+    Step::Shot("split"),
+    Step::DownAt("git-commit", 40.0, 20.0),
+    Step::UpAt("git-commit", 40.0, 20.0),
+    Step::Wait(200),
+    Step::Key("cmd-a"),
+    Step::Type("Blend every accent toward white by lift, clamped in gamma"),
+    Step::Wait(300),
+    Step::Shot("subject"),
+];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
     div()

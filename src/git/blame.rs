@@ -3,14 +3,14 @@ use std::{ops::Range, rc::Rc};
 use gpui::{
     AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement,
     RenderOnce, SharedString, StatefulInteractiveElement, Styled, StyledText, Window, div,
-    prelude::*,
+    prelude::*, relative,
 };
 
 use crate::{
     data_display::Avatar,
     editor::code_colors,
     theme::{ActiveTheme, AvatarSize, TextSize},
-    typography::Ellipsis,
+    typography::{Ellipsis, LEADING},
 };
 
 /// Who last changed lines: the commit, its author, when and its subject, and its age from 0, newest, to 1, oldest.
@@ -190,6 +190,7 @@ impl RenderOnce for BlameView {
                     .flex_1()
                     .min_w_0()
                     .overflow_hidden()
+                    .line_height(relative(LEADING))
                     .flex()
                     .flex_col()
                     .children(span.clone().map(|line| {

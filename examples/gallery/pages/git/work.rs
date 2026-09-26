@@ -10,7 +10,10 @@ use ely_gpui_component::{
 };
 use gpui::{App, Entity, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
 
-use crate::ui::{keep, row, section, set};
+use crate::{
+    probe::probe,
+    ui::{keep, row, section, set},
+};
 
 fn changed(path: &str, status: GitStatus, added: usize, removed: usize) -> Changed {
     Changed {
@@ -113,7 +116,8 @@ pub fn changes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                         }),
                 ),
             )
-            .child(
+            .child(probe(
+                "git-commit",
                 div().w(px(380.)).child(
                     CommitInput::new("git-commit", &subject, &body, "main", count)
                         .amend(now_amend)
@@ -124,7 +128,7 @@ pub fn changes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                             set(&done, Some(format!("Committed {files} file{}.", if files == 1 { "" } else { "s" }).into()), cx);
                         }),
                 ),
-            ),
+            )),
     )
     .children(told.map(Caption::new))
 }

@@ -3,18 +3,18 @@ use std::{ops::Range, rc::Rc};
 use gpui::{
     AnyElement, App, ElementId, FontWeight, HighlightStyle, Hsla, InteractiveElement, IntoElement,
     MouseButton, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
-    StyledText, Window, div, prelude::*, uniform_list,
+    StyledText, Window, div, prelude::*, relative, uniform_list,
 };
 
 use super::{
     badges::DiffStat,
-    diff::{DiffLine, LineKind, Stretch, diff, pairs},
+    diff::{DiffLine, LineKind, Stretch, diff, pairs, side_numbers},
 };
 use crate::{
     buttons::SegmentedControl,
     editor::{code_colors, stack},
     theme::{ActiveTheme, ControlSize, Palette, TextSize},
-    typography::format,
+    typography::{LEADING, format},
 };
 
 /// How a diff lays out.
@@ -210,7 +210,7 @@ impl RenderOnce for DiffViewer {
                         .children(value.map(|value| value.to_string()))
                 };
                 let side =
-                    |line: Option<&DiffLine>, cx: &App| -> AnyElement {
+                    |line: Option<&DiffLine>, shown: Option<usize>, cx: &App| -> AnyElement {
                         let (wash, _) = line
                             .map_or((Some(colors.hover.opacity(0.5)), colors.hover), |line| {
                                 washes(line.kind, &colors)
@@ -222,7 +222,7 @@ impl RenderOnce for DiffViewer {
                             .gap_2()
                             .overflow_hidden()
                             .when_some(wash, |side, wash| side.bg(wash))
-                            .child(number(line.and_then(|line| line.old.or(line.new))))
+                            .child(number(shown))
                             .children(line.map(|line| {
                                 div().whitespace_nowrap().child(code(line, &colors, cx))
                             }))
@@ -230,7 +230,13 @@ impl RenderOnce for DiffViewer {
                     };
                 range
                     .map(|ix| {
-                        let row = div().id(ix).w_full().flex().px_2().whitespace_nowrap();
+                        let row = div()
+                            .id(ix)
+                            .w_full()
+                            .flex()
+                            .px_2()
+                            .whitespace_nowrap()
+                            .line_height(relative(LEADING));
                         match &rows[ix] {
                             Shown::Header(header) => row
                                 .bg(colors.hover)
@@ -260,11 +266,13 @@ impl RenderOnce for DiffViewer {
                                     )
                                     .into_any_element()
                             }
-                            Shown::Pair(left, right) => row
-                                .gap_1()
-                                .child(side(left.as_ref(), cx))
-                                .child(side(right.as_ref(), cx))
-                                .into_any_element(),
+                            Shown::Pair(left, right) => {
+                                let (old, new) = side_numbers(left.as_ref(), right.as_ref());
+                                row.gap_1()
+                                    .child(side(left.as_ref(), old, cx))
+                                    .child(side(right.as_ref(), new, cx))
+                                    .into_any_element()
+                            }
                             Shown::Fold(stretch, count) => {
                                 let (open, stretch) = (on_open.clone(), *stretch);
                                 row.id((id.clone(), format!("fold-{stretch}")))

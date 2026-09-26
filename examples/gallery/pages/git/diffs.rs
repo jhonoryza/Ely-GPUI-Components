@@ -6,7 +6,10 @@ use ely_gpui_component::{
 };
 use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
 
-use crate::ui::{keep, section, set};
+use crate::{
+    probe::probe,
+    ui::{keep, section, set},
+};
 
 const OLD: &str = r#"use std::collections::HashMap;
 
@@ -84,7 +87,8 @@ pub fn viewer(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         "One file's changes, unified or side by side: each change in its context with old and new numbers, the words that changed washed, the stretches between folded until pressed. InlineDiff inside an editor is CodeEditor::set_diff.",
         cx,
     )
-    .child(
+    .child(probe(
+        "git-diff",
         div()
             .w(px(840.))
             .h(px(360.))
@@ -103,7 +107,7 @@ pub fn viewer(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                         set(&unfold, next, cx)
                     }),
             ),
-    )
+    ))
 }
 
 const BASE: &str =

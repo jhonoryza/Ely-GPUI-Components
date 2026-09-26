@@ -333,9 +333,8 @@ impl RenderOnce for CommitInput {
                 }
             })
             .child(
-                div().relative().child(Input::new(&self.subject)).child(
-                    tabular(div().absolute().top_2().right_2().text_color(count))
-                        .child(format!("{length}/{}", SUBJECT.0)),
+                Input::new(&self.subject).suffix(
+                    tabular(div().text_color(count)).child(format!("{length}/{}", SUBJECT.0)),
                 ),
             )
             .child(Input::new(&self.body))
