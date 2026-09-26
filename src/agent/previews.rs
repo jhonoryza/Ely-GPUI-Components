@@ -12,29 +12,13 @@ use crate::{
     forms::{Pick, Run, reveal, revealer},
     layout::on_axis,
     motion::{self, Spinner},
-    primitives::{FocusRing, Icon, IconName, Image, tab_stop},
+    primitives::{FocusRing, Icon, IconName, Image, checked_ratio, framed, tab_stop},
     theme::{ActiveTheme, AvatarSize, ControlSize, IconSize, Radius, TextSize},
     typography::Ellipsis,
 };
 
 /// Width over height of a frame from the host, unless it says.
 const FRAME: f32 = 16.0 / 10.0;
-
-fn checked(ratio: f32) -> f32 {
-    assert!(ratio.is_finite() && ratio > 0.0, "a frame ratio of {ratio}");
-    ratio
-}
-
-/// A box that keeps a frame's shape at the width it is given.
-fn framed(ratio: f32, cx: &App) -> Div {
-    let mut frame = div()
-        .relative()
-        .w_full()
-        .overflow_hidden()
-        .bg(cx.theme().colors.sunken);
-    frame.style().aspect_ratio = Some(ratio);
-    frame
-}
 
 /// The bar over a page: a lock, the address, a spinner while it loads, and the owner's actions.
 fn address_bar(
@@ -116,7 +100,7 @@ impl BrowserPreview {
 
     /// The frames' width over their height, 16:10 unless set, so the boxes take the pictures' shape.
     pub fn ratio(mut self, width_over_height: f32) -> Self {
-        self.ratio = checked(width_over_height);
+        self.ratio = checked_ratio(width_over_height);
         self
     }
 
@@ -260,7 +244,7 @@ impl ComputerUseViewer {
 
     /// The frame's width over its height, 16:10 unless set, so the box takes the picture's shape.
     pub fn ratio(mut self, width_over_height: f32) -> Self {
-        self.ratio = checked(width_over_height);
+        self.ratio = checked_ratio(width_over_height);
         self
     }
 

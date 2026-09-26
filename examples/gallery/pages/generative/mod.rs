@@ -1,4 +1,5 @@
 mod panel;
+mod results;
 
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
 
@@ -19,8 +20,21 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("gen-enhancer", 356.0, 124.0),
     Step::Wait(1400),
     Step::Shot("suggested"),
+    Step::DownAt("gen-queue", 426.0, 280.0),
+    Step::UpAt("gen-queue", 426.0, 280.0),
+    Step::Wait(400),
+    Step::Shot("retried"),
+    Step::DownAt("gen-ab", 181.0, 147.0),
+    Step::UpAt("gen-ab", 181.0, 147.0),
+    Step::Wait(300),
+    Step::Shot("verdict"),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
-    div().child(panel::panel(window, cx)).into_any_element()
+    div()
+        .child(panel::panel(window, cx))
+        .child(results::queue(window, cx))
+        .child(results::results(window, cx))
+        .child(results::variations(window, cx))
+        .into_any_element()
 }

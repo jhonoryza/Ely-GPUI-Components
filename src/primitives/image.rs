@@ -13,6 +13,26 @@ use crate::{
 
 const PULSE: Duration = Duration::from_millis(1600);
 
+/// A host's width over height, fail-fast when it is not a positive number.
+pub(crate) fn checked_ratio(ratio: f32) -> f32 {
+    assert!(
+        ratio.is_finite() && ratio > 0.0,
+        "a picture ratio of {ratio}"
+    );
+    ratio
+}
+
+/// A box in a picture's shape at the width it is given, sunken until the picture draws.
+pub(crate) fn framed(ratio: f32, cx: &App) -> Div {
+    let mut frame = div()
+        .relative()
+        .w_full()
+        .overflow_hidden()
+        .bg(cx.theme().colors.sunken);
+    frame.style().aspect_ratio = Some(ratio);
+    frame
+}
+
 /// Themed `img()` that fills the box it is given; a `Cover` crop keeps square corners.
 #[derive(IntoElement)]
 pub struct Image {

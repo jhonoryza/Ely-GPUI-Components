@@ -241,6 +241,7 @@ icons! {
     Shapes => "shapes",
     Share2 => "share-2",
     Shield => "shield",
+    Shuffle => "shuffle",
     SkipBack => "skip-back",
     SkipForward => "skip-forward",
     SlidersHorizontal => "sliders-horizontal",

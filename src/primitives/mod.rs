@@ -18,6 +18,7 @@ pub(crate) use focus::{Takeover, give_back, hand_back, hold_focus, tab_stop, tak
 pub use ghost::DragGhost;
 pub use icon::{Icon, IconName};
 pub use image::Image;
+pub(crate) use image::{checked_ratio, framed};
 pub use measure::{IntersectionObserver, Measure};
 pub use pressable::Pressable;
 pub use severity::Severity;
