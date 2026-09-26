@@ -17,6 +17,13 @@ use crate::{
 
 type OnPath = Rc<dyn Fn(PathBuf, &mut Window, &mut App)>;
 
+/// What the upload has said about a file: its fitted crop to the host, its failure to the log.
+#[derive(Default)]
+struct Told {
+    fitted: bool,
+    failed: bool,
+}
+
 /// A picture to send: a drop zone until one is chosen, then the picture to crop, its name, Replace and Remove. Only pictures are taken; the picture's shape comes from the file. The host keeps the file and its crop; with none yet, the upload reports the largest centered box of its aspect once the picture opens.
 #[derive(IntoElement)]
 pub struct ImageUpload {
@@ -80,10 +87,10 @@ impl RenderOnce for ImageUpload {
         };
         let decoded =
             window.use_asset::<ImageAssetLoader>(&Resource::Path(path.clone().into()), cx);
-        let failed = window.use_keyed_state(
+        let told = window.use_keyed_state(
             (self.id.clone(), path.to_string_lossy().into_owned()),
             cx,
-            |_, _| false,
+            |_, _| Told::default(),
         );
         let name = path
             .file_name()
@@ -102,15 +109,17 @@ impl RenderOnce for ImageUpload {
             _ => None,
         };
         if let (Some((_, fitted)), None, Some(on_crop)) = (opened, self.crop, self.on_crop.clone())
+            && !told.read(cx).fitted
         {
             log::info!("image upload: {name} opened, crop fitted to {fitted:?}");
+            told.update(cx, |told, _| told.fitted = true);
             window.defer(cx, move |window, cx| on_crop(fitted, window, cx));
         }
         if let Some(Err(error)) = &decoded
-            && !*failed.read(cx)
+            && !told.read(cx).failed
         {
             log::error!("image upload: {name} can't be opened: {error}");
-            failed.update(cx, |failed, _| *failed = true);
+            told.update(cx, |told, _| told.failed = true);
         }
         let theme = cx.theme();
         let colors = theme.colors.clone();

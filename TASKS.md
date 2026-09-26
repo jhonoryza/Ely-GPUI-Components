@@ -309,3 +309,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25f | 2 | PASS | |
 | T26a | 1 | FAIL | the viewer's picture had no id, so an animated picture never left its first frame |
 | T26a | 2 | PASS | |
+| T26b | 1 | FAIL | a shaped crop's corner ignored the pointer's move up or down |

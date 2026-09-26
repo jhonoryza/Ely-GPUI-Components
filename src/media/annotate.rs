@@ -407,10 +407,15 @@ impl RenderOnce for ImageAnnotator {
                     match (stroke.key.as_str(), command, stroke.modifiers.shift) {
                         ("z", true, back) => keyed.step(!back, window, cx),
                         ("delete" | "backspace", false, _) => keyed.remove(window, cx),
-                        ("escape", false, _) => keyed.hand.update(cx, |hand, cx| {
-                            hand.chosen = None;
-                            cx.notify();
-                        }),
+                        ("escape", false, _) => {
+                            let chose = keyed.hand.update(cx, |hand, cx| {
+                                cx.notify();
+                                hand.chosen.take().is_some()
+                            });
+                            if !chose {
+                                return;
+                            }
+                        }
                         (key, false, false) => {
                             match TOOLS.iter().find(|(_, each, ..)| *each == key) {
                                 Some((tool, ..)) => keyed.pick(*tool, cx),

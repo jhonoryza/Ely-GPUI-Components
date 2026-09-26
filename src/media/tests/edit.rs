@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use gpui::{
-    Context, Entity, IntoElement, Modifiers, MouseButton, ParentElement, Pixels, Point, Render,
-    Styled, TestAppContext, VisualTestContext, Window, div, point, px,
+    Context, Entity, InteractiveElement, IntoElement, Modifiers, MouseButton, ParentElement,
+    Pixels, Point, Render, Styled, TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
 use super::{picture, press, settle, setup};
@@ -161,10 +161,11 @@ fn a_cropper_with_no_handler_takes_no_tab(cx: &mut TestAppContext) {
     assert!(cx.update(|window, cx| window.focused(cx)).is_none());
 }
 
-/// An upload over a picked picture, and how often it was emptied.
+/// An upload over a picked picture, the crops it heard, kept or not, and how often it was emptied.
 struct Uploading {
     picked: Option<PathBuf>,
     crop: Option<Crop>,
+    keeps: bool,
     heard: usize,
     removed: usize,
 }
@@ -177,7 +178,10 @@ impl Render for Uploading {
                 .aspect(Some(1.0))
                 .on_crop(move |crop, _, cx| {
                     cropped.update(cx, |view, cx| {
-                        (view.crop, view.heard) = (Some(crop), view.heard + 1);
+                        view.heard += 1;
+                        if view.keeps {
+                            view.crop = Some(crop);
+                        }
                         cx.notify();
                     })
                 })
@@ -198,6 +202,7 @@ fn a_picked_picture_crops_from_a_fitted_box_and_remove_empties_it(cx: &mut TestA
     let (view, cx) = cx.add_window_view(|_, _| Uploading {
         picked,
         crop: None,
+        keeps: true,
         heard: 0,
         removed: 0,
     });
@@ -230,32 +235,63 @@ fn a_picked_picture_crops_from_a_fitted_box_and_remove_empties_it(cx: &mut TestA
     assert_eq!(view.read_with(cx, |view, _| view.removed), 1);
 }
 
+#[gpui::test]
+fn a_host_that_keeps_no_crop_still_hears_the_fitted_one_once(cx: &mut TestAppContext) {
+    setup(cx);
+    let picked = Some(picture("ignored", 300, 100));
+    let (view, cx) = cx.add_window_view(|_, _| Uploading {
+        picked,
+        crop: None,
+        keeps: false,
+        heard: 0,
+        removed: 0,
+    });
+    settle(cx);
+    for _ in 0..3 {
+        view.update(cx, |_, cx| cx.notify());
+        settle(cx);
+    }
+    assert_eq!(view.read_with(cx, |view, _| view.heard), 1);
+}
+
 /// An annotator 400 wide over a picture twice as wide as tall, and its marks.
 struct Marking {
     path: PathBuf,
     marks: Vec<Mark>,
+    escapes: usize,
 }
 
 impl Render for Marking {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let owner = cx.entity();
-        div().w(px(400.0)).child(
-            ImageAnnotator::new("marks", self.path.clone(), 2.0, self.marks.clone()).on_change(
-                move |marks, _, cx| {
-                    owner.update(cx, |view, cx| {
-                        view.marks = marks.to_vec();
-                        cx.notify();
-                    })
-                },
-            ),
-        )
+        let (owner, page) = (cx.entity(), cx.entity());
+        div()
+            .w(px(400.0))
+            .on_key_down(move |event, _, cx| {
+                if event.keystroke.key == "escape" {
+                    page.update(cx, |view, _| view.escapes += 1);
+                }
+            })
+            .child(
+                ImageAnnotator::new("marks", self.path.clone(), 2.0, self.marks.clone()).on_change(
+                    move |marks, _, cx| {
+                        owner.update(cx, |view, cx| {
+                            view.marks = marks.to_vec();
+                            cx.notify();
+                        })
+                    },
+                ),
+            )
     }
 }
 
 fn marking(marks: Vec<Mark>, cx: &mut TestAppContext) -> (Entity<Marking>, &mut VisualTestContext) {
     setup(cx);
     let path = picture("marks", 200, 100);
-    let (view, cx) = cx.add_window_view(|_, _| Marking { path, marks });
+    let (view, cx) = cx.add_window_view(|_, _| Marking {
+        path,
+        marks,
+        escapes: 0,
+    });
     cx.update(|window, _| window.activate_window());
     settle(cx);
     (view, cx)
@@ -299,11 +335,19 @@ fn select_and_delete_remove_a_mark_and_undo_brings_it_back(cx: &mut TestAppConte
     let middle = spot("image-annotator", (0.5, 0.5), cx);
     cx.simulate_click(middle, Modifiers::none());
     settle(cx);
+    press("escape", cx);
+    let escapes = view.read_with(cx, |view, _| view.escapes);
+    assert_eq!(escapes, 0, "Escape lets the chosen pin go and stops there");
+    cx.simulate_click(middle, Modifiers::none());
+    settle(cx);
     press("backspace", cx);
     assert!(
         view.read_with(cx, |view, _| view.marks.is_empty()),
         "the pin is gone"
     );
+    press("escape", cx);
+    let escapes = view.read_with(cx, |view, _| view.escapes);
+    assert_eq!(escapes, 1, "with nothing chosen, Escape passes to the page");
     press("cmd-z", cx);
     assert_eq!(view.read_with(cx, |view, _| view.marks.clone()), [pin]);
 }

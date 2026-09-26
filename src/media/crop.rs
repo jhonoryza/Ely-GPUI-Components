@@ -72,7 +72,7 @@ pub(crate) fn grip_at(crop: Crop, at: (f32, f32), reach: (f32, f32), shaped: boo
     }
 }
 
-/// The crop after `grip` moves by `by`, in shares, kept inside the picture with sides of at least `least`. With `shape`, a width over height in shares, only corners resize and the box keeps that shape, anchored at the opposite corner.
+/// The crop after `grip` moves by `by`, in shares, kept inside the picture with sides of at least `least`. With `shape`, a width over height in shares, only corners resize and the box keeps that shape, anchored at the opposite corner, sized by whichever side the pointer moved further.
 pub(crate) fn dragged(
     crop: Crop,
     grip: Grip,
@@ -108,7 +108,13 @@ pub(crate) fn dragged(
     if let Some(shape) = shape {
         let tall = if grip.top { y2 } else { 1.0 - y1 };
         let wide = if grip.left { x2 } else { 1.0 - x1 };
-        let w = (x2 - x1)
+        let (across, down) = (x2 - x1, (y2 - y1) * shape);
+        let asked = if (across - crop.w).abs() >= (down - crop.w).abs() {
+            across
+        } else {
+            down
+        };
+        let w = asked
             .max(least * shape.max(1.0))
             .min(tall * shape)
             .min(wide);
@@ -250,6 +256,39 @@ mod tests {
             ..Grip::default()
         };
         assert_eq!(dragged(HALF, edge, (0.0, -0.1), 0.05, Some(1.0)), HALF);
+    }
+
+    #[test]
+    fn a_shaped_corner_follows_the_pointer_up_and_down_too() {
+        let bottom_right = Grip {
+            right: true,
+            bottom: true,
+            ..Grip::default()
+        };
+        let down = dragged(HALF, bottom_right, (0.0, 0.2), 0.05, Some(1.0));
+        assert!(
+            near(
+                down,
+                Crop {
+                    w: 0.7,
+                    h: 0.7,
+                    ..HALF
+                }
+            ),
+            "straight down grows it: {down:?}"
+        );
+        let up = dragged(HALF, bottom_right, (0.0, -0.2), 0.05, Some(1.0));
+        assert!(
+            near(
+                up,
+                Crop {
+                    w: 0.3,
+                    h: 0.3,
+                    ..HALF
+                }
+            ),
+            "straight up shrinks it: {up:?}"
+        );
     }
 
     #[test]
