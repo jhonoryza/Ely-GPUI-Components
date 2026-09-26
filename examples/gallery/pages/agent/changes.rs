@@ -65,20 +65,29 @@ fn decided(mut changes: Vec<FileChange>, decision: Decision) -> Vec<FileChange> 
 pub fn changes_section(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let files = keep("agent-changes", changes, window, cx);
     let now = files.read(cx).clone();
+    let narrow = files.clone();
     section(
         "FileChangeCard / MultiFileDiff Review / CommandExecutionCard",
-        "What an agent would change, file by file: how much moves, the diff a press away, and a verdict each or for all. A command it ran is terminal::CommandBlock.",
+        "What an agent would change, file by file: how much moves, the diff a press away, and a verdict each or for all; in a side panel the counts and verdicts wrap below. A command it ran is terminal::CommandBlock.",
         cx,
     )
     .child(
         probe(
             "agent-changes",
             div().w(px(640.)).child(
-                MultiFileDiffReview::new("agent-review", now).on_decide(move |decision, _, cx| {
+                MultiFileDiffReview::new("agent-review", now.clone()).on_decide(move |decision, _, cx| {
                     let next = decided(files.read(cx).clone(), decision);
                     set(&files, next, cx)
                 }),
             ),
+        ),
+    )
+    .child(
+        div().w(px(280.)).child(
+            MultiFileDiffReview::new("agent-review-narrow", now).on_decide(move |decision, _, cx| {
+                let next = decided(narrow.read(cx).clone(), decision);
+                set(&narrow, next, cx)
+            }),
         ),
     )
     .child(

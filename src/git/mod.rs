@@ -10,6 +10,8 @@ mod merging;
 mod refs;
 mod review;
 mod tags;
+#[cfg(all(test, feature = "test-support"))]
+mod tests;
 mod viewer;
 
 pub use badges::{DiffStat, GitStatusBadge};

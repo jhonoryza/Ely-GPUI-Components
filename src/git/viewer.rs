@@ -3,7 +3,7 @@ use std::{ops::Range, rc::Rc};
 use gpui::{
     AnyElement, App, ElementId, FontWeight, HighlightStyle, Hsla, InteractiveElement, IntoElement,
     MouseButton, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
-    StyledText, Window, div, prelude::*, relative, uniform_list,
+    StyledText, Window, div, prelude::*, relative, transparent_black, uniform_list,
 };
 
 use super::{
@@ -13,6 +13,7 @@ use super::{
 use crate::{
     buttons::SegmentedControl,
     editor::{code_colors, stack},
+    primitives::FocusRing,
     theme::{ActiveTheme, ControlSize, Palette, TextSize},
     typography::{LEADING, format},
 };
@@ -243,6 +244,8 @@ impl RenderOnce for DiffViewer {
                             .w_full()
                             .flex()
                             .px_2()
+                            .border_1()
+                            .border_color(transparent_black())
                             .whitespace_nowrap()
                             .line_height(relative(LEADING));
                         match &rows[ix] {
@@ -287,13 +290,17 @@ impl RenderOnce for DiffViewer {
                                     .justify_center()
                                     .bg(colors.hover.opacity(0.5))
                                     .text_color(colors.fg_subtle)
-                                    .cursor_pointer()
-                                    .hover(|row| row.text_color(colors.fg))
-                                    .on_mouse_down(MouseButton::Left, |_, window, _| {
-                                        window.prevent_default()
-                                    })
                                     .when_some(open, |row, open| {
-                                        row.on_click(move |_, window, cx| open(stretch, window, cx))
+                                        row.tab_index(0)
+                                            .focus_ring(cx)
+                                            .cursor_pointer()
+                                            .hover(|row| row.text_color(colors.fg))
+                                            .on_mouse_down(MouseButton::Left, |_, window, _| {
+                                                window.prevent_default()
+                                            })
+                                            .on_click(move |_, window, cx| {
+                                                open(stretch, window, cx)
+                                            })
                                     })
                                     .child(format!(
                                         "⋯ {}",

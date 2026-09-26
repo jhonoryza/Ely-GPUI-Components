@@ -31,7 +31,7 @@ fn setup(cx: &mut TestAppContext) {
     });
 }
 
-/// One change card in a 400px column, its verdicts and the column's height.
+/// One change card in a 640px column, its verdicts and the column's height.
 struct Card {
     verdicts: Vec<bool>,
     height: Rc<Cell<Pixels>>,
@@ -42,7 +42,7 @@ impl Render for Card {
         let (view, height) = (cx.entity(), self.height.clone());
         div()
             .relative()
-            .w(px(400.0))
+            .w(px(640.0))
             .child(
                 FileChangeCard::new("card", change("src/theme/lift.rs")).on_decide(
                     move |accepted, _, cx| view.update(cx, |card, _| card.verdicts.push(accepted)),
@@ -72,7 +72,7 @@ fn a_press_on_accept_decides_and_leaves_the_card_shut(cx: &mut TestAppContext) {
     });
     settle(cx);
     let shut = height.get();
-    let accept = point(px(400.0 - 16.0), shut / 2.0);
+    let accept = point(px(640.0 - 16.0), shut / 2.0);
     cx.simulate_mouse_move(accept, None, Modifiers::none());
     cx.simulate_click(accept, Modifiers::none());
     settle(cx);
@@ -133,5 +133,60 @@ fn a_cards_verdict_names_its_file(cx: &mut TestAppContext) {
     assert_eq!(
         view.read_with(cx, |review, _| review.decisions.clone()),
         [Decision::Accept(1)]
+    );
+}
+
+/// A review at `width`, and its height as drawn.
+struct Narrow {
+    width: Pixels,
+    height: Rc<Cell<Pixels>>,
+}
+
+impl Render for Narrow {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let height = self.height.clone();
+        div()
+            .relative()
+            .w(self.width)
+            .child(
+                MultiFileDiffReview::new(
+                    "narrow",
+                    ["src/theme/lift.rs", "src/theme/tokens.rs"].map(change),
+                )
+                .on_decide(|_, _, _| {}),
+            )
+            .child(
+                canvas(
+                    move |bounds, _, _| height.set(bounds.size.height),
+                    |_, _, _, _| {},
+                )
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full(),
+            )
+    }
+}
+
+#[gpui::test]
+fn a_narrow_review_wraps_its_rows_inside_its_box(cx: &mut TestAppContext) {
+    setup(cx);
+    let height = Rc::new(Cell::new(Pixels::ZERO));
+    let seen = height.clone();
+    let (view, cx) = cx.add_window_view(|_, _| Narrow {
+        width: px(640.0),
+        height: seen,
+    });
+    settle(cx);
+    let wide = height.get();
+    view.update(cx, |narrow, cx| {
+        narrow.width = px(280.0);
+        cx.notify();
+    });
+    settle(cx);
+    assert!(
+        height.get() > wide,
+        "at 280px the counts and verdicts wrap below: {:?} vs {wide:?}",
+        height.get()
     );
 }

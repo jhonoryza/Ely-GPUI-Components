@@ -135,6 +135,7 @@ impl RenderOnce for FileChangeCard {
                 div()
                     .id((self.id.clone(), "header"))
                     .flex()
+                    .flex_wrap()
                     .items_center()
                     .gap_2()
                     .px_2()
@@ -162,17 +163,20 @@ impl RenderOnce for FileChangeCard {
                     .child(
                         div()
                             .flex_1()
-                            .min_w_0()
+                            .min_w(theme.label_width())
                             .font_family(theme.mono_family.clone())
                             .child(Ellipsis::new(self.change.path.clone())),
                     )
-                    .child(div().flex_none().child(DiffStat::new(added, removed)))
-                    .child(div().flex_none().child(verdict(
-                        &self.id,
-                        self.change.state,
-                        decide,
-                        cx,
-                    ))),
+                    .child(
+                        div()
+                            .flex_none()
+                            .ml_auto()
+                            .flex()
+                            .items_center()
+                            .gap_2()
+                            .child(DiffStat::new(added, removed))
+                            .child(verdict(&self.id, self.change.state, decide, cx)),
+                    ),
             )
             .when(open, |card| {
                 card.child(
@@ -248,6 +252,7 @@ impl RenderOnce for MultiFileDiffReview {
         let all = self.on_decide.clone().filter(|_| open > 0).map(|decide| {
             let (reject, accept) = (decide.clone(), decide);
             div()
+                .flex_none()
                 .flex()
                 .items_center()
                 .gap_1()
@@ -279,18 +284,29 @@ impl RenderOnce for MultiFileDiffReview {
             .child(
                 div()
                     .flex()
+                    .flex_wrap()
                     .items_center()
-                    .gap_3()
+                    .justify_between()
+                    .gap_y_2()
                     .child(
                         div()
-                            .flex_none()
-                            .font_weight(FontWeight::MEDIUM)
-                            .child(format!("{count} files changed")),
+                            .flex()
+                            .flex_wrap()
+                            .items_center()
+                            .gap_x_3()
+                            .gap_y_1()
+                            .child(
+                                div()
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .child(format!("{count} files changed")),
+                            )
+                            .child(DiffStat::new(added, removed))
+                            .child(
+                                div()
+                                    .text_color(colors.fg_subtle)
+                                    .child(format!("{} of {count} reviewed", count - open)),
+                            ),
                     )
-                    .child(div().flex_none().child(DiffStat::new(added, removed)))
-                    .child(div().flex_1().min_w_0().text_color(colors.fg_subtle).child(
-                        Ellipsis::new(format!("{} of {count} reviewed", count - open)),
-                    ))
                     .children(all),
             )
             .children(self.changes.into_iter().enumerate().map(|(ix, change)| {

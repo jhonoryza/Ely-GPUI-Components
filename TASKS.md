@@ -277,3 +277,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24a | 3 | PASS | |
 | T24b | 1 | FAIL | a task of one step crashed at render: its bar asked for one segment, and a segmented bar needs two |
 | T24b | 2 | PASS | |
+| T24c | 1 | FAIL | at 280px the path vanished and Accept all drew outside the box; the diff's fold rows took presses but no Tab |
