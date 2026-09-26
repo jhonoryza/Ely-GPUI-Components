@@ -33,6 +33,8 @@ macro_rules! icons {
 }
 
 icons! {
+    AArrowDown => "a-arrow-down",
+    AArrowUp => "a-arrow-up",
     Accessibility => "accessibility",
     Activity => "activity",
     AlarmClock => "alarm-clock",

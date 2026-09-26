@@ -4,6 +4,8 @@ mod keys;
 mod kind;
 mod media;
 mod table;
+#[cfg(all(test, feature = "test-support"))]
+mod tests;
 mod view;
 
 use std::{collections::HashMap, rc::Rc};
@@ -15,6 +17,7 @@ use gpui::{
 
 pub use kind::{Align, BlockKind, Media};
 pub(crate) use kind::{matching, shortcut};
+pub(crate) use media::source;
 
 use super::markdown::markdown_highlights;
 use crate::forms::{History, InputEvent, TextInput, code_highlights};

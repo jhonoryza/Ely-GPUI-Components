@@ -279,6 +279,16 @@ impl Theme {
         px_to_rems(20.0)
     }
 
+    /// A page's cover band.
+    pub fn page_cover(&self) -> Rems {
+        px_to_rems(208.0)
+    }
+
+    /// A page's icon, an emoji set large.
+    pub fn page_icon(&self) -> Rems {
+        px_to_rems(64.0)
+    }
+
     /// A picture's height in a skeleton card.
     pub fn skeleton_media(&self) -> Rems {
         px_to_rems(128.0)

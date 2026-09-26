@@ -110,6 +110,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Charts lay out in `f32` pixels of their own box, tested without gpui, and paint through `charts::paint::at`: a canvas's paint gets window coordinates, and `with_element_offset` works only in prepaint. Their sizes come from `theme.chart()`.
 - A label pinned to a point sits in a zero-size absolute box that centers it with flex (`charts::axes`), so no offset guesses at text size.
 - Tokens live in `src/theme`; the raw `px()` scan skips that folder only.
+- `ScrollHandle` keeps its children's bounds unscrolled: a child paints at its bounds plus the offset. A press on a scrolled child subtracts both, and an offset that brings a child to a place is set whole, not added (`documents::find::reveal`).
+- A find box is `editor::FindWidget`, over code, a terminal or a document's pages. It shows the replace fold and the option toggles only when the owner handles them.
 - A callback field holds a named `type` alias; clippy's type_complexity rejects `Option<Rc<dyn Fn(..)>>`. A chapter shares one alias per shape.
 - A component that fills its container says `w_full` on its root. As a window's root, or in a flex row, it would shrink to its text's narrowest width.
 - A field's `Highlight` sets color, wash, weight, slant and strike per span; measuring and painting share one set of runs, so wrapped heights match.

@@ -1,21 +1,66 @@
-use gpui::{AppContext as _, Entity, Focusable, TestAppContext, VisualTestContext};
+use std::{cell::RefCell, rc::Rc};
 
-use super::{BlockData, BlockEditor, BlockKind};
-use crate::{forms, theme::Theme};
+use gpui::{
+    AppContext as _, Bounds, Context, Entity, IntoElement, Modifiers, ParentElement, Pixels, Point,
+    Render, ScrollDelta, ScrollWheelEvent, Styled, TestAppContext, TouchPhase, VisualTestContext,
+    Window, div, point, px, size,
+};
 
-fn open(
-    blocks: Vec<BlockData>,
-    cx: &mut TestAppContext,
-) -> (Entity<BlockEditor>, &mut VisualTestContext) {
-    cx.update(|cx| {
-        Theme::init(cx);
-        forms::bind_keys(cx);
-        super::bind_keys(cx);
+use super::{DocPage, DocumentViewer, PageHit};
+use crate::{
+    editor::FindWidget,
+    forms::TextInput,
+    theme::{ActiveTheme, ControlSize, Theme},
+};
+
+type Noted = Rc<RefCell<Option<(usize, Point<f32>)>>>;
+
+/// Three tall pages with one hit on the second; a press while pinning records the note asked.
+struct Reader {
+    query: Entity<TextInput>,
+    current: Option<usize>,
+    noted: Noted,
+}
+
+impl Render for Reader {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let pages: Vec<DocPage> = (0..3)
+            .map(|ix| DocPage {
+                source: format!("page-{ix}.png").into(),
+                width: 400.0,
+                height: 1000.0,
+            })
+            .collect();
+        let hit = PageHit {
+            page: 1,
+            bounds: Bounds::new(point(40.0, 400.0), size(60.0, 12.0)),
+        };
+        let noted = self.noted.clone();
+        div().size_full().child(
+            DocumentViewer::new("viewer", "lift.pdf", pages)
+                .find(
+                    FindWidget::new("find", &self.query, self.current, 1),
+                    vec![hit],
+                    self.current,
+                )
+                .notes(Vec::new(), move |page, at, _, _| {
+                    *noted.borrow_mut() = Some((page, at))
+                }),
+        )
+    }
+}
+
+fn open(cx: &mut TestAppContext) -> (Entity<Reader>, Noted, &mut VisualTestContext) {
+    cx.update(Theme::init);
+    let noted = Noted::default();
+    let seen = noted.clone();
+    let (reader, cx) = cx.add_window_view(move |window, cx| Reader {
+        query: cx.new(|cx| TextInput::new(window, cx)),
+        current: None,
+        noted: seen,
     });
-    let (editor, cx) = cx.add_window_view(|window, cx| BlockEditor::new(blocks, window, cx));
-    cx.update(|window, _| window.activate_window());
     settle(cx);
-    (editor, cx)
+    (reader, noted, cx)
 }
 
 fn settle(cx: &mut VisualTestContext) {
@@ -24,350 +69,77 @@ fn settle(cx: &mut VisualTestContext) {
     cx.run_until_parked();
 }
 
-fn blocks(
-    editor: &Entity<BlockEditor>,
-    cx: &mut VisualTestContext,
-) -> Vec<(BlockKind, Vec<String>)> {
-    cx.update(|_, cx| {
-        editor
-            .read(cx)
-            .blocks(cx)
-            .into_iter()
-            .map(|block| (block.kind, block.texts))
-            .collect()
-    })
+/// A point on the pages, below the header and the find bar, at the view's middle.
+fn on_pages(cx: &mut VisualTestContext) -> Point<Pixels> {
+    cx.update(|window, _| point(window.viewport_size().width / 2.0, px(300.0)))
 }
 
-/// Puts the caret in block `ix`'s first field at byte `at`.
-fn caret(editor: &Entity<BlockEditor>, ix: usize, at: usize, cx: &mut VisualTestContext) {
-    cx.update(|window, cx| {
-        let field = editor.read(cx).blocks[ix].fields[0].clone();
-        field.update(cx, |field, cx| field.select(at..at, cx));
-        window.focus(&field.focus_handle(cx));
+fn wheel(down: f32, cx: &mut VisualTestContext) {
+    let at = on_pages(cx);
+    cx.simulate_event(ScrollWheelEvent {
+        position: at,
+        delta: ScrollDelta::Pixels(point(px(0.0), px(-down))),
+        modifiers: Modifiers::none(),
+        touch_phase: TouchPhase::Moved,
     });
     settle(cx);
 }
 
-fn text(kind: BlockKind, text: &str) -> (BlockKind, Vec<String>) {
-    (kind, vec![text.to_string()])
+/// Turns pinning on with the header's last button, then presses the pages; returns the note asked.
+fn pin(cx: &mut VisualTestContext, noted: &Noted) -> (usize, Point<f32>) {
+    let toggle = cx.update(|window, cx| {
+        let header = cx
+            .theme()
+            .control_height(ControlSize::Lg)
+            .to_pixels(window.rem_size());
+        point(
+            window.viewport_size().width - px(17.0),
+            px(1.0) + header / 2.0,
+        )
+    });
+    cx.simulate_click(toggle, Modifiers::none());
+    settle(cx);
+    let at = on_pages(cx);
+    cx.simulate_click(at, Modifiers::none());
+    settle(cx);
+    noted
+        .borrow_mut()
+        .take()
+        .expect("a press while pinning asks for a note")
 }
 
 #[gpui::test]
-fn enter_splits_prose_at_the_caret(cx: &mut TestAppContext) {
-    let (editor, cx) = open(vec![BlockData::new(BlockKind::Bullet, ["lift"])], cx);
-    caret(&editor, 0, 2, cx);
-    cx.simulate_keystrokes("enter");
+fn a_note_lands_where_the_press_is_on_a_scrolled_page(cx: &mut TestAppContext) {
+    let (_, noted, cx) = open(cx);
+    let (page, top) = pin(cx, &noted);
+    wheel(150.0, cx);
+    let at = on_pages(cx);
+    cx.simulate_click(at, Modifiers::none());
     settle(cx);
-    assert_eq!(
-        blocks(&editor, cx),
-        [text(BlockKind::Bullet, "li"), text(BlockKind::Bullet, "ft")]
-    );
+    let (scrolled_page, scrolled) = noted.borrow_mut().take().expect("pinning stays on");
+    assert_eq!((scrolled_page, page), (0, 0));
+    assert_eq!(scrolled.x, top.x);
+    assert_eq!(scrolled.y, top.y + 150.0, "the press counts the scroll");
 }
 
-#[gpui::test]
-fn backspace_at_the_start_joins_up_and_undo_parts_them(cx: &mut TestAppContext) {
-    let (editor, cx) = open(
-        vec![
-            BlockData::new(BlockKind::Paragraph, ["tone "]),
-            BlockData::new(BlockKind::Paragraph, ["lift"]),
-        ],
-        cx,
-    );
-    caret(&editor, 1, 0, cx);
-    cx.simulate_keystrokes("backspace");
-    settle(cx);
-    assert_eq!(
-        blocks(&editor, cx),
-        [text(BlockKind::Paragraph, "tone lift")]
-    );
-    cx.simulate_keystrokes("cmd-z");
-    settle(cx);
-    assert_eq!(
-        blocks(&editor, cx),
-        [
-            text(BlockKind::Paragraph, "tone "),
-            text(BlockKind::Paragraph, "lift")
-        ],
-        "undo brings the joined block back"
-    );
-}
-
-#[gpui::test]
-fn markdown_typed_at_a_paragraphs_start_changes_its_kind(cx: &mut TestAppContext) {
-    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, [""])], cx);
-    caret(&editor, 0, 0, cx);
-    cx.simulate_input("## Lift");
-    settle(cx);
-    assert_eq!(blocks(&editor, cx), [text(BlockKind::Heading(2), "Lift")]);
-}
-
-#[gpui::test]
-fn backspace_turns_a_heading_back_into_text(cx: &mut TestAppContext) {
-    let (editor, cx) = open(vec![BlockData::new(BlockKind::Heading(1), ["Lift"])], cx);
-    caret(&editor, 0, 0, cx);
-    cx.simulate_keystrokes("backspace");
-    settle(cx);
-    assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "Lift")]);
-}
-
-#[gpui::test]
-fn a_press_in_a_blocks_text_puts_the_caret_there(cx: &mut TestAppContext) {
-    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["lift"])], cx);
-    cx.simulate_click(
-        gpui::point(gpui::px(300.0), gpui::px(10.0)),
-        gpui::Modifiers::none(),
-    );
-    settle(cx);
-    let focused = cx.update(|window, cx| editor.read(cx).focused(window, cx));
-    assert!(focused.is_some(), "the press focuses the block's field");
-    cx.simulate_keystrokes("enter");
-    settle(cx);
-    assert_eq!(blocks(&editor, cx).len(), 2);
-}
-
-/// The editor at a fixed width inside a row, as a page holds it.
-struct Hosted(Entity<BlockEditor>);
-
-impl gpui::Render for Hosted {
-    fn render(
-        &mut self,
-        _: &mut gpui::Window,
-        _: &mut gpui::Context<Self>,
-    ) -> impl gpui::IntoElement {
-        use gpui::{ParentElement, Styled};
-        gpui::div()
-            .flex()
-            .child(gpui::div().w(gpui::px(760.0)).child(self.0.clone()))
+/// Scrolls `down`, makes the hit current, then pins a note at the same window point.
+fn revealed(down: f32, cx: &mut TestAppContext) -> (usize, Point<f32>) {
+    let (reader, noted, cx) = open(cx);
+    if down > 0.0 {
+        wheel(down, cx);
     }
-}
-
-#[gpui::test]
-fn a_press_past_the_words_still_lands_in_the_block(cx: &mut TestAppContext) {
-    cx.update(|cx| {
-        Theme::init(cx);
-        forms::bind_keys(cx);
-        super::bind_keys(cx);
-    });
-    let (host, cx) = cx.add_window_view(|window, cx| {
-        let editor = cx.new(|cx| {
-            BlockEditor::new(
-                vec![BlockData::new(BlockKind::Paragraph, ["lift"])],
-                window,
-                cx,
-            )
-        });
-        Hosted(editor)
+    reader.update(cx, |reader, cx| {
+        reader.current = Some(0);
+        cx.notify();
     });
     settle(cx);
-    cx.simulate_click(
-        gpui::point(gpui::px(700.0), gpui::px(10.0)),
-        gpui::Modifiers::none(),
-    );
-    settle(cx);
-    let editor = cx.update(|_, cx| host.read(cx).0.clone());
-    let focused = cx.update(|window, cx| editor.read(cx).focused(window, cx));
-    assert!(focused.is_some(), "the press focuses the block's field");
+    pin(cx, &noted)
 }
 
 #[gpui::test]
-fn a_press_beside_a_blocks_text_puts_the_caret_at_its_end(cx: &mut TestAppContext) {
-    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["lift"])], cx);
-    cx.simulate_click(
-        gpui::point(gpui::px(300.0), gpui::px(1.0)),
-        gpui::Modifiers::none(),
-    );
-    settle(cx);
-    let focused = cx.update(|window, cx| editor.read(cx).focused(window, cx));
-    assert_eq!(
-        focused,
-        Some((editor.read_with(cx, |editor, _| editor.blocks[0].key), 0))
-    );
-}
-
-/// Puts block `ix`'s field `field` in focus with `range` selected.
-fn select(
-    editor: &Entity<BlockEditor>,
-    ix: usize,
-    field: usize,
-    range: std::ops::Range<usize>,
-    cx: &mut VisualTestContext,
-) {
-    cx.update(|window, cx| {
-        let field = editor.read(cx).blocks[ix].fields[field].clone();
-        field.update(cx, |field, cx| field.select(range, cx));
-        window.focus(&field.focus_handle(cx));
-    });
-    settle(cx);
-}
-
-#[gpui::test]
-fn enter_over_a_selection_drops_it_and_splits_there(cx: &mut TestAppContext) {
-    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["abcdef"])], cx);
-    select(&editor, 0, 0, 2..4, cx);
-    cx.simulate_keystrokes("enter");
-    settle(cx);
-    assert_eq!(
-        blocks(&editor, cx),
-        [
-            text(BlockKind::Paragraph, "ab"),
-            text(BlockKind::Paragraph, "ef")
-        ]
-    );
-    cx.simulate_keystrokes("cmd-z");
-    settle(cx);
-    assert_eq!(
-        blocks(&editor, cx),
-        [text(BlockKind::Paragraph, "abcdef")],
-        "one step undoes it"
-    );
-}
-
-#[gpui::test]
-fn undo_puts_the_caret_back_where_the_change_began(cx: &mut TestAppContext) {
-    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["abcdef"])], cx);
-    caret(&editor, 0, 3, cx);
-    cx.simulate_keystrokes("enter");
-    settle(cx);
-    cx.simulate_keystrokes("cmd-z");
-    settle(cx);
-    let first = cx.update(|_, cx| editor.read(cx).blocks[0].key);
-    let focused = cx.update(|window, cx| editor.read(cx).focused(window, cx));
-    assert_eq!(focused, Some((first, 0)));
-    cx.simulate_keystrokes("cmd-shift-z");
-    settle(cx);
-    assert_eq!(
-        blocks(&editor, cx),
-        [
-            text(BlockKind::Paragraph, "abc"),
-            text(BlockKind::Paragraph, "def")
-        ],
-        "redo splits again"
-    );
-    cx.simulate_keystrokes("cmd-z");
-    settle(cx);
-    cx.simulate_input("x");
-    settle(cx);
-    assert_eq!(
-        blocks(&editor, cx),
-        [text(BlockKind::Paragraph, "abcxdef")],
-        "typing lands at the caret undo put back"
-    );
-}
-
-#[gpui::test]
-fn keys_into_a_merged_cell_land_on_the_cell_that_shows(cx: &mut TestAppContext) {
-    let table = BlockKind::Table {
-        columns: 2,
-        merged: vec![(1, 1)],
-    };
-    let (editor, cx) = open(vec![BlockData::new(table, ["A", "B", "c", ""])], cx);
-    select(&editor, 0, 0, 1..1, cx);
-    cx.update(|window, cx| {
-        let field = editor.read(cx).blocks[0].fields[1].clone();
-        window.focus(&field.focus_handle(cx));
-    });
-    settle(cx);
-    cx.simulate_keystrokes("down");
-    settle(cx);
-    let key = cx.update(|_, cx| editor.read(cx).blocks[0].key);
-    let focused = cx.update(|window, cx| editor.read(cx).focused(window, cx));
-    assert_eq!(
-        focused,
-        Some((key, 2)),
-        "down from B lands on the cell c spans"
-    );
-}
-
-#[gpui::test]
-fn undoing_a_kind_change_brings_back_its_styling(cx: &mut TestAppContext) {
-    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["**lift**"])], cx);
-    cx.update(|window, cx| {
-        let key = editor.read(cx).blocks[0].key;
-        editor.update(cx, |editor, cx| {
-            editor.turn_into(key, BlockKind::Code, window, cx)
-        });
-    });
-    settle(cx);
-    caret(&editor, 0, 0, cx);
-    cx.simulate_keystrokes("cmd-z");
-    settle(cx);
-    let bold = cx.update(|_, cx| {
-        let field = editor.read(cx).blocks[0].fields[0].clone();
-        field
-            .read(cx)
-            .highlights(cx)
-            .iter()
-            .any(|(_, highlight)| highlight.weight.is_some())
-    });
-    assert_eq!(
-        blocks(&editor, cx),
-        [text(BlockKind::Paragraph, "**lift**")]
-    );
-    assert!(bold, "the paragraph styles its markdown again");
-}
-
-#[gpui::test]
-fn undo_of_typing_restores_the_selection_it_replaced(cx: &mut TestAppContext) {
-    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["abcdef"])], cx);
-    select(&editor, 0, 0, 2..4, cx);
-    cx.simulate_keystrokes("x");
-    settle(cx);
-    assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abxef")]);
-    cx.simulate_keystrokes("cmd-z");
-    settle(cx);
-    let selection = cx.update(|_, cx| editor.read(cx).blocks[0].fields[0].read(cx).selection());
-    assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abcdef")]);
-    assert_eq!(selection, 2..4, "undo selects what the typing replaced");
-}
-
-#[gpui::test]
-fn up_into_a_table_skips_its_hidden_cells(cx: &mut TestAppContext) {
-    let table = BlockKind::Table {
-        columns: 2,
-        merged: vec![(1, 1)],
-    };
-    let (editor, cx) = open(
-        vec![
-            BlockData::new(table, ["A", "B", "c", ""]),
-            BlockData::new(BlockKind::Paragraph, ["after"]),
-        ],
-        cx,
-    );
-    caret(&editor, 1, 0, cx);
-    cx.simulate_keystrokes("up");
-    settle(cx);
-    let key = cx.update(|_, cx| editor.read(cx).blocks[0].key);
-    let focused = cx.update(|window, cx| editor.read(cx).focused(window, cx));
-    assert_eq!(
-        focused,
-        Some((key, 2)),
-        "up lands on the cell that shows in the last row"
-    );
-}
-
-#[gpui::test]
-fn undo_of_a_delete_or_a_paste_restores_the_selection(cx: &mut TestAppContext) {
-    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["abcdef"])], cx);
-    let selection = |cx: &mut VisualTestContext| {
-        cx.update(|_, cx| editor.read(cx).blocks[0].fields[0].read(cx).selection())
-    };
-    select(&editor, 0, 0, 2..4, cx);
-    cx.simulate_keystrokes("backspace");
-    settle(cx);
-    assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abef")]);
-    cx.simulate_keystrokes("cmd-z");
-    settle(cx);
-    assert_eq!(selection(cx), 2..4, "undo of a delete selects what it took");
-    cx.update(|_, cx| cx.write_to_clipboard(gpui::ClipboardItem::new_string("xy".into())));
-    select(&editor, 0, 0, 2..4, cx);
-    cx.simulate_keystrokes("cmd-v");
-    settle(cx);
-    assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abxyef")]);
-    cx.simulate_keystrokes("cmd-z");
-    settle(cx);
-    assert_eq!(
-        selection(cx),
-        2..4,
-        "undo of a paste selects what it replaced"
-    );
+fn a_current_hit_comes_to_one_place_from_any_scroll(cx: &mut TestAppContext) {
+    let from_top = revealed(0.0, cx);
+    let from_below = revealed(300.0, cx);
+    assert_eq!(from_top.0, 1, "the hit's page comes into view");
+    assert_eq!(from_top, from_below);
 }

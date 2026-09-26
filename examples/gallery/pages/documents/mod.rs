@@ -1,4 +1,6 @@
 mod editing;
+mod knowledge;
+mod reading;
 
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
 
@@ -58,8 +60,31 @@ const SCRIPT: &[Step] = &[
     Step::HoverAt("doc-blocks", 120.0, 20.0),
     Step::Wait(300),
     Step::Shot("handle"),
+    Step::DownAt("read-viewer", 440.0, 58.0),
+    Step::UpAt("read-viewer", 440.0, 58.0),
+    Step::Key("cmd-a"),
+    Step::Type("lift"),
+    Step::Wait(200),
+    Step::DownAt("read-viewer", 786.0, 58.0),
+    Step::UpAt("read-viewer", 786.0, 58.0),
+    Step::Wait(400),
+    Step::Shot("find"),
+    Step::DownAt("know-versions", 330.0, 22.0),
+    Step::UpAt("know-versions", 330.0, 22.0),
+    Step::Wait(300),
+    Step::Shot("changes"),
+    Step::DownAt("read-zen", 60.0, 24.0),
+    Step::UpAt("read-zen", 60.0, 24.0),
+    Step::Wait(500),
+    Step::Shot("zen"),
+    Step::Key("escape"),
+    Step::Wait(300),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
-    div().child(editing::editing(window, cx)).into_any_element()
+    div()
+        .child(editing::editing(window, cx))
+        .child(reading::reading(window, cx))
+        .child(knowledge::knowledge(window, cx))
+        .into_any_element()
 }

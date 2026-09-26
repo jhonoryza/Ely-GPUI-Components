@@ -55,7 +55,7 @@ type OnOptions = Rc<dyn Fn(FindOptions, &mut Window, &mut App)>;
 type OnBool = Rc<dyn Fn(bool, &mut Window, &mut App)>;
 type OnClose = Rc<dyn Fn(&mut Window, &mut App)>;
 
-/// A find box over code: the query with its options, where the current match stands among all, steps between them, and a replace row that folds away.
+/// A find box: the query, its options when the owner takes them, where the current match stands among all, steps between them, and a replace row that folds away when the owner offers one.
 #[derive(IntoElement)]
 pub struct FindWidget {
     id: ElementId,
@@ -208,45 +208,49 @@ impl RenderOnce for FindWidget {
             .text_size(theme.text_size(TextSize::Xs))
             .child(
                 row()
-                    .child(icon_button(
-                        "fold",
-                        if showing {
-                            IconName::ChevronDown
-                        } else {
-                            IconName::ChevronRight
-                        },
-                        "Toggle replace",
-                        true,
-                        self.on_toggle_replace.clone(),
-                        !showing,
-                    ))
+                    .children(self.on_toggle_replace.clone().map(|fold| {
+                        icon_button(
+                            "fold",
+                            if showing {
+                                IconName::ChevronDown
+                            } else {
+                                IconName::ChevronRight
+                            },
+                            "Toggle replace",
+                            true,
+                            Some(fold),
+                            !showing,
+                        )
+                    }))
                     .child(
                         div()
                             .flex_1()
                             .min_w_0()
                             .child(Input::new(&self.find).size(ControlSize::Sm)),
                     )
-                    .child(toggle(
-                        "case",
-                        IconName::CaseSensitive,
-                        "Match case",
-                        options.case,
-                        |next, on| next.case = on,
-                    ))
-                    .child(toggle(
-                        "word",
-                        IconName::WholeWord,
-                        "Whole word",
-                        options.word,
-                        |next, on| next.word = on,
-                    ))
-                    .child(toggle(
-                        "regex",
-                        IconName::Regex,
-                        "Regular expression",
-                        options.regex,
-                        |next, on| next.regex = on,
-                    ))
+                    .when(self.on_options.is_some(), |row| {
+                        row.child(toggle(
+                            "case",
+                            IconName::CaseSensitive,
+                            "Match case",
+                            options.case,
+                            |next, on| next.case = on,
+                        ))
+                        .child(toggle(
+                            "word",
+                            IconName::WholeWord,
+                            "Whole word",
+                            options.word,
+                            |next, on| next.word = on,
+                        ))
+                        .child(toggle(
+                            "regex",
+                            IconName::Regex,
+                            "Regular expression",
+                            options.regex,
+                            |next, on| next.regex = on,
+                        ))
+                    })
                     .child(
                         div()
                             .w(theme.label_width() * 0.5)
@@ -285,7 +289,9 @@ impl RenderOnce for FindWidget {
             .children(self.replace.as_ref().map(|field| {
                 let (one, all) = (self.on_replace.clone(), self.on_replace.clone());
                 row()
-                    .pl(theme.control_height(ControlSize::Sm))
+                    .when(self.on_toggle_replace.is_some(), |row| {
+                        row.pl(theme.control_height(ControlSize::Sm))
+                    })
                     .child(
                         div()
                             .flex_1()

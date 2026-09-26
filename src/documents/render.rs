@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontStyle, FontWeight, HighlightStyle, InteractiveText,
+    AnyElement, App, ElementId, Entity, FontStyle, FontWeight, HighlightStyle, InteractiveText,
     IntoElement, ParentElement, RenderOnce, SharedString, StrikethroughStyle, Styled, StyledText,
     UnderlineStyle, Window, div, prelude::*,
 };
@@ -10,6 +10,7 @@ use pulldown_cmark::Alignment;
 use super::tree::{Inline, Node, Style, parse};
 use crate::{
     editor::code_colors,
+    navigation::{Anchor, Sections},
     primitives::{Icon, IconName},
     theme::{ActiveTheme, IconSize, Radius, TextSize},
     typography::Latex,
@@ -23,6 +24,8 @@ pub struct MarkdownRenderer {
     id: ElementId,
     source: SharedString,
     on_link: Option<OnLink>,
+    size: TextSize,
+    sections: Option<Entity<Sections>>,
 }
 
 impl MarkdownRenderer {
@@ -31,7 +34,21 @@ impl MarkdownRenderer {
             id: id.into(),
             source: source.into(),
             on_link: None,
+            size: TextSize::Base,
+            sections: None,
         }
+    }
+
+    /// The body's size; headings keep theirs.
+    pub fn text_size(mut self, size: TextSize) -> Self {
+        self.size = size;
+        self
+    }
+
+    /// Marks each heading for a table of contents over `sections`; `outline` gives its entries.
+    pub fn sections(mut self, sections: &Entity<Sections>) -> Self {
+        self.sections = Some(sections.clone());
+        self
     }
 
     /// Takes link presses instead of the browser.
@@ -46,6 +63,8 @@ struct Draw<'a> {
     id: &'a ElementId,
     on_link: &'a Option<OnLink>,
     next: std::cell::Cell<usize>,
+    sections: &'a Option<Entity<Sections>>,
+    headings: std::cell::Cell<usize>,
 }
 
 impl Draw<'_> {
@@ -143,7 +162,7 @@ impl Draw<'_> {
                     3 => TextSize::Lg,
                     _ => TextSize::Md,
                 };
-                div()
+                let heading = div()
                     .pt_2()
                     .text_size(theme.text_size(size))
                     .font_weight(if *level <= 2 {
@@ -152,8 +171,15 @@ impl Draw<'_> {
                         FontWeight::MEDIUM
                     })
                     .text_color(colors.fg)
-                    .child(self.inline(inline, cx))
-                    .into_any_element()
+                    .child(self.inline(inline, cx));
+                let ordinal = self.headings.get();
+                self.headings.set(ordinal + 1);
+                match self.sections {
+                    Some(sections) => Anchor::new(sections, anchor(ordinal))
+                        .child(heading)
+                        .into_any_element(),
+                    None => heading.into_any_element(),
+                }
             }
             Node::Quote(inner) => div()
                 .flex()
@@ -337,6 +363,39 @@ impl Draw<'_> {
     }
 }
 
+/// The anchor of the document's `ordinal`th heading.
+fn anchor(ordinal: usize) -> SharedString {
+    format!("heading-{ordinal}").into()
+}
+
+/// The headings of `markdown` in order, as a table of contents takes them: anchor, text and depth from 0.
+pub fn outline(markdown: &str) -> Vec<(SharedString, SharedString, usize)> {
+    fn walk(nodes: &[Node], out: &mut Vec<(SharedString, SharedString, usize)>) {
+        for node in nodes {
+            match node {
+                Node::Heading(level, inline) => {
+                    let ordinal = out.len();
+                    out.push((
+                        anchor(ordinal),
+                        inline.text.clone().into(),
+                        *level as usize - 1,
+                    ));
+                }
+                Node::Quote(inner) | Node::Footnote { body: inner, .. } => walk(inner, out),
+                Node::List { items, .. } => {
+                    for (_, body) in items {
+                        walk(body, out);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    let mut out = Vec::new();
+    walk(&parse(markdown), &mut out);
+    out
+}
+
 impl RenderOnce for MarkdownRenderer {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
@@ -345,13 +404,40 @@ impl RenderOnce for MarkdownRenderer {
             id: &self.id,
             on_link: &self.on_link,
             next: std::cell::Cell::new(0),
+            sections: &self.sections,
+            headings: std::cell::Cell::new(0),
         };
         div()
             .flex()
             .flex_col()
             .gap_3()
-            .text_size(theme.text_size(TextSize::Base))
-            .line_height(theme.text_size(TextSize::Base) * 1.6)
+            .text_size(theme.text_size(self.size))
+            .line_height(theme.text_size(self.size) * 1.6)
             .children(draw.nodes(&nodes, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::outline;
+
+    #[test]
+    fn the_outline_numbers_headings_in_order_with_their_depth() {
+        let found =
+            outline("# Lift\n\ntext\n\n## In light\n\n> ### Quoted\n\n- #### Listed\n\n## In dark");
+        let shape: Vec<(&str, &str, usize)> = found
+            .iter()
+            .map(|(anchor, text, depth)| (anchor.as_ref(), text.as_ref(), *depth))
+            .collect();
+        assert_eq!(
+            shape,
+            [
+                ("heading-0", "Lift", 0),
+                ("heading-1", "In light", 1),
+                ("heading-2", "Quoted", 2),
+                ("heading-3", "Listed", 3),
+                ("heading-4", "In dark", 1),
+            ]
+        );
     }
 }
