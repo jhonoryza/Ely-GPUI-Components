@@ -77,7 +77,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T23c AI Chat · Input
 - [x] T23d AI Chat · Conversations
 - [x] T23e AI Chat · Welcome
-- [ ] T24a Agent · Tool calls
+- [x] T24a Agent · Tool calls
 - [ ] T24b Agent · Progress
 - [ ] T24c Agent · Changes
 - [ ] T24d Agent · Previews
@@ -274,3 +274,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T23e | 1 | PASS | |
 | T24a | 1 | FAIL | tall arguments pushed the approval dialog's title and buttons off screen; a long tool name in a narrow column pushed the time and chevron out of the card; the dark capture closed the card the light one opened |
 | T24a | 2 | FAIL | a dialog body's children shrank to the capped column instead of scrolling: a 2000px body drew at 860px and a scroll moved nothing |
+| T24a | 3 | PASS | |
