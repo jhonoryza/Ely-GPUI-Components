@@ -252,3 +252,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T21a | 3 | FAIL | undo after a delete or a paste lost the selection they replaced; fixed after the cap by recording the replaced selection where every TextInput edit passes, verified by a red-green test, no fourth review |
 | T21b | 1 | FAIL | a page zoomed wider than the view sat past its left edge; a new hit at the same index kept the old page in view; a hit current from the first frame only scrolled its page to the top; the chapter list did not scroll; Escape could not leave zen turned on from a button |
 | T21c | 1 | FAIL | the gallery's page properties dropped a new due date and tags |
+| T21b | 2 | PASS | |
+| T21c | 2 | PASS | |
