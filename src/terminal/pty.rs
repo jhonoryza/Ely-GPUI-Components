@@ -49,6 +49,13 @@ pub(crate) fn detached(size: TermSize) -> Session {
 
 /// Starts `launch` on a pseudo-terminal of `size` cells, each `cell` pixels.
 pub(crate) fn spawn(launch: &Launch, size: TermSize, cell: (u16, u16)) -> anyhow::Result<Session> {
+    if let Some(cwd) = &launch.cwd {
+        anyhow::ensure!(
+            cwd.is_dir(),
+            "a terminal cannot start in {}: no such folder",
+            cwd.display()
+        );
+    }
     let (sender, events) = unbounded();
     let listener = Listener(sender);
     let term = Arc::new(FairMutex::new(Term::new(
@@ -102,6 +109,19 @@ mod tests {
     use futures::StreamExt;
 
     use super::*;
+
+    #[test]
+    fn a_missing_folder_stops_the_start() {
+        let launch = Launch {
+            program: Some(("/bin/sh".into(), vec!["-c".into(), "true".into()])),
+            cwd: Some("/nonexistent/ely".into()),
+            ..Launch::default()
+        };
+        let error = spawn(&launch, TermSize::new(20, 4), (8, 16))
+            .err()
+            .expect("a missing folder is an error");
+        assert!(error.to_string().contains("/nonexistent/ely"));
+    }
 
     #[test]
     fn a_program_prints_into_the_grid_through_a_pseudo_terminal() {

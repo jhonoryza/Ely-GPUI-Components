@@ -239,4 +239,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T17d | 1 | FAIL | a path match marked a project name mid-character; pin and remove also opened the row; number settings showed no places |
 | T17d | 2 | PASS | |
 | T17e | 1 | PASS | |
-| T18 | 1 | — | pending review |
+| T18 | 1 | FAIL | a missing folder ran in the app's own; combining marks dropped; Tab skipped the terminal; its wheel scrolled the page too; clear kept find matches; New bash reused the old shell; the dark script typed into the replay |
+| T18 | 2 | — | pending review |

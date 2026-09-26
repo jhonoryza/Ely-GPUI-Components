@@ -27,6 +27,8 @@ pub(crate) struct Style {
 pub(crate) struct Row {
     pub text: String,
     pub runs: Vec<(usize, Style)>,
+    /// Cells with combining marks, painted on their own at their column: the column, the cluster and its style.
+    pub clusters: Vec<(usize, String, Style)>,
 }
 
 /// Why cells are lit: selected, or a find match, the current one stronger.
@@ -50,7 +52,17 @@ pub(crate) struct Frame {
 impl Frame {
     /// The screen's text, trailing spaces gone.
     pub(crate) fn text(&self) -> String {
-        let lines: Vec<&str> = self.rows.iter().map(|row| row.text.trim_end()).collect();
+        let lines: Vec<String> = self
+            .rows
+            .iter()
+            .map(|row| {
+                let mut cells: Vec<String> = row.text.chars().map(String::from).collect();
+                for (column, cluster, _) in &row.clusters {
+                    cells[*column] = cluster.clone();
+                }
+                cells.concat().trim_end().to_string()
+            })
+            .collect();
         lines.join("\n").trim_end().to_string()
     }
 }
@@ -78,11 +90,27 @@ pub(crate) fn frame<T: EventListener>(
         let spacer = cell
             .flags
             .intersects(Flags::WIDE_CHAR_SPACER | Flags::LEADING_WIDE_CHAR_SPACER);
+        let look = style(cell, ink, content.colors);
+        let cluster = cell
+            .zerowidth()
+            .filter(|marks| !marks.is_empty())
+            .map(|marks| {
+                std::iter::once(cell.c)
+                    .chain(marks.iter().copied())
+                    .collect::<String>()
+            });
         push(
             &mut rows[row],
-            if spacer { ' ' } else { cell.c },
-            style(cell, ink, content.colors),
+            if spacer || cluster.is_some() {
+                ' '
+            } else {
+                cell.c
+            },
+            look,
         );
+        if let Some(cluster) = cluster {
+            rows[row].clusters.push((point.column.0, cluster, look));
+        }
         let why = if content.selection.is_some_and(|range| range.contains(point)) {
             Some(Lit::Selected)
         } else {
@@ -176,6 +204,19 @@ mod tests {
             fg: black(),
             bg: white(),
         }
+    }
+
+    #[test]
+    fn combining_marks_stay_on_their_cell() {
+        let term = replayed("e\u{301}x".as_bytes());
+        let shown = frame(&term, &ink(), &[], None);
+        assert_eq!(shown.text(), "e\u{301}x");
+        assert_eq!(
+            &shown.rows[0].text[..2],
+            " x",
+            "the cluster's cell keeps its column"
+        );
+        assert_eq!(shown.rows[0].clusters[0].1, "e\u{301}");
     }
 
     #[test]

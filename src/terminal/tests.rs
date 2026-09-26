@@ -49,3 +49,23 @@ fn find_counts_matches_and_steps_round(cx: &mut TestAppContext) {
         );
     });
 }
+
+#[gpui::test]
+fn tab_reaches_the_terminal(cx: &mut TestAppContext) {
+    let (terminal, cx) = replayed(b"ok", cx);
+    let focused = cx.update(|window, cx| {
+        window.focus_next();
+        terminal.read(cx).focus.is_focused(window)
+    });
+    assert!(focused);
+}
+
+#[gpui::test]
+fn clearing_drops_the_matches(cx: &mut TestAppContext) {
+    let (terminal, cx) = replayed(b"one two one", cx);
+    terminal.update(cx, |terminal, cx| {
+        assert_eq!(terminal.find("one", FindOptions::default(), cx), Ok(2));
+        terminal.clear(cx);
+        assert_eq!(terminal.matches(), (0, None));
+    });
+}

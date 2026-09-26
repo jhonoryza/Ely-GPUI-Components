@@ -18,6 +18,9 @@ pub const PAGE: Page = Page {
 
 const SCRIPT: &[Step] = &[
     Step::Rest,
+    Step::DownAt("terminal-tabs", 46.0, 16.0),
+    Step::UpAt("terminal-tabs", 46.0, 16.0),
+    Step::Wait(300),
     Step::DownAt("terminal", 200.0, 150.0),
     Step::UpAt("terminal", 200.0, 150.0),
     Step::Wait(400),

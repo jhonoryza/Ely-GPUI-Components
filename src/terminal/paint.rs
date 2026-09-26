@@ -8,7 +8,7 @@ use gpui::{
 };
 
 use super::{
-    frame::{Frame, Lit},
+    frame::{Frame, Lit, Style},
     links::Target,
     view::Terminal,
 };
@@ -26,6 +26,23 @@ pub(crate) struct Look {
     pub found: Hsla,
     pub current: Hsla,
     pub link: Hsla,
+}
+
+/// The face a style prints in.
+fn font(style: &Style, base: &Font) -> Font {
+    Font {
+        weight: if style.bold {
+            FontWeight::BOLD
+        } else {
+            FontWeight::NORMAL
+        },
+        style: if style.italic {
+            FontStyle::Italic
+        } else {
+            FontStyle::Normal
+        },
+        ..base.clone()
+    }
 }
 
 /// The grid, fitted to its box: it tells the terminal its size and origin, then paints each row.
@@ -63,19 +80,7 @@ pub(crate) fn grid(
                     .iter()
                     .map(|(len, style)| TextRun {
                         len: *len,
-                        font: Font {
-                            weight: if style.bold {
-                                FontWeight::BOLD
-                            } else {
-                                FontWeight::NORMAL
-                            },
-                            style: if style.italic {
-                                FontStyle::Italic
-                            } else {
-                                FontStyle::Normal
-                            },
-                            ..look.font.clone()
-                        },
+                        font: font(style, &look.font),
                         color: style.fg,
                         background_color: style.bg,
                         underline: style.underline.then_some(UnderlineStyle {
@@ -110,6 +115,21 @@ pub(crate) fn grid(
                 shaped
                     .paint(at(ix, 0), cell.height, window, cx)
                     .expect("a terminal row paints");
+                for (column, cluster, style) in &row.clusters {
+                    let run = TextRun {
+                        len: cluster.len(),
+                        font: font(style, &look.font),
+                        color: style.fg,
+                        background_color: None,
+                        underline: None,
+                        strikethrough: None,
+                    };
+                    window
+                        .text_system()
+                        .shape_line(cluster.clone().into(), look.size, &[run], None)
+                        .paint(at(ix, *column), cell.height, window, cx)
+                        .expect("a terminal cluster paints");
+                }
             }
             if let Some((row, columns, _)) = &hovered {
                 let under = at(*row, columns.start) + point(Pixels::ZERO, cell.height - look.rule);

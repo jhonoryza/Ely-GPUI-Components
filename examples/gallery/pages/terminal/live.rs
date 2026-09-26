@@ -50,10 +50,11 @@ fn launch(shell: usize) -> Launch {
 /// A pane group of shells, and the shell each pane holds.
 type Panes = (Entity<PaneGroup>, Entity<Vec<(PaneId, Entity<Terminal>)>>);
 
-fn panes(shell: usize, window: &mut Window, cx: &mut App) -> Panes {
-    let sessions = window.use_keyed_state(("terminal-sessions", shell), cx, |_, _| Vec::new());
+/// Panes of `shell`, fresh for each `start`: a pick starts new shells even of the same kind.
+fn panes(shell: usize, start: usize, window: &mut Window, cx: &mut App) -> Panes {
+    let sessions = window.use_keyed_state(("terminal-sessions", start), cx, |_, _| Vec::new());
     let held = sessions.clone();
-    let group = window.use_keyed_state(("terminal-panes", shell), cx, move |_, _| {
+    let group = window.use_keyed_state(("terminal-panes", start), cx, move |_, _| {
         PaneGroup::new(move |pane, _, cx| session(&held, pane, shell, cx).into_any_element())
     });
     (group, sessions)
@@ -85,9 +86,9 @@ fn field(key: &'static str, text: &str, window: &mut Window, cx: &mut App) -> En
 
 pub fn live(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let tab = keep("terminal-tab", || SharedString::from("shell"), window, cx);
-    let shell = keep("terminal-shell-choice", || 0usize, window, cx);
-    let (now_tab, now_shell) = (tab.read(cx).clone(), *shell.read(cx));
-    let (group, sessions) = panes(now_shell, window, cx);
+    let shell = keep("terminal-shell-choice", || (0usize, 0usize), window, cx);
+    let (now_tab, (now_shell, start)) = (tab.read(cx).clone(), *shell.read(cx));
+    let (group, sessions) = panes(now_shell, start, window, cx);
     let build = window.use_keyed_state("terminal-build", cx, |_, cx| {
         Terminal::replay(BUILD.as_bytes(), 92, 12, cx)
     });
@@ -124,7 +125,7 @@ pub fn live(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         }),
     )
     .default_shell(now_shell)
-    .on_pick(move |ix, _, cx| set(&choose, ix, cx));
+    .on_pick(move |ix, _, cx| set(&choose, (ix, start + 1), cx));
     let on_shell = now_tab.as_ref() == "shell";
     let exit = active
         .read(cx)

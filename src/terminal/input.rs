@@ -198,6 +198,7 @@ impl Terminal {
     }
 
     fn wheel(&mut self, event: &ScrollWheelEvent, _: &mut Window, cx: &mut Context<Self>) {
+        cx.stop_propagation();
         self.rest += event.delta.pixel_delta(self.cell.height).y;
         let lines = (self.rest / self.cell.height).trunc() as i32;
         if lines == 0 {

@@ -126,7 +126,7 @@ impl Terminal {
         Self {
             term,
             pty,
-            focus: cx.focus_handle(),
+            focus: cx.focus_handle().tab_stop(true),
             title,
             exited: None,
             size,
@@ -166,6 +166,7 @@ impl Terminal {
 
     /// Clears the screen and the scrollback; a shell redraws its prompt.
     pub fn clear(&mut self, cx: &mut Context<Self>) {
+        self.search = Search::default();
         {
             let mut term = self.term.lock();
             term.clear_screen(ClearMode::Saved);
