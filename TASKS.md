@@ -93,8 +93,11 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T26b Media · Crop and annotate
 - [x] T26c Media · Video
 - [x] T26d Media · Audio and controls
-- [ ] T26e Media · Capture and devices
-- [ ] T27 Files
+- [x] T26e Media · Capture and devices
+- [ ] T27a Files · Items
+- [ ] T27b Files · Explorer
+- [ ] T27c Files · Find and look
+- [ ] T27d Files · Transfers
 - [ ] T28 Messaging
 - [ ] T29 Mail
 - [ ] T30 Calendar
@@ -317,3 +320,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T26d | 1 | FAIL | the playlist's keys started from the first row, not the song under way; the waveform's bar fit sat untested in paint |
 | T26d | 2 | PASS | |
 | T26e | 1 | FAIL | an option list had no width limit, so a long device name ran it past the window |
+| T26e | 2 | PASS | |

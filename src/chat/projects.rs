@@ -7,13 +7,12 @@ use gpui::{
 };
 use jiff::Timestamp;
 
-use super::media::file_icon;
 use crate::{
     buttons::{Button, ButtonVariant, IconButton},
     data_display::Meter,
     forms::{CheckState, Checkbox, Choice, OnFlag, OnValue, Pick, RadioGroup, Run},
     overlays::Dialog,
-    primitives::{FocusRing, Icon, IconName},
+    primitives::{FocusRing, Icon, IconName, file_icon},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
     typography::{Ellipsis, RelativeTime, format::file_size, tabular},
 };

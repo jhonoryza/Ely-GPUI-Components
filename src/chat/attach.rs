@@ -5,13 +5,12 @@ use gpui::{
     Styled, Window, div, relative,
 };
 
-use super::media::file_icon;
 use crate::{
     buttons::{ButtonVariant, IconButton},
     data_display::Tag,
     documents::source,
     forms::{Pick, Run},
-    primitives::{Icon, IconName, Image},
+    primitives::{Icon, IconName, Image, file_icon},
     theme::{ActiveTheme, AvatarSize, ControlSize, IconSize, Radius, TextSize},
     typography::{Ellipsis, format::file_size},
 };

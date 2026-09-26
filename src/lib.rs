@@ -10,6 +10,7 @@ pub mod debug;
 pub mod documents;
 pub mod editor;
 pub mod feedback;
+pub mod files;
 pub mod finance;
 pub mod forms;
 pub mod generative;

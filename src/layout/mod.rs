@@ -19,6 +19,7 @@ pub use collapse::{Accordion, AccordionItem, Collapsible};
 pub use dock::{Dock, DockLayout, DockPanel, DockSide, Spot};
 pub use floating::FloatingPanel;
 pub use grid::{Masonry, SimpleGrid};
+pub(crate) use grid::{columns_for, fit};
 pub use page::{AppShell, MasterDetail, Page};
 pub use panes::{PaneGroup, PaneId, PaneLayout};
 pub(crate) use scroll::bring_into_view;

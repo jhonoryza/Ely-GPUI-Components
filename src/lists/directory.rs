@@ -9,7 +9,7 @@ use jiff::Timestamp;
 use super::{ListItem, SelectableList};
 use crate::{
     navigation::{Breadcrumb, Crumb},
-    primitives::{Icon, IconName},
+    primitives::{Icon, IconName, file_icon},
     theme::{ActiveTheme, IconSize, TextSize},
     typography::{format, tabular},
 };
@@ -45,6 +45,15 @@ impl DirEntry {
 
     pub fn is_folder(&self) -> bool {
         self.size.is_none()
+    }
+
+    /// A file's size in bytes; none for a folder.
+    pub fn size(&self) -> Option<u64> {
+        self.size
+    }
+
+    pub fn modified(&self) -> Timestamp {
+        self.modified
     }
 }
 
@@ -223,7 +232,7 @@ impl RenderOnce for DirectoryListing {
                             Icon::new(if entry.is_folder() {
                                 IconName::Folder
                             } else {
-                                IconName::File
+                                file_icon(&entry.name)
                             })
                             .size(IconSize::Md)
                             .color(colors.fg_muted),

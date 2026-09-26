@@ -10,7 +10,7 @@ use crate::{
     buttons::{ButtonVariant, IconButton},
     documents::source,
     forms::{Pick, Run},
-    primitives::{Icon, IconName, Image},
+    primitives::{Icon, IconName, Image, file_icon},
     theme::{ActiveTheme, AvatarSize, ContainerSize, IconSize, Radius, TextSize},
     typography::{Ellipsis, format::file_size},
 };
@@ -202,16 +202,6 @@ impl RenderOnce for ImageGrid {
                 .child(row().child(tile(0)).child(tile(1)))
                 .child(row().child(tile(2)).child(tile(3))),
         }
-    }
-}
-
-/// The icon a file's name suggests.
-pub(crate) fn file_icon(name: &str) -> IconName {
-    let extension = name.rsplit_once('.').map(|(_, ext)| ext.to_lowercase());
-    match extension.as_deref() {
-        Some("png" | "jpg" | "jpeg" | "gif" | "webp" | "svg" | "heic") => IconName::Image,
-        Some("pdf" | "md" | "txt" | "doc" | "docx" | "rtf" | "pages") => IconName::FileText,
-        _ => IconName::File,
     }
 }
 
@@ -410,17 +400,5 @@ impl RenderOnce for LinkPreviewCard {
                             .size_full(),
                     )
             }))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_file_name_picks_its_icon() {
-        assert_eq!(file_icon("lift.PNG"), IconName::Image);
-        assert_eq!(file_icon("notes.md"), IconName::FileText);
-        assert_eq!(file_icon("archive"), IconName::File);
     }
 }

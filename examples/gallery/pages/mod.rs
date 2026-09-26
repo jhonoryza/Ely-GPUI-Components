@@ -8,6 +8,7 @@ mod debug;
 mod documents;
 mod editor;
 mod feedback;
+mod files;
 mod finance;
 mod forms;
 mod generative;
@@ -67,6 +68,7 @@ pub const ALL: &[Page] = &[
     agent::PAGE,
     generative::PAGE,
     media::PAGE,
+    files::PAGE,
     theme::PAGE,
 ];
 

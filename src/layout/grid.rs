@@ -5,9 +5,16 @@ use gpui::{
 use smallvec::SmallVec;
 
 /// Columns for `width`, each at least `min`, `gap` apart.
-fn columns_for(width: Pixels, min: Pixels, gap: Pixels) -> u16 {
+pub(crate) fn columns_for(width: Pixels, min: Pixels, gap: Pixels) -> u16 {
     let fit = ((width + gap) / (min + gap)).floor();
     fit.clamp(1.0, f32::from(u16::MAX)) as u16
+}
+
+/// How many items `item` wide with `gap` between fit across `width`, at least one, and the inset that centers them.
+pub(crate) fn fit(width: Pixels, item: Pixels, gap: Pixels) -> (usize, Pixels) {
+    let count = columns_for(width, item, gap) as usize;
+    let used = (item + gap) * count as f32 - gap;
+    (count, ((width - used) / 2.0).max(Pixels::ZERO))
 }
 
 /// Index of the shortest column; ties go left.
@@ -174,7 +181,14 @@ impl RenderOnce for Masonry {
 mod tests {
     use gpui::px;
 
-    use super::{columns_for, shortest};
+    use super::{columns_for, fit, shortest};
+
+    #[test]
+    fn what_fits_sits_centered() {
+        assert_eq!(fit(px(100.0), px(3.0), px(2.0)), (20, px(1.0)));
+        assert_eq!(fit(px(98.0), px(3.0), px(2.0)), (20, px(0.0)));
+        assert_eq!(fit(px(2.0), px(3.0), px(2.0)), (1, px(0.0)));
+    }
 
     #[test]
     fn columns_fit_the_width() {

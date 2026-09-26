@@ -9,7 +9,7 @@ use super::{Tree, TreeNode};
 use crate::{
     data_display::Tone,
     forms::{SearchInput, TextInput},
-    primitives::IconName,
+    primitives::{IconName, file_icon},
     theme::ControlSize,
 };
 
@@ -54,19 +54,6 @@ impl GitStatus {
             Self::Deleted | Self::Conflicted => Tone::Danger,
             Self::Renamed => Tone::Info,
         }
-    }
-}
-
-/// The icon a file's name suggests.
-fn icon_for(name: &str) -> IconName {
-    let kind = name.rsplit_once('.').map(|(_, kind)| kind.to_lowercase());
-    match kind.as_deref() {
-        Some("rs" | "ts" | "tsx" | "js" | "py" | "go" | "swift" | "c" | "h" | "sh") => {
-            IconName::Code
-        }
-        Some("png" | "jpg" | "jpeg" | "gif" | "svg" | "webp") => IconName::Image,
-        Some("toml" | "json" | "yaml" | "yml" | "lock") => IconName::SlidersHorizontal,
-        _ => IconName::FileText,
     }
 }
 
@@ -141,7 +128,7 @@ fn nodes(
         files.sort_by_key(|name| name.to_lowercase());
         for name in files {
             let path = format!("{prefix}{name}");
-            let node = TreeNode::new(path.clone(), name.clone()).icon(icon_for(name));
+            let node = TreeNode::new(path.clone(), name.clone()).icon(file_icon(name));
             out.push(match state(&path) {
                 Some(state) => {
                     changed = true;

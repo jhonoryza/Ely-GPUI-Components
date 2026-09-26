@@ -112,6 +112,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui 0.2.2 keeps a no-wrap line's first measure, taken at full width inside flex and scroll boxes, so `.truncate()` clips there instead of ending in an ellipsis. A line that may overflow is a `typography::Ellipsis`.
 - Set an explicit line height on any box that clips text. gpui's default leading is taller than a tight box, and the clip eats descenders.
 - gpui's `img` takes its picture's pixel size for any `Auto` side, and its aspect ratio beats percent heights in flow. `Image` pins it absolute at full size, so an `Image` needs a sized box.
+- A file's icon comes from `primitives::file_icon`, one map from name to icon for every chapter; `files::FileIcon` draws it. What fits across a width comes from `layout::columns_for`, and `layout::fit` adds the inset that centers it.
 - Badges, tags and avatars live in `data_display`; forms and shell draw theirs from there, and `data_display` imports neither. Avatars take square pictures.
 - A picture drawn in code reaches gpui as a `RenderImage`. A host that replaces one frees the old through `App::drop_image`, or every frame stays in the sprite atlas (the gallery's model).
 - `img()` keeps loading state, and moves an animated picture's frames, only with an id. Content masks are rectangles, so rounded corners survive only when the image fills its box without cropping.

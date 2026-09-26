@@ -1,6 +1,7 @@
 mod backdrop;
 mod disclosure;
 mod divider;
+mod files;
 mod focus;
 mod ghost;
 mod icon;
@@ -13,6 +14,7 @@ mod tooltip;
 pub use backdrop::{Backdrop, Place};
 pub use disclosure::Disclosure;
 pub use divider::Divider;
+pub(crate) use files::file_icon;
 pub use focus::{FocusNext, FocusPrev, FocusRing, FocusScope};
 pub(crate) use focus::{Takeover, give_back, hand_back, hold_focus, tab_stop, take_focus};
 pub use ghost::DragGhost;

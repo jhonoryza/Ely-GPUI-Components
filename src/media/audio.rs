@@ -9,6 +9,7 @@ use gpui::{
 use super::scrubber::{OnTime, clock, time_at, time_tip};
 use crate::{
     forms::keyed,
+    layout::fit,
     primitives::{FocusRing, tab_stop},
     theme::{ActiveTheme, Radius},
 };
@@ -30,13 +31,6 @@ pub(crate) fn resample(peaks: &[f32], count: usize) -> Vec<f32> {
             peaks[from..to].iter().copied().fold(0.0, f32::max)
         })
         .collect()
-}
-
-/// How many bars `bar` wide with `gap` between fit across `width`, at least one, and the inset that centers them.
-pub(crate) fn fit(width: f32, bar: f32, gap: f32) -> (usize, f32) {
-    let count = ((width + gap) / (bar + gap)).floor().max(1.0) as usize;
-    let used = (bar + gap) * count as f32 - gap;
-    (count, ((width - used) / 2.0).max(0.0))
 }
 
 /// A seeking drag on a waveform, marked with its waveform.
@@ -121,7 +115,8 @@ impl RenderOnce for AudioWaveform {
             move |bounds, _, window, _| {
                 let width = f32::from(bounds.size.width);
                 let pitch = f32::from(bar + gap);
-                let (count, inset) = fit(width, f32::from(bar), f32::from(gap));
+                let (count, inset) = fit(bounds.size.width, bar, gap);
+                let inset = f32::from(inset);
                 for (ix, peak) in resample(&peaks, count).into_iter().enumerate() {
                     let left = inset + pitch * ix as f32;
                     let tall = (bounds.size.height * peak).max(bar);
@@ -248,14 +243,7 @@ impl RenderOnce for AudioSpectrum {
 
 #[cfg(test)]
 mod tests {
-    use super::{fit, resample};
-
-    #[test]
-    fn the_bars_that_fit_sit_centered() {
-        assert_eq!(fit(100.0, 3.0, 2.0), (20, 1.0));
-        assert_eq!(fit(98.0, 3.0, 2.0), (20, 0.0));
-        assert_eq!(fit(2.0, 3.0, 2.0), (1, 0.0));
-    }
+    use super::resample;
 
     #[test]
     fn peaks_gather_into_bars_by_their_loudest() {

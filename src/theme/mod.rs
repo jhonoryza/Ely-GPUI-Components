@@ -1,4 +1,5 @@
 mod chart;
+mod files;
 mod generative;
 mod media;
 mod palette;
@@ -10,6 +11,7 @@ use gpui::{App, Global, SharedString, WindowAppearance};
 
 use crate::motion;
 pub use chart::ChartSizes;
+pub use files::FileSizes;
 pub use generative::GenerativeSizes;
 pub use media::MediaSizes;
 pub use palette::{Mix, Palette, Syntax};

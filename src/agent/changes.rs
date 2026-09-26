@@ -8,11 +8,10 @@ use gpui::{
 
 use crate::{
     buttons::{Button, ButtonVariant},
-    chat::file_icon,
     collab::Decision,
     forms::OnFlag,
     git::{DiffStat, DiffViewer, stat},
-    primitives::{Disclosure, FocusRing, Icon, IconName},
+    primitives::{Disclosure, FocusRing, Icon, IconName, file_icon},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
     typography::Ellipsis,
 };
