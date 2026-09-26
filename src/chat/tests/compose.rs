@@ -30,9 +30,13 @@ impl Render for Compose {
         .commands(self.commands.clone(), move |value, _, cx| {
             command.update(cx, |compose, _| compose.picked.push(value.clone()))
         })
-        .context([Choice::new("lift", "lift.rs")], move |value, _, cx| {
-            mention.update(cx, |compose, _| compose.picked.push(value.clone()))
-        })
+        .context(
+            [
+                Choice::new("lift", "lift.rs"),
+                Choice::new("src", "src/lift.rs"),
+            ],
+            move |value, _, cx| mention.update(cx, |compose, _| compose.picked.push(value.clone())),
+        )
         .on_drop(|_, _, _| {});
         let input = if self.busy {
             input.busy(|_, _| {})
@@ -170,14 +174,19 @@ fn a_file_name_keeps_its_suggestions_past_a_dot(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
-fn arrows_pass_disabled_rows_and_keep_the_cursor_in_view(cx: &mut TestAppContext) {
-    let (compose, cx) = open(false, numbered(&[1]), cx);
-    cx.simulate_input("/");
-    frames(cx);
-    for _ in 0..16 {
-        cx.simulate_keystrokes("down");
-        frames(cx);
-    }
+fn a_path_keeps_its_suggestions_past_a_slash(cx: &mut TestAppContext) {
+    let (compose, cx) = open(false, summarize(), cx);
+    cx.simulate_input("see @src/");
+    settle(cx);
+    cx.simulate_keystrokes("enter");
+    settle(cx);
+    assert_eq!(text(&compose, cx), "see ");
+    assert_eq!(picked(&compose, cx), ["src"]);
+    assert_eq!(compose.read_with(cx, |compose, _| compose.sent), 0);
+}
+
+/// Clicks near the foot of the command list that hangs under the slash.
+fn click_list_foot(compose: &Entity<Compose>, cx: &mut VisualTestContext) {
     let (anchor, height) = cx.update(|window, cx| {
         let anchor = compose.read(cx).field.read(cx).bounds_for(0);
         let height = cx.theme().list_max_height().to_pixels(window.rem_size());
@@ -189,6 +198,32 @@ fn arrows_pass_disabled_rows_and_keep_the_cursor_in_view(cx: &mut TestAppContext
     );
     cx.simulate_mouse_move(foot, None, Modifiers::none());
     cx.simulate_click(foot, Modifiers::none());
+}
+
+#[gpui::test]
+fn the_list_opens_on_its_first_enabled_row_in_view(cx: &mut TestAppContext) {
+    let disabled: Vec<usize> = (0..17).collect();
+    let (compose, cx) = open(false, numbered(&disabled), cx);
+    cx.simulate_input("/");
+    frames(cx);
+    click_list_foot(&compose, cx);
+    assert_eq!(
+        picked(&compose, cx),
+        ["c17"],
+        "the list opens scrolled to its cursor"
+    );
+}
+
+#[gpui::test]
+fn arrows_pass_disabled_rows_and_keep_the_cursor_in_view(cx: &mut TestAppContext) {
+    let (compose, cx) = open(false, numbered(&[1]), cx);
+    cx.simulate_input("/");
+    frames(cx);
+    for _ in 0..16 {
+        cx.simulate_keystrokes("down");
+        frames(cx);
+    }
+    click_list_foot(&compose, cx);
     assert_eq!(
         picked(&compose, cx),
         ["c17"],

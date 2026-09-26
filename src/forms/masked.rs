@@ -303,6 +303,7 @@ impl RenderOnce for PhoneInput {
                             })
                         })),
                         scroll: None,
+                        reveal: None,
                     }
                     .render(window, cx),
                 )

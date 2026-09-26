@@ -224,6 +224,7 @@ pub(crate) fn listing(
                         Picker::show(&close, false, at, cx)
                     })),
                     scroll: Some(&scroll),
+                    reveal: None,
                 }
                 .render(window, cx),
             )

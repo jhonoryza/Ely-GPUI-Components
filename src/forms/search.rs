@@ -113,6 +113,7 @@ impl RenderOnce for SearchInput {
                         pick,
                         dismiss: None,
                         scroll: None,
+                        reveal: None,
                     }
                     .render(window, cx),
                 )

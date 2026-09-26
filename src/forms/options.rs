@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Bounds, Corner, Div, ElementId, InteractiveElement,
     IntoElement, MouseButton, ParentElement, Pixels, ScrollHandle, SharedString, Stateful,
-    StatefulInteractiveElement, Styled, Window, anchored, deferred, div, prelude::*,
+    StatefulInteractiveElement, Styled, Window, anchored, canvas, deferred, div, prelude::*,
 };
 
 use crate::{
@@ -221,6 +221,8 @@ pub(crate) struct Popup<'a> {
     pub pick: Pick,
     pub dismiss: Option<Run>,
     pub scroll: Option<&'a ScrollHandle>,
+    /// A row to scroll into view once the list has its bounds, and what marks it done.
+    pub reveal: Option<(usize, Run)>,
 }
 
 impl Popup<'_> {
@@ -259,7 +261,24 @@ impl Popup<'_> {
             .when_some(self.dismiss, |list, dismiss| {
                 list.on_mouse_down_out(move |_, window, cx| dismiss(window, cx))
             })
-            .children(rows);
+            .children(rows)
+            .when_some(
+                self.scroll.zip(self.reveal),
+                |list, (handle, (ix, done))| {
+                    let handle = handle.clone();
+                    list.child(
+                        canvas(
+                            move |_, window, cx| {
+                                handle.scroll_to_item(ix);
+                                window.request_animation_frame();
+                                done(window, cx);
+                            },
+                            |_, _, _, _| {},
+                        )
+                        .absolute(),
+                    )
+                },
+            );
         float(anchor, self.rows.len(), list, window, cx)
     }
 }

@@ -222,6 +222,7 @@ impl RenderOnce for MultiSelect {
                             Picker::show(&close, false, at, cx)
                         })),
                         scroll: Some(&scroll),
+                        reveal: None,
                     }
                     .render(window, cx),
                 )

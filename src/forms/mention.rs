@@ -7,7 +7,7 @@ use gpui::{
 
 use super::{
     Highlight, Input, TextInput,
-    options::{Choice, Pick, Popup, step},
+    options::{Choice, Pick, Popup, Run, step},
     text::{Down, Enter, Up},
 };
 use crate::theme::ActiveTheme;
@@ -19,7 +19,7 @@ pub(crate) fn one_word(ch: char) -> bool {
     ch.is_alphanumeric() || ch == '_'
 }
 
-/// The trigger being typed, its query all `word` characters: its byte offset and char, ending at `caret`.
+/// The trigger that opens the word ending at `caret`, its query all `word` characters: its byte offset and char.
 pub(crate) fn active_trigger(
     text: &str,
     caret: usize,
@@ -27,17 +27,14 @@ pub(crate) fn active_trigger(
     word: fn(char) -> bool,
 ) -> Option<(usize, char)> {
     let before = &text[..caret];
-    let (ix, ch) = before
+    let start = before
         .char_indices()
         .rev()
-        .take_while(|(_, ch)| !ch.is_whitespace())
-        .find(|(_, ch)| triggers.contains(ch))?;
-    let opens = before[..ix]
-        .chars()
-        .next_back()
-        .is_none_or(char::is_whitespace);
-    let query = before[ix + ch.len_utf8()..].chars().all(word);
-    (opens && query).then_some((ix, ch))
+        .find(|(_, ch)| ch.is_whitespace())
+        .map_or(0, |(ix, ch)| ix + ch.len_utf8());
+    let mut chars = before[start..].chars();
+    let trigger = chars.next().filter(|ch| triggers.contains(ch))?;
+    chars.all(word).then_some((start, trigger))
 }
 
 /// Replaces the trigger and its query, `at..caret`, with `text`, as one undo step.
@@ -107,6 +104,7 @@ struct Picking {
     highlighted: usize,
     dismissed: Option<usize>,
     scroll: ScrollHandle,
+    revealed: Option<usize>,
 }
 
 /// The row the cursor rests on: `at` kept in range and off disabled rows.
@@ -118,16 +116,15 @@ fn usable(rows: &[Choice], at: usize) -> usize {
     }
 }
 
-/// Moves the cursor `by` rows past disabled ones and scrolls it into view.
+/// Moves the cursor `by` rows past disabled ones.
 fn move_cursor(picking: &Entity<Picking>, rows: &[Choice], by: isize, cx: &mut App) {
     picking.update(cx, |picking, cx| {
         picking.highlighted = step(rows, picking.highlighted, by);
-        picking.scroll.scroll_to_item(picking.highlighted);
         cx.notify();
     });
 }
 
-/// Rows offered at a trigger in a field's text, and what a pick does: arrows choose past disabled rows, Enter or a press picks, Escape dismisses until the trigger ends.
+/// Rows offered at a trigger in a field's text, and what a pick does: arrows choose past disabled rows, the cursor stays in view, Enter or a press picks, Escape dismisses until the trigger ends.
 pub(crate) struct Suggestions {
     pub id: ElementId,
     pub state: Entity<TextInput>,
@@ -152,10 +149,23 @@ impl Suggestions {
             && !self.rows.is_empty()
             && self.trigger.is_some_and(|ix| dismissed != Some(ix));
         let rows: Rc<[Choice]> = self.rows.into();
+        let shown = open && anchor.is_some();
         let highlighted = usable(&rows, picking.read(cx).highlighted);
-        if highlighted != picking.read(cx).highlighted {
-            picking.update(cx, |picking, _| picking.highlighted = highlighted);
+        let revealed = picking.read(cx).revealed.filter(|_| shown);
+        let stored = (picking.read(cx).highlighted, picking.read(cx).revealed);
+        if (highlighted, revealed) != stored {
+            picking.update(cx, |picking, _| {
+                picking.highlighted = highlighted;
+                picking.revealed = revealed;
+            });
         }
+        let reveal = (shown && revealed != Some(highlighted)).then(|| {
+            let done = picking.clone();
+            let mark: Run = Rc::new(move |_, cx| {
+                done.update(cx, |picking, _| picking.revealed = Some(highlighted))
+            });
+            (highlighted, mark)
+        });
         let scroll = picking.read(cx).scroll.clone();
         log::debug!(
             "suggestions {:?}: open {open}, {} rows, anchor {anchor:?}",
@@ -214,6 +224,7 @@ impl Suggestions {
                         pick: self.pick,
                         dismiss: None,
                         scroll: Some(&scroll),
+                        reveal,
                     }
                     .render(window, cx),
                 )
@@ -333,8 +344,15 @@ mod tests {
         assert_eq!(at("hi @ada lovelace"), None);
         assert_eq!(at("go #rel"), Some((3, '#')));
         assert_eq!(at("see @lift."), None, "a handle is one word");
-        let file = active_trigger("see @lift.rs", 12, &marks, |ch| !ch.is_whitespace());
-        assert_eq!(file, Some((4, '@')), "a file name holds dots");
+        let file =
+            |text: &str| active_trigger(text, text.len(), &['/', '@'], |ch| !ch.is_whitespace());
+        assert_eq!(
+            file("see @lift.rs"),
+            Some((4, '@')),
+            "a file name holds dots"
+        );
+        assert_eq!(file("see @src/"), Some((4, '@')), "a path holds slashes");
+        assert_eq!(file("/usr/bin"), Some((0, '/')));
     }
 
     #[test]

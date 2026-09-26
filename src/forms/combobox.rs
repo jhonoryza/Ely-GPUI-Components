@@ -256,6 +256,7 @@ impl RenderOnce for Combobox {
                         pick,
                         dismiss: None,
                         scroll: Some(&scroll),
+                        reveal: None,
                     }
                     .render(window, cx),
                 )
