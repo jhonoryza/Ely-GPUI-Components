@@ -114,6 +114,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A component that fills its container says `w_full` on its root. As a window's root, or in a flex row, it would shrink to its text's narrowest width.
 - A field's `Highlight` sets color, wash, weight, slant and strike per span; measuring and painting share one set of runs, so wrapped heights match.
 - A block editor keeps one undo for the document: text and structure together, as snapshots through `forms::History`; it takes Undo and Redo before its fields do.
+- gpui calls focus listeners only while the window is active. A test that needs focus events activates its window with `window.activate_window()`.
 - A terminal takes Tab and Shift-Tab through bindings under `ElyTerminal`, ahead of focus moves; other keys go through `terminal::keys` in a key listener, and typed text through its input handler.
 - A shell in the gallery starts without startup files and with a fixed prompt, so captures show no user or host.
 - gpui 0.2.2 has no `(ElementId, usize)` id. A child id names its index: `(self.id.clone(), format!("row-{ix}"))`.

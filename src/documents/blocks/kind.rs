@@ -150,6 +150,16 @@ impl BlockKind {
         }
     }
 
+    /// Whether a field made for this kind serves `other` unchanged: the same highlighter and hint.
+    pub(crate) fn same_fields(&self, other: &Self) -> bool {
+        std::mem::discriminant(self) == std::mem::discriminant(other)
+            && match (self, other) {
+                (Self::Heading(one), Self::Heading(two)) => one == two,
+                (Self::Synced(one), Self::Synced(two)) => one == two,
+                _ => true,
+            }
+    }
+
     /// Prose: Enter splits it, Backspace at its start turns it back into text or joins it up.
     pub fn is_prose(&self) -> bool {
         matches!(

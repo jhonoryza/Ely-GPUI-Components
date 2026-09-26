@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use gpui::{Context, Window};
+use gpui::{App, Context, Focusable, Window};
 
 use super::{Block, BlockData, BlockEditor, BlockEvent, BlockKind, Snapshot};
 
@@ -17,13 +17,13 @@ impl BlockEditor {
             self.turn_into(key, BlockKind::Paragraph, window, cx);
             return;
         }
-        let caret = field.read(cx).cursor();
-        let tail = field.read(cx).text()[caret..].to_string();
-        log::info!("block editor: block {key} splits at {caret}");
+        let selection = field.read(cx).selection();
+        let tail = field.read(cx).text()[selection.end..].to_string();
+        log::info!("block editor: block {key} splits over {selection:?}");
         self.before_change(cx);
         field.update(cx, |field, cx| {
             let end = field.text().len();
-            field.select(caret..end, cx);
+            field.select(selection.start..end, cx);
             field.insert("", cx);
         });
         let key = self.fresh_key();
@@ -73,29 +73,39 @@ impl BlockEditor {
 
     pub(crate) fn undo(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.settle(true, cx);
-        if let Some(previous) = self.history.undo(self.current.clone()) {
+        if let Some(previous) = self.history.undo(self.now(cx)) {
             log::info!("block editor: undo");
             self.restore(previous, window, cx);
         }
     }
 
     pub(crate) fn redo(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(next) = self.history.redo(self.current.clone()) {
+        if let Some(next) = self.history.redo(self.now(cx)) {
             log::info!("block editor: redo");
             self.restore(next, window, cx);
         }
     }
 
-    /// Puts the document back as `snapshot` holds it, keeping fields whose blocks stay.
+    /// The current document with the caret where it is now.
+    fn now(&self, cx: &Context<Self>) -> Snapshot {
+        let mut now = self.current.clone();
+        now.caret = self.snapshot(cx).caret;
+        now
+    }
+
+    /// Puts the document back as `snapshot` holds it, keeping fields whose blocks stay, and the caret where it was.
     fn restore(&mut self, snapshot: Snapshot, window: &mut Window, cx: &mut Context<Self>) {
         let mut kept: HashMap<u64, Block> = self
             .blocks
             .drain(..)
             .map(|block| (block.key, block))
             .collect();
-        for (key, data) in &snapshot.0 {
+        for (key, data) in &snapshot.blocks {
             let block = match kept.remove(key) {
-                Some(mut block) if block.fields.len() == data.texts.len() => {
+                Some(mut block)
+                    if block.fields.len() == data.texts.len()
+                        && block.kind.same_fields(&data.kind) =>
+                {
                     block.kind = data.kind.clone();
                     for (field, text) in block.fields.iter().zip(&data.texts) {
                         if field.read(cx).text() != text {
@@ -108,7 +118,69 @@ impl BlockEditor {
             };
             self.blocks.push(block);
         }
+        if let Some((key, field, selection)) = snapshot.caret.clone()
+            && let Some(block) = self.blocks.iter().find(|block| block.key == key)
+            && let Some(field) = block.fields.get(field)
+        {
+            field.update(cx, |field, cx| field.select(selection, cx));
+            window.focus(&field.focus_handle(cx));
+        }
         self.current = snapshot;
+        cx.emit(BlockEvent::Changed);
+        cx.notify();
+    }
+
+    pub(super) fn snapshot(&self, cx: &App) -> Snapshot {
+        let caret = self.caret.and_then(|(key, field)| {
+            let block = self.blocks.iter().find(|block| block.key == key)?;
+            let selection = block.fields.get(field)?.read(cx).selection();
+            Some((key, field, selection))
+        });
+        Snapshot {
+            caret,
+            blocks: self
+                .blocks
+                .iter()
+                .map(|block| {
+                    let texts = block
+                        .fields
+                        .iter()
+                        .map(|field| field.read(cx).text().to_string())
+                        .collect();
+                    (
+                        block.key,
+                        BlockData {
+                            kind: block.kind.clone(),
+                            texts,
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+
+    /// Records what changed as one undo step, a burst of typing as one, and tells the owner.
+    pub(super) fn settle(&mut self, typing: bool, cx: &mut Context<Self>) {
+        let now = self.snapshot(cx);
+        if now.blocks != self.current.blocks {
+            let before = std::mem::replace(&mut self.current, now);
+            self.history.record(before, typing);
+            cx.emit(BlockEvent::Changed);
+            cx.notify();
+        }
+    }
+
+    /// Records the document before a change to its blocks.
+    pub(crate) fn before_change(&mut self, cx: &mut Context<Self>) {
+        self.settle(true, cx);
+        let mut before = self.current.clone();
+        before.caret = self.snapshot(cx).caret;
+        self.history.record(before, false);
+    }
+
+    /// After a change to the blocks: the new state is current.
+    pub(crate) fn after_change(&mut self, cx: &mut Context<Self>) {
+        self.current = self.snapshot(cx);
         cx.emit(BlockEvent::Changed);
         cx.notify();
     }

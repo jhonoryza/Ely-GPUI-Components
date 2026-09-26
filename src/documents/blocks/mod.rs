@@ -61,9 +61,12 @@ pub(crate) struct Block {
     _changes: Vec<Subscription>,
 }
 
-/// The whole document, as undo keeps it.
-#[derive(Clone, Debug, PartialEq)]
-struct Snapshot(Vec<(u64, BlockData)>);
+/// The whole document as undo keeps it, and where the caret was: block, field and selection.
+#[derive(Clone, Debug)]
+struct Snapshot {
+    blocks: Vec<(u64, BlockData)>,
+    caret: Option<(u64, usize, std::ops::Range<usize>)>,
+}
 
 /// A document of blocks, Notion-like: prose, lists and to-dos, quotes and callouts, toggles, code, math, diagrams, dividers, tables, media, columns and synced blocks. Markdown at a paragraph's start changes its kind; `/` offers every kind; `@` and `:` suggest people and emoji; blocks drag by their handle. Undo covers text and structure alike.
 pub struct BlockEditor {
@@ -71,6 +74,8 @@ pub struct BlockEditor {
     next: u64,
     history: History<Snapshot>,
     current: Snapshot,
+    /// The field that last held focus, as block and field.
+    caret: Option<(u64, usize)>,
     pub(crate) people: Vec<SharedString>,
     pub(crate) diagram: Option<RenderDiagram>,
     _synced: Subscription,
@@ -85,7 +90,11 @@ impl BlockEditor {
             blocks: Vec::new(),
             next: 0,
             history: History::default(),
-            current: Snapshot(Vec::new()),
+            current: Snapshot {
+                blocks: Vec::new(),
+                caret: None,
+            },
+            caret: None,
             people: Vec::new(),
             diagram: None,
             _synced: synced,
@@ -114,32 +123,10 @@ impl BlockEditor {
     /// The document as it stands.
     pub fn blocks(&self, cx: &App) -> Vec<BlockData> {
         self.snapshot(cx)
-            .0
+            .blocks
             .into_iter()
             .map(|(_, data)| data)
             .collect()
-    }
-
-    fn snapshot(&self, cx: &App) -> Snapshot {
-        Snapshot(
-            self.blocks
-                .iter()
-                .map(|block| {
-                    let texts = block
-                        .fields
-                        .iter()
-                        .map(|field| field.read(cx).text().to_string())
-                        .collect();
-                    (
-                        block.key,
-                        BlockData {
-                            kind: block.kind.clone(),
-                            texts,
-                        },
-                    )
-                })
-                .collect(),
-        )
     }
 
     /// A field for `kind`: inline markdown styled as typed, or code colored as code.
@@ -300,9 +287,16 @@ impl BlockEditor {
                 }
                 self.settle(true, cx);
             }
-            InputEvent::Focus if field.read(cx).is_empty() => {
-                let hint = self.blocks[ix].kind.placeholder();
-                field.update(cx, |field, cx| field.set_placeholder(hint, cx));
+            InputEvent::Focus => {
+                self.caret = self.blocks[ix]
+                    .fields
+                    .iter()
+                    .position(|each| each == field)
+                    .map(|at| (key, at));
+                if field.read(cx).is_empty() {
+                    let hint = self.blocks[ix].kind.placeholder();
+                    field.update(cx, |field, cx| field.set_placeholder(hint, cx));
+                }
             }
             InputEvent::Blur if self.blocks[ix].kind == BlockKind::Paragraph => {
                 field.update(cx, |field, cx| field.set_placeholder("", cx));
@@ -330,30 +324,6 @@ impl BlockEditor {
                 field.update(cx, |field, cx| field.set_text(text, cx));
             }
         }
-    }
-
-    /// Records what changed as one undo step, a burst of typing as one, and tells the owner.
-    fn settle(&mut self, typing: bool, cx: &mut Context<Self>) {
-        let now = self.snapshot(cx);
-        if now != self.current {
-            let before = std::mem::replace(&mut self.current, now);
-            self.history.record(before, typing);
-            cx.emit(BlockEvent::Changed);
-            cx.notify();
-        }
-    }
-
-    /// Records the document before a change to its blocks.
-    pub(crate) fn before_change(&mut self, cx: &mut Context<Self>) {
-        self.settle(true, cx);
-        self.history.record(self.current.clone(), false);
-    }
-
-    /// After a change to the blocks: the new state is current.
-    pub(crate) fn after_change(&mut self, cx: &mut Context<Self>) {
-        self.current = self.snapshot(cx);
-        cx.emit(BlockEvent::Changed);
-        cx.notify();
     }
 
     pub(crate) fn focus_field(
@@ -453,7 +423,7 @@ impl BlockEditor {
 
     pub fn duplicate(&mut self, key: u64, window: &mut Window, cx: &mut Context<Self>) {
         let ix = self.index(key);
-        let data = self.snapshot(cx).0[ix].1.clone();
+        let data = self.snapshot(cx).blocks[ix].1.clone();
         self.insert(Some(key), data, window, cx);
     }
 

@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use gpui::{App, Entity};
 
-use super::markdown::{Mark, marks};
+use super::markdown::{Mark, edge, marks};
 use crate::forms::TextInput;
 
 /// A format the toolbars apply to markdown.
@@ -28,6 +28,17 @@ impl Format {
             Self::Italic => Some("*"),
             Self::Strike => Some("~~"),
             Self::Code => Some("`"),
+            _ => None,
+        }
+    }
+
+    /// The mark an inline format writes.
+    fn mark(self) -> Option<Mark> {
+        match self {
+            Self::Bold => Some(Mark::Strong),
+            Self::Italic => Some(Mark::Emphasis),
+            Self::Strike => Some(Mark::Strike),
+            Self::Code => Some(Mark::Code),
             _ => None,
         }
     }
@@ -81,6 +92,28 @@ fn line_prefix(line: &str) -> usize {
     number_prefix(line)
 }
 
+/// The span of `format` that `selection` fills, but for other styles' markers: where it is written, and where its text sits.
+fn own(
+    text: &str,
+    selection: &Range<usize>,
+    format: Format,
+) -> Option<(Range<usize>, Range<usize>)> {
+    let wanted = format.mark().expect("an inline format has a mark");
+    let only_markers = |part: &str| part.chars().all(|ch| matches!(ch, '*' | '_' | '~' | '`'));
+    marks(text).into_iter().find_map(|(range, mark)| {
+        if mark != wanted || selection.start < range.start || range.end < selection.end {
+            return None;
+        }
+        let edge = edge(&text[range.clone()], mark);
+        let inner = range.start + edge..range.end - edge;
+        let fills = inner.start <= selection.start
+            && selection.end <= inner.end
+            && only_markers(&text[inner.start..selection.start])
+            && only_markers(&text[selection.end..inner.end]);
+        fills.then_some((range, inner))
+    })
+}
+
 /// `text` with `format` applied over `selection`, and where the selection lands. An inline format wraps the selection, or unwraps it when already wrapped; an empty one leaves the caret between its markers. A line format prefixes each touched line, or takes the prefix off when every line has it.
 pub fn apply(text: &str, selection: Range<usize>, format: Format) -> (String, Range<usize>) {
     assert!(
@@ -97,10 +130,20 @@ pub fn apply(text: &str, selection: Range<usize>, format: Format) -> (String, Ra
     if let Some(marker) = format.marker() {
         let (before, after) = (&text[..selection.start], &text[selection.end..]);
         let inner = &text[selection.clone()];
-        if before.ends_with(marker) && after.starts_with(marker) {
+        if selection.is_empty() && before.ends_with(marker) && after.starts_with(marker) {
             let start = selection.start - marker.len();
             let unwrapped = format!("{}{inner}{}", &before[..start], &after[marker.len()..]);
             return (unwrapped, start..selection.end - marker.len());
+        }
+        if let Some((range, text_range)) = own(text, &selection, format) {
+            let shift = text_range.start - range.start;
+            let unwrapped = format!(
+                "{}{}{}",
+                &text[..range.start],
+                &text[text_range],
+                &text[range.end..]
+            );
+            return (unwrapped, selection.start - shift..selection.end - shift);
         }
         let shift = marker.len();
         let wrapped = format!("{before}{marker}{inner}{marker}{after}");
@@ -202,6 +245,19 @@ mod tests {
             apply("see docs", 4..8, Format::Link),
             ("see [docs]()".into(), 11..11)
         );
+    }
+
+    #[test]
+    fn a_format_unwraps_only_its_own_markers() {
+        assert_eq!(
+            apply("**bold**", 2..6, Format::Italic),
+            ("***bold***".into(), 3..7)
+        );
+        assert_eq!(
+            apply("a *it* b", 3..5, Format::Italic),
+            ("a it b".into(), 2..4)
+        );
+        assert_eq!(apply("**bold**", 2..6, Format::Bold), ("bold".into(), 0..4));
     }
 
     #[test]

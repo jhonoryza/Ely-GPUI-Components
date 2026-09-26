@@ -25,6 +25,15 @@ pub(crate) fn span(merged: &[(usize, usize)], columns: usize, row: usize, column
         .count()
 }
 
+/// The cell that shows for `cell`: itself, or the one a merge folds it into.
+pub(crate) fn shown_cell(merged: &[(usize, usize)], columns: usize, cell: usize) -> usize {
+    let (row, mut column) = (cell / columns, cell % columns);
+    while column > 0 && merged.contains(&(row, column)) {
+        column -= 1;
+    }
+    row * columns + column
+}
+
 /// Merges after `column` is removed: its own go, the ones right of it move left.
 pub(crate) fn without_column(merged: &[(usize, usize)], column: usize) -> Vec<(usize, usize)> {
     merged

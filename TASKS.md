@@ -247,4 +247,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T19 | 3 | PASS | |
 | T20 | 1 | FAIL | the demo picked past memory's end; an empty gutter had no height to press; a breakpoint's box also opened it; zoomed ticks lost their places; docs promised bound keys and batch actions |
 | T20 | 2 | PASS | |
-| T21a | 1 | — | pending review |
+| T21a | 1 | FAIL | Enter kept a selection; undo of a split left focus on a gone field; italic inside bold ate the bold; keys went into merged cells; undo kept a changed kind's highlighter |
+| T21a | 2 | — | pending review |

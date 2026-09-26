@@ -13,6 +13,7 @@ fn open(
         super::bind_keys(cx);
     });
     let (editor, cx) = cx.add_window_view(|window, cx| BlockEditor::new(blocks, window, cx));
+    cx.update(|window, _| window.activate_window());
     settle(cx);
     (editor, cx)
 }
@@ -181,4 +182,126 @@ fn a_press_beside_a_blocks_text_puts_the_caret_at_its_end(cx: &mut TestAppContex
         focused,
         Some((editor.read_with(cx, |editor, _| editor.blocks[0].key), 0))
     );
+}
+
+/// Puts block `ix`'s field `field` in focus with `range` selected.
+fn select(
+    editor: &Entity<BlockEditor>,
+    ix: usize,
+    field: usize,
+    range: std::ops::Range<usize>,
+    cx: &mut VisualTestContext,
+) {
+    cx.update(|window, cx| {
+        let field = editor.read(cx).blocks[ix].fields[field].clone();
+        field.update(cx, |field, cx| field.select(range, cx));
+        window.focus(&field.focus_handle(cx));
+    });
+    settle(cx);
+}
+
+#[gpui::test]
+fn enter_over_a_selection_drops_it_and_splits_there(cx: &mut TestAppContext) {
+    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["abcdef"])], cx);
+    select(&editor, 0, 0, 2..4, cx);
+    cx.simulate_keystrokes("enter");
+    settle(cx);
+    assert_eq!(
+        blocks(&editor, cx),
+        [
+            text(BlockKind::Paragraph, "ab"),
+            text(BlockKind::Paragraph, "ef")
+        ]
+    );
+    cx.simulate_keystrokes("cmd-z");
+    settle(cx);
+    assert_eq!(
+        blocks(&editor, cx),
+        [text(BlockKind::Paragraph, "abcdef")],
+        "one step undoes it"
+    );
+}
+
+#[gpui::test]
+fn undo_puts_the_caret_back_where_the_change_began(cx: &mut TestAppContext) {
+    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["abcdef"])], cx);
+    caret(&editor, 0, 3, cx);
+    cx.simulate_keystrokes("enter");
+    settle(cx);
+    cx.simulate_keystrokes("cmd-z");
+    settle(cx);
+    let first = cx.update(|_, cx| editor.read(cx).blocks[0].key);
+    let focused = cx.update(|window, cx| editor.read(cx).focused(window, cx));
+    assert_eq!(focused, Some((first, 0)));
+    cx.simulate_keystrokes("cmd-shift-z");
+    settle(cx);
+    assert_eq!(
+        blocks(&editor, cx),
+        [
+            text(BlockKind::Paragraph, "abc"),
+            text(BlockKind::Paragraph, "def")
+        ],
+        "redo splits again"
+    );
+    cx.simulate_keystrokes("cmd-z");
+    settle(cx);
+    cx.simulate_input("x");
+    settle(cx);
+    assert_eq!(
+        blocks(&editor, cx),
+        [text(BlockKind::Paragraph, "abcxdef")],
+        "typing lands at the caret undo put back"
+    );
+}
+
+#[gpui::test]
+fn keys_into_a_merged_cell_land_on_the_cell_that_shows(cx: &mut TestAppContext) {
+    let table = BlockKind::Table {
+        columns: 2,
+        merged: vec![(1, 1)],
+    };
+    let (editor, cx) = open(vec![BlockData::new(table, ["A", "B", "c", ""])], cx);
+    select(&editor, 0, 0, 1..1, cx);
+    cx.update(|window, cx| {
+        let field = editor.read(cx).blocks[0].fields[1].clone();
+        window.focus(&field.focus_handle(cx));
+    });
+    settle(cx);
+    cx.simulate_keystrokes("down");
+    settle(cx);
+    let key = cx.update(|_, cx| editor.read(cx).blocks[0].key);
+    let focused = cx.update(|window, cx| editor.read(cx).focused(window, cx));
+    assert_eq!(
+        focused,
+        Some((key, 2)),
+        "down from B lands on the cell c spans"
+    );
+}
+
+#[gpui::test]
+fn undoing_a_kind_change_brings_back_its_styling(cx: &mut TestAppContext) {
+    let (editor, cx) = open(vec![BlockData::new(BlockKind::Paragraph, ["**lift**"])], cx);
+    cx.update(|window, cx| {
+        let key = editor.read(cx).blocks[0].key;
+        editor.update(cx, |editor, cx| {
+            editor.turn_into(key, BlockKind::Code, window, cx)
+        });
+    });
+    settle(cx);
+    caret(&editor, 0, 0, cx);
+    cx.simulate_keystrokes("cmd-z");
+    settle(cx);
+    let bold = cx.update(|_, cx| {
+        let field = editor.read(cx).blocks[0].fields[0].clone();
+        field
+            .read(cx)
+            .highlights(cx)
+            .iter()
+            .any(|(_, highlight)| highlight.weight.is_some())
+    });
+    assert_eq!(
+        blocks(&editor, cx),
+        [text(BlockKind::Paragraph, "**lift**")]
+    );
+    assert!(bold, "the paragraph styles its markdown again");
 }

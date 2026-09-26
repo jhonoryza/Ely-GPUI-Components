@@ -1,6 +1,6 @@
 use gpui::{Context, Window};
 
-use super::{BlockData, BlockEditor, BlockKind};
+use super::{BlockData, BlockEditor, BlockKind, table::shown_cell};
 use crate::documents::modes::at_edge;
 
 /// A new empty paragraph.
@@ -43,12 +43,13 @@ impl BlockEditor {
             BlockKind::Image(_) | BlockKind::Video(_) | BlockKind::Embed(_) => {
                 self.insert(Some(key), paragraph(), window, cx);
             }
-            BlockKind::Table { columns, .. } => {
+            BlockKind::Table { columns, merged } => {
                 let below = field + columns;
                 if below >= self.blocks[self.index(key)].fields.len() {
                     self.add_row(key, window, cx);
                 }
-                self.focus_field(key, below, None, window, cx);
+                let shown = shown_cell(&merged, columns, below);
+                self.focus_field(key, shown, None, window, cx);
             }
             _ => return false,
         }
@@ -95,14 +96,15 @@ impl BlockEditor {
         if !at_edge(block.fields[field].read(cx), down) {
             return false;
         }
-        if let BlockKind::Table { columns, .. } = block.kind {
+        if let BlockKind::Table { columns, merged } = &block.kind {
             let row = if down {
                 Some(field + columns)
             } else {
-                field.checked_sub(columns)
+                field.checked_sub(*columns)
             };
             if let Some(row) = row.filter(|row| *row < block.fields.len()) {
-                self.focus_field(key, row, None, window, cx);
+                let shown = shown_cell(merged, *columns, row);
+                self.focus_field(key, shown, None, window, cx);
                 return true;
             }
         }

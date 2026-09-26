@@ -37,6 +37,16 @@ fn leading(text: &str, ch: char) -> usize {
         .sum()
 }
 
+/// How many bytes at each end of `span` write `mark`: its asterisks, tildes or backticks.
+pub(crate) fn edge(span: &str, mark: Mark) -> usize {
+    let first = span.chars().next().expect("a styled span has its marker");
+    let run = leading(span, first).min(span.len() / 2);
+    match mark {
+        Mark::Emphasis => run.min(first.len_utf8()),
+        _ => run,
+    }
+}
+
 /// The marks over `text`'s bytes: styles, code, links, headings and quotes, and the syntax that writes each.
 pub fn marks(text: &str) -> Vec<(Range<usize>, Mark)> {
     let mut out = Vec::new();
@@ -50,18 +60,13 @@ pub fn marks(text: &str) -> Vec<(Range<usize>, Mark)> {
                     Event::Start(Tag::Emphasis) => Mark::Emphasis,
                     _ => Mark::Strike,
                 };
-                let first = span.chars().next().expect("a styled span has its marker");
-                let edge = leading(span, first).min(span.len() / 2);
-                let edge = match mark {
-                    Mark::Emphasis => edge.min(first.len_utf8()),
-                    _ => edge,
-                };
+                let edge = edge(span, mark);
                 out.push((range.clone(), mark));
                 out.push((range.start..range.start + edge, Mark::Syntax));
                 out.push((range.end - edge..range.end, Mark::Syntax));
             }
             Event::Code(_) => {
-                let ticks = leading(span, '`');
+                let ticks = edge(span, Mark::Code);
                 out.push((range.clone(), Mark::Code));
                 out.push((range.start..range.start + ticks, Mark::Syntax));
                 out.push((range.end - ticks..range.end, Mark::Syntax));
