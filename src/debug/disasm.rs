@@ -185,7 +185,6 @@ impl RenderOnce for Disassembly {
                                 .id(row)
                                 .w_full()
                                 .flex()
-                                .items_center()
                                 .gap_3()
                                 .whitespace_nowrap()
                                 .when(is_current, |line| line.bg(colors.warning.opacity(0.12)))
@@ -195,6 +194,7 @@ impl RenderOnce for Disassembly {
                                         .flex_none()
                                         .w_5()
                                         .flex()
+                                        .items_center()
                                         .justify_center()
                                         .cursor_pointer()
                                         .on_mouse_down(MouseButton::Left, |_, window, _| {

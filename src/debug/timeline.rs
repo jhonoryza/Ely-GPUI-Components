@@ -10,7 +10,7 @@ use super::OnIndex;
 use crate::{
     charts::nice_step,
     theme::{ActiveTheme, ControlSize, Radius, TextSize},
-    typography::{Ellipsis, LEADING},
+    typography::{Ellipsis, LEADING, format::decimals},
 };
 
 /// A stretch of work on a track, in milliseconds.
@@ -24,6 +24,11 @@ pub struct Span {
 
 /// Wheel pixels that zoom by a factor of e.
 const ZOOM: f64 = 400.0;
+
+/// A tick's time, in as many places as its step needs.
+fn tick_label(time: f64, step: f64) -> String {
+    format!("{time:.*} ms", decimals(step))
+}
 
 /// Ticks along the ruler, about.
 const TICKS: usize = 6;
@@ -147,7 +152,7 @@ impl RenderOnce for TimelineProfiler {
                                 .border_l_1()
                                 .border_color(colors.border)
                                 .text_color(colors.fg_subtle)
-                                .child(format!("{time:.0} ms"))
+                                .child(tick_label(*time, step))
                         })),
                 ),
             )
@@ -267,6 +272,12 @@ impl RenderOnce for TimelineProfiler {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn ticks_keep_the_places_their_step_needs() {
+        assert_eq!(super::tick_label(0.2, 0.2), "0.2 ms");
+        assert_eq!(super::tick_label(15.0, 5.0), "15 ms");
+    }
+
     use super::*;
 
     #[test]

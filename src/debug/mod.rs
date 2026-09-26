@@ -8,6 +8,8 @@ mod hex;
 mod network;
 mod session;
 mod stack;
+#[cfg(all(test, feature = "test-support"))]
+mod tests;
 mod timeline;
 mod variables;
 

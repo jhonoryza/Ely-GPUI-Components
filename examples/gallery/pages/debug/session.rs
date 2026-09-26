@@ -106,7 +106,7 @@ pub fn session(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let (command, tell) = (state.clone(), said.clone());
     section(
         "DebugToolbar",
-        "The floating row that drives a session: continue or pause, the three steps while paused, restart and stop, each with its key.",
+        "The floating row that drives a session: continue or pause, the three steps while paused, restart and stop. Each tooltip names the usual key; the app binds it.",
         cx,
     )
     .child(row().child(DebugToolbar::new("debug-toolbar", now_state).on_command(move |which, _, cx| {

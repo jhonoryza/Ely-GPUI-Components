@@ -141,7 +141,7 @@ pub fn machine(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         frame().h(px(220.)).child(
             HexViewer::new("debug-hex", memory())
                 .base(0x7ffd_5a20_1000)
-                .selected(now_picked..now_picked + 4)
+                .selected(now_picked..(now_picked + 4).min(memory().len()))
                 .on_select(move |at, _, cx| set(&pick, at, cx)),
         ),
     )

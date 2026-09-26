@@ -1,13 +1,14 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, Keystroke,
+    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div,
+    prelude::*,
 };
 
 use super::OnIndex;
 use crate::{
-    buttons::{ButtonVariant, IconButton},
+    buttons::{ButtonVariant, IconButton, shortcut_text},
     forms::Checkbox,
     primitives::IconName,
     theme::{ActiveTheme, ControlSize, Elevation, Radius, TextSize},
@@ -36,7 +37,7 @@ pub enum DebugCommand {
 type OnCommand = Rc<dyn Fn(DebugCommand, &mut Window, &mut App)>;
 type OnSwitch = Rc<dyn Fn(usize, bool, &mut Window, &mut App)>;
 
-/// The floating row that drives a debug session: continue or pause, the three steps while paused, restart and stop, each with its key.
+/// The floating row that drives a debug session: continue or pause, the three steps while paused, restart and stop. Each tooltip names the key debuggers use for it; the app binds the keys.
 #[derive(IntoElement)]
 pub struct DebugToolbar {
     id: ElementId,
@@ -67,20 +68,22 @@ impl RenderOnce for DebugToolbar {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let paused = self.state == DebugState::Paused;
-        let button = |command: DebugCommand, icon: IconName, words: &'static str, enabled: bool| {
-            let run = self.on_command.clone();
-            IconButton::new((self.id.clone(), format!("{command:?}")), icon)
-                .variant(ButtonVariant::Ghost)
-                .size(ControlSize::Sm)
-                .tooltip(words)
-                .disabled(!enabled)
-                .when_some(run, |button, run| {
-                    button.on_click(move |_, window, cx| {
-                        log::info!("debug toolbar: {command:?}");
-                        run(command, window, cx)
+        let button =
+            |command: DebugCommand, icon: IconName, words: &str, key: &str, enabled: bool| {
+                let run = self.on_command.clone();
+                let key = Keystroke::parse(key).expect("a debug key parses");
+                IconButton::new((self.id.clone(), format!("{command:?}")), icon)
+                    .variant(ButtonVariant::Ghost)
+                    .size(ControlSize::Sm)
+                    .tooltip(format!("{words}  {}", shortcut_text(&key)))
+                    .disabled(!enabled)
+                    .when_some(run, |button, run| {
+                        button.on_click(move |_, window, cx| {
+                            log::info!("debug toolbar: {command:?}");
+                            run(command, window, cx)
+                        })
                     })
-                })
-        };
+            };
         let rule = || div().w_0().h_4().border_l_1().border_color(colors.border);
         div()
             .flex()
@@ -93,39 +96,50 @@ impl RenderOnce for DebugToolbar {
             .bg(colors.overlay)
             .shadow(theme.elevation(Elevation::Floating))
             .child(if paused {
-                button(DebugCommand::Continue, IconName::Play, "Continue  F5", true)
+                button(
+                    DebugCommand::Continue,
+                    IconName::Play,
+                    "Continue",
+                    "f5",
+                    true,
+                )
             } else {
-                button(DebugCommand::Pause, IconName::Pause, "Pause  F6", true)
+                button(DebugCommand::Pause, IconName::Pause, "Pause", "f6", true)
             })
             .child(button(
                 DebugCommand::StepOver,
                 IconName::RedoDot,
-                "Step over  F10",
+                "Step over",
+                "f10",
                 paused,
             ))
             .child(button(
                 DebugCommand::StepInto,
                 IconName::ArrowDownToDot,
-                "Step into  F11",
+                "Step into",
+                "f11",
                 paused,
             ))
             .child(button(
                 DebugCommand::StepOut,
                 IconName::ArrowUpFromDot,
-                "Step out  ⇧F11",
+                "Step out",
+                "shift-f11",
                 paused,
             ))
             .child(rule())
             .child(button(
                 DebugCommand::Restart,
                 IconName::RotateCw,
-                "Restart  ⇧⌘F5",
+                "Restart",
+                "secondary-shift-f5",
                 true,
             ))
             .child(button(
                 DebugCommand::Stop,
                 IconName::Square,
-                "Stop  ⇧F5",
+                "Stop",
+                "shift-f5",
                 true,
             ))
     }
@@ -142,7 +156,7 @@ pub struct Breakpoint {
     pub hits: usize,
 }
 
-/// Every breakpoint: turn each on or off, see its condition and hits, go to it, or remove it; or all at once.
+/// Every breakpoint: turn each on or off, see its condition and hits, go to it, or remove it.
 #[derive(IntoElement)]
 pub struct BreakpointList {
     id: ElementId,
@@ -200,9 +214,10 @@ impl RenderOnce for BreakpointList {
                 let (open, remove) = (self.on_open.clone(), self.on_remove.clone());
                 let check = Checkbox::new((self.id.clone(), format!("on-{ix}")), point.enabled);
                 let check = match toggle {
-                    Some(toggle) => {
-                        check.on_change(move |on, window, cx| toggle(ix, on, window, cx))
-                    }
+                    Some(toggle) => check.on_change(move |on, window, cx| {
+                        cx.stop_propagation();
+                        toggle(ix, on, window, cx)
+                    }),
                     None => check,
                 };
                 div()

@@ -245,4 +245,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T19 | 1 | FAIL | a merge rewrote line endings and added a last newline; the split view numbered its right side from the old file; an empty side started its hunk a line late; the subject counter covered long subjects; clipped code rows had no line height |
 | T19 | 2 | FAIL | a lone return split lines for similar but not for regions, so a change was lost; taking both sides added a newline to an empty side |
 | T19 | 3 | PASS | |
-| T20 | 1 | — | pending review |
+| T20 | 1 | FAIL | the demo picked past memory's end; an empty gutter had no height to press; a breakpoint's box also opened it; zoomed ticks lost their places; docs promised bound keys and batch actions |
+| T20 | 2 | — | pending review |
