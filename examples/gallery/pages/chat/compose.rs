@@ -29,13 +29,15 @@ macro_rules! asset {
     };
 }
 
-fn field(key: &'static str, text: &str, window: &mut Window, cx: &mut App) -> Entity<TextInput> {
-    let text = text.to_string();
-    window.use_keyed_state(key, cx, move |window, cx| {
+const SYSTEM: &str = "You answer about color in plain words. Cite sources.";
+
+/// The composer's text, which the prompt menu fills.
+pub fn draft(window: &mut Window, cx: &mut App) -> Entity<TextInput> {
+    window.use_keyed_state("chat-compose", cx, |window, cx| {
         let mut input = TextInput::new(window, cx)
             .multi_line(1, 8)
             .placeholder("Ask anything, / for commands, @ for context");
-        input.set_text(text, cx);
+        input.set_text("Compare these two lifts in dark mode", cx);
         input
     })
 }
@@ -64,13 +66,11 @@ fn attachments() -> Vec<Attachment> {
     ]
 }
 
-pub fn composer(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
-    let draft = field(
-        "chat-compose",
-        "Compare these two lifts in dark mode",
-        window,
-        cx,
-    );
+pub fn composer(
+    draft: &Entity<TextInput>,
+    window: &mut Window,
+    cx: &mut App,
+) -> impl IntoElement + use<> {
     let files = keep("chat-attachments", attachments, window, cx);
     let context = keep(
         "chat-context",
@@ -131,7 +131,7 @@ pub fn composer(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         set(files, next, cx)
     };
     let (sent, stopped, mentioned) = (busy.clone(), busy.clone(), context.clone());
-    let mut input = PromptInput::new("chat-composer", &draft, move |_, cx| set(&sent, true, cx))
+    let mut input = PromptInput::new("chat-composer", draft, move |_, cx| set(&sent, true, cx))
         .above(chips)
         .above(context_chips)
         .tool(AttachmentButton::new("chat-attach", move |paths, _, cx| {
@@ -195,7 +195,11 @@ fn levels() -> Vec<f32> {
         .collect()
 }
 
-pub fn pickers(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
+pub fn pickers(
+    draft: &Entity<TextInput>,
+    window: &mut Window,
+    cx: &mut App,
+) -> impl IntoElement + use<> {
     let model = keep("chat-model", || SharedString::from("large"), window, cx);
     let mode = keep("chat-mode-pick", || SharedString::from("chat"), window, cx);
     let tools = keep("chat-tools", || (true, false, false), window, cx);
@@ -214,6 +218,13 @@ pub fn pickers(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 _ => images = !images,
             }
             set(&tools, (web, code, images), cx)
+        }
+    };
+    let fill = |draft: &Entity<TextInput>, prompt: &'static str| {
+        let draft = draft.clone();
+        move |_: &mut Window, cx: &mut App| {
+            log::info!("gallery: prompt template");
+            draft.update(cx, |input, cx| input.set_text(prompt, cx))
         }
     };
     section(
@@ -255,12 +266,15 @@ pub fn pickers(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .item(MenuItem::check("Run code", code).on_click(flip(&tools, 1)))
                     .item(MenuItem::check("Make images", images).on_click(flip(&tools, 2))),
             ))
-            .child(DropdownMenu::new(
+            .child(probe(
                 "chat-templates",
-                "Prompts",
-                Menu::new()
-                    .item(MenuItem::new("Review this code").on_click(|_, _| log::info!("gallery: template review")))
-                    .item(MenuItem::new("Explain like a textbook").on_click(|_, _| log::info!("gallery: template explain"))),
+                DropdownMenu::new(
+                    "chat-templates",
+                    "Prompts",
+                    Menu::new()
+                        .item(MenuItem::new("Review this code").on_click(fill(draft, "Review the code below. List bugs first, then anything unclear, each with its line and a fix.")))
+                        .item(MenuItem::new("Explain like a textbook").on_click(fill(draft, "Explain the idea below to a newcomer: define terms before using them, one idea per paragraph."))),
+                ),
             )),
     )
 }
@@ -270,9 +284,10 @@ pub fn tuning(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let (temperature, top_p, longest) = *values.read(cx);
     let system = window.use_keyed_state("chat-system", cx, |window, cx| {
         let mut input = TextInput::new(window, cx).multi_line(3, 8);
-        input.set_text("You answer about color in plain words. Cite sources.", cx);
+        input.set_text(SYSTEM, cx);
         input
     });
+    let reset = system.clone();
     let system_tokens = tokens(system.read(cx).text());
     let changed = values.clone();
     section(
@@ -303,7 +318,13 @@ pub fn tuning(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     set(&changed, (t, p, l), cx)
                 },
             ))
-            .child(SystemPromptEditor::new("chat-system", &system, system_tokens, 400).on_reset(|_, _| log::info!("gallery: reset system prompt")))
+            .child(probe(
+                "chat-system",
+                div().w(px(560.)).child(
+                    SystemPromptEditor::new("chat-system", &system, system_tokens, 400)
+                        .on_reset(move |_, cx| reset.update(cx, |input, cx| input.set_text(SYSTEM, cx))),
+                ),
+            ))
             .child(
                 UsageBar::new(200_000.0)
                     .part("System", 1_200.0)

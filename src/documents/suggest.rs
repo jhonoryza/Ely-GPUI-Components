@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gpui::{App, ElementId, Entity, SharedString, Window};
 
 use crate::forms::{
-    Choice, Pick, Suggestions, TextInput, active_trigger, emoji_found, handles_matching,
+    Choice, Pick, Suggestions, TextInput, active_trigger, emoji_found, handles_matching, one_word,
     replace_trigger,
 };
 
@@ -36,7 +36,7 @@ pub(crate) fn offers(
     let (text, caret) = (input.text().to_string(), input.cursor());
     let mut marks = vec!['@', ':'];
     marks.extend(extra.as_ref().map(|(mark, _)| *mark));
-    let active = active_trigger(&text, caret, &marks);
+    let active = active_trigger(&text, caret, &marks, one_word);
     let query = active.map_or("", |(at, mark)| &text[at + mark.len_utf8()..caret]);
     let (rows, pick): (Vec<Choice>, Pick) = match active {
         Some((at, '@')) => {

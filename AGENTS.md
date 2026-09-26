@@ -129,6 +129,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Clippy's `single_range_in_vec_init` rejects `[a..b]` and `vec![a..b]`; bind the range first.
 - A component built on `lists::Tree` fills its box; the host gives it a height. A fixed-width column beside a `flex_1` one takes `flex_none`, or it shrinks.
 - Editor rows read their text through `CodeEditor::row_text`: a multi-line ghost cuts its line, and the rest follows the ghost's last line.
+- gpui styles a drag-over only on an element with its own hitbox. A veil that shows while files hover takes the drop itself (`chat::DragDropOverlay`).
+- gpui 0.2.2 never clears `debug_bounds`: a test sees an element appear, not leave.
 
 ## Decisions
 

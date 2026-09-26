@@ -261,3 +261,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T23b | 1 | FAIL | source cards and web results with a handler were no Tab stops; in a narrow column the sources row and a passage's header ran past their edge |
 | T23b | 2 | FAIL | the gallery's narrow passage built a vec of one range, which clippy refuses, so the checks failed |
 | T23b | 3 | PASS | |
+| T23c | 1 | FAIL | suggestion arrows landed on disabled rows and left the cursor out of view; a dot ended a file mention; the drop veil never showed, since gpui styles a drag-over only on an element with a hitbox; a parameter's places came from its step alone; the gallery's prompt menu and Reset only logged |

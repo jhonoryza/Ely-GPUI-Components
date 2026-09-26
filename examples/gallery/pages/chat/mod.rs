@@ -38,11 +38,28 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("chat-sources", 20.0, 10.0),
     Step::Wait(300),
     Step::Shot("sources"),
+    Step::DownAt("chat-templates", 30.0, 12.0),
+    Step::UpAt("chat-templates", 30.0, 12.0),
+    Step::Wait(200),
+    Step::Key("down"),
+    Step::Key("enter"),
+    Step::Wait(200),
+    Step::DownAt("chat-system", 160.0, 48.0),
+    Step::UpAt("chat-system", 160.0, 48.0),
+    Step::Key("cmd-a"),
+    Step::Type("Answer in one line."),
+    Step::Wait(200),
+    Step::Shot("prompts"),
+    Step::DownAt("chat-system", 548.0, 12.0),
+    Step::UpAt("chat-system", 548.0, 12.0),
+    Step::Wait(200),
+    Step::Shot("reset"),
     Step::DownAt("chat-sources", 20.0, 10.0),
     Step::UpAt("chat-sources", 20.0, 10.0),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
+    let draft = compose::draft(window, cx);
     div()
         .child(talk::conversation(window, cx))
         .child(talk::streaming(window, cx))
@@ -54,8 +71,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(controls::thinking(window, cx))
         .child(cite::citations(window, cx))
         .child(cite::search(window, cx))
-        .child(compose::composer(window, cx))
-        .child(compose::pickers(window, cx))
+        .child(compose::composer(&draft, window, cx))
+        .child(compose::pickers(&draft, window, cx))
         .child(compose::tuning(window, cx))
         .into_any_element()
 }

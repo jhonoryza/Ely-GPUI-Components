@@ -2,20 +2,30 @@ use std::{ops::Range, rc::Rc};
 
 use gpui::{
     App, Div, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, RenderOnce,
-    SharedString, Stateful, Styled, Window, div, prelude::*,
+    ScrollHandle, SharedString, Stateful, Styled, Window, div, prelude::*,
 };
 
 use super::{
     Highlight, Input, TextInput,
-    options::{Choice, Pick, Popup},
+    options::{Choice, Pick, Popup, step},
     text::{Down, Enter, Up},
 };
 use crate::theme::ActiveTheme;
 
 const SHOWN: usize = 6;
 
-/// The trigger being typed: its byte offset and char, ending at `caret`.
-pub(crate) fn active_trigger(text: &str, caret: usize, triggers: &[char]) -> Option<(usize, char)> {
+/// A character of a one-word handle.
+pub(crate) fn one_word(ch: char) -> bool {
+    ch.is_alphanumeric() || ch == '_'
+}
+
+/// The trigger being typed, its query all `word` characters: its byte offset and char, ending at `caret`.
+pub(crate) fn active_trigger(
+    text: &str,
+    caret: usize,
+    triggers: &[char],
+    word: fn(char) -> bool,
+) -> Option<(usize, char)> {
     let before = &text[..caret];
     let (ix, ch) = before
         .char_indices()
@@ -26,10 +36,8 @@ pub(crate) fn active_trigger(text: &str, caret: usize, triggers: &[char]) -> Opt
         .chars()
         .next_back()
         .is_none_or(char::is_whitespace);
-    let word = before[ix + ch.len_utf8()..]
-        .chars()
-        .all(|ch| ch.is_alphanumeric() || ch == '_');
-    (opens && word).then_some((ix, ch))
+    let query = before[ix + ch.len_utf8()..].chars().all(word);
+    (opens && query).then_some((ix, ch))
 }
 
 /// Replaces the trigger and its query, `at..caret`, with `text`, as one undo step.
@@ -98,9 +106,28 @@ pub fn mention_highlights(text: &str, cx: &App) -> Vec<(Range<usize>, Highlight)
 struct Picking {
     highlighted: usize,
     dismissed: Option<usize>,
+    scroll: ScrollHandle,
 }
 
-/// Rows offered at a trigger in a field's text, and what a pick does: arrows choose, Enter or a press picks, Escape dismisses until the trigger ends.
+/// The row the cursor rests on: `at` kept in range and off disabled rows.
+fn usable(rows: &[Choice], at: usize) -> usize {
+    let at = at.min(rows.len().saturating_sub(1));
+    match rows.get(at) {
+        Some(row) if row.disabled => step(rows, at, 1),
+        _ => at,
+    }
+}
+
+/// Moves the cursor `by` rows past disabled ones and scrolls it into view.
+fn move_cursor(picking: &Entity<Picking>, rows: &[Choice], by: isize, cx: &mut App) {
+    picking.update(cx, |picking, cx| {
+        picking.highlighted = step(rows, picking.highlighted, by);
+        picking.scroll.scroll_to_item(picking.highlighted);
+        cx.notify();
+    });
+}
+
+/// Rows offered at a trigger in a field's text, and what a pick does: arrows choose past disabled rows, Enter or a press picks, Escape dismisses until the trigger ends.
 pub(crate) struct Suggestions {
     pub id: ElementId,
     pub state: Entity<TextInput>,
@@ -124,13 +151,20 @@ impl Suggestions {
         let open = focused
             && !self.rows.is_empty()
             && self.trigger.is_some_and(|ix| dismissed != Some(ix));
-        let count = self.rows.len();
-        let highlighted = picking.read(cx).highlighted.min(count.saturating_sub(1));
+        let rows: Rc<[Choice]> = self.rows.into();
+        let highlighted = usable(&rows, picking.read(cx).highlighted);
+        if highlighted != picking.read(cx).highlighted {
+            picking.update(cx, |picking, _| picking.highlighted = highlighted);
+        }
+        let scroll = picking.read(cx).scroll.clone();
         log::debug!(
-            "suggestions {:?}: open {open}, {count} rows, anchor {anchor:?}",
-            self.id
+            "suggestions {:?}: open {open}, {} rows, anchor {anchor:?}",
+            self.id,
+            rows.len()
         );
-        let (up, down, escape) = (picking.clone(), picking.clone(), picking);
+        let (up, down, chosen, escape) =
+            (picking.clone(), picking.clone(), picking.clone(), picking);
+        let (up_rows, down_rows, enter_rows) = (rows.clone(), rows.clone(), rows.clone());
         let (enter, trigger) = (self.pick.clone(), self.trigger);
         div()
             .id(self.id)
@@ -139,25 +173,24 @@ impl Suggestions {
             .capture_action(move |_: &Up, _, cx| {
                 if open {
                     cx.stop_propagation();
-                    up.update(cx, |picking, cx| {
-                        picking.highlighted = (picking.highlighted + count - 1) % count;
-                        cx.notify();
-                    });
+                    move_cursor(&up, &up_rows, -1, cx);
                 }
             })
             .capture_action(move |_: &Down, _, cx| {
                 if open {
                     cx.stop_propagation();
-                    down.update(cx, |picking, cx| {
-                        picking.highlighted = (picking.highlighted + 1) % count;
-                        cx.notify();
-                    });
+                    move_cursor(&down, &down_rows, 1, cx);
                 }
             })
             .capture_action(move |_: &Enter, window, cx| {
                 if open {
                     cx.stop_propagation();
-                    enter(highlighted, window, cx);
+                    let at = chosen.read(cx).highlighted;
+                    if enter_rows[at].disabled {
+                        log::info!("suggestions: enter on disabled row {at}");
+                    } else {
+                        enter(at, window, cx);
+                    }
                 }
             })
             .on_key_down(move |event, _, cx| {
@@ -175,12 +208,12 @@ impl Suggestions {
                     Popup {
                         id: "suggestions".into(),
                         anchor,
-                        rows: &self.rows,
+                        rows: &rows,
                         highlighted: Some(highlighted),
                         checked: None,
                         pick: self.pick,
                         dismiss: None,
-                        scroll: None,
+                        scroll: Some(&scroll),
                     }
                     .render(window, cx),
                 )
@@ -240,7 +273,7 @@ impl RenderOnce for MentionInput {
         let input = self.state.read(cx);
         let (text, caret) = (input.text().to_string(), input.cursor());
         let marks: Vec<char> = self.triggers.iter().map(|(trigger, _)| *trigger).collect();
-        let active = active_trigger(&text, caret, &marks);
+        let active = active_trigger(&text, caret, &marks, one_word);
         let matches: Vec<SharedString> = active
             .map(|(ix, trigger)| {
                 let names = &self
@@ -288,16 +321,20 @@ impl RenderOnce for MentionInput {
 
 #[cfg(test)]
 mod tests {
-    use super::{active_trigger, dismissal, mention_spans};
+    use super::{active_trigger, dismissal, mention_spans, one_word};
 
     #[test]
     fn triggers_open_after_space_and_close_on_space() {
         let marks = ['@', '#'];
-        assert_eq!(active_trigger("hi @ad", 6, &marks), Some((3, '@')));
-        assert_eq!(active_trigger("@", 1, &marks), Some((0, '@')));
-        assert_eq!(active_trigger("mail@ad", 7, &marks), None);
-        assert_eq!(active_trigger("hi @ada lovelace", 16, &marks), None);
-        assert_eq!(active_trigger("go #rel", 7, &marks), Some((3, '#')));
+        let at = |text: &str| active_trigger(text, text.len(), &marks, one_word);
+        assert_eq!(at("hi @ad"), Some((3, '@')));
+        assert_eq!(at("@"), Some((0, '@')));
+        assert_eq!(at("mail@ad"), None);
+        assert_eq!(at("hi @ada lovelace"), None);
+        assert_eq!(at("go #rel"), Some((3, '#')));
+        assert_eq!(at("see @lift."), None, "a handle is one word");
+        let file = active_trigger("see @lift.rs", 12, &marks, |ch| !ch.is_whitespace());
+        assert_eq!(file, Some((4, '@')), "a file name holds dots");
     }
 
     #[test]

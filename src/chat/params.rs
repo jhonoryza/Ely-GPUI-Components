@@ -34,6 +34,15 @@ pub struct Parameter {
 
 type OnParameter = Rc<dyn Fn(&SharedString, f64, &mut Window, &mut App)>;
 
+/// Places that show the value, both ends and every step exactly.
+fn places(parameter: &Parameter) -> usize {
+    [parameter.value, parameter.min, parameter.max]
+        .into_iter()
+        .filter(|number| *number != 0.0)
+        .map(|number| decimals(number.abs()))
+        .fold(decimals(parameter.step), usize::max)
+}
+
 /// How answers are made, knob by knob: each a slider with its value, such as temperature, top p and the longest answer.
 #[derive(IntoElement)]
 pub struct ParameterPanel {
@@ -79,7 +88,7 @@ impl RenderOnce for ParameterPanel {
             .children(self.parameters.into_iter().map(|parameter| {
                 let change = self.on_change.clone();
                 let key = parameter.key.clone();
-                let places = decimals(parameter.step);
+                let places = places(&parameter);
                 div()
                     .flex()
                     .flex_col()
@@ -302,12 +311,46 @@ impl RenderOnce for SystemPromptEditor {
 
 #[cfg(test)]
 mod tests {
-    use super::cost;
+    use super::{Parameter, cost, places};
 
     #[test]
     fn cost_counts_tokens_at_their_prices() {
         assert_eq!(cost(1_000_000, 0, 3.0, 15.0), 3.0);
         assert_eq!(cost(2_000, 1_000, 3.0, 15.0), 0.021);
         assert_eq!(cost(0, 0, 3.0, 15.0), 0.0);
+    }
+
+    #[test]
+    fn a_value_shows_the_places_of_its_step_and_range() {
+        let knob = |value, min, max, step| Parameter {
+            key: "k".into(),
+            label: "K".into(),
+            value,
+            min,
+            max,
+            step,
+            hint: None,
+        };
+        assert_eq!(
+            places(&knob(0.25, 0.25, 1.25, 0.5)),
+            2,
+            "the range starts off the step's grid"
+        );
+        assert_eq!(
+            places(&knob(1.0, 0.0, 1.25, 0.5)),
+            2,
+            "the top end needs two"
+        );
+        assert_eq!(places(&knob(0.7, 0.0, 2.0, 0.1)), 1);
+        assert_eq!(
+            places(&knob(-2.0, -2.0, 2.0, 1.0)),
+            0,
+            "whole numbers on both sides"
+        );
+        assert_eq!(
+            places(&knob(0.1 + 0.2, 0.0, 1.0, 0.1)),
+            1,
+            "float noise adds no places"
+        );
     }
 }

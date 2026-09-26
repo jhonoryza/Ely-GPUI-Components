@@ -76,7 +76,9 @@ pub use knob::Knob;
 pub use listbox::ListBox;
 pub use masked::{COUNTRIES, MaskedInput, PhoneInput};
 pub use mention::{MentionInput, mention_highlights};
-pub(crate) use mention::{Suggestions, active_trigger, handles_matching, replace_trigger};
+pub(crate) use mention::{
+    Suggestions, active_trigger, handles_matching, one_word, replace_trigger,
+};
 pub use multi::MultiSelect;
 pub use number::{NumberInput, ScrubInput};
 pub use options::Choice;

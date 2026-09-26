@@ -2,7 +2,7 @@ use std::{path::PathBuf, rc::Rc};
 
 use gpui::{
     AnyElement, App, ElementId, Entity, ExternalPaths, InteractiveElement, IntoElement,
-    ParentElement, PathPromptOptions, RenderOnce, SharedString, Styled, Window, div,
+    ParentElement, PathPromptOptions, RenderOnce, SharedString, Styled, Window, div, prelude::*,
 };
 use smallvec::SmallVec;
 
@@ -142,16 +142,17 @@ impl RenderOnce for InputHint {
     }
 }
 
-/// While files hover the composer, a veil over it that says a drop attaches them; `group` names the composer.
+/// While files hover its parent, a veil over it that says a drop attaches them; it takes the drop. The parent is `relative`.
 #[derive(IntoElement)]
 pub struct DragDropOverlay {
-    group: SharedString,
+    on_drop: OnPaths,
 }
 
 impl DragDropOverlay {
-    pub fn new(group: impl Into<SharedString>) -> Self {
+    /// `on_drop` gets the files dropped; a drop with a folder is refused.
+    pub fn new(on_drop: impl Fn(Vec<PathBuf>, &mut Window, &mut App) + 'static) -> Self {
         Self {
-            group: group.into(),
+            on_drop: Rc::new(on_drop),
         }
     }
 }
@@ -160,15 +161,24 @@ impl RenderOnce for DragDropOverlay {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
+        let take = self.on_drop;
         div()
             .absolute()
             .inset_0()
             .invisible()
-            .group_drag_over::<ExternalPaths>(self.group, |style| style.visible())
+            .drag_over::<ExternalPaths>(|style, _, _, _| style.visible())
+            .on_drop(
+                move |paths: &ExternalPaths, window, cx| match dropped(paths.paths(), true) {
+                    Ok(paths) => {
+                        log::info!("drag drop overlay: {} files dropped", paths.len());
+                        take(paths, window, cx)
+                    }
+                    Err(reason) => log::info!("drag drop overlay: refused a drop: {reason}"),
+                },
+            )
             .flex()
             .items_center()
             .justify_center()
-            .gap_2()
             .rounded(theme.radius(Radius::Xl))
             .border_1()
             .border_dashed()
@@ -177,11 +187,18 @@ impl RenderOnce for DragDropOverlay {
             .text_size(theme.text_size(TextSize::Sm))
             .text_color(colors.fg_muted)
             .child(
-                Icon::new(IconName::Upload)
-                    .size(IconSize::Sm)
-                    .color(colors.fg_muted),
+                div()
+                    .debug_selector(|| "drag-drop-overlay".into())
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .child(
+                        Icon::new(IconName::Upload)
+                            .size(IconSize::Sm)
+                            .color(colors.fg_muted),
+                    )
+                    .child("Drop to attach"),
             )
-            .child("Drop to attach")
     }
 }
 
@@ -197,8 +214,8 @@ fn offers(
 ) -> Suggestions {
     let input = field.read(cx);
     let (text, caret) = (input.text().to_string(), input.cursor());
-    let active =
-        active_trigger(&text, caret, &['/', '@']).filter(|(at, mark)| *mark == '@' || *at == 0);
+    let active = active_trigger(&text, caret, &['/', '@'], |ch| !ch.is_whitespace())
+        .filter(|(at, mark)| *mark == '@' || *at == 0);
     let query = active.map_or(String::new(), |(at, mark)| {
         text[at + mark.len_utf8()..caret].to_lowercase()
     });
@@ -326,7 +343,6 @@ impl RenderOnce for PromptInput {
         let colors = theme.colors.clone();
         let ready = !self.field.read(cx).text().trim().is_empty();
         let focused = self.field.read(cx).focus().contains_focused(window, cx);
-        let group = SharedString::from(format!("composer-{}", self.id));
         let (send, enter) = (self.on_send.clone(), self.on_send.clone());
         let suggestions = offers(
             (self.id.clone(), "offers").into(),
@@ -347,7 +363,6 @@ impl RenderOnce for PromptInput {
         let busy = self.on_stop.is_some();
         let body = div()
             .id(self.id.clone())
-            .group(group.clone())
             .relative()
             .w_full()
             .flex()
@@ -388,19 +403,8 @@ impl RenderOnce for PromptInput {
                     .child(div().flex_1())
                     .child(button),
             );
-        match self.on_drop {
-            Some(take) => body
-                .on_drop(move |paths: &ExternalPaths, window, cx| {
-                    match dropped(paths.paths(), true) {
-                        Ok(paths) => {
-                            log::info!("composer: {} files dropped", paths.len());
-                            take(paths, window, cx)
-                        }
-                        Err(reason) => log::info!("composer: refused a drop: {reason}"),
-                    }
-                })
-                .child(DragDropOverlay::new(group)),
-            None => body,
-        }
+        body.when_some(self.on_drop, |body, take| {
+            body.child(DragDropOverlay { on_drop: take })
+        })
     }
 }
