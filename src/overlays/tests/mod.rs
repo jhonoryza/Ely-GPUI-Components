@@ -13,7 +13,7 @@ use crate::{
     buttons::Button,
     forms::TextInput,
     primitives::{FocusNext, FocusScope, Severity},
-    theme::Theme,
+    theme::{ActiveTheme, ControlSize, Theme},
 };
 
 #[derive(Clone, Copy, PartialEq)]
@@ -22,6 +22,7 @@ enum Open {
     Alert,
     Confirm,
     Prompt,
+    Tall,
 }
 
 /// A popover, a hover card and one dialog at a time, recording what they do.
@@ -90,7 +91,11 @@ impl Render for Stage {
                 Button::new("follow", "Follow").on_click(move |_, window, cx| follow(window, cx))
             },
         );
-        let (shut, confirmed) = (self.shut(cx), self.note(cx, "confirmed"));
+        let (shut, confirmed, done) = (
+            self.shut(cx),
+            self.note(cx, "confirmed"),
+            self.note(cx, "done"),
+        );
         let sent = cx.entity();
         let overlay = self.open.map(|open| match open {
             Open::Plain => Dialog::new("plain", "Plain", shut)
@@ -112,6 +117,12 @@ impl Render for Stage {
                 .on_submit(move |text, _, cx| {
                     let text = format!("sent {text}");
                     sent.update(cx, |stage, _| stage.log.push(text));
+                })
+                .into_any_element(),
+            Open::Tall => Dialog::new("tall", "Tall", shut)
+                .child(div().h(px(2000.0)))
+                .action(move |_| {
+                    Button::new("tall-done", "Done").on_click(move |_, window, cx| done(window, cx))
                 })
                 .into_any_element(),
         });
@@ -350,4 +361,31 @@ fn enter_on_a_prompt_button_runs_that_button_alone(cx: &mut TestAppContext) {
     press("tab", cx);
     press("enter", cx);
     assert_eq!(log(&view, cx), ["sent notes"]);
+}
+
+#[gpui::test]
+fn a_tall_dialog_keeps_its_actions_in_the_window(cx: &mut TestAppContext) {
+    let (view, cx) = stage(cx);
+    cx.update(|_, cx| Theme::update(cx, |theme| theme.reduced_motion = true));
+    show(&view, Open::Tall, cx);
+    std::thread::sleep(Duration::from_millis(2));
+    settle(cx);
+    let (size, margin, width, button) = cx.update(|window, cx| {
+        let (theme, rem) = (cx.theme(), window.rem_size());
+        (
+            window.viewport_size(),
+            theme.titlebar_height().to_pixels(rem),
+            theme.dialog_width().to_pixels(rem),
+            theme.control_height(ControlSize::Md).to_pixels(rem),
+        )
+    });
+    let padding = px(24.0);
+    let x = size.width / 2.0 + width / 2.0 - padding - px(12.0);
+    let y = size.height - margin - padding - button / 2.0;
+    click(f32::from(x), f32::from(y), cx);
+    assert_eq!(
+        log(&view, cx),
+        ["done"],
+        "the button sits at the card's foot, inside the window"
+    );
 }

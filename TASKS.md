@@ -272,3 +272,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T23d | 1 | FAIL | the list grouped days in a silent UTC fallback when the system zone was unknown; Combobox and MultiSelect opened a long list at its top, away from the choice |
 | T23d | 2 | PASS | |
 | T23e | 1 | PASS | |
+| T24a | 1 | FAIL | tall arguments pushed the approval dialog's title and buttons off screen; a long tool name in a narrow column pushed the time and chevron out of the card; the dark capture closed the card the light one opened |

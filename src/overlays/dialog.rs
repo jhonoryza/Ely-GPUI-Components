@@ -120,6 +120,7 @@ impl RenderOnce for Dialog {
         let theme = cx.theme();
         let colors = &theme.colors;
         let heading = div()
+            .flex_none()
             .flex()
             .flex_col()
             .gap_1()
@@ -143,8 +144,14 @@ impl RenderOnce for Dialog {
             .into_iter()
             .map(|build| build(close.clone()))
             .collect();
-        let actions =
-            (!buttons.is_empty()).then(|| div().flex().justify_end().gap_2().children(buttons));
+        let actions = (!buttons.is_empty()).then(|| {
+            div()
+                .flex_none()
+                .flex()
+                .justify_end()
+                .gap_2()
+                .children(buttons)
+        });
         let enter = self.enter.map(|build| {
             let field = self
                 .first
@@ -179,7 +186,15 @@ impl RenderOnce for Dialog {
                                 .on_click(move |_, window, cx| button(window, cx)),
                         ),
                 )
-                .child(div().flex_1().min_h_0().p_6().children(self.body))
+                .child(
+                    div()
+                        .id((self.id.clone(), "body"))
+                        .flex_1()
+                        .min_h_0()
+                        .overflow_y_scroll()
+                        .p_6()
+                        .children(self.body),
+                )
                 .children(actions.map(|row| {
                     div()
                         .px_6()
@@ -189,12 +204,24 @@ impl RenderOnce for Dialog {
                         .child(row)
                 }))
         } else {
+            let margin = theme.titlebar_height().to_pixels(window.rem_size());
+            let body = (!self.body.is_empty()).then(|| {
+                div()
+                    .id((self.id.clone(), "body"))
+                    .min_h_0()
+                    .overflow_y_scroll()
+                    .flex()
+                    .flex_col()
+                    .gap_5()
+                    .children(self.body)
+            });
             div()
                 .id(self.id.clone())
                 .flex()
                 .flex_col()
                 .gap_5()
                 .w(theme.dialog_width())
+                .max_h(window.viewport_size().height - margin * 2.0)
                 .p_6()
                 .rounded(theme.radius(Radius::Xl))
                 .bg(colors.overlay)
@@ -202,7 +229,7 @@ impl RenderOnce for Dialog {
                 .border_color(colors.border)
                 .shadow(theme.elevation(Elevation::Modal))
                 .child(heading)
-                .children(self.body)
+                .children(body)
                 .children(actions)
         };
         let rise = if fullscreen {

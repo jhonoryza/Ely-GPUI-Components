@@ -60,6 +60,14 @@ pub fn calls(_: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .arguments(WRITE),
             )
             .child(
+                div().w(px(280.)).child(
+                    ToolCallCard::new("agent-narrow", "mcp__filesystem__read_multiple_files", StepState::Done)
+                        .summary("3 files")
+                        .took(Duration::from_millis(1_100))
+                        .arguments(READ),
+                ),
+            )
+            .child(
                 ToolCallGroup::new("agent-group", "Read 3 files")
                     .child(ToolCallCard::new("agent-group-1", "read_file", StepState::Done).summary("src/theme/mod.rs").took(Duration::from_millis(120)))
                     .child(ToolCallCard::new("agent-group-2", "read_file", StepState::Done).summary("src/theme/tokens.rs").took(Duration::from_millis(95)))

@@ -24,6 +24,9 @@ const SCRIPT: &[Step] = &[
     Step::Shot("approval"),
     Step::Key("escape"),
     Step::Wait(200),
+    Step::DownAt("agent-call", 60.0, 18.0),
+    Step::UpAt("agent-call", 60.0, 18.0),
+    Step::Wait(200),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {

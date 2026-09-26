@@ -123,10 +123,10 @@ impl RenderOnce for ToolCallCard {
                 .child(step_mark((self.id.clone(), "mark").into(), self.status, cx))
                 .child(
                     div()
-                        .flex_none()
+                        .min_w_0()
                         .font_family(theme.mono_family.clone())
                         .text_color(colors.fg)
-                        .child(self.name),
+                        .child(Ellipsis::new(self.name)),
                 )
                 .child(
                     div()
