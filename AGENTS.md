@@ -107,6 +107,10 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Charts lay out in `f32` pixels of their own box, tested without gpui, and paint through `charts::paint::at`: a canvas's paint gets window coordinates, and `with_element_offset` works only in prepaint. Their sizes come from `theme.chart()`.
 - A label pinned to a point sits in a zero-size absolute box that centers it with flex (`charts::axes`), so no offset guesses at text size.
 - Tokens live in `src/theme`; the raw `px()` scan skips that folder only.
+- gpui 0.2.2 has no `(ElementId, usize)` id. A child id names its index: `(self.id.clone(), format!("row-{ix}"))`.
+- Clippy's `single_range_in_vec_init` rejects `[a..b]` and `vec![a..b]`; bind the range first.
+- A component built on `lists::Tree` fills its box; the host gives it a height. A fixed-width column beside a `flex_1` one takes `flex_none`, or it shrinks.
+- Editor rows read their text through `CodeEditor::row_text`: a multi-line ghost cuts its line, and the rest follows the ghost's last line.
 
 ## Decisions
 

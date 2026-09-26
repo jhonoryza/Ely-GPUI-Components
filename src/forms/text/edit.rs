@@ -93,17 +93,26 @@ pub(crate) struct Snapshot {
 /// Typing within this pause joins one undo step.
 const JOIN: Duration = Duration::from_millis(900);
 
-/// Undo and redo as whole-text snapshots.
-#[derive(Default)]
-pub(crate) struct History {
-    undo: Vec<Snapshot>,
-    redo: Vec<Snapshot>,
+/// Undo and redo as whole snapshots of what an editor holds.
+pub(crate) struct History<S> {
+    undo: Vec<S>,
+    redo: Vec<S>,
     typing_since: Option<Instant>,
 }
 
-impl History {
+impl<S> Default for History<S> {
+    fn default() -> Self {
+        Self {
+            undo: Vec::new(),
+            redo: Vec::new(),
+            typing_since: None,
+        }
+    }
+}
+
+impl<S> History<S> {
     /// Records the state before an edit. Typing in one burst makes one step.
-    pub fn record(&mut self, before: Snapshot, typing: bool) {
+    pub fn record(&mut self, before: S, typing: bool) {
         let joins = typing && self.typing_since.is_some_and(|at| at.elapsed() < JOIN);
         if !joins {
             self.undo.push(before);
@@ -112,14 +121,14 @@ impl History {
         self.redo.clear();
     }
 
-    pub fn undo(&mut self, current: Snapshot) -> Option<Snapshot> {
+    pub fn undo(&mut self, current: S) -> Option<S> {
         let previous = self.undo.pop()?;
         self.redo.push(current);
         self.typing_since = None;
         Some(previous)
     }
 
-    pub fn redo(&mut self, current: Snapshot) -> Option<Snapshot> {
+    pub fn redo(&mut self, current: S) -> Option<S> {
         let next = self.redo.pop()?;
         self.undo.push(current);
         self.typing_since = None;
@@ -175,7 +184,7 @@ mod tests {
             text: text.into(),
             selection: text.len()..text.len(),
         };
-        let mut history = History::default();
+        let mut history = History::<Snapshot>::default();
         history.record(snap(""), true);
         history.record(snap("a"), true);
         history.record(snap("ab"), false);

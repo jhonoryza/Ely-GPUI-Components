@@ -167,6 +167,7 @@ type ClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
 #[derive(IntoElement)]
 pub struct StatusBarItem {
     id: ElementId,
+    leading: Option<AnyElement>,
     icon: Option<IconName>,
     label: Option<SharedString>,
     tooltip: Option<SharedString>,
@@ -177,11 +178,18 @@ impl StatusBarItem {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
+            leading: None,
             icon: None,
             label: None,
             tooltip: None,
             on_click: None,
         }
+    }
+
+    /// Drawn before the icon, such as a mark with a count.
+    pub fn leading(mut self, leading: impl IntoElement) -> Self {
+        self.leading = Some(leading.into_any_element());
+        self
     }
 
     pub fn icon(mut self, icon: IconName) -> Self {
@@ -220,6 +228,7 @@ impl RenderOnce for StatusBarItem {
             .h_full()
             .px_1p5()
             .rounded(theme.radius(Radius::Sm))
+            .children(self.leading)
             .when_some(self.icon, |item, icon| {
                 item.child(
                     Icon::new(icon)

@@ -11,7 +11,8 @@ use gpui::{
 };
 
 pub(crate) use actions::{Backspace, Down, Enter, Submit, Up, bind_keys};
-use edit::{History, Snapshot};
+use edit::Snapshot;
+pub(crate) use edit::{History, from_utf16, to_utf16};
 
 use crate::theme::ActiveTheme;
 
@@ -64,7 +65,7 @@ pub struct TextInput {
     max_len: Option<usize>,
     highlighter: Option<Highlighter>,
     disabled: bool,
-    history: History,
+    history: History<Snapshot>,
     pub(crate) layout: Option<Layout>,
     pub(crate) scroll: Point<Pixels>,
     selecting: bool,

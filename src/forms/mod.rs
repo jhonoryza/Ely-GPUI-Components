@@ -54,6 +54,7 @@ pub use check::{CheckState, Checkbox, CheckboxGroup};
 pub use checked::{EmailInput, UrlInput, is_email, is_url};
 pub use chips::ChoiceChips;
 pub use code::{CodeInput, JsonInput, code_highlights, json_highlights};
+pub(crate) use code::{Kind, lex};
 pub use color::{ColorPalette, ColorPicker, ColorSwatch, EyeDropper, GradientEditor, GradientStop};
 pub use combobox::Combobox;
 pub use date::{
@@ -94,7 +95,7 @@ pub use structure::{
 };
 pub use switch::Switch;
 pub use tags::TagInput;
-pub(crate) use text::{Down, Enter, Up, bind_keys};
+pub(crate) use text::{Down, Enter, History, Up, bind_keys, from_utf16, to_utf16};
 pub use text::{Highlight, InputEvent, TextInput};
 pub use transfer::TransferList;
 pub use unit::UnitInput;

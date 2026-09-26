@@ -229,3 +229,8 @@ Per-component lines live in `tasks/`. Tags there:
 | T16d | 2 | PASS | |
 | T16e | 1 | FAIL | a smaller loss than expected read as a miss |
 | T16e | 2 | PASS | |
+| T17a | 1 | — | pending review |
+| T17b | 1 | — | pending review |
+| T17c | 1 | — | pending review |
+| T17d | 1 | — | pending review |
+| T17e | 1 | — | pending review |

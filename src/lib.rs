@@ -3,6 +3,7 @@ mod assets;
 pub mod buttons;
 pub mod charts;
 pub mod data_display;
+pub mod editor;
 pub mod feedback;
 pub mod finance;
 pub mod forms;
@@ -38,4 +39,5 @@ pub fn init(cx: &mut App) {
         KeyBinding::new("shift-tab", FocusPrev, None),
     ]);
     forms::bind_keys(cx);
+    editor::bind_keys(cx);
 }

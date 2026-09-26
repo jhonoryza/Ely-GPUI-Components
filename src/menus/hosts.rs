@@ -104,6 +104,8 @@ impl RenderOnce for DropdownMenu {
 pub struct OverflowMenu {
     id: ElementId,
     menu: Menu,
+    icon: IconName,
+    tooltip: SharedString,
 }
 
 impl OverflowMenu {
@@ -111,7 +113,19 @@ impl OverflowMenu {
         Self {
             id: id.into(),
             menu,
+            icon: IconName::Ellipsis,
+            tooltip: "More".into(),
         }
+    }
+
+    pub fn icon(mut self, icon: IconName) -> Self {
+        self.icon = icon;
+        self
+    }
+
+    pub fn tooltip(mut self, tooltip: impl Into<SharedString>) -> Self {
+        self.tooltip = tooltip.into();
+        self
     }
 }
 
@@ -119,9 +133,9 @@ impl RenderOnce for OverflowMenu {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let state = state(&self.id, window, cx);
         let click = toggle(&state, &self.menu, cx);
-        let button = IconButton::new((self.id.clone(), "button"), IconName::Ellipsis)
+        let button = IconButton::new((self.id.clone(), "button"), self.icon)
             .variant(ButtonVariant::Ghost)
-            .tooltip("More")
+            .tooltip(self.tooltip)
             .on_click(move |event, window, cx| click(event, window, cx));
         host(self.id, button, &self.menu, &state, None, window, cx)
     }
