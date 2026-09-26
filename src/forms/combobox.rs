@@ -158,6 +158,18 @@ impl RenderOnce for Combobox {
         };
         let rows = Rc::new(matching(&self.choices, query));
         let open = focused && !typing.read(cx).dismissed && !rows.is_empty();
+        if open != picker.read(cx).open {
+            let chosen = self.selected.as_ref().and_then(|value| {
+                rows.iter()
+                    .position(|row| !row.disabled && row.value == *value)
+            });
+            picker.update(cx, |picker, _| {
+                picker.open = open;
+                if let Some(at) = chosen.filter(|_| open) {
+                    picker.highlighted = at;
+                }
+            });
+        }
         let kept = picker.read(cx).highlighted;
         let highlighted = if rows.get(kept).is_some_and(|row| !row.disabled) {
             kept

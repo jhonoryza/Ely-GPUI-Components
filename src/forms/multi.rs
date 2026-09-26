@@ -79,7 +79,10 @@ impl RenderOnce for MultiSelect {
             picker.update(cx, |picker, _| picker.open = false);
         }
         let (choices, selected) = (Rc::new(self.choices), Rc::new(self.selected));
-        let start = step(&choices, choices.len() - 1, 1);
+        let start = choices
+            .iter()
+            .position(|choice| !choice.disabled && selected.contains(&choice.value))
+            .unwrap_or_else(|| step(&choices, choices.len() - 1, 1));
         if picker.read(cx).highlighted >= choices.len() {
             picker.update(cx, |picker, _| picker.highlighted = start);
         }

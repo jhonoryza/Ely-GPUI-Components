@@ -13,7 +13,7 @@ use crate::{
     menus::{Menu, MenuItem, OverflowMenu},
     primitives::{FocusRing, Icon, IconName, tab_stop},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
-    typography::Ellipsis,
+    typography::{Ellipsis, format::system_zone},
 };
 
 /// A conversation in a list: its key, its title, when it last moved, and whether it is pinned.
@@ -302,7 +302,7 @@ impl RenderOnce for ConversationList {
             &self.conversations,
             &self.query,
             self.today,
-            &TimeZone::system(),
+            &system_zone("conversation list"),
         );
         let empty = groups.is_empty();
         div()

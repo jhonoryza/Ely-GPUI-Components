@@ -115,7 +115,9 @@ fn row(ix: usize, row: &Row, today: Date, now: Timestamp) -> gpui::AnyElement {
 }
 
 pub fn conversation(_: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
-    let today = Timestamp::now().to_zoned(TimeZone::system()).date();
+    let today = Timestamp::now()
+        .to_zoned(TimeZone::try_system().expect("the gallery reads the system time zone"))
+        .date();
     let now = Timestamp::now();
     let all = rows(today);
     let count = all.len();

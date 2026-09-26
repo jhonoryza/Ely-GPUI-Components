@@ -79,7 +79,9 @@ pub fn conversations_section(
     window: &mut Window,
     cx: &mut App,
 ) -> impl IntoElement + use<> {
-    let today = Timestamp::now().to_zoned(TimeZone::system()).date();
+    let today = Timestamp::now()
+        .to_zoned(TimeZone::try_system().expect("the gallery reads the system time zone"))
+        .date();
     let query = window.use_keyed_state("chat-find-conversation", cx, |window, cx| {
         TextInput::new(window, cx).placeholder("Search conversations")
     });

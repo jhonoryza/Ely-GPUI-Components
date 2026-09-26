@@ -264,3 +264,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T23c | 1 | FAIL | suggestion arrows landed on disabled rows and left the cursor out of view; a dot ended a file mention; the drop veil never showed, since gpui styles a drag-over only on an element with a hitbox; a parameter's places came from its step alone; the gallery's prompt menu and Reset only logged |
 | T23c | 2 | FAIL | a slash inside a path read as a new trigger, closing the file suggestions; a list whose first rows were disabled opened with its cursor out of view |
 | T23c | 3 | PASS | |
+| T23d | 1 | FAIL | the list grouped days in a silent UTC fallback when the system zone was unknown; Combobox and MultiSelect opened a long list at its top, away from the choice |

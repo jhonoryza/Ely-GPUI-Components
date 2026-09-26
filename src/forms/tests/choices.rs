@@ -87,38 +87,59 @@ fn select_opens_moves_and_picks_from_the_keyboard(cx: &mut TestAppContext) {
     assert_eq!(view.read_with(cx, |view, _| view.chosen.clone()), "b");
 }
 
-/// A select of thirty rows, low in the window, and the rows it picked.
+/// Which list of thirty rows a test opens.
+#[derive(Clone, Copy)]
+enum Kind {
+    Select,
+    Combobox,
+    Multi,
+}
+
+/// A list of thirty rows with r25 chosen, low in the window, and what each press picked.
 struct Long {
-    chosen: SharedString,
-    picks: Vec<SharedString>,
+    kind: Kind,
+    field: Entity<TextInput>,
+    picks: Vec<String>,
 }
 
 impl Render for Long {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let view = cx.entity();
         let rows = (0..30).map(|ix| Choice::new(format!("r{ix:02}"), format!("Row {ix:02}")));
-        div().pt(px(200.0)).w(px(240.0)).child(
-            Select::new("long", rows)
-                .selected(self.chosen.clone())
-                .on_change(move |value, _, cx| {
-                    view.update(cx, |view, cx| {
-                        view.chosen = value.clone();
-                        view.picks.push(value.clone());
-                        cx.notify();
-                    })
-                }),
-        )
+        let view = cx.entity();
+        let note = move |pick: String, cx: &mut gpui::App| {
+            view.update(cx, |view, cx| {
+                view.picks.push(pick);
+                cx.notify();
+            })
+        };
+        let list = match self.kind {
+            Kind::Select => Select::new("long", rows)
+                .selected("r25")
+                .on_change(move |value, _, cx| note(value.to_string(), cx))
+                .into_any_element(),
+            Kind::Combobox => Combobox::new("long", &self.field, rows)
+                .selected("r25")
+                .on_change(move |value, _, cx| note(value.to_string(), cx))
+                .into_any_element(),
+            Kind::Multi => MultiSelect::new("long", rows)
+                .selected([SharedString::from("r25")])
+                .on_change(move |next, _, cx| note(next.join(","), cx))
+                .into_any_element(),
+        };
+        div().pt(px(200.0)).w(px(240.0)).child(list)
     }
 }
 
-#[gpui::test]
-fn a_long_list_opens_with_its_choice_in_view(cx: &mut TestAppContext) {
+/// Opens the list with a press on its field, then presses the row at its foot.
+fn press_the_foot(kind: Kind, cx: &mut TestAppContext) -> Vec<String> {
     setup(cx);
     cx.update(|cx| Theme::update(cx, |theme| theme.reduced_motion = true));
-    let (view, cx) = cx.add_window_view(|_, _| Long {
-        chosen: "r25".into(),
+    let (view, cx) = cx.add_window_view(|window, cx| Long {
+        kind,
+        field: cx.new(|cx| TextInput::new(window, cx)),
         picks: Vec::new(),
     });
+    cx.update(|window, _| window.activate_window());
     let (trigger, list) = cx.update(|window, cx| {
         let theme = cx.theme();
         (
@@ -139,8 +160,26 @@ fn a_long_list_opens_with_its_choice_in_view(cx: &mut TestAppContext) {
     cx.simulate_mouse_move(foot, None, Modifiers::none());
     cx.simulate_click(foot, Modifiers::none());
     frames(cx);
-    let picks = view.read_with(cx, |view, _| view.picks.clone());
-    assert_eq!(picks, ["r25"], "the list opens with its choice at the foot");
+    view.read_with(cx, |view, _| view.picks.clone())
+}
+
+#[gpui::test]
+fn a_long_select_opens_with_its_choice_in_view(cx: &mut TestAppContext) {
+    assert_eq!(press_the_foot(Kind::Select, cx), ["r25"]);
+}
+
+#[gpui::test]
+fn a_long_combobox_opens_with_its_choice_in_view(cx: &mut TestAppContext) {
+    assert_eq!(press_the_foot(Kind::Combobox, cx), ["r25"]);
+}
+
+#[gpui::test]
+fn a_long_multi_select_opens_with_its_first_choice_in_view(cx: &mut TestAppContext) {
+    assert_eq!(
+        press_the_foot(Kind::Multi, cx),
+        [""],
+        "the press unticks r25"
+    );
 }
 
 /// Frames 2ms apart, past reduced motion's 1ms entrances.

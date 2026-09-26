@@ -131,6 +131,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Editor rows read their text through `CodeEditor::row_text`: a multi-line ghost cuts its line, and the rest follows the ghost's last line.
 - gpui styles a drag-over only on an element with its own hitbox. A veil that shows while files hover takes the drop itself (`chat::DragDropOverlay`).
 - gpui 0.2.2 never clears `debug_bounds`: a test sees an element appear, not leave.
+- The system time zone comes from `typography::format::system_zone`, which fails loud; jiff's `TimeZone::system()` falls back to UTC in silence.
+- A list opens with its cursor on the current choice: Select on the chosen row, Combobox on its value, MultiSelect on the first one ticked.
 
 ## Decisions
 
