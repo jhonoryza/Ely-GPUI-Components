@@ -90,7 +90,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T25e Generative · Models
 - [x] T25f Generative · Data and prompts
 - [x] T26a Media · Images
-- [ ] T26b Media · Crop and annotate
+- [x] T26b Media · Crop and annotate
 - [ ] T26c Media · Video
 - [ ] T26d Media · Audio and controls
 - [ ] T26e Media · Capture and devices
@@ -310,3 +310,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T26a | 1 | FAIL | the viewer's picture had no id, so an animated picture never left its first frame |
 | T26a | 2 | PASS | |
 | T26b | 1 | FAIL | a shaped crop's corner ignored the pointer's move up or down |
+| T26b | 2 | PASS | |
