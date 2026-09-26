@@ -56,6 +56,7 @@ icons! {
     ArrowUpRight => "arrow-up-right",
     ArrowUp => "arrow-up",
     AtSign => "at-sign",
+    AudioLines => "audio-lines",
     Ban => "ban",
     Battery => "battery",
     Bell => "bell",

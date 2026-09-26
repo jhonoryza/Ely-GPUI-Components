@@ -19,6 +19,7 @@ pub use hex::HexViewer;
 pub use network::{NetworkInspector, Request};
 pub use session::{Breakpoint, BreakpointList, DebugCommand, DebugState, DebugToolbar};
 pub use stack::{CallStack, StackFrame, Thread, ThreadList, ThreadState};
+pub(crate) use timeline::ruler;
 pub use timeline::{Span, TimelineProfiler, zoomed};
 pub use variables::{ValueKind, Variable, VariablesPanel, Watch, WatchPanel};
 

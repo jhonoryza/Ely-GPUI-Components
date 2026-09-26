@@ -1,6 +1,7 @@
 mod canvas;
 mod panel;
 mod results;
+mod sound;
 
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
 
@@ -43,5 +44,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(results::results(window, cx))
         .child(results::variations(window, cx))
         .child(canvas::canvas(window, cx))
+        .child(sound::audio(window, cx))
+        .child(sound::voice(window, cx))
+        .child(sound::video(window, cx))
         .into_any_element()
 }

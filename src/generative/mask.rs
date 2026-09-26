@@ -329,19 +329,21 @@ impl RenderOnce for InpaintCanvas {
                 .size_full(),
             )
             .children(ring)
-            .on_mouse_move(move |event, _, cx| {
-                hover.update(cx, |pointer, cx| {
-                    *pointer = Some(event.position);
-                    cx.notify();
-                })
-            })
-            .on_hover(move |hovered, _, cx| {
-                if !hovered {
-                    leave.update(cx, |pointer, cx| {
-                        *pointer = None;
+            .when(drawn, |area| {
+                area.on_mouse_move(move |event, _, cx| {
+                    hover.update(cx, |pointer, cx| {
+                        *pointer = Some(event.position);
                         cx.notify();
                     })
-                }
+                })
+                .on_hover(move |hovered, _, cx| {
+                    if !hovered {
+                        leave.update(cx, |pointer, cx| {
+                            *pointer = None;
+                            cx.notify();
+                        })
+                    }
+                })
             })
             .on_key_down(move |event, window, cx| {
                 let Some(keys) = &keys else {

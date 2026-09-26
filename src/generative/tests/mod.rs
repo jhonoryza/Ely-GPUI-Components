@@ -5,6 +5,7 @@ use crate::{forms, primitives::FocusNext, theme::Theme};
 mod canvas;
 mod results;
 mod settings;
+mod sound;
 
 fn settle(cx: &mut VisualTestContext) {
     cx.run_until_parked();

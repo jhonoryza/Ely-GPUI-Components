@@ -3,7 +3,7 @@ use std::{rc::Rc, time::Duration};
 use gpui::{
     App, ElementId, InteractiveElement, IntoElement, MouseButton, ObjectFit, ParentElement,
     RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
-    relative,
+    relative, transparent_black,
 };
 
 use super::media::shaped;
@@ -11,12 +11,15 @@ use crate::{
     buttons::{ButtonVariant, IconButton},
     documents::source,
     forms::OnFlag,
-    primitives::{Icon, IconName, Image},
+    primitives::{FocusRing, Icon, IconName, Image, tab_stop},
     theme::{ActiveTheme, ContainerSize, ControlSize, IconSize, Radius, TextSize},
     typography::{DurationStyle, format::duration, tabular},
 };
 
 type OnSeek = Rc<dyn Fn(f32, &mut Window, &mut App)>;
+
+/// The share of a clip Left and Right move on its waveform.
+const STEP: f32 = 0.05;
 
 /// A clip's time as it plays: what played and the length, in clock digits.
 fn clock(played: Duration, length: Duration) -> String {
@@ -27,7 +30,7 @@ fn clock(played: Duration, length: Duration) -> String {
     )
 }
 
-/// A voice note or a song: play and pause, a waveform lit as far as it has played, and the time; a press on the waveform seeks there. The host plays it.
+/// A voice note or a song: play and pause, a waveform lit as far as it has played, and the time; a press on the waveform seeks there, and so do Left and Right once it has focus. The host plays it.
 #[derive(IntoElement)]
 pub struct AudioMessage {
     id: ElementId,
@@ -80,7 +83,9 @@ impl AudioMessage {
 }
 
 impl RenderOnce for AudioMessage {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let focus = (self.on_seek.as_ref())
+            .map(|_| tab_stop((self.id.clone(), "wave").into(), true, window, cx));
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let share = if self.length.is_zero() {
@@ -121,11 +126,31 @@ impl RenderOnce for AudioMessage {
             }))
             .child(
                 div()
+                    .id((self.id.clone(), "wave"))
                     .flex_1()
+                    .min_w_0()
                     .h(tall)
                     .flex()
                     .items_center()
                     .gap_px()
+                    .rounded(theme.radius(Radius::Sm))
+                    .border_1()
+                    .border_color(transparent_black())
+                    .when_some(focus.zip(self.on_seek.clone()), |wave, (focus, seek)| {
+                        wave.track_focus(&focus).focus_ring(cx).on_key_down(
+                            move |event, window, cx| {
+                                let step = match event.keystroke.key.as_str() {
+                                    "left" => -STEP,
+                                    "right" => STEP,
+                                    _ => return,
+                                };
+                                cx.stop_propagation();
+                                let next = (share + step).clamp(0.0, 1.0);
+                                log::info!("audio message: seek to {next:.2}");
+                                seek(next, window, cx)
+                            },
+                        )
+                    })
                     .children(self.peaks.iter().enumerate().map(|(ix, peak)| {
                         let seek = self.on_seek.clone();
                         let lit = (ix as f32 + 0.5) / count as f32 <= share;
@@ -156,6 +181,7 @@ impl RenderOnce for AudioMessage {
             .child(
                 tabular(
                     div()
+                        .flex_none()
                         .pr_2()
                         .text_size(theme.text_size(TextSize::Xs))
                         .text_color(colors.fg_muted),
