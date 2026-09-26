@@ -65,7 +65,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T17c Editor · Search
 - [x] T17d Editor · Panels
 - [x] T17e Editor · Status items
-- [ ] T18 Terminal
+- [x] T18 Terminal
 - [ ] T19 Git
 - [ ] T20 Debug
 - [ ] T21a Documents · Editing — `tasks/ch21-30.md`
@@ -241,4 +241,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T17e | 1 | PASS | |
 | T18 | 1 | FAIL | a missing folder ran in the app's own; combining marks dropped; Tab skipped the terminal; its wheel scrolled the page too; clear kept find matches; New bash reused the old shell; the dark script typed into the replay |
 | T18 | 2 | FAIL | a folder it could not enter still started the shell elsewhere; links read cluster cells as spaces |
-| T18 | 3 | — | pending review |
+| T18 | 3 | PASS | |
