@@ -15,7 +15,10 @@ use crate::{
     typography::{Caption, Heading, Label},
 };
 
-/// Sections stacked with room between them. Cmd-Enter in any field submits the form.
+/// The key context a form sets, so Cmd-Enter reaches it from any control inside.
+pub(crate) const FORM_CONTEXT: &str = "ElyForm";
+
+/// Sections stacked with room between them. Cmd-Enter on any field or control inside submits the form.
 #[derive(IntoElement)]
 pub struct Form {
     id: ElementId,
@@ -49,6 +52,7 @@ impl RenderOnce for Form {
         let id = self.id.clone();
         div()
             .id(self.id)
+            .key_context(FORM_CONTEXT)
             .flex()
             .flex_col()
             .gap_8()

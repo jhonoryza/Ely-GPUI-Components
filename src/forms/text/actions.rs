@@ -9,6 +9,7 @@ use super::{
     edit::{self, next_grapheme, prev_grapheme},
     element::TextElement,
 };
+use crate::forms::structure::FORM_CONTEXT;
 
 actions!(
     ely_input,
@@ -87,6 +88,7 @@ pub(crate) fn bind_keys(cx: &mut App) {
         KeyBinding::new("enter", Enter, Some(CONTEXT)),
         KeyBinding::new("shift-enter", Newline, Some(CONTEXT)),
         KeyBinding::new("secondary-enter", Submit, Some(CONTEXT)),
+        KeyBinding::new("secondary-enter", Submit, Some(FORM_CONTEXT)),
     ];
     if cfg!(target_os = "macos") {
         bindings.extend([

@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use gpui::{
-    AppContext as _, Context, Entity, IntoElement, KeyBinding, KeyUpEvent, Keystroke,
+    AppContext as _, Context, Entity, Focusable, IntoElement, KeyBinding, KeyUpEvent, Keystroke,
     ParentElement, Render, SharedString, Styled, TestAppContext, VisualTestContext, Window, div,
     px,
 };
@@ -101,6 +101,11 @@ fn enhance_asks_with_the_trimmed_prompt_and_use_this_takes_the_offer(cx: &mut Te
         assert_eq!(view.heard, ["asked a cat", "taken true"]);
         assert_eq!(view.field.read(cx).text(), "a fluffy cat asleep");
     });
+    assert!(field_focused(&view, cx), "the field takes focus back");
+}
+
+fn field_focused(view: &Entity<Enhancing>, cx: &mut VisualTestContext) -> bool {
+    cx.update(|window, cx| view.read(cx).field.focus_handle(cx).is_focused(window))
 }
 
 #[gpui::test]
@@ -119,6 +124,7 @@ fn keep_mine_leaves_the_prompt_as_written(cx: &mut TestAppContext) {
         assert_eq!(view.heard, ["taken false"]);
         assert_eq!(view.field.read(cx).text(), "a cat");
     });
+    assert!(field_focused(&view, cx), "the field takes focus back");
 }
 
 /// Three presets, two ratios, a seed, and every pick heard.

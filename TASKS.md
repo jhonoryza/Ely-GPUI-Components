@@ -291,3 +291,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24e | 2 | PASS | |
 | T24f | 1 | FAIL | Tab to a sortable header past a narrow table's edge left it out of view; a virtualized table still drew past its box at 280px |
 | T24f | 2 | PASS | |
+| T25a | 1 | FAIL | Cmd-Enter generated only while a text field held focus; the form set no key context of its own |

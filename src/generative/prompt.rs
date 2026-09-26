@@ -16,7 +16,7 @@ use crate::{
 
 type OnText = Rc<dyn Fn(&str, &mut Window, &mut App)>;
 
-/// Byte ranges of `new` that `old` lacks, word by word: neighbors joined, spaces and punctuation trimmed from each end.
+/// Byte ranges of `new` that `old` lacks, word by word: neighbors joined, and anything but letters and digits trimmed from each end.
 pub(crate) fn added_words(old: &str, new: &str) -> Vec<Range<usize>> {
     let diff = TextDiff::from_unicode_words(old, new);
     let mut ranges: Vec<Range<usize>> = Vec::new();
@@ -37,7 +37,7 @@ pub(crate) fn added_words(old: &str, new: &str) -> Vec<Range<usize>> {
         .into_iter()
         .filter_map(|range| {
             let word = &new[range.clone()];
-            let glue = |ch: char| ch.is_whitespace() || ch.is_ascii_punctuation();
+            let glue = |ch: char| !ch.is_alphanumeric();
             let start = range.start + word.len() - word.trim_start_matches(glue).len();
             let end = range.end - (word.len() - word.trim_end_matches(glue).len());
             (start < end).then_some(start..end)
@@ -145,7 +145,7 @@ impl RenderOnce for PromptEnhancer {
             ..HighlightStyle::default()
         };
         let card = div()
-            .mt_1()
+            .mt_3()
             .flex()
             .flex_col()
             .gap_3()
@@ -202,9 +202,8 @@ impl RenderOnce for PromptEnhancer {
             .w_full()
             .flex()
             .flex_col()
-            .gap_2()
             .child(Input::new(&self.field))
-            .children(enhance.map(|button| div().flex().justify_end().child(button)))
+            .children(enhance.map(|button| div().mt_2().flex().justify_end().child(button)))
             .child(
                 Transition::new((self.id.clone(), "offered"), shown)
                     .entrance(Entrance::Rise)
@@ -231,6 +230,10 @@ mod tests {
             ["pale limestone"],
             "a comma added after a kept word stays plain"
         );
+        let new = "白い中庭，朝の光";
+        let ranges = added_words("白い中庭", new);
+        let words: Vec<&str> = ranges.iter().map(|range| &new[range.clone()]).collect();
+        assert_eq!(words, ["朝の光"], "any script's punctuation stays plain");
         assert!(added_words("same words", "same words").is_empty());
         let whole = 2..7;
         assert_eq!(added_words("", "  a cat "), [whole]);

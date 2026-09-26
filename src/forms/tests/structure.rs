@@ -4,7 +4,10 @@ use gpui::{
 };
 
 use super::setup;
-use crate::forms::{FieldArray, Form, FormField, Input, InputEvent, TextInput};
+use crate::{
+    buttons::Button,
+    forms::{FieldArray, Form, FormField, Input, InputEvent, TextInput},
+};
 
 struct Signup {
     name: Entity<TextInput>,
@@ -27,13 +30,13 @@ impl Render for Signup {
                     .required()
                     .child(Input::new(&self.name)),
             )
+            .child(Button::new("signup-save", "Save"))
     }
 }
 
-#[gpui::test]
-fn cmd_enter_in_a_field_submits_the_form_once(cx: &mut TestAppContext) {
+fn signup(cx: &mut TestAppContext) -> (Entity<Signup>, &mut VisualTestContext) {
     setup(cx);
-    let (view, cx) = cx.add_window_view(|window, cx| {
+    cx.add_window_view(|window, cx| {
         let name = cx.new(|cx| TextInput::new(window, cx));
         cx.subscribe(&name, |view: &mut Signup, _, event, _| {
             if *event == InputEvent::Submit {
@@ -46,12 +49,32 @@ fn cmd_enter_in_a_field_submits_the_form_once(cx: &mut TestAppContext) {
             sent: 0,
             field_submits: 0,
         }
-    });
+    })
+}
+
+#[gpui::test]
+fn cmd_enter_in_a_field_submits_the_form_once(cx: &mut TestAppContext) {
+    let (view, cx) = signup(cx);
     cx.update(|window, _| window.focus_next());
     cx.simulate_input("Ada");
     cx.simulate_keystrokes("cmd-enter");
     let counts = view.read_with(cx, |view, _| (view.sent, view.field_submits));
     assert_eq!(counts, (1, 0));
+}
+
+#[gpui::test]
+fn cmd_enter_on_any_control_in_a_form_submits_it(cx: &mut TestAppContext) {
+    let (view, cx) = signup(cx);
+    cx.update(|window, _| {
+        window.focus_next();
+        window.focus_next();
+    });
+    cx.simulate_keystrokes("cmd-enter");
+    assert_eq!(
+        view.read_with(cx, |view, _| view.sent),
+        1,
+        "the button holds focus"
+    );
 }
 
 struct Rows {
