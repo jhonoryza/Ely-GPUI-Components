@@ -13,6 +13,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Terminal: `alacritty_terminal` 0.26 (Apache-2.0, default features off) for the grid, its parser and the pseudo-terminal; `futures` carries its events.
 - Diffs: `similar` 3.2 (Apache-2.0) for line and word diffs and three-way merges; its `unicode` feature splits words at punctuation.
 - Markdown: `pulldown-cmark` 0.13 (MIT, default features off) for CommonMark with tables, tasks, strikethrough, footnotes and math.
+- Pictures: `image` 0.25 (MIT OR Apache-2.0), the crate gpui decodes with, default features off; it turns decoded frames.
 - Gallery: `examples/gallery`. Website: `frontend/` (Vite 8, pnpm), built after the components.
 
 ## Commands
@@ -47,7 +48,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui's `Window::dispatch_event` returns a private type, so the gallery scripts mouse input by posting `NSEvent`s to its own queue.
 - `hover()` needs an element id.
 - `occlude()` blocks the pointer for everything painted before it, its own ancestors too. Put it on the outermost box that should stop the pointer, as the toast stack does, or the ancestors' hover never fires.
-- gpui sends a drag's moves to every listener of its type. Each drag payload carries its owner's `EntityId`, and handlers check it.
+- A drag that pans, turns or slides goes through gpui's drag, whose moves reach the owner in or out of its box; `on_mouse_move` stops at the box's edge. gpui sends a drag's moves to every listener of its type, so each payload carries its owner's `EntityId` and handlers check it.
+- gpui 0.2.2 paints pictures without a transform, so a picture turns by its pixels: `media::turn` turns decoded frames by quarter turns off the main thread, an asset keyed by the picture and the turn.
 - A component that takes a starting value from its owner keeps it in `layout::seeded`: a new value from the owner replaces local drags.
 - The capture harness turns on reduced motion, so shots are still: repeating motion rests on one frame, and a shimmer shows no band.
 - Each capture pass starts its page fresh (`Gallery::fresh`): page state lives under the pass, so the dark pass runs its script from the same start as the light one.

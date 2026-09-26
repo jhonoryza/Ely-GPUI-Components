@@ -20,6 +20,7 @@ barcoders = { version = "2", default-features = false, features = ["std"] }
 emojis = "0.9"
 futures = "0.3"
 gpui = "0.2.2"
+image = { version = "0.25", default-features = false }
 iso_currency = { version = "0.7", features = ["iterator"] }
 isocountry = "0.3"
 isolang = { version = "2.4", features = ["local_names", "list_languages"] }

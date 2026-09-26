@@ -14,6 +14,7 @@ mod generative;
 mod git;
 mod layout;
 mod lists;
+mod media;
 mod menus;
 mod motion;
 mod navigation;
@@ -65,6 +66,7 @@ pub const ALL: &[Page] = &[
     chat::PAGE,
     agent::PAGE,
     generative::PAGE,
+    media::PAGE,
     theme::PAGE,
 ];
 

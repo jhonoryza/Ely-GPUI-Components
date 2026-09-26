@@ -45,6 +45,7 @@ pub use templates::{Template, TemplatePicker};
 pub use thumbs::PageThumbnailList;
 pub use todo::{Checklist, TodoItem};
 pub use toolbar::FixedFormatToolbar;
+pub(crate) use viewer::step as zoom_step;
 pub use viewer::{DocPage, DocumentViewer, PageHit, PageNote};
 
 /// Binds the documents keys. `init` calls it.

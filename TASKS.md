@@ -89,7 +89,11 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T25d Generative · Sound and motion
 - [x] T25e Generative · Models
 - [x] T25f Generative · Data and prompts
-- [ ] T26 Media
+- [ ] T26a Media · Images
+- [ ] T26b Media · Crop and annotate
+- [ ] T26c Media · Video
+- [ ] T26d Media · Audio and controls
+- [ ] T26e Media · Capture and devices
 - [ ] T27 Files
 - [ ] T28 Messaging
 - [ ] T29 Mail
