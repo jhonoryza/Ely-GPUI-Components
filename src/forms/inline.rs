@@ -1,24 +1,25 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Context, ElementId, Entity, InteractiveElement, IntoElement, MouseButton, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Subscription, Window, div,
-    prelude::*,
+    App, Context, ElementId, Entity, FocusHandle, InteractiveElement, IntoElement, MouseButton,
+    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Subscription,
+    Window, div, prelude::*,
 };
 
 use super::{Input, InputEvent, TextInput};
 use crate::{
-    primitives::{Icon, IconName},
+    primitives::{FocusRing, Icon, IconName, tab_stop},
     theme::{ActiveTheme, ControlSize, IconSize, Radius},
 };
 
 pub(crate) type OnCommit = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
-/// A text being edited in place: its field while open, and who hears the kept text.
+/// A text being edited in place: its field while open, who hears the kept text, and where focus goes back after Enter or Escape. An edit that hands focus back keeps its text on Enter's release, so the release does not open it again.
 #[derive(Default)]
 pub(crate) struct Editing {
     field: Option<(Entity<TextInput>, Subscription)>,
     pub on_commit: Option<OnCommit>,
+    back: Option<FocusHandle>,
 }
 
 impl Editing {
@@ -33,15 +34,34 @@ impl Editing {
         field.update(cx, |input, cx| input.select(0..all, cx));
         window.focus(&field.read(cx).focus().clone());
         let owner = state.clone();
-        let events = window.subscribe(&field, cx, move |_, event, window, cx| {
-            if matches!(event, InputEvent::Submit | InputEvent::Blur) {
-                owner.update(cx, |editing, cx| editing.finish(false, window, cx));
-            }
+        let events = window.subscribe(&field, cx, move |_, event, window, cx| match event {
+            InputEvent::Submit => owner.update(cx, |editing, cx| {
+                if editing.back.is_none() {
+                    editing.finish(false, window, cx);
+                }
+            }),
+            InputEvent::Blur => owner.update(cx, |editing, cx| {
+                editing.back = None;
+                editing.finish(false, window, cx);
+            }),
+            _ => {}
         });
         state.update(cx, |editing, cx| {
             editing.field = Some((field, events));
             cx.notify();
         });
+    }
+
+    /// Focus goes back here after Enter or Escape.
+    fn returning(&mut self, back: FocusHandle) {
+        self.back = Some(back);
+    }
+
+    fn give_back(&mut self, window: &mut Window) {
+        if let Some(back) = self.back.take() {
+            log::info!("inline edit: focus handed back");
+            window.focus(&back);
+        }
     }
 
     pub(crate) fn field(&self) -> Option<Entity<TextInput>> {
@@ -102,16 +122,29 @@ impl InlineEdit {
 impl RenderOnce for InlineEdit {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let state = window.use_keyed_state(self.id.clone(), cx, |_, _| Editing::default());
+        let focus = tab_stop((self.id.clone(), "focus").into(), true, window, cx);
         state.update(cx, |editing, _| editing.on_commit = self.on_commit.clone());
         if let Some(field) = state.read(cx).field() {
-            let escape = state.clone();
+            let (escape, enter) = (state.clone(), state.clone());
             return div()
                 .id(self.id)
                 .w_full()
                 .on_key_down(move |event, window, cx| {
                     if event.keystroke.key == "escape" {
                         cx.stop_propagation();
-                        escape.update(cx, |editing, cx| editing.finish(true, window, cx));
+                        escape.update(cx, |editing, cx| {
+                            editing.finish(true, window, cx);
+                            editing.give_back(window);
+                        });
+                    }
+                })
+                .on_key_up(move |event, window, cx| {
+                    if event.keystroke.key == "enter" {
+                        cx.stop_propagation();
+                        enter.update(cx, |editing, cx| {
+                            editing.finish(false, window, cx);
+                            editing.give_back(window);
+                        });
                     }
                 })
                 .child(Input::new(&field).size(ControlSize::Sm))
@@ -120,7 +153,7 @@ impl RenderOnce for InlineEdit {
         let theme = cx.theme();
         let colors = &theme.colors;
         let empty = self.value.is_empty();
-        let (value, start) = (self.value.clone(), state);
+        let (value, start, back) = (self.value.clone(), state, focus.clone());
         let group = SharedString::from(format!("inline-edit-{:?}", self.id));
         div()
             .id(self.id)
@@ -133,12 +166,15 @@ impl RenderOnce for InlineEdit {
             .rounded(theme.radius(Radius::Md))
             .border_1()
             .border_color(gpui::transparent_black())
+            .track_focus(&focus)
+            .focus_ring(cx)
             .cursor_text()
             .hover(|style| style.bg(colors.hover))
             .text_color(if empty { colors.fg_subtle } else { colors.fg })
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
             .on_click(move |_, window, cx| {
                 log::info!("inline edit: editing");
+                start.update(cx, |editing, _| editing.returning(back.clone()));
                 Editing::begin(&start, value.to_string(), window, cx);
             })
             .child(if empty { self.placeholder } else { self.value })

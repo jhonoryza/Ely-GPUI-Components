@@ -1,5 +1,6 @@
 mod edit;
 mod images;
+mod video;
 
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
 
@@ -53,6 +54,20 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("media-upload", 388.0, 307.0),
     Step::Wait(300),
     Step::Shot("emptied"),
+    Step::HoverAt("media-scrubber", 320.0, 31.0),
+    Step::Wait(200),
+    Step::Shot("scrub-tip"),
+    Step::DownAt("media-strip", 467.0, 25.0),
+    Step::DragTo("media-strip", 560.0, 25.0),
+    Step::UpAt("media-strip", 560.0, 25.0),
+    Step::Wait(200),
+    Step::Shot("trimmed"),
+    Step::DownAt("media-subtitles", 80.0, 142.0),
+    Step::UpAt("media-subtitles", 80.0, 142.0),
+    Step::Type("00:20.000"),
+    Step::Key("enter"),
+    Step::Wait(300),
+    Step::Shot("retimed"),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
@@ -62,5 +77,9 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(edit::cropper(window, cx))
         .child(edit::upload(window, cx))
         .child(edit::annotator(window, cx))
+        .child(video::video(window, cx))
+        .child(video::scrubber(window, cx))
+        .child(video::strip(window, cx))
+        .child(video::subtitles(window, cx))
         .into_any_element()
 }

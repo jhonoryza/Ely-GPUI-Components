@@ -97,6 +97,7 @@ pub use select::Select;
 pub(crate) use select::{Listing, field_button, field_text, listing};
 pub(crate) use signature::{Drawing, ink, pen};
 pub use signature::{SignaturePad, Stroke};
+pub(crate) use slider::keyed;
 pub use slider::{RangeSlider, Slider};
 pub use stepper::Stepper;
 pub use structure::{

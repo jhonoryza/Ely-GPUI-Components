@@ -6,6 +6,7 @@ use crate::{primitives::FocusNext, theme::Theme};
 
 mod edit;
 mod images;
+mod video;
 
 pub(super) fn setup(cx: &mut TestAppContext) {
     cx.update(|cx| {

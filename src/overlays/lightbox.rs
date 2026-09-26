@@ -7,10 +7,11 @@ use gpui::{
 };
 
 use crate::{
+    buttons::label_size,
     forms::Run,
     motion,
     primitives::{FocusRing, FocusScope, Icon, IconName, Image, give_back, take_focus},
-    theme::{ActiveTheme, ControlSize, IconSize, TextSize},
+    theme::{ActiveTheme, ControlSize, TextSize},
 };
 
 /// One picture in a lightbox, and the line under it.
@@ -31,10 +32,11 @@ impl Slide {
 
 type OnStep = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
-/// A round button drawn for the dark layer: light icon, a faint fill on hover, dim when it has nowhere to go.
-fn media_button(
+/// A round button drawn for a dark layer over pictures: light icon, a faint fill on hover, dim when it has nowhere to go.
+pub(crate) fn media_button(
     id: (ElementId, &'static str),
     icon: IconName,
+    size: ControlSize,
     enabled: bool,
     run: impl Fn(&mut Window, &mut App) + 'static,
     cx: &App,
@@ -47,11 +49,11 @@ fn media_button(
         .flex_none()
         .items_center()
         .justify_center()
-        .size(theme.control_height(ControlSize::Lg))
+        .size(theme.control_height(size))
         .rounded_full()
         .border_1()
         .border_color(gpui::transparent_black())
-        .child(Icon::new(icon).size(IconSize::Md).color(if enabled {
+        .child(Icon::new(icon).size(label_size(size).1).color(if enabled {
             light
         } else {
             light.opacity(0.3)
@@ -147,6 +149,7 @@ impl RenderOnce for Lightbox {
             media_button(
                 (self.id.clone(), name),
                 icon,
+                ControlSize::Lg,
                 to.is_some(),
                 move |window, cx| {
                     if let Some(to) = to {
@@ -206,6 +209,7 @@ impl RenderOnce for Lightbox {
                     .child(div().flex().justify_end().p_3().child(media_button(
                         (self.id.clone(), "close"),
                         IconName::X,
+                        ControlSize::Lg,
                         true,
                         move |window, cx| button(window, cx),
                         cx,

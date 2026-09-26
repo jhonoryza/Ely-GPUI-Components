@@ -13,6 +13,10 @@ pub struct MediaSizes {
     pub arrow_head: Rems,
     /// A numbered pin, round.
     pub pin: Rems,
+    /// A strip of video frames, tall.
+    pub strip: Rems,
+    /// A trim's handle, wide.
+    pub trim_handle: Rems,
 }
 
 impl Theme {
@@ -22,6 +26,8 @@ impl Theme {
             mark_stroke: px_to_rems(2.0),
             arrow_head: px_to_rems(12.0),
             pin: px_to_rems(20.0),
+            strip: px_to_rems(48.0),
+            trim_handle: px_to_rems(8.0),
         }
     }
 }

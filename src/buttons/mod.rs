@@ -1,5 +1,6 @@
 mod bars;
 mod button;
+pub(crate) use button::label_size;
 mod confirm;
 mod copy;
 mod fab;
