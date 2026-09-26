@@ -74,7 +74,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T22 Collaboration
 - [x] T23a AI Chat · Messages
 - [x] T23b AI Chat · Citations
-- [ ] T23c AI Chat · Input
+- [x] T23c AI Chat · Input
 - [ ] T23d AI Chat · Conversations
 - [ ] T23e AI Chat · Welcome
 - [ ] T24 Agent

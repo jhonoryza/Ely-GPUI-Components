@@ -8,7 +8,8 @@ use gpui::{
 use super::{Block, BlockData, BlockEditor, BlockKind, matching};
 use crate::{
     buttons::{ButtonVariant, IconButton},
-    documents::suggest::{Offer, offers, replace_trigger},
+    documents::suggest::{Offer, offers},
+    forms::replace_trigger,
     forms::{Backspace, Choice, Down, Enter, Pick, Redo, Submit, Undo, Up},
     menus::{Menu, MenuItem, OverflowMenu},
     motion::Reorder,

@@ -299,3 +299,17 @@ fn a_range_gives_a_box_per_line_it_spans(cx: &mut TestAppContext) {
         "the second line starts at the edge"
     );
 }
+
+#[gpui::test]
+fn shift_enter_breaks_only_a_field_of_many_lines(cx: &mut TestAppContext) {
+    let (fields, cx) = open(1, false, cx);
+    focus(&fields[0], cx);
+    cx.simulate_input("one line");
+    cx.simulate_keystrokes("shift-enter");
+    cx.run_until_parked();
+    assert_eq!(
+        text(&fields[0], cx),
+        "one line",
+        "a single line stays single"
+    );
+}

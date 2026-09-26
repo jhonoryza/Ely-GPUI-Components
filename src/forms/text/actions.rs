@@ -39,6 +39,7 @@ actions!(
         Undo,
         Redo,
         Enter,
+        Newline,
         Submit,
         ShowCharacterPalette,
     ]
@@ -84,6 +85,7 @@ pub(crate) fn bind_keys(cx: &mut App) {
         KeyBinding::new("secondary-z", Undo, Some(CONTEXT)),
         KeyBinding::new("secondary-shift-z", Redo, Some(CONTEXT)),
         KeyBinding::new("enter", Enter, Some(CONTEXT)),
+        KeyBinding::new("shift-enter", Newline, Some(CONTEXT)),
         KeyBinding::new("secondary-enter", Submit, Some(CONTEXT)),
     ];
     if cfg!(target_os = "macos") {
@@ -290,6 +292,12 @@ impl TextInput {
         }
     }
 
+    fn newline(&mut self, _: &Newline, _: &mut Window, cx: &mut Context<Self>) {
+        if self.rows.is_some() {
+            self.replace(self.selection.clone(), "\n", false, cx);
+        }
+    }
+
     fn submit(&mut self, _: &Submit, _: &mut Window, cx: &mut Context<Self>) {
         log::info!("text input: submitted");
         cx.emit(InputEvent::Submit);
@@ -380,6 +388,7 @@ impl Render for TextInput {
             .on_action(cx.listener(Self::undo))
             .on_action(cx.listener(Self::redo))
             .on_action(cx.listener(Self::enter))
+            .on_action(cx.listener(Self::newline))
             .on_action(cx.listener(Self::submit))
             .on_action(cx.listener(Self::show_character_palette))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::mouse_down))

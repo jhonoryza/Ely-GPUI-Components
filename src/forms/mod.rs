@@ -63,6 +63,7 @@ pub use date::{
     WeekPicker, YearPicker,
 };
 pub use expression::{ExpressionInput, evaluate, expression_highlights};
+pub(crate) use files::dropped;
 pub use files::{DropZone, FileInput};
 pub(crate) use glyphs::emoji_found;
 pub use glyphs::{EmojiPicker, IconPicker};
@@ -75,7 +76,7 @@ pub use knob::Knob;
 pub use listbox::ListBox;
 pub use masked::{COUNTRIES, MaskedInput, PhoneInput};
 pub use mention::{MentionInput, mention_highlights};
-pub(crate) use mention::{Suggestions, active_trigger, handles_matching};
+pub(crate) use mention::{Suggestions, active_trigger, handles_matching, replace_trigger};
 pub use multi::MultiSelect;
 pub use number::{NumberInput, ScrubInput};
 pub use options::Choice;
@@ -84,6 +85,7 @@ pub(crate) use options::{
 };
 pub use pairs::{FieldArray, KeyValueInput, ListInput};
 pub use path::PathInput;
+pub(crate) use path::choose;
 pub use pattern::{RegexInput, regex_highlights};
 pub use pin::PinInput;
 pub use radio::{Radio, RadioGroup};

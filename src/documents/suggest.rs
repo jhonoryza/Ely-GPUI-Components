@@ -4,6 +4,7 @@ use gpui::{App, ElementId, Entity, SharedString, Window};
 
 use crate::forms::{
     Choice, Pick, Suggestions, TextInput, active_trigger, emoji_found, handles_matching,
+    replace_trigger,
 };
 
 /// A trigger of the owner's: from the query and where it runs, the rows and what a pick does.
@@ -21,20 +22,6 @@ fn nothing() -> (Vec<Choice>, Pick) {
         Vec::new(),
         Rc::new(|_: usize, _: &mut Window, _: &mut App| unreachable!("an empty offer has no row")),
     )
-}
-
-/// Replaces the trigger and its query, `at..caret`, with `text`, as one undo step.
-pub(crate) fn replace_trigger(
-    field: &Entity<TextInput>,
-    at: usize,
-    caret: usize,
-    text: &str,
-    cx: &mut App,
-) {
-    field.update(cx, |input, cx| {
-        input.select(at..caret, cx);
-        input.insert(text, cx);
-    });
 }
 
 /// What `@` and `:` offer at the field's caret: people by handle, emoji by name; `extra` adds a trigger of the owner's, such as `/` in blocks.

@@ -8,6 +8,7 @@ use gpui::{
 };
 
 mod cite;
+mod compose;
 
 use super::{
     ImageMessage, MessageAvatar, MessageBubble, MessageEditor, MessageList, Role, ThinkingBlock,

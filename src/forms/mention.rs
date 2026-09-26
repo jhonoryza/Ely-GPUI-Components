@@ -32,6 +32,20 @@ pub(crate) fn active_trigger(text: &str, caret: usize, triggers: &[char]) -> Opt
     (opens && word).then_some((ix, ch))
 }
 
+/// Replaces the trigger and its query, `at..caret`, with `text`, as one undo step.
+pub(crate) fn replace_trigger(
+    field: &Entity<TextInput>,
+    at: usize,
+    caret: usize,
+    text: &str,
+    cx: &mut App,
+) {
+    field.update(cx, |input, cx| {
+        input.select(at..caret, cx);
+        input.insert(text, cx);
+    });
+}
+
 /// The dismissed trigger, while it is still the one being typed.
 fn dismissal(dismissed: Option<usize>, active: Option<usize>) -> Option<usize> {
     dismissed.filter(|at| active == Some(*at))

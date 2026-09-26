@@ -1,5 +1,6 @@
 mod blocks;
 mod cite;
+mod compose;
 mod controls;
 mod talk;
 
@@ -53,5 +54,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(controls::thinking(window, cx))
         .child(cite::citations(window, cx))
         .child(cite::search(window, cx))
+        .child(compose::composer(window, cx))
+        .child(compose::pickers(window, cx))
+        .child(compose::tuning(window, cx))
         .into_any_element()
 }
