@@ -7,26 +7,41 @@ use gpui::{
 
 use super::{edit_at, settle};
 use crate::{
-    tables::{Column, DataTable, Row},
+    tables::{Cell, Column, DataTable, Row},
     theme::Theme,
 };
 
-/// Three editable columns 200 wide in a table 280 wide, the first pinned or not; it keeps the column of each edit.
-struct Wide(Rc<RefCell<Vec<String>>>, bool);
+/// How a wide table lays out its rows.
+#[derive(Clone, Copy, Debug)]
+enum Mode {
+    Plain,
+    Pinned,
+    Long,
+}
+
+/// Twenty rows of three editable columns 200 wide in a table 280 wide; it keeps each edit's row and column.
+struct Wide(Rc<RefCell<Vec<String>>>, Mode);
 
 impl Render for Wide {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
         let heard = self.0.clone();
         let column = |key: &'static str| Column::new(key, key).width(gpui::rems(12.5)).editable();
-        let first = if self.1 {
-            column("a").pinned()
-        } else {
-            column("a")
+        let first = match self.1 {
+            Mode::Pinned => column("a").pinned(),
+            _ => column("a"),
         };
-        DataTable::new("wide", [first, column("b"), column("c")])
-            .rows(vec![Row::new("r", ["A".into(), "B".into(), "C".into()])])
-            .on_edit(move |_, column, _, _, _| heard.borrow_mut().push(column.to_string()))
-            .w(px(280.0))
+        let table = DataTable::new("wide", [first, column("b"), column("c")])
+            .rows(
+                (0..20)
+                    .map(|n| Row::new(format!("r{n}"), ["A".into(), "B".into(), "C".into()]))
+                    .collect::<Vec<_>>(),
+            )
+            .on_edit(move |row, column, _, _, _| heard.borrow_mut().push(format!("{row} {column}")))
+            .w(px(280.0));
+        match self.1 {
+            Mode::Long => table.virtualized().h(px(200.0)),
+            _ => table,
+        }
     }
 }
 
@@ -36,13 +51,18 @@ fn columns_past_the_table_scroll_sideways_and_a_plain_wheel_leaves_them(cx: &mut
         Theme::init(cx);
         crate::forms::bind_keys(cx);
     });
-    for pinned in [false, true] {
+    for mode in [Mode::Plain, Mode::Pinned, Mode::Long] {
         let heard = Rc::new(RefCell::new(Vec::new()));
         let seen = heard.clone();
-        let (_, cx) = cx.add_window_view(|_, _| Wide(seen, pinned));
+        let (_, cx) = cx.add_window_view(|_, _| Wide(seen, mode));
         settle(cx);
         let cell = point(px(250.0), px(54.0));
-        for delta in [point(px(0.0), px(-2000.0)), point(px(-2000.0), px(0.0))] {
+        // A long table's rows take a plain wheel down; up leaves them at the top.
+        let plain = match mode {
+            Mode::Long => px(2000.0),
+            _ => px(-2000.0),
+        };
+        for delta in [point(px(0.0), plain), point(px(-2000.0), px(0.0))] {
             cx.simulate_event(gpui::ScrollWheelEvent {
                 position: cell,
                 delta: gpui::ScrollDelta::Pixels(delta),
@@ -52,7 +72,7 @@ fn columns_past_the_table_scroll_sideways_and_a_plain_wheel_leaves_them(cx: &mut
             settle(cx);
             edit_at(cell, "x", cx);
         }
-        assert_eq!(*heard.borrow(), ["b", "c"], "pinned {pinned}");
+        assert_eq!(*heard.borrow(), ["r0 b", "r0 c"], "{mode:?}");
     }
 }
 
@@ -92,4 +112,42 @@ fn tab_reaches_a_header_and_enter_sorts_by_it(cx: &mut TestAppContext) {
     settle(cx);
     edit_at(point(px(120.0), px(54.0)), "x", cx);
     assert_eq!(*heard.borrow(), ["ada"], "Ada rises to the top");
+}
+
+/// Five sortable, editable columns 96 wide in a table 280 wide; it keeps the column of each edit.
+struct Five(Rc<RefCell<Vec<String>>>);
+
+impl Render for Five {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let heard = self.0.clone();
+        let keys = ["a", "b", "c", "d", "e"];
+        let columns = keys.map(|key| Column::new(key, key).width(gpui::rems(6.0)).editable());
+        DataTable::new("five", columns)
+            .rows(vec![Row::new("r", keys.map(Cell::from))])
+            .on_edit(move |_, column, _, _, _| heard.borrow_mut().push(column.to_string()))
+            .w(px(280.0))
+    }
+}
+
+#[gpui::test]
+fn a_focused_header_past_the_edge_scrolls_into_view(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        Theme::init(cx);
+        crate::forms::bind_keys(cx);
+    });
+    let heard = Rc::new(RefCell::new(Vec::new()));
+    let seen = heard.clone();
+    let (_, cx) = cx.add_window_view(|_, _| Five(seen));
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    for _ in 0..5 {
+        cx.update(|window, _| window.focus_next());
+    }
+    settle(cx);
+    edit_at(point(px(270.0), px(54.0)), "x", cx);
+    assert_eq!(
+        *heard.borrow(),
+        ["e"],
+        "the last header's column sits at the box's end"
+    );
 }

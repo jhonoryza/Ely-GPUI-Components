@@ -10,6 +10,7 @@ use crate::{
     buttons::{ButtonVariant, IconButton},
     documents::source,
     forms::{Pick, Run, reveal, revealer},
+    layout::on_axis,
     motion::{self, Spinner},
     primitives::{FocusRing, Icon, IconName, Image, tab_stop},
     theme::{ActiveTheme, AvatarSize, ControlSize, IconSize, Radius, TextSize},
@@ -168,8 +169,7 @@ impl RenderOnce for BrowserPreview {
         let thumb = theme.avatar_size(AvatarSize::Lg);
         let shown = self.shown;
         let strip = (self.frames.len() > 1).then(|| {
-            div()
-                .id((self.id.clone(), "strip"))
+            on_axis(div().id((self.id.clone(), "strip")))
                 .track_scroll(&scroll)
                 .overflow_x_scroll()
                 .flex()

@@ -11,7 +11,7 @@ use crate::{
     theme::Theme,
 };
 
-/// A question with two answers to pick, and the answers given.
+/// A question with two answers to pick, and the answers given; once answered, it shows the first.
 struct Asked {
     field: Entity<TextInput>,
     answers: Vec<String>,
@@ -20,17 +20,23 @@ struct Asked {
 impl Render for Asked {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let view = cx.entity();
-        div().w(px(420.0)).child(
-            HumanInputRequest::new(
-                "asked",
-                "Keep the accents?",
-                &self.field,
-                move |answer, _, cx| {
-                    view.update(cx, |asked, _| asked.answers.push(answer.to_string()))
-                },
-            )
-            .choices(["Keep them", "Lift further"]),
+        let request = HumanInputRequest::new(
+            "asked",
+            "Keep the accents?",
+            &self.field,
+            move |answer, _, cx| {
+                view.update(cx, |asked, cx| {
+                    asked.answers.push(answer.to_string());
+                    cx.notify();
+                })
+            },
         )
+        .choices(["Keep them", "Lift further"]);
+        let request = match self.answers.first() {
+            Some(answer) => request.answered(answer.clone()),
+            None => request,
+        };
+        div().w(px(420.0)).child(request)
     }
 }
 
@@ -50,14 +56,17 @@ fn asked(cx: &mut TestAppContext) -> (Entity<Asked>, &mut VisualTestContext) {
 }
 
 #[gpui::test]
-fn a_pick_answers_the_question(cx: &mut TestAppContext) {
+fn a_pick_answers_the_question_and_the_answer_stands_alone(cx: &mut TestAppContext) {
     let (view, cx) = asked(cx);
     cx.update(|window, _| window.focus_next());
     cx.update(|window, _| window.focus_next());
     press("enter", cx);
+    cx.update(|window, _| window.focus_next());
+    press("enter", cx);
     assert_eq!(
         view.read_with(cx, |asked, _| asked.answers.clone()),
-        ["Lift further"]
+        ["Lift further"],
+        "once answered, no choice is left to press"
     );
 }
 

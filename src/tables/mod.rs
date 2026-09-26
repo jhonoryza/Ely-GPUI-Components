@@ -1,6 +1,7 @@
 mod body;
 mod builders;
 mod cell;
+mod foot;
 mod formula;
 mod grid;
 mod gridkeys;

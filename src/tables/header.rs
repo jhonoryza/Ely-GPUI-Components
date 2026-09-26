@@ -1,10 +1,11 @@
 use gpui::{
-    App, DragMoveEvent, ElementId, Entity, EntityId, FontWeight, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, Pixels, Rems, SharedString, StatefulInteractiveElement, Styled,
-    canvas, div, prelude::*, transparent_black,
+    App, Bounds, Div, DragMoveEvent, ElementId, Entity, EntityId, FocusHandle, FontWeight,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Rems, SharedString,
+    Stateful, StatefulInteractiveElement, Styled, Window, canvas, div, point, prelude::*,
+    transparent_black,
 };
 
-use super::{Column, body::sized, table::View};
+use super::{Column, table::View};
 use crate::layout::seeded::Seeded;
 use crate::{
     primitives::{DragGhost, FocusRing, Icon, IconName},
@@ -78,16 +79,48 @@ pub(crate) fn moved(
     next
 }
 
-/// One header cell: its title and sort mark; a press sorts, a drag moves it, and its right edge resizes.
+/// Brings a focused header whole into its table's sideways box once, from its painted bounds; forgets it when focus leaves.
+fn reveal(
+    view: &Entity<View>,
+    key: &SharedString,
+    focused: bool,
+    head: Bounds<Pixels>,
+    window: &mut Window,
+    cx: &mut App,
+) {
+    if focused == (view.read(cx).revealed.as_ref() == Some(key)) {
+        return;
+    }
+    if !focused {
+        view.update(cx, |view, _| view.revealed = None);
+        return;
+    }
+    let scroll = view.read(cx).sideways.clone();
+    let (frame, offset) = (scroll.bounds(), scroll.offset());
+    let shift = if head.left() < frame.left() {
+        frame.left() - head.left()
+    } else if head.right() > frame.right() {
+        (frame.right() - head.right()).max(frame.left() - head.left())
+    } else {
+        Pixels::ZERO
+    };
+    view.update(cx, |view, _| view.revealed = Some(key.clone()));
+    if shift != Pixels::ZERO {
+        scroll.set_offset(point(offset.x + shift, offset.y));
+        log::info!("data table: header {key} scrolled into view");
+        window.request_animation_frame();
+    }
+}
+
+/// One header cell, sized by its caller: its title and sort mark; a press sorts, a drag moves it, and its right edge resizes. A sortable one is a Tab stop through `focus`, and scrolls into view when focused.
 pub(crate) fn header(
     id: &ElementId,
     view: &Entity<View>,
     sorting: &Entity<Seeded<Vec<(SharedString, bool)>>>,
     column: &Column,
-    width: Option<Pixels>,
-    narrowest: Rems,
+    focus: Option<FocusHandle>,
     cx: &App,
-) -> impl IntoElement + use<> {
+) -> Stateful<Div> {
     let sort = sorting.read(cx).value.clone();
     let theme = cx.theme();
     let colors = &theme.colors;
@@ -116,80 +149,79 @@ pub(crate) fn header(
         .text_size(theme.text_size(TextSize::Xs))
         .font_weight(FontWeight::MEDIUM)
         .text_color(colors.fg_muted);
-    let cell = match width {
-        Some(width) => cell.w(width).flex_none(),
-        None => sized(cell, column, narrowest),
-    };
-    cell.when(column.sortable, |cell| {
-        let key = key.clone();
-        cell.tab_index(0)
-            .focus_ring(cx)
-            .cursor_pointer()
-            .hover(|style| style.text_color(colors.fg))
-            .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
-            .on_click(move |event, _, cx| {
-                let join = event.modifiers().shift;
-                sorter.update(cx, |sorting, cx| {
-                    sorting.value = next_sort(&sorting.value, &key, join);
-                    log::info!("data table: sort {:?}", sorting.value);
-                    cx.notify();
-                });
-                pager.update(cx, |view, _| view.page = 0);
-            })
-    })
-    .on_drag(
-        Move {
-            owner,
-            key: key.clone(),
-        },
-        move |_, _, _, cx| DragGhost::new(title.clone(), None, cx),
-    )
-    .on_drop({
-        let key = key.clone();
-        move |drag: &Move, _, cx| {
-            if drag.owner != owner || drag.key == key {
-                return;
-            }
-            mover.update(cx, |view, cx| {
-                view.order = moved(&view.order, &drag.key, &key);
-                log::info!("data table: moved {} before {key}", drag.key);
-                cx.notify();
-            })
-        }
-    })
-    .child(column.title.clone())
-    .children(mark.map(|(rising, rank)| {
-        div()
-            .flex()
-            .items_center()
-            .child(
-                Icon::new(if rising {
-                    IconName::ArrowUp
-                } else {
-                    IconName::ArrowDown
+    let revealing = focus.clone().filter(|_| !column.pinned);
+    cell.when_some(focus, |cell, focus| cell.track_focus(&focus).focus_ring(cx))
+        .when(column.sortable, |cell| {
+            let key = key.clone();
+            cell.cursor_pointer()
+                .hover(|style| style.text_color(colors.fg))
+                .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
+                .on_click(move |event, _, cx| {
+                    let join = event.modifiers().shift;
+                    sorter.update(cx, |sorting, cx| {
+                        sorting.value = next_sort(&sorting.value, &key, join);
+                        log::info!("data table: sort {:?}", sorting.value);
+                        cx.notify();
+                    });
+                    pager.update(cx, |view, _| view.page = 0);
                 })
-                .size(IconSize::Xs)
-                .color(colors.fg_muted),
-            )
-            .children(rank.map(|rank| {
-                div()
-                    .text_size(theme.text_size(TextSize::Xs))
-                    .child(rank.to_string())
-            }))
-    }))
-    .child(grip(id, &key, owner, sizer, theme.handle_hit(), cx))
-    .child(
-        canvas(
-            move |bounds, _, cx| {
-                if edges.read(cx).edges.get(&key) != Some(&bounds.left()) {
-                    edges.update(cx, |view, _| view.edges.insert(key.clone(), bounds.left()));
-                }
+        })
+        .on_drag(
+            Move {
+                owner,
+                key: key.clone(),
             },
-            |_, _, _, _| {},
+            move |_, _, _, cx| DragGhost::new(title.clone(), None, cx),
         )
-        .absolute()
-        .inset_0(),
-    )
+        .on_drop({
+            let key = key.clone();
+            move |drag: &Move, _, cx| {
+                if drag.owner != owner || drag.key == key {
+                    return;
+                }
+                mover.update(cx, |view, cx| {
+                    view.order = moved(&view.order, &drag.key, &key);
+                    log::info!("data table: moved {} before {key}", drag.key);
+                    cx.notify();
+                })
+            }
+        })
+        .child(column.title.clone())
+        .children(mark.map(|(rising, rank)| {
+            div()
+                .flex()
+                .items_center()
+                .child(
+                    Icon::new(if rising {
+                        IconName::ArrowUp
+                    } else {
+                        IconName::ArrowDown
+                    })
+                    .size(IconSize::Xs)
+                    .color(colors.fg_muted),
+                )
+                .children(rank.map(|rank| {
+                    div()
+                        .text_size(theme.text_size(TextSize::Xs))
+                        .child(rank.to_string())
+                }))
+        }))
+        .child(grip(id, &key, owner, sizer, theme.handle_hit(), cx))
+        .child(
+            canvas(
+                move |bounds, window, cx| {
+                    if edges.read(cx).edges.get(&key) != Some(&bounds.left()) {
+                        edges.update(cx, |view, _| view.edges.insert(key.clone(), bounds.left()));
+                    }
+                    if let Some(focus) = &revealing {
+                        reveal(&edges, &key, focus.is_focused(window), bounds, window, cx);
+                    }
+                },
+                |_, _, _, _| {},
+            )
+            .absolute()
+            .inset_0(),
+        )
 }
 
 /// The resize grip on a header's right edge.

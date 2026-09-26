@@ -284,3 +284,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24d | 3 | FAIL | reviewed by Claude Fable 5.1 max after codex ran out of quota: the shown thumbnail wore the focus color, so focus and choice looked alike; frames were forced to 16:10 and cropped, and a pointer's share missed its target. Fixed after the cap: the shown frame takes accent, and BrowserPreview and ComputerUseViewer take the host's ratio (test a_screen_takes_its_pictures_shape); no fourth review |
 | T24e | 1 | FAIL | cpu() clamped a share past 1 in silence; the registry's grouping by source had no test |
 | T24e | 2 | PASS | |
+| T24f | 1 | FAIL | Tab to a sortable header past a narrow table's edge left it out of view; a virtualized table still drew past its box at 280px |

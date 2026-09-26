@@ -2,13 +2,14 @@ use std::{collections::HashSet, rc::Rc};
 
 use gpui::{
     AnyElement, App, Div, ElementId, Entity, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, Pixels, Rems, SharedString, Stateful, StatefulInteractiveElement, Styled,
-    Window, div, prelude::*, transparent_black,
+    ParentElement, Pixels, Rems, ScrollHandle, SharedString, Stateful, StatefulInteractiveElement,
+    Styled, Window, div, prelude::*, transparent_black,
 };
 
 use super::{Align, Column, Row, cell::draw, model::tint, table::View};
 use crate::{
     forms::{CheckState, Editing, Input, check_mark},
+    layout::on_axis,
     lists::Pick,
     primitives::Disclosure,
     theme::{ActiveTheme, ControlSize, TextSize},
@@ -32,11 +33,14 @@ pub(super) fn sized<E: Styled>(cell: E, column: &Column, narrowest: Rems) -> E {
     }
 }
 
-/// A box a table's columns scroll sideways in; a plain wheel passes to the page.
-pub(super) fn sideways(id: &ElementId) -> Stateful<Div> {
-    let mut sideways = div().id((id.clone(), "sideways")).overflow_x_scroll();
-    sideways.style().restrict_scroll_to_axis = Some(true);
-    sideways
+/// A box a table's columns scroll sideways in, tracked by `handle`; a plain wheel passes to the page.
+pub(super) fn sideways(id: &ElementId, handle: &ScrollHandle) -> Stateful<Div> {
+    on_axis(
+        div()
+            .id((id.clone(), "sideways"))
+            .overflow_x_scroll()
+            .track_scroll(handle),
+    )
 }
 
 /// What the body draws, one after another.

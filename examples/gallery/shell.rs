@@ -1,5 +1,6 @@
 use ely_gpui_component::{
     buttons::{ButtonVariant, IconButton},
+    layout::on_axis,
     primitives::{FocusScope, IconName},
     theme::{ActiveTheme, ControlSize, Mode, Radius, TextSize, Theme},
 };
@@ -122,8 +123,7 @@ impl Gallery {
                     ),
             )
             .child(
-                div()
-                    .id("nav")
+                on_axis(div().id("nav"))
                     .flex()
                     .flex_col()
                     .gap_0p5()
@@ -208,8 +208,7 @@ impl Render for Gallery {
             .text_size(theme.text_size(TextSize::Base))
             .child(sidebar)
             .child(
-                div()
-                    .id("page")
+                on_axis(div().id("page"))
                     .flex_1()
                     .h_full()
                     .overflow_y_scroll()

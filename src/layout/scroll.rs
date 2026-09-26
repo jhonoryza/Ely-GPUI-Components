@@ -16,6 +16,12 @@ use crate::{motion, theme::ActiveTheme};
 
 const IDLE: Duration = Duration::from_millis(900);
 
+/// Keeps a scroll box's wheel to its own axes; gpui turns a wheel along the other axis onto a box that scrolls one way, while the page scrolls too.
+pub fn on_axis<E: Styled>(mut element: E) -> E {
+    element.style().restrict_scroll_to_axis = Some(true);
+    element
+}
+
 struct Activity {
     handle: ScrollHandle,
     last: Point<Pixels>,

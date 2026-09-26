@@ -10,6 +10,7 @@ use crate::{
     buttons::{Button, ButtonVariant, CopyButton, IconButton},
     editor::code_colors,
     forms::Run,
+    layout::on_axis,
     primitives::{Disclosure, IconName},
     theme::{ActiveTheme, ControlSize, Radius, TextSize},
 };
@@ -128,8 +129,7 @@ impl RenderOnce for CodeBlock {
                     .child(CopyButton::new((self.id.clone(), "copy"), code.clone())),
             )
             .child(
-                div()
-                    .id((self.id.clone(), "code"))
+                on_axis(div().id((self.id.clone(), "code")))
                     .overflow_x_scroll()
                     .px_3()
                     .py_2()

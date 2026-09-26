@@ -4,25 +4,26 @@ use std::{
 };
 
 use gpui::{
-    AnyElement, App, Div, ElementId, Entity, FontWeight, InteractiveElement, IntoElement,
-    ParentElement, Pixels, RenderOnce, SharedString, StatefulInteractiveElement, StyleRefinement,
-    Styled, UniformListScrollHandle, Window, div, prelude::*, transparent_black, uniform_list,
+    AnyElement, App, Div, ElementId, Entity, FocusHandle, InteractiveElement, IntoElement,
+    ParentElement, Pixels, RenderOnce, ScrollHandle, SharedString, StatefulInteractiveElement,
+    StyleRefinement, Styled, UniformListScrollHandle, Window, div, prelude::*, uniform_list,
 };
 
 use super::{
-    Aggregate, Cell, Column, FilterRule,
+    Cell, Column, FilterRule,
     body::{Body, Detail, Line, OnEdit, Select, sideways, sized},
     header::header,
-    model::{figure, filtered, page, range},
+    model::{filtered, page, range},
     rules::{groups, kept, sorted_by},
 };
 use crate::{
     forms::{CheckState, Editing, check_mark},
-    layout::seeded::use_seeded,
+    layout::{on_axis, seeded::use_seeded},
     lists::{Pick, picked},
     navigation::Pagination,
+    primitives::tab_stop,
     theme::{ActiveTheme, ControlSize, Density, TextSize},
-    typography::{Caption, format},
+    typography::Caption,
 };
 
 /// One row: its key, which a selection names it by, and a cell for each column.
@@ -41,12 +42,14 @@ impl Row {
     }
 }
 
-/// A table's own state: the page, a Shift range's start, the scroll, column widths, edges and order, opened rows, folded groups, and the cell being edited.
+/// A table's own state: the page, a Shift range's start, the scrolls down and sideways, the header last scrolled into view, column widths, edges and order, opened rows, folded groups, and the cell being edited.
 #[derive(Default)]
 pub(crate) struct View {
     pub page: usize,
     pub anchor: usize,
     pub scroll: UniformListScrollHandle,
+    pub sideways: ScrollHandle,
+    pub revealed: Option<SharedString>,
     pub widths: HashMap<SharedString, Pixels>,
     pub edges: HashMap<SharedString, Pixels>,
     pub narrowest: Pixels,
@@ -121,6 +124,12 @@ impl RenderOnce for DataTable {
             window.use_keyed_state((id.clone(), "view"), cx, |_, _| View::default());
         let sorting = use_seeded((id.clone(), "sort"), self.sorts.clone(), window, cx);
         let editor = window.use_keyed_state((id.clone(), "editor"), cx, |_, _| Editing::default());
+        let focuses: Vec<Option<FocusHandle>> = (self.columns.iter())
+            .map(|column| {
+                let key = (id.clone(), format!("head-{}", column.key)).into();
+                column.sortable.then(|| tab_stop(key, true, window, cx))
+            })
+            .collect();
         let narrowest = cx.theme().label_width() * 0.5;
         let rem = window.rem_size();
         let keys_now: Vec<SharedString> = self
@@ -328,72 +337,22 @@ impl RenderOnce for DataTable {
                     })
                 })
                 .children(cols.iter().map(|col| {
-                    header(
+                    let head = header(
                         &id,
                         &view,
                         &sorting,
                         &columns[*col],
-                        widths[*col],
-                        narrowest,
+                        focuses[*col].clone(),
                         cx,
-                    )
+                    );
+                    match widths[*col] {
+                        Some(width) => head.w(width).flex_none(),
+                        None => sized(head, &columns[*col], narrowest),
+                    }
                 }))
         };
-        let figures = |cols: &[usize], lead: bool, cx: &App| {
-            columns
-                .iter()
-                .any(|column| column.aggregate.is_some())
-                .then(|| {
-                    let theme = cx.theme();
-                    div()
-                        .flex()
-                        .items_center()
-                        .h(height)
-                        .text_size(theme.text_size(TextSize::Sm))
-                        .font_weight(FontWeight::MEDIUM)
-                        .when(lead, |row| {
-                            row.child(div().flex_none().w(body.lead_width()))
-                        })
-                        .children(cols.iter().map(|col| {
-                            let column = &columns[*col];
-                            let shown = column.aggregate.map(|how| {
-                                let shares = rows.first().is_some_and(|row| {
-                                    matches!(row.cells[*col], Cell::Progress(_))
-                                });
-                                let value = figure(&rows, &order, *col, how).map_or(
-                                    "—".to_string(),
-                                    |value| match how {
-                                        Aggregate::Count => format!("{}", value as usize),
-                                        _ if shares => format::percent(value, 0, false),
-                                        _ => column.reads(value),
-                                    },
-                                );
-                                div()
-                                    .flex()
-                                    .items_baseline()
-                                    .gap_1()
-                                    .child(
-                                        div()
-                                            .text_size(theme.text_size(TextSize::Xs))
-                                            .text_color(theme.colors.fg_subtle)
-                                            .child(how.label()),
-                                    )
-                                    .child(value)
-                            });
-                            let cell = div()
-                                .px_3()
-                                .border_x_1()
-                                .border_color(transparent_black())
-                                .flex()
-                                .items_center();
-                            match widths[*col] {
-                                Some(width) => cell.w(width).flex_none(),
-                                None => sized(cell, column, narrowest),
-                            }
-                            .children(shown)
-                        }))
-                })
-        };
+        let figures = |cols: &[usize], lead: bool, cx: &App| body.figures(&order, cols, lead, cx);
+        let slide = view.read(cx).sideways.clone();
         let part = |cols: &[usize], lead: bool, window: &mut Window, cx: &mut App| -> Div {
             let lines: Vec<AnyElement> = (0..body.lines.len())
                 .map(|at| body.line(at, cols, lead, window, cx))
@@ -405,68 +364,75 @@ impl RenderOnce for DataTable {
                 .children(lines)
                 .children(figures(cols, lead, cx))
         };
-        let table: AnyElement =
-            if total == 0 {
-                let theme = cx.theme();
-                let least = body.least(&shown_columns, true, rem);
-                sideways(&id)
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .min_w(least)
-                            .child(heads(&shown_columns, true, cx))
-                            .child(
-                                div()
-                                    .flex()
-                                    .justify_center()
-                                    .py_6()
-                                    .text_size(theme.text_size(TextSize::Sm))
-                                    .text_color(theme.colors.fg_subtle)
-                                    .child("Nothing matches."),
-                            ),
-                    )
-                    .into_any_element()
-            } else if self.virtualized {
-                let (scroll, count, cols, drawn) = (
-                    view.read(cx).scroll.clone(),
-                    body.lines.len(),
-                    shown_columns.clone(),
-                    body.clone(),
-                );
-                div()
-                    .flex()
-                    .flex_col()
-                    .size_full()
-                    .child(heads(&shown_columns, true, cx))
-                    .child(
-                        uniform_list((id.clone(), "rows"), count, move |range, window, cx| {
-                            range
-                                .map(|at| drawn.line(at, &cols, true, window, cx))
-                                .collect()
-                        })
-                        .track_scroll(scroll)
-                        .flex_1()
-                        .min_h_0(),
-                    )
-                    .children(figures(&shown_columns, true, cx))
-                    .into_any_element()
-            } else if pinned_any {
-                let (held, moving): (Vec<usize>, Vec<usize>) =
-                    shown_columns.iter().partition(|col| columns[**col].pinned);
-                div()
-                    .flex()
-                    .child(part(&held, true, window, cx).flex_none())
-                    .child(sideways(&id).flex_1().min_w_0().child(
+        let table: AnyElement = if total == 0 {
+            let theme = cx.theme();
+            let least = body.least(&shown_columns, true, rem);
+            sideways(&id, &slide)
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .min_w(least)
+                        .child(heads(&shown_columns, true, cx))
+                        .child(
+                            div()
+                                .flex()
+                                .justify_center()
+                                .py_6()
+                                .text_size(theme.text_size(TextSize::Sm))
+                                .text_color(theme.colors.fg_subtle)
+                                .child("Nothing matches."),
+                        ),
+                )
+                .into_any_element()
+        } else if self.virtualized {
+            let (scroll, count, cols, drawn) = (
+                view.read(cx).scroll.clone(),
+                body.lines.len(),
+                shown_columns.clone(),
+                body.clone(),
+            );
+            let least = body.least(&shown_columns, true, rem);
+            sideways(&id, &slide)
+                .size_full()
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .size_full()
+                        .min_w(least)
+                        .child(heads(&shown_columns, true, cx))
+                        .child(on_axis(
+                            uniform_list((id.clone(), "rows"), count, move |range, window, cx| {
+                                range
+                                    .map(|at| drawn.line(at, &cols, true, window, cx))
+                                    .collect()
+                            })
+                            .track_scroll(scroll)
+                            .flex_1()
+                            .min_h_0(),
+                        ))
+                        .children(figures(&shown_columns, true, cx)),
+                )
+                .into_any_element()
+        } else if pinned_any {
+            let (held, moving): (Vec<usize>, Vec<usize>) =
+                shown_columns.iter().partition(|col| columns[**col].pinned);
+            div()
+                .flex()
+                .child(part(&held, true, window, cx).flex_none())
+                .child(
+                    sideways(&id, &slide).flex_1().min_w_0().child(
                         part(&moving, false, window, cx).min_w(body.least(&moving, false, rem)),
-                    ))
-                    .into_any_element()
-            } else {
-                let least = body.least(&shown_columns, true, rem);
-                sideways(&id)
-                    .child(part(&shown_columns, true, window, cx).min_w(least))
-                    .into_any_element()
-            };
+                    ),
+                )
+                .into_any_element()
+        } else {
+            let least = body.least(&shown_columns, true, rem);
+            sideways(&id, &slide)
+                .child(part(&shown_columns, true, window, cx).min_w(least))
+                .into_any_element()
+        };
         let pager = pages.filter(|pages| *pages > 1).map(|pages| {
             let size = self.page_size.expect("pages come from a page size");
             let (first, last) = (page_at * size + 1, ((page_at + 1) * size).min(total));

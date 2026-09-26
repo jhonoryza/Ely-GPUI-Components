@@ -82,7 +82,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A window keeps one `feedback::Toaster` and renders one `ToastViewport`; anything holding the entity pushes to it. Messages share `primitives::Severity`.
 - Only gpui can build `ExternalPaths` with paths, so drop rules live in `forms::files::dropped`, where tests reach them.
 - gpui runs key bindings before key listeners. A container takes a child's bound key through the action with `capture_action`, as `Form` takes `Submit`.
-- `ScrollHandle::scroll_to_item` runs in the container's prepaint against last frame's bounds and overflow, so a call before a list's first frame does nothing. Call it from a child's prepaint once the handle has bounds, then request one frame (`navigation::editor_tabs`). A floating list reveals its cursor, and a strip its focused item, through `forms::options::reveal` and `revealer`. Never poll layout with `request_animation_frame`.
+- `ScrollHandle::scroll_to_item` runs in the container's prepaint against last frame's bounds and overflow, so a call before a list's first frame does nothing. Call it from a child's prepaint once the handle has bounds, then request one frame (`navigation::editor_tabs`). A floating list reveals its cursor, and a strip its focused item, through `forms::options::reveal` and `revealer`. A focused Tab stop deeper in a scroll box sets the box's offset whole from its own painted bounds in prepaint, once per focus (`tables::header`). Never poll layout with `request_animation_frame`.
 - gpui animations run on the wall clock; timers run on the executor's clock, which tests advance by hand. A test that needs an animation settled turns on the theme's reduced motion. Clocks read `background_executor().now()` and wake only their own view.
 - Machine-read marks, QR codes and barcodes, paint `ink` on `paper`: dark on light in both themes, so cameras read them.
 - A layer over pressable content that must still pass scrolls to its ancestors uses `block_mouse_except_scroll`; `occlude` hides them from scrolls too.
@@ -137,7 +137,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A flex line whose free space goes to an auto margin loses its gaps in taffy 0.9. A row that parts left and right groups its sides and uses `justify_between`; `ml_auto` is safe only beside a `flex_1` item that leaves no free space.
 - A header that holds a name beside counts and actions wraps: `flex_wrap`, the name `flex_1` with `min_w(label_width)`, the rest one `flex_none` group that drops below.
 - Every header, row and strip works at 280px: a name keeps its minimum width, the rest wraps below or scrolls, and nothing draws past its box.
-- gpui takes a scroll box's reach from its direct children's bounds, and a block child stretches to the box. Content that scrolls sideways sets its least width on that child (`tables::body::least`). An x-only scroll box also turns a plain wheel sideways unless `restrict_scroll_to_axis` is set through `style()`; a table's sets it, so the page keeps the wheel.
+- gpui takes a scroll box's reach from its direct children's bounds, and a block child stretches to the box. Content that scrolls sideways sets its least width on that child (`tables::body::least`).
+- gpui turns a wheel along the other axis onto a box that scrolls one way, and the page around it scrolls too. A box inside a scrolling page keeps its wheel to its axis with `layout::on_axis`, and so does the page.
 - The focus color belongs to the focus ring. A chosen or shown item takes accent, as `forms::glyphs` and `lists::ListItem` do.
 - A box that shows a host's picture takes the picture's shape from the host (`ratio`), so nothing is cropped and a point given as a share lands on the picture.
 

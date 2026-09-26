@@ -136,7 +136,7 @@ impl RenderOnce for TimelineProfiler {
         let (from, to) = self.range;
         let length = to - from;
         let at = move |time: f64| ((time - from) / length) as f32;
-        let room = (theme.label_width() * 0.4).to_pixels(window.rem_size());
+        let room = theme.chart().label.to_pixels(window.rem_size());
         let width = lane.read(cx).size.width;
         let (step, ticks) = ruler(self.range, f32::from(width), f32::from(room));
         let wheel_lane = lane.clone();
