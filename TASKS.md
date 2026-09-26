@@ -75,9 +75,14 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T23a AI Chat · Messages
 - [x] T23b AI Chat · Citations
 - [x] T23c AI Chat · Input
-- [ ] T23d AI Chat · Conversations
-- [ ] T23e AI Chat · Welcome
-- [ ] T24 Agent
+- [x] T23d AI Chat · Conversations
+- [x] T23e AI Chat · Welcome
+- [ ] T24a Agent · Tool calls
+- [ ] T24b Agent · Progress
+- [ ] T24c Agent · Changes
+- [ ] T24d Agent · Previews
+- [ ] T24e Agent · Environment
+- [ ] T24f Agent · Control and cost
 - [ ] T25 Generative
 - [ ] T26 Media
 - [ ] T27 Files
@@ -266,3 +271,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T23c | 3 | PASS | |
 | T23d | 1 | FAIL | the list grouped days in a silent UTC fallback when the system zone was unknown; Combobox and MultiSelect opened a long list at its top, away from the choice |
 | T23d | 2 | PASS | |
+| T23e | 1 | PASS | |
