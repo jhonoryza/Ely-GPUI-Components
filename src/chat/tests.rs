@@ -1,28 +1,37 @@
 use std::{cell::RefCell, rc::Rc};
 
 use gpui::{
-    AppContext as _, Context, Entity, Focusable, IntoElement, Modifiers, ParentElement, Render,
-    ScrollDelta, ScrollWheelEvent, Styled, TestAppContext, TouchPhase, VisualTestContext, Window,
-    div, point, px,
+    AppContext as _, Bounds, Context, Entity, Focusable, InteractiveElement, IntoElement,
+    KeyUpEvent, Keystroke, Modifiers, MouseButton, ParentElement, Pixels, Render, ScrollDelta,
+    ScrollWheelEvent, Styled, TestAppContext, TouchPhase, VisualTestContext, Window, canvas, div,
+    point, px,
 };
 
-use super::{MessageEditor, MessageList};
+use super::{
+    ImageMessage, MessageAvatar, MessageBubble, MessageEditor, MessageList, Role, ThinkingBlock,
+};
 use crate::{forms, forms::TextInput, theme::Theme};
 
 type Seen = Rc<RefCell<Vec<usize>>>;
 
-/// A conversation of tall messages, noting which ones each frame drew.
+type Pressed = Rc<RefCell<Option<bool>>>;
+
+/// A conversation of tall messages, noting which ones each frame drew, and whether a press landed on a button.
 struct Talk {
     count: usize,
     seen: Seen,
+    pressed: Pressed,
 }
 
 impl Render for Talk {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-        let seen = self.seen.clone();
+        let (seen, pressed) = (self.seen.clone(), self.pressed.clone());
         seen.borrow_mut().clear();
         div()
             .size_full()
+            .on_mouse_down(MouseButton::Left, move |_, window, _| {
+                *pressed.borrow_mut() = Some(window.default_prevented())
+            })
             .child(MessageList::new("talk", self.count, move |ix, _, _| {
                 seen.borrow_mut().push(ix);
                 div().h(px(80.0)).w_full().into_any_element()
@@ -48,6 +57,7 @@ fn the_list_follows_the_newest_until_the_reader_scrolls_away(cx: &mut TestAppCon
     let (talk, cx) = cx.add_window_view(move |_, _| Talk {
         count: 40,
         seen: noted,
+        pressed: Pressed::default(),
     });
     settle(cx);
     assert_eq!(newest(&seen), 39, "it opens at the newest");
@@ -160,5 +170,189 @@ fn the_editor_takes_focus_as_it_opens(cx: &mut TestAppContext) {
         edit.read_with(cx, |edit, _| edit.cancelled),
         1,
         "Escape reaches the editor"
+    );
+}
+
+type Measured = Rc<RefCell<Option<Bounds<Pixels>>>>;
+
+/// A long message of yours in a narrow column, its body's box measured.
+struct Narrow {
+    body: Measured,
+}
+
+impl Render for Narrow {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let body = self.body.clone();
+        div().size_full().child(
+            div().w(px(360.0)).child(
+                MessageBubble::new(Role::User)
+                    .avatar(MessageAvatar::new("me", Role::User, "Ada Park"))
+                    .child("How far does a lift move a saturated accent on charcoal compared with the same accent on paper, and why?")
+                    .child(
+                        canvas(move |bounds, _, _| *body.borrow_mut() = Some(bounds), |_, _, _, _| {})
+                            .absolute()
+                            .top_0()
+                            .left_0()
+                            .size_full(),
+                    ),
+            ),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_long_message_of_yours_wraps_within_its_column(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let body = Measured::default();
+    let seen = body.clone();
+    let (_, cx) = cx.add_window_view(move |_, _| Narrow { body: seen });
+    settle(cx);
+    let bounds = body.borrow().expect("the body is laid out");
+    assert!(
+        bounds.left() >= px(0.0),
+        "it starts inside the column: {bounds:?}"
+    );
+    assert!(
+        bounds.right() <= px(360.0),
+        "it ends inside the column: {bounds:?}"
+    );
+}
+
+#[gpui::test]
+fn a_list_that_fits_again_drops_the_way_down(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let pressed = Pressed::default();
+    let noted = pressed.clone();
+    let (talk, cx) = cx.add_window_view(move |_, _| Talk {
+        count: 40,
+        seen: Seen::default(),
+        pressed: noted,
+    });
+    settle(cx);
+    let (middle, button) = cx.update(|window, _| {
+        let size = window.viewport_size();
+        (
+            point(size.width / 2.0, size.height / 2.0),
+            point(size.width / 2.0, size.height - px(28.0)),
+        )
+    });
+    cx.simulate_event(ScrollWheelEvent {
+        position: middle,
+        delta: ScrollDelta::Pixels(point(px(0.0), px(1200.0))),
+        modifiers: Modifiers::none(),
+        touch_phase: TouchPhase::Moved,
+    });
+    settle(cx);
+    cx.simulate_click(button, Modifiers::none());
+    assert_eq!(*pressed.borrow(), Some(true), "away, the way down shows");
+    cx.simulate_event(ScrollWheelEvent {
+        position: middle,
+        delta: ScrollDelta::Pixels(point(px(0.0), px(1200.0))),
+        modifiers: Modifiers::none(),
+        touch_phase: TouchPhase::Moved,
+    });
+    settle(cx);
+    talk.update(cx, |talk, cx| {
+        talk.count = 2;
+        cx.notify();
+    });
+    settle(cx);
+    settle(cx);
+    cx.simulate_click(button, Modifiers::none());
+    assert_eq!(*pressed.borrow(), Some(false), "all in view, no way down");
+}
+
+/// A wide picture in a narrow column, its box measured.
+struct Picture {
+    frame: Measured,
+}
+
+impl Render for Picture {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let frame = self.frame.clone();
+        div().size_full().child(
+            div()
+                .w(px(240.0))
+                .relative()
+                .child(ImageMessage::new("wide", "wide.png", 960.0, 640.0))
+                .child(
+                    canvas(
+                        move |bounds, _, _| *frame.borrow_mut() = Some(bounds),
+                        |_, _, _, _| {},
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                ),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_picture_fits_a_narrow_column_in_its_own_shape(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let frame = Measured::default();
+    let seen = frame.clone();
+    let (_, cx) = cx.add_window_view(move |_, _| Picture { frame: seen });
+    settle(cx);
+    let bounds = frame.borrow().expect("the column is laid out");
+    assert_eq!(bounds.size.height, px(160.0), "240 wide at 3:2 is 160 tall");
+}
+
+/// Reasoning folded under its time, the block's box measured.
+struct Reasoning {
+    frame: Measured,
+}
+
+impl Render for Reasoning {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let frame = self.frame.clone();
+        div().size_full().child(
+            div()
+                .w(px(320.0))
+                .relative()
+                .child(ThinkingBlock::new(
+                    "thought",
+                    "Start from the definition.",
+                    false,
+                    std::time::Duration::from_secs(3),
+                ))
+                .child(
+                    canvas(
+                        move |bounds, _, _| *frame.borrow_mut() = Some(bounds),
+                        |_, _, _, _| {},
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                ),
+        )
+    }
+}
+
+#[gpui::test]
+fn the_reasoning_opens_from_the_keyboard(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        Theme::init(cx);
+        forms::bind_keys(cx);
+    });
+    let frame = Measured::default();
+    let seen = frame.clone();
+    let (_, cx) = cx.add_window_view(move |_, _| Reasoning { frame: seen });
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    let closed = frame.borrow().expect("the block is laid out").size.height;
+    cx.update(|window, _| window.focus_next());
+    cx.simulate_keystrokes("space");
+    cx.simulate_event(KeyUpEvent {
+        keystroke: Keystroke::parse("space").expect("space parses"),
+    });
+    settle(cx);
+    let open = frame.borrow().expect("the block is laid out").size.height;
+    assert!(
+        open > closed,
+        "Tab and Space open it: {closed:?} to {open:?}"
     );
 }

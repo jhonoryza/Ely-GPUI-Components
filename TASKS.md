@@ -256,3 +256,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T21c | 2 | PASS | |
 | T22 | 1 | FAIL | a remote cursor scrolled out sideways still drew its flag; presence avatars showed no focus ring; the access list hid roles it could not change; status dots used a fixed size |
 | T22 | 2 | PASS | |
+| T23a | 1 | FAIL | a long message of yours overflowed a narrow column; pictures and video sized to the theme, not their column; a finished stream kept revealing; avatar pictures from the web were read as files; the list stayed away after it fit again; the reasoning toggle had no Tab stop; a link's thumbnail lost its corners |

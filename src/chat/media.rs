@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, ObjectFit,
+    AnyElement, App, Div, ElementId, FontWeight, InteractiveElement, IntoElement, ObjectFit,
     ParentElement, Pixels, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
     div, prelude::*,
 };
@@ -15,14 +15,17 @@ use crate::{
     typography::{Ellipsis, format::file_size},
 };
 
-/// A picture's box: its own shape, no wider than `widest`.
-pub(crate) fn fitted(width: f32, height: f32, widest: f32) -> (f32, f32) {
+/// A box in a picture's own shape: as wide as the picture, but no wider than `widest` or its container.
+pub(crate) fn shaped(width: f32, height: f32, widest: Pixels) -> Div {
     assert!(
         width > 0.0 && height > 0.0,
         "a picture of {width}x{height} has no shape"
     );
-    let shown = width.min(widest);
-    (shown, shown * height / width)
+    let mut frame = div()
+        .w(Pixels::from(width.min(f32::from(widest))))
+        .max_w_full();
+    frame.style().aspect_ratio = Some(width / height);
+    frame
 }
 
 /// A picture in a message, in its own shape up to the column's width, a caption under it; a press asks the owner to open it large.
@@ -66,19 +69,17 @@ impl ImageMessage {
 impl RenderOnce for ImageMessage {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
-        let widest = f32::from(theme.prose_width().to_pixels(window.rem_size()));
-        let (width, height) = fitted(self.size.0, self.size.1, widest);
+        let widest = theme.prose_width().to_pixels(window.rem_size());
         let open = self.on_open;
         div()
+            .w_full()
             .flex()
             .flex_col()
             .gap_1()
             .child(
-                div()
+                shaped(self.size.0, self.size.1, widest)
                     .id(self.id.clone())
                     .relative()
-                    .w(Pixels::from(width))
-                    .h(Pixels::from(height))
                     .when_some(open, |picture, open| {
                         picture
                             .cursor_pointer()
@@ -129,7 +130,7 @@ impl ImageGrid {
 }
 
 impl RenderOnce for ImageGrid {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let side = theme.prose_width();
@@ -173,12 +174,19 @@ impl RenderOnce for ImageGrid {
                 .into_any_element()
         };
         let row = || div().flex().flex_1().min_h_0().gap_0p5();
-        let grid = div().w(side).h(side).flex().flex_col().gap_0p5();
-        match self.sources.len() {
+        let (count, rem) = (self.sources.len(), window.rem_size());
+        let wide = f32::from(side.to_pixels(rem));
+        let grid = shaped(
+            wide,
+            if count == 2 { wide / 2.0 } else { wide },
+            side.to_pixels(rem),
+        )
+        .flex()
+        .flex_col()
+        .gap_0p5();
+        match count {
             1 => grid.child(row().child(tile(0))),
-            2 => grid
-                .h(side * 0.5)
-                .child(row().child(tile(0)).child(tile(1))),
+            2 => grid.child(row().child(tile(0)).child(tile(1))),
             3 => grid.child(
                 div().flex().flex_1().gap_0p5().child(tile(0)).child(
                     div()
@@ -237,7 +245,8 @@ impl RenderOnce for FileMessage {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
-            .w(theme.prose_width())
+            .w_full()
+            .max_w(theme.prose_width())
             .flex()
             .items_center()
             .gap_3()
@@ -340,7 +349,8 @@ impl RenderOnce for LinkPreviewCard {
         let open = self.on_open;
         div()
             .id(self.id.clone())
-            .w(theme.container_width(ContainerSize::Sm))
+            .w_full()
+            .max_w(theme.container_width(ContainerSize::Sm))
             .flex()
             .gap_3()
             .p_3()
@@ -396,6 +406,7 @@ impl RenderOnce for LinkPreviewCard {
                     .child(
                         Image::new((self.id.clone(), "picture"), source(&picture))
                             .fit(ObjectFit::Cover)
+                            .rounded(theme.radius(Radius::Md))
                             .size_full(),
                     )
             }))
@@ -405,16 +416,6 @@ impl RenderOnce for LinkPreviewCard {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn a_picture_keeps_its_shape_within_the_column() {
-        assert_eq!(fitted(800.0, 600.0, 320.0), (320.0, 240.0));
-        assert_eq!(
-            fitted(200.0, 100.0, 320.0),
-            (200.0, 100.0),
-            "small ones stay"
-        );
-    }
 
     #[test]
     fn a_file_name_picks_its_icon() {

@@ -6,7 +6,7 @@ use std::{
 use gpui::{
     App, ElementId, Entity, FontWeight, InteractiveElement, IntoElement, MouseButton,
     ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div,
-    prelude::*, relative,
+    prelude::*, relative, transparent_black,
 };
 
 use super::stream::StreamingText;
@@ -14,7 +14,7 @@ use crate::{
     buttons::{Button, ButtonVariant},
     feedback::{Alert, Countdown},
     forms::{Choice, ChoiceChips, Input, OnValues, Run, TextInput},
-    primitives::{Disclosure, Icon, IconName, Severity},
+    primitives::{Disclosure, FocusRing, Icon, IconName, Severity},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
     typography::ShimmerText,
 };
@@ -367,6 +367,12 @@ impl RenderOnce for ThinkingBlock {
                     .flex()
                     .items_center()
                     .gap_1()
+                    .px_1()
+                    .rounded(theme.radius(Radius::Sm))
+                    .border_1()
+                    .border_color(transparent_black())
+                    .tab_index(0)
+                    .focus_ring(cx)
                     .cursor_pointer()
                     .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
                     .on_click(move |_, _, cx| {

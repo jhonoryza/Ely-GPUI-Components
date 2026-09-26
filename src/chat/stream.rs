@@ -36,6 +36,20 @@ pub(crate) fn advanced(shown: f32, total: usize, elapsed: Duration) -> f32 {
     (shown + rate * elapsed.as_secs_f32()).min(total as f32)
 }
 
+/// Graphemes shown next: `advanced` toward `total` while live, or all of them once finished or when motion rests.
+pub(crate) fn next_shown(
+    shown: f32,
+    total: usize,
+    still: bool,
+    elapsed: Duration,
+    live: bool,
+) -> f32 {
+    if still || !live {
+        return total as f32;
+    }
+    advanced(shown.min(total as f32), total, elapsed)
+}
+
 /// Where the first `count` graphemes of `text` end, in bytes.
 pub(crate) fn grapheme_end(text: &str, count: usize) -> usize {
     text.grapheme_indices(true)
@@ -51,12 +65,14 @@ fn revealed(id: &ElementId, text: &str, live: bool, window: &mut Window, cx: &mu
         shown: if live { 0.0 } else { total as f32 },
         at: now,
     });
-    let (shown, at) = (state.read(cx).shown.min(total as f32), state.read(cx).at);
-    let shown = if cx.theme().reduced_motion {
-        total as f32
-    } else {
-        advanced(shown, total, now.saturating_duration_since(at))
-    };
+    let (shown, at) = (state.read(cx).shown, state.read(cx).at);
+    let shown = next_shown(
+        shown,
+        total,
+        cx.theme().reduced_motion,
+        now.saturating_duration_since(at),
+        live,
+    );
     state.update(cx, |reveal, _| *reveal = Reveal { shown, at: now });
     if (shown as usize) < total {
         window.request_animation_frame();
@@ -188,6 +204,25 @@ mod tests {
         assert!(long > PACE * 0.1, "far behind, it speeds up: {long}");
         assert!(long < 1000.0, "but still reveals: {long}");
         assert_eq!(advanced(12.0, 10, tick), 10.0, "shorter text clamps");
+    }
+
+    #[test]
+    fn a_finished_stream_shows_whole() {
+        let tick = Duration::from_millis(16);
+        assert_eq!(
+            next_shown(3.0, 400, false, tick, false),
+            400.0,
+            "done: whole at once"
+        );
+        assert!(
+            next_shown(3.0, 400, false, tick, true) < 400.0,
+            "live: it keeps revealing"
+        );
+        assert_eq!(
+            next_shown(3.0, 400, true, tick, true),
+            400.0,
+            "still motion: whole"
+        );
     }
 
     #[test]

@@ -91,31 +91,48 @@ pub fn media(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     .child(
         div()
             .flex()
-            .flex_wrap()
-            .items_start()
+            .flex_col()
             .gap_6()
             .child(
                 div()
                     .flex()
-                    .flex_col()
-                    .gap_4()
-                    .child(ImageMessage::new("chat-image", asset!("atrium.jpg"), 960.0, 640.0).caption("The atrium at noon"))
-                    .child(FileMessage::new("chat-file", "lift-notes.pdf", 482_000).on_download(|_, _| log::info!("gallery: download file")))
-                    .child(
-                        AudioMessage::new("chat-audio", peaks, Duration::from_secs(42))
-                            .played(played, on)
-                            .on_toggle(move |next, _, cx| {
-                                let at = toggle.read(cx).0;
-                                set(&toggle, (at, next), cx)
-                            })
-                            .on_seek(move |share, _, cx| {
-                                let on = seek.read(cx).1;
-                                set(&seek, (Duration::from_secs_f32(42.0 * share), on), cx)
-                            }),
-                    ),
+                    .items_start()
+                    .gap_6()
+                .child(
+                    div()
+                        .w(px(320.))
+                        .flex()
+                        .flex_col()
+                        .gap_4()
+                        .child(ImageMessage::new("chat-image", asset!("atrium.jpg"), 960.0, 640.0).caption("The atrium at noon"))
+                        .child(FileMessage::new("chat-file", "lift-notes.pdf", 482_000).on_download(|_, _| log::info!("gallery: download file")))
+                        .child(
+                            AudioMessage::new("chat-audio", peaks, Duration::from_secs(42))
+                                .played(played, on)
+                                .on_toggle(move |next, _, cx| {
+                                    let at = toggle.read(cx).0;
+                                    set(&toggle, (at, next), cx)
+                                })
+                                .on_seek(move |share, _, cx| {
+                                    let on = seek.read(cx).1;
+                                    set(&seek, (Duration::from_secs_f32(42.0 * share), on), cx)
+                                }),
+                        ),
+                )
+                .child(
+                    div()
+                        .w(px(280.))
+                        .flex()
+                        .flex_col()
+                        .gap_3()
+                        .child(ImageMessage::new("chat-narrow-image", asset!("atrium-stair.jpg"), 600.0, 400.0).caption("In a narrow column, in its own shape"))
+                        .child(VideoMessage::new("chat-narrow-video", asset!("dunes-sun.jpg"), 600.0, 400.0, Duration::from_secs(31)))
+                        .child(FileMessage::new("chat-narrow-file", "a-long-name-for-the-lift-notes.pdf", 482_000)),
+                ),
             )
             .child(
                 div()
+                    .w(px(520.))
                     .flex()
                     .flex_col()
                     .gap_4()
@@ -136,6 +153,6 @@ pub fn media(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                             .picture(asset!("dunes-square.jpg"))
                             .on_open(|_, _| log::info!("gallery: open link")),
                     ),
-            ),
+            )
     )
 }

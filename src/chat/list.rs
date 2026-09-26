@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, Context, ElementId, IntoElement, ListAlignment, ListOffset, ListState,
-    ParentElement, Pixels, RenderOnce, SharedString, Styled, Window, div, list, prelude::*,
+    ParentElement, Pixels, RenderOnce, SharedString, Styled, Window, canvas, div, list, prelude::*,
 };
 use jiff::civil::Date;
 
@@ -101,11 +101,33 @@ impl RenderOnce for MessageList {
             (feed.list.clone(), feed.away, feed.fresh)
         };
         let render = self.render;
-        let down = feed.clone();
+        let (down, settled) = (feed.clone(), feed.clone());
         div()
             .relative()
             .size_full()
             .child(list(state, move |ix, window, cx| render(ix, window, cx)).size_full())
+            .child(
+                canvas(
+                    move |_, window, cx| {
+                        let feed = settled.read(cx);
+                        let held = feed.list.logical_scroll_top().item_ix >= feed.list.item_count();
+                        if feed.away && held {
+                            log::info!("message list: back at the newest");
+                            settled.update(cx, |feed, cx| {
+                                feed.away = false;
+                                feed.fresh = 0;
+                                cx.notify();
+                            });
+                            window.request_animation_frame();
+                        }
+                    },
+                    |_, _, _, _| {},
+                )
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full(),
+            )
             .when(away, |view| {
                 view.child(
                     div()

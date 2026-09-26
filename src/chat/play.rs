@@ -1,12 +1,12 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    App, ElementId, InteractiveElement, IntoElement, MouseButton, ObjectFit, ParentElement, Pixels,
+    App, ElementId, InteractiveElement, IntoElement, MouseButton, ObjectFit, ParentElement,
     RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
     relative,
 };
 
-use super::media::fitted;
+use super::media::shaped;
 use crate::{
     buttons::{ButtonVariant, IconButton},
     documents::source,
@@ -92,7 +92,8 @@ impl RenderOnce for AudioMessage {
         let playing = self.playing;
         let tall = theme.control_height(ControlSize::Md);
         div()
-            .w(theme.prose_width())
+            .w_full()
+            .max_w(theme.prose_width())
             .flex()
             .items_center()
             .gap_3()
@@ -213,12 +214,9 @@ impl RenderOnce for VideoMessage {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let widest = f32::from(
-            theme
-                .container_width(ContainerSize::Sm)
-                .to_pixels(window.rem_size()),
-        );
-        let (width, height) = fitted(self.size.0, self.size.1, widest);
+        let widest = theme
+            .container_width(ContainerSize::Sm)
+            .to_pixels(window.rem_size());
         let share = if self.length.is_zero() {
             0.0
         } else {
@@ -226,11 +224,9 @@ impl RenderOnce for VideoMessage {
         };
         let playing = self.playing;
         let toggle = self.on_toggle.clone();
-        div()
+        shaped(self.size.0, self.size.1, widest)
             .id(self.id.clone())
             .relative()
-            .w(Pixels::from(width))
-            .h(Pixels::from(height))
             .bg(colors.media_backdrop)
             .when_some(toggle, |video, toggle| {
                 video.cursor_pointer().on_click(move |_, window, cx| {

@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use gpui::{
     AnyElement, App, ElementId, FontWeight, IntoElement, ParentElement, RenderOnce, SharedString,
     Styled, Window, div, prelude::*, relative,
@@ -9,6 +7,7 @@ use smallvec::SmallVec;
 
 use crate::{
     data_display::Avatar,
+    documents::source,
     primitives::{Icon, IconName},
     theme::{ActiveTheme, AvatarSize, ContainerSize, IconSize, Radius, TextSize},
     typography::RelativeTime,
@@ -57,7 +56,7 @@ impl RenderOnce for MessageAvatar {
             Role::User | Role::System => {
                 let avatar = Avatar::new(self.id, self.name).size(AvatarSize::Sm);
                 match self.picture {
-                    Some(picture) => avatar.image(Path::new(picture.as_ref())),
+                    Some(picture) => avatar.image(source(&picture)),
                     None => avatar,
                 }
                 .into_any_element()
@@ -250,26 +249,35 @@ impl RenderOnce for MessageBubble {
             Role::User => div()
                 .w_full()
                 .flex()
-                .justify_end()
                 .gap_3()
                 .child(
                     div()
-                        .max_w(theme.container_width(ContainerSize::Sm))
+                        .flex_1()
+                        .min_w_0()
                         .flex()
                         .flex_col()
-                        .items_end()
                         .gap_1()
-                        .children(self.header)
-                        .child(
-                            div()
-                                .px_4()
-                                .py_2p5()
-                                .rounded(theme.radius(Radius::Xl))
-                                .bg(colors.hover)
-                                .text_color(colors.fg)
-                                .child(body),
+                        .children(
+                            self.header
+                                .map(|header| div().flex().justify_end().child(header)),
                         )
-                        .children(self.footer),
+                        .child(
+                            div().flex().justify_end().child(
+                                div()
+                                    .min_w_0()
+                                    .max_w(theme.container_width(ContainerSize::Sm))
+                                    .px_4()
+                                    .py_2p5()
+                                    .rounded(theme.radius(Radius::Xl))
+                                    .bg(colors.hover)
+                                    .text_color(colors.fg)
+                                    .child(body),
+                            ),
+                        )
+                        .children(
+                            self.footer
+                                .map(|footer| div().flex().justify_end().child(footer)),
+                        ),
                 )
                 .children(self.avatar)
                 .into_any_element(),
