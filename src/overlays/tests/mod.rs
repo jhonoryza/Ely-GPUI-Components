@@ -1,9 +1,10 @@
-use std::time::Duration;
+use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
-    AppContext as _, Context, Entity, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
-    KeyUpEvent, Keystroke, Modifiers, ParentElement, Render, Styled, TestAppContext,
-    VisualTestContext, Window, div, point, px,
+    AppContext as _, Bounds, Context, Entity, FocusHandle, InteractiveElement, IntoElement,
+    KeyBinding, KeyUpEvent, Keystroke, Modifiers, ParentElement, Pixels, Render, ScrollDelta,
+    ScrollWheelEvent, Styled, TestAppContext, TouchPhase, VisualTestContext, Window, canvas, div,
+    point, px,
 };
 
 mod guides;
@@ -32,6 +33,7 @@ struct Stage {
     field: Entity<TextInput>,
     open: Option<Open>,
     log: Vec<String>,
+    tall: Rc<Cell<Bounds<Pixels>>>,
 }
 
 impl Stage {
@@ -120,7 +122,14 @@ impl Render for Stage {
                 })
                 .into_any_element(),
             Open::Tall => Dialog::new("tall", "Tall", shut)
-                .child(div().h(px(2000.0)))
+                .child(div().relative().h(px(2000.0)).child({
+                    let tall = self.tall.clone();
+                    canvas(move |bounds, _, _| tall.set(bounds), |_, _, _, _| {})
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                }))
                 .action(move |_| {
                     Button::new("tall-done", "Done").on_click(move |_, window, cx| done(window, cx))
                 })
@@ -177,6 +186,7 @@ fn stage(cx: &mut TestAppContext) -> (Entity<Stage>, &mut VisualTestContext) {
         field: cx.new(|cx| TextInput::new(window, cx)),
         open: None,
         log: Vec::new(),
+        tall: Rc::new(Cell::new(Bounds::default())),
     });
     settle(cx);
     (view, cx)
@@ -387,5 +397,32 @@ fn a_tall_dialog_keeps_its_actions_in_the_window(cx: &mut TestAppContext) {
         log(&view, cx),
         ["done"],
         "the button sits at the card's foot, inside the window"
+    );
+}
+
+#[gpui::test]
+fn a_tall_dialog_body_keeps_its_height_and_scrolls(cx: &mut TestAppContext) {
+    let (view, cx) = stage(cx);
+    cx.update(|_, cx| Theme::update(cx, |theme| theme.reduced_motion = true));
+    show(&view, Open::Tall, cx);
+    std::thread::sleep(Duration::from_millis(2));
+    settle(cx);
+    let tall = view.read_with(cx, |stage, _| stage.tall.clone());
+    let before = tall.get();
+    assert_eq!(before.size.height, px(2000.0), "the body keeps its height");
+    let middle = cx
+        .update(|window, _| window.viewport_size())
+        .map(|side| side / 2.0);
+    cx.simulate_event(ScrollWheelEvent {
+        position: point(middle.width, middle.height),
+        delta: ScrollDelta::Pixels(point(px(0.0), px(-300.0))),
+        modifiers: Modifiers::none(),
+        touch_phase: TouchPhase::Moved,
+    });
+    settle(cx);
+    assert_eq!(
+        tall.get().top(),
+        before.top() - px(300.0),
+        "a scroll moves the body"
     );
 }

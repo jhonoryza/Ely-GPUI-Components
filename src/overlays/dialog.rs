@@ -210,10 +210,7 @@ impl RenderOnce for Dialog {
                     .id((self.id.clone(), "body"))
                     .min_h_0()
                     .overflow_y_scroll()
-                    .flex()
-                    .flex_col()
-                    .gap_5()
-                    .children(self.body)
+                    .child(div().flex().flex_col().gap_5().children(self.body))
             });
             div()
                 .id(self.id.clone())
