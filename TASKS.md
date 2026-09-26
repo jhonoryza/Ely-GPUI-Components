@@ -275,3 +275,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T24a | 1 | FAIL | tall arguments pushed the approval dialog's title and buttons off screen; a long tool name in a narrow column pushed the time and chevron out of the card; the dark capture closed the card the light one opened |
 | T24a | 2 | FAIL | a dialog body's children shrank to the capped column instead of scrolling: a 2000px body drew at 860px and a scroll moved nothing |
 | T24a | 3 | PASS | |
+| T24b | 1 | FAIL | a task of one step crashed at render: its bar asked for one segment, and a segmented bar needs two |

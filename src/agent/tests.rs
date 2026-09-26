@@ -129,3 +129,28 @@ fn the_prompt_walks_deny_always_then_once(cx: &mut TestAppContext) {
 fn progress_past_its_total_fails_loud() {
     let _ = AgentProgress::new("progress", "Writing", 6, 5);
 }
+
+/// A progress bar for a task of one step, `done` or not.
+struct Single {
+    done: usize,
+}
+
+impl Render for Single {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .w_full()
+            .child(AgentProgress::new("single", "The one step", self.done, 1))
+    }
+}
+
+#[gpui::test]
+fn a_task_of_one_step_draws_before_and_after(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (view, cx) = cx.add_window_view(|_, _| Single { done: 0 });
+    settle(cx);
+    view.update(cx, |single, cx| {
+        single.done = 1;
+        cx.notify();
+    });
+    settle(cx);
+}

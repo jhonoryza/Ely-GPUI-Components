@@ -246,7 +246,7 @@ impl RenderOnce for AgentStatus {
     }
 }
 
-/// How far an agent has come: the step at work, how many are done of how many, the time so far, and a bar split by step.
+/// How far an agent has come: the step at work, how many are done of how many, the time so far, and a bar split by step when there are two or more.
 #[derive(IntoElement)]
 pub struct AgentProgress {
     id: ElementId,
@@ -309,9 +309,13 @@ impl RenderOnce for AgentProgress {
                         tabular(div().flex_none().text_color(colors.fg_subtle)).child(took(spent))
                     })),
             )
-            .child(
-                ProgressBar::new((self.id, "bar"), self.done as f32 / self.total as f32)
-                    .segments(self.total),
-            )
+            .child({
+                let bar = ProgressBar::new((self.id, "bar"), self.done as f32 / self.total as f32);
+                if self.total >= 2 {
+                    bar.segments(self.total)
+                } else {
+                    bar
+                }
+            })
     }
 }
