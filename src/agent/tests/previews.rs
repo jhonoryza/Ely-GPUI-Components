@@ -1,8 +1,8 @@
 use std::{cell::Cell, rc::Rc};
 
 use gpui::{
-    Context, IntoElement, KeyBinding, ParentElement, Render, Styled, TestAppContext, Window,
-    canvas, div, point, px,
+    Context, IntoElement, KeyBinding, Modifiers, ParentElement, Pixels, Render, ScrollDelta,
+    ScrollWheelEvent, Styled, TestAppContext, TouchPhase, Window, canvas, div, point, px,
 };
 
 use super::{press, settle};
@@ -10,7 +10,7 @@ use crate::{
     agent::{ArtifactPanel, BrowserPreview, ComputerUseViewer},
     forms,
     primitives::{FocusNext, IconName},
-    theme::Theme,
+    theme::{ActiveTheme, AvatarSize, Theme},
 };
 
 fn setup(cx: &mut TestAppContext) {
@@ -100,4 +100,115 @@ fn the_source_shows_when_asked(cx: &mut TestAppContext) {
     cx.update(|window, _| window.focus_next());
     press("enter", cx);
     assert!(drew.get(), "the source shows once asked");
+}
+
+/// A narrow browser with eight frames, its height as drawn, and the frames asked for.
+struct Strip {
+    height: Rc<Cell<Pixels>>,
+    asked: Vec<usize>,
+}
+
+impl Render for Strip {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let (view, height) = (cx.entity(), self.height.clone());
+        let frames = (0..8).map(|ix| format!("{ix}.png"));
+        div()
+            .relative()
+            .w(px(280.0))
+            .child(
+                BrowserPreview::new("strip", "localhost", frames, 0)
+                    .on_show(move |ix, _, cx| view.update(cx, |strip, _| strip.asked.push(ix))),
+            )
+            .child(
+                canvas(
+                    move |bounds, _, _| height.set(bounds.size.height),
+                    |_, _, _, _| {},
+                )
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full(),
+            )
+    }
+}
+
+#[gpui::test]
+fn a_narrow_strip_scrolls_to_its_last_frame(cx: &mut TestAppContext) {
+    setup(cx);
+    let height = Rc::new(Cell::new(Pixels::ZERO));
+    let seen = height.clone();
+    let (view, cx) = cx.add_window_view(|_, _| Strip {
+        height: seen,
+        asked: Vec::new(),
+    });
+    settle(cx);
+    let thumb = cx.update(|window, cx| {
+        cx.theme()
+            .avatar_size(AvatarSize::Lg)
+            .to_pixels(window.rem_size())
+    });
+    let row = height.get() - px(9.0) - thumb / 2.0;
+    cx.simulate_event(ScrollWheelEvent {
+        position: point(px(140.0), row),
+        delta: ScrollDelta::Pixels(point(px(-2000.0), px(0.0))),
+        modifiers: Modifiers::none(),
+        touch_phase: TouchPhase::Moved,
+    });
+    settle(cx);
+    let last = point(px(280.0 - 24.0), row);
+    cx.simulate_mouse_move(last, None, Modifiers::none());
+    cx.simulate_click(last, Modifiers::none());
+    settle(cx);
+    assert_eq!(view.read_with(cx, |strip, _| strip.asked.clone()), [7]);
+}
+
+/// A panel with every control at `width`, noting where its body starts.
+struct Crowded {
+    width: Pixels,
+    top: Rc<Cell<Pixels>>,
+}
+
+impl Render for Crowded {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let top = self.top.clone();
+        div().w(self.width).h(px(320.0)).child(
+            ArtifactPanel::new("crowded", "Notes on lift", IconName::FileText)
+                .version(1, 3, |_, _, _| {})
+                .preview(
+                    div().relative().h(px(40.0)).child(
+                        canvas(move |bounds, _, _| top.set(bounds.top()), |_, _, _, _| {})
+                            .absolute()
+                            .top_0()
+                            .left_0()
+                            .size_full(),
+                    ),
+                )
+                .source(div().h(px(40.0)))
+                .on_copy(|_, _| {})
+                .on_download(|_, _| {}),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_narrow_panel_wraps_its_header(cx: &mut TestAppContext) {
+    setup(cx);
+    let top = Rc::new(Cell::new(Pixels::ZERO));
+    let seen = top.clone();
+    let (view, cx) = cx.add_window_view(|_, _| Crowded {
+        width: px(640.0),
+        top: seen,
+    });
+    settle(cx);
+    let wide = top.get();
+    view.update(cx, |crowded, cx| {
+        crowded.width = px(280.0);
+        cx.notify();
+    });
+    settle(cx);
+    assert!(
+        top.get() > wide,
+        "the header wraps below at 280px: {:?} vs {wide:?}",
+        top.get()
+    );
 }

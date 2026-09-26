@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div,
+    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
 use crate::{
@@ -114,6 +114,25 @@ impl RenderOnce for ArtifactPanel {
                 })
             })
         });
+        let version = self.version.map(|(current, total, pick)| {
+            BranchNavigator::new(
+                (self.id.clone(), "versions"),
+                current,
+                total,
+                move |to, window, cx| pick(to, window, cx),
+            )
+            .into_any_element()
+        });
+        let copy = (self.on_copy)
+            .map(|copy| action("copy", IconName::Copy, "Copy", copy).into_any_element());
+        let save = (self.on_download).map(|save| {
+            action("download", IconName::Download, "Download", save).into_any_element()
+        });
+        let controls: Vec<AnyElement> =
+            [version, view.map(IntoElement::into_any_element), copy, save]
+                .into_iter()
+                .flatten()
+                .collect();
         let body = if showing_source {
             self.source
         } else {
@@ -131,42 +150,45 @@ impl RenderOnce for ArtifactPanel {
                 div()
                     .flex_none()
                     .flex()
+                    .flex_wrap()
                     .items_center()
-                    .gap_2()
+                    .gap_x_2()
+                    .gap_y_1()
                     .px_3()
                     .py_2()
                     .border_b_1()
                     .border_color(colors.border)
                     .text_size(theme.text_size(TextSize::Sm))
                     .child(
-                        Icon::new(self.icon)
-                            .size(IconSize::Sm)
-                            .color(colors.fg_muted),
-                    )
-                    .child(
                         div()
                             .flex_1()
-                            .min_w_0()
-                            .font_weight(FontWeight::MEDIUM)
-                            .child(Ellipsis::new(self.title)),
+                            .min_w(theme.label_width())
+                            .flex()
+                            .items_center()
+                            .gap_2()
+                            .child(
+                                Icon::new(self.icon)
+                                    .size(IconSize::Sm)
+                                    .color(colors.fg_muted),
+                            )
+                            .child(
+                                div()
+                                    .flex_1()
+                                    .min_w_0()
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .child(Ellipsis::new(self.title)),
+                            ),
                     )
-                    .children(self.version.map(|(current, total, pick)| {
-                        BranchNavigator::new(
-                            (self.id.clone(), "versions"),
-                            current,
-                            total,
-                            move |to, window, cx| pick(to, window, cx),
+                    .when(!controls.is_empty(), |header| {
+                        header.child(
+                            div()
+                                .flex()
+                                .flex_wrap()
+                                .items_center()
+                                .gap_1()
+                                .children(controls),
                         )
-                    }))
-                    .children(view)
-                    .children(
-                        self.on_copy
-                            .map(|copy| action("copy", IconName::Copy, "Copy", copy)),
-                    )
-                    .children(
-                        self.on_download
-                            .map(|save| action("download", IconName::Download, "Download", save)),
-                    ),
+                    }),
             )
             .child(
                 div()

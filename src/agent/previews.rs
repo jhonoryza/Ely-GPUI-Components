@@ -126,6 +126,8 @@ impl RenderOnce for BrowserPreview {
         let shown = self.shown;
         let strip = (self.frames.len() > 1).then(|| {
             div()
+                .id((self.id.clone(), "strip"))
+                .overflow_x_scroll()
                 .flex()
                 .gap_1p5()
                 .p_2()

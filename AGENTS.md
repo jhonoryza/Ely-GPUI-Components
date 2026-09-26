@@ -136,6 +136,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A search step, a tool call or an agent's step says where it stands with `chat::StepState` and draws it with `chat::step_mark`.
 - A flex line whose free space goes to an auto margin loses its gaps in taffy 0.9. A row that parts left and right groups its sides and uses `justify_between`; `ml_auto` is safe only beside a `flex_1` item that leaves no free space.
 - A header that holds a name beside counts and actions wraps: `flex_wrap`, the name `flex_1` with `min_w(label_width)`, the rest one `flex_none` group that drops below.
+- Every header, row and strip works at 280px: a name keeps its minimum width, the rest wraps below or scrolls, and nothing draws past its box.
 
 ## Decisions
 
