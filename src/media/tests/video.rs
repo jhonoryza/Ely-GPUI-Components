@@ -1,8 +1,8 @@
 use std::{path::PathBuf, time::Duration};
 
 use gpui::{
-    Context, Entity, IntoElement, Modifiers, MouseButton, ParentElement, Pixels, Point, Render,
-    Styled, TestAppContext, VisualTestContext, Window, div, point, px,
+    Context, Entity, InteractiveElement, IntoElement, Modifiers, MouseButton, ParentElement,
+    Pixels, Point, Render, Styled, TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
 use super::{picture, press, settle, setup};
@@ -89,21 +89,45 @@ fn the_pointer_shows_its_time_over_the_track(cx: &mut TestAppContext) {
     let tip = cx
         .debug_bounds("scrubber-tip")
         .expect("a tip over the track");
-    assert!((tip.left() - half.x).abs() < px(1.0), "{tip:?}");
+    assert!(
+        (tip.center().x - half.x).abs() < px(1.0),
+        "centered on the pointer: {tip:?}"
+    );
 }
 
-/// A player of a hundred seconds, what it was told, and whether it plays.
+#[gpui::test]
+fn the_tip_stays_over_the_track_at_its_ends(cx: &mut TestAppContext) {
+    let (_, cx) = scrubbing(cx);
+    for share in [0.0, 1.0] {
+        let at = across("scrubber-rail", share, cx);
+        cx.simulate_mouse_move(at, None, Modifiers::none());
+        settle(cx);
+        settle(cx);
+        let tip = cx
+            .debug_bounds("scrubber-tip")
+            .expect("a tip over the track");
+        let rail = cx.debug_bounds("scrubber-rail").expect("the rail draws");
+        let inside = tip.left() >= rail.left() - px(0.5) && tip.right() <= rail.right() + px(0.5);
+        assert!(inside, "at {share}: {tip:?} over {rail:?}");
+    }
+}
+
+/// A player of a hundred seconds, this wide, with this caption, and what it was told.
 struct Watching {
     path: PathBuf,
+    width: f32,
+    caption: &'static str,
     at: Duration,
     playing: bool,
+    plays: Vec<bool>,
     captions: bool,
+    fullscreens: usize,
 }
 
 impl Render for Watching {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let (play, seek, caption) = (cx.entity(), cx.entity(), cx.entity());
-        div().w(px(480.0)).child(
+        let (play, seek, caption, full) = (cx.entity(), cx.entity(), cx.entity(), cx.entity());
+        div().w(px(self.width)).child(
             VideoPlayer::new(
                 "player",
                 Some(self.path.clone().into()),
@@ -112,10 +136,11 @@ impl Render for Watching {
                 self.at,
             )
             .playing(self.playing)
-            .captions(self.captions, Some("Light falls on the stair".into()))
+            .captions(self.captions, Some(self.caption.into()))
             .on_play(move |on, _, cx| {
                 play.update(cx, |view, cx| {
                     view.playing = on;
+                    view.plays.push(on);
                     cx.notify();
                 })
             })
@@ -130,19 +155,34 @@ impl Render for Watching {
                     view.captions = on;
                     cx.notify();
                 })
+            })
+            .on_fullscreen(move |_, cx| {
+                full.update(cx, |view, cx| {
+                    view.fullscreens += 1;
+                    cx.notify();
+                })
             }),
         )
     }
 }
 
-fn watching(cx: &mut TestAppContext) -> (Entity<Watching>, &mut VisualTestContext) {
+fn watching_at<'a>(
+    width: f32,
+    caption: &'static str,
+    captions: bool,
+    cx: &'a mut TestAppContext,
+) -> (Entity<Watching>, &'a mut VisualTestContext) {
     setup(cx);
     let path = picture("frame", 160, 100);
     let (view, cx) = cx.add_window_view(|_, _| Watching {
         path,
+        width,
+        caption,
         at: SECOND * 30,
         playing: false,
-        captions: false,
+        plays: Vec::new(),
+        captions,
+        fullscreens: 0,
     });
     cx.update(|window, _| window.activate_window());
     settle(cx);
@@ -150,6 +190,81 @@ fn watching(cx: &mut TestAppContext) -> (Entity<Watching>, &mut VisualTestContex
     cx.simulate_click(frame.origin + point(px(8.0), px(8.0)), Modifiers::none());
     settle(cx);
     (view, cx)
+}
+
+fn watching(cx: &mut TestAppContext) -> (Entity<Watching>, &mut VisualTestContext) {
+    watching_at(480.0, "Light falls on the stair", false, cx)
+}
+
+#[gpui::test]
+fn space_on_a_focused_bar_button_presses_it_once(cx: &mut TestAppContext) {
+    let (view, cx) = watching(cx);
+    cx.update(|window, _| {
+        window.blur();
+        for _ in 0..3 {
+            window.focus_next();
+        }
+    });
+    press("space", cx);
+    assert_eq!(view.read_with(cx, |view, _| view.plays.clone()), [true]);
+}
+
+#[gpui::test]
+fn command_letters_leave_the_player_to_the_app(cx: &mut TestAppContext) {
+    let (view, cx) = watching(cx);
+    for key in ["cmd-f", "cmd-c", "cmd-k", "ctrl-f"] {
+        press(key, cx);
+    }
+    let heard = view.read_with(cx, |view, _| {
+        (view.fullscreens, view.captions, view.plays.clone())
+    });
+    assert_eq!(heard, (0, false, vec![]));
+}
+
+#[gpui::test]
+fn a_long_caption_wraps_inside_a_narrow_player(cx: &mut TestAppContext) {
+    let (view, cx) = watching_at(280.0, "Light falls", true, cx);
+    let line = cx.debug_bounds("video-caption").expect("the caption draws");
+    view.update(cx, |view, cx| {
+        view.caption = "The shadow walks the length of the hall while the morning comes in.";
+        cx.notify();
+    });
+    settle(cx);
+    let (chip, frame) = (
+        cx.debug_bounds("video-caption").expect("the caption draws"),
+        cx.debug_bounds("video-player").expect("the player draws"),
+    );
+    assert!(
+        chip.left() >= frame.left() && chip.right() <= frame.right(),
+        "{chip:?} in {frame:?}"
+    );
+    assert!(
+        chip.size.height > line.size.height * 1.5,
+        "{chip:?} wraps past {line:?}"
+    );
+}
+
+#[gpui::test]
+fn a_caption_stays_while_the_controls_rest(cx: &mut TestAppContext) {
+    let (view, cx) = watching_at(480.0, "Light falls on the stair", true, cx);
+    cx.update(|window, _| window.blur());
+    view.update(cx, |view, cx| {
+        view.playing = true;
+        cx.notify();
+    });
+    let frame = cx.debug_bounds("video-player").expect("the player draws");
+    cx.simulate_mouse_move(frame.center(), None, Modifiers::none());
+    settle(cx);
+    cx.executor().advance_clock(Duration::from_millis(2600));
+    cx.run_until_parked();
+    let faded = cx
+        .debug_bounds("video-controls-resting")
+        .expect("the bar rests");
+    let caption = cx.debug_bounds("video-caption").expect("the caption draws");
+    assert!(
+        caption.bottom() <= faded.top(),
+        "{caption:?} outside {faded:?}"
+    );
 }
 
 #[gpui::test]
@@ -253,6 +368,19 @@ fn a_press_seeks_and_a_handle_drag_moves_its_end_to_the_length(cx: &mut TestAppC
 }
 
 #[gpui::test]
+fn command_o_leaves_the_trim_to_the_app(cx: &mut TestAppContext) {
+    let (view, cx) = trimming(cx);
+    let press_at = across("video-strip", 0.3, cx);
+    cx.simulate_click(press_at, Modifiers::none());
+    settle(cx);
+    press("cmd-o", cx);
+    assert_eq!(
+        view.read_with(cx, |view, _| view.trim),
+        (SECOND * 10, SECOND * 50)
+    );
+}
+
+#[gpui::test]
 fn i_and_o_set_the_trim_at_the_playhead(cx: &mut TestAppContext) {
     let (view, cx) = trimming(cx);
     let press_at = across("video-strip", 0.3, cx);
@@ -273,35 +401,48 @@ fn i_and_o_set_the_trim_at_the_playhead(cx: &mut TestAppContext) {
 struct Captioning {
     cues: Vec<Cue>,
     at: Duration,
+    width: f32,
 }
 
 impl Render for Captioning {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let owner = cx.entity();
-        div().w(px(420.0)).child(
-            SubtitleEditor::new("subs", self.cues.clone(), self.at).on_change(
-                move |cues, _, cx| {
-                    owner.update(cx, |view, cx| {
-                        view.cues = cues.to_vec();
-                        cx.notify();
-                    })
-                },
-            ),
-        )
+        div()
+            .w(px(self.width))
+            .debug_selector(|| "subtitle-host".into())
+            .child(
+                SubtitleEditor::new("subs", self.cues.clone(), self.at).on_change(
+                    move |cues, _, cx| {
+                        owner.update(cx, |view, cx| {
+                            view.cues = cues.to_vec();
+                            cx.notify();
+                        })
+                    },
+                ),
+            )
     }
 }
 
 fn captioning(cx: &mut TestAppContext) -> (Entity<Captioning>, &mut VisualTestContext) {
+    captioning_at(420.0, "b", cx)
+}
+
+fn captioning_at<'a>(
+    width: f32,
+    words: &'static str,
+    cx: &'a mut TestAppContext,
+) -> (Entity<Captioning>, &'a mut VisualTestContext) {
     setup(cx);
-    let cue = |key: &str, start: u64, end: u64| Cue {
+    let cue = |key: &str, text: &str, start: u64, end: u64| Cue {
         key: key.to_string().into(),
         start: SECOND * start as u32,
         end: SECOND * end as u32,
-        text: key.to_string().into(),
+        text: text.to_string().into(),
     };
-    let (view, cx) = cx.add_window_view(|_, _| Captioning {
-        cues: vec![cue("a", 1, 3), cue("b", 5, 8)],
+    let (view, cx) = cx.add_window_view(move |_, _| Captioning {
+        cues: vec![cue("a", "a", 1, 3), cue("b", words, 5, 8)],
         at: SECOND * 6,
+        width,
     });
     cx.update(|window, _| window.activate_window());
     settle(cx);
@@ -338,4 +479,15 @@ fn a_time_that_does_not_read_keeps_the_cue_and_says_why(cx: &mut TestAppContext)
     retype(1, "1:x", cx);
     assert_eq!(view.read_with(cx, |view, _| view.cues.clone()), before);
     assert!(cx.debug_bounds("subtitle-complaint").is_some());
+}
+
+#[gpui::test]
+fn long_words_give_way_inside_a_narrow_editor(cx: &mut TestAppContext) {
+    let long = "The shadow walks the length of the hall while the morning comes in";
+    let (_, cx) = captioning_at(280.0, long, cx);
+    let host = cx.debug_bounds("subtitle-host").expect("the editor draws");
+    let words = cx
+        .debug_bounds("inline-edit subs-b-words")
+        .expect("the words draw");
+    assert!(words.right() <= host.right(), "{words:?} in {host:?}");
 }

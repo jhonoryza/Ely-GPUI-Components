@@ -311,3 +311,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T26a | 2 | PASS | |
 | T26b | 1 | FAIL | a shaped crop's corner ignored the pointer's move up or down |
 | T26b | 2 | PASS | |
+| T26c | 1 | FAIL | the caption faded with the controls; Space on a focused bar button acted twice; Command letters fired the player and the strip; a long caption, cue words and the scrubber's tip ran past their boxes at 280px |

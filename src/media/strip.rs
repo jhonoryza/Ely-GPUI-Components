@@ -290,6 +290,10 @@ impl RenderOnce for VideoThumbnailStrip {
                         );
                     })
                     .on_key_down(move |event, window, cx| {
+                        let command = &event.keystroke.modifiers;
+                        if command.platform || command.control {
+                            return;
+                        }
                         let (held, time) = match event.keystroke.key.as_str() {
                             "left" => (None, at.saturating_sub(span)),
                             "right" => (None, (at + span).min(length)),

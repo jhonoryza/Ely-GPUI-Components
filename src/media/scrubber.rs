@@ -12,6 +12,7 @@ use crate::{
     primitives::{FocusRing, tab_stop},
     theme::{ActiveTheme, Radius, TextSize},
     typography::{
+        Ellipsis,
         format::{DurationStyle, duration},
         tabular,
     },
@@ -180,27 +181,29 @@ impl RenderOnce for Scrubber {
                 Some(name) => format!("{} · {name}", clock(time)),
                 None => clock(time),
             };
+            let side = |share: f32| div().flex_basis(relative(share));
             div()
                 .absolute()
-                .left(relative(hovered))
+                .left_0()
                 .bottom_full()
-                .size_0()
+                .w_full()
                 .flex()
-                .justify_center()
                 .items_end()
+                .child(side(hovered))
                 .child(
                     tabular(div())
                         .flex_none()
+                        .max_w_full()
                         .mb_1()
                         .px_1p5()
                         .rounded(theme.radius(Radius::Sm))
                         .bg(colors.tooltip_bg)
                         .text_color(colors.tooltip_fg)
                         .text_size(theme.text_size(TextSize::Xs))
-                        .whitespace_nowrap()
-                        .child(text),
+                        .debug_selector(|| "scrubber-tip".into())
+                        .child(Ellipsis::new(text)),
                 )
-                .debug_selector(|| "scrubber-tip".into())
+                .child(side(1.0 - hovered))
         });
         let knob = (hover.is_some() || focused).then(|| {
             div()

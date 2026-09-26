@@ -90,7 +90,7 @@ pub(crate) fn retimed(cues: &[Cue], key: &str, edge: Edge, text: &str) -> Result
         Edge::End => cue.end = time,
     }
     if cue.start >= cue.end {
-        return Err("A cue ends after it starts".to_string());
+        return Err("A cue must end after it starts".to_string());
     }
     next.sort_by_key(|cue| cue.start);
     Ok(next)
@@ -356,7 +356,7 @@ mod tests {
         assert!(retimed(&cues, "a", Edge::End, "1:x").is_err());
         assert_eq!(
             retimed(&cues, "a", Edge::End, "00:00.500"),
-            Err("A cue ends after it starts".to_string())
+            Err("A cue must end after it starts".to_string())
         );
     }
 }

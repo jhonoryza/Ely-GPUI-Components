@@ -10,6 +10,7 @@ use super::{Input, InputEvent, TextInput};
 use crate::{
     primitives::{FocusRing, Icon, IconName, tab_stop},
     theme::{ActiveTheme, ControlSize, IconSize, Radius},
+    typography::Ellipsis,
 };
 
 pub(crate) type OnCommit = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
@@ -155,6 +156,15 @@ impl RenderOnce for InlineEdit {
         let empty = self.value.is_empty();
         let (value, start, back) = (self.value.clone(), state, focus.clone());
         let group = SharedString::from(format!("inline-edit-{:?}", self.id));
+        let label = div()
+            .debug_selector(|| format!("inline-edit {}", self.id))
+            .flex_1()
+            .min_w_0()
+            .child(Ellipsis::new(if empty {
+                self.placeholder
+            } else {
+                self.value
+            }));
         div()
             .id(self.id)
             .group(group.clone())
@@ -177,9 +187,10 @@ impl RenderOnce for InlineEdit {
                 start.update(cx, |editing, _| editing.returning(back.clone()));
                 Editing::begin(&start, value.to_string(), window, cx);
             })
-            .child(if empty { self.placeholder } else { self.value })
+            .child(label)
             .child(
                 div()
+                    .flex_none()
                     .invisible()
                     .group_hover(group, |style| style.visible())
                     .child(

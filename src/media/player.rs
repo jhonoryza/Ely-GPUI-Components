@@ -146,7 +146,11 @@ impl RenderOnce for VideoPlayer {
             moved: started,
             waking: false,
         });
-        let focus = tab_stop((self.id.clone(), "focus").into(), true, window, cx);
+        let keys = self.on_play.is_some()
+            || self.on_seek.is_some()
+            || self.on_fullscreen.is_some()
+            || (self.on_captions.is_some() && self.captions.is_some());
+        let focus = tab_stop((self.id.clone(), "focus").into(), keys, window, cx);
         let now = cx.background_executor().now();
         let resting = self.playing
             && now.duration_since(watch.read(cx).moved) >= IDLE
@@ -166,20 +170,29 @@ impl RenderOnce for VideoPlayer {
                 cx,
             )
         };
-        let play = self.on_play.clone().map(|play| {
+        let toggle: Option<Run> = self.on_play.clone().map(|play| {
+            Rc::new(move |window: &mut Window, cx: &mut App| {
+                log::info!("video player: {}", if playing { "pause" } else { "play" });
+                play(!playing, window, cx)
+            }) as Run
+        });
+        let turn: Option<Run> = self
+            .on_captions
+            .clone()
+            .zip(self.captions)
+            .map(|(set, on)| {
+                Rc::new(move |window: &mut Window, cx: &mut App| {
+                    log::info!("video player: captions {}", if on { "off" } else { "on" });
+                    set(!on, window, cx)
+                }) as Run
+            });
+        let play = toggle.clone().map(|run| {
             let icon = if playing {
                 IconName::Pause
             } else {
                 IconName::Play
             };
-            button(
-                "play",
-                icon,
-                Rc::new(move |window, cx| {
-                    log::info!("video player: {}", if playing { "pause" } else { "play" });
-                    play(!playing, window, cx)
-                }),
-            )
+            button("play", icon, run)
         });
         let speed_button = self.on_speed.clone().map(|set| {
             let next = SPEEDS[(SPEEDS
@@ -206,22 +219,14 @@ impl RenderOnce for VideoPlayer {
                         .child(format!("{speed}×")),
                 )
         });
-        let captions = self
-            .on_captions
-            .clone()
-            .zip(self.captions)
-            .map(|(set, on)| {
-                let icon = if on {
-                    IconName::Captions
-                } else {
-                    IconName::CaptionsOff
-                };
-                button(
-                    "captions",
-                    icon,
-                    Rc::new(move |window, cx| set(!on, window, cx)),
-                )
-            });
+        let captions = turn.clone().map(|run| {
+            let icon = if self.captions == Some(true) {
+                IconName::Captions
+            } else {
+                IconName::CaptionsOff
+            };
+            button("captions", icon, run)
+        });
         let picture = self
             .on_picture
             .clone()
@@ -274,6 +279,8 @@ impl RenderOnce for VideoPlayer {
         let caption = self.caption.map(|words| {
             div().flex().justify_center().child(
                 div()
+                    .debug_selector(|| "video-caption".into())
+                    .min_w_0()
                     .max_w(theme.prose_width())
                     .px_2()
                     .py_0p5()
@@ -284,10 +291,22 @@ impl RenderOnce for VideoPlayer {
                     .child(words),
             )
         });
+        let bar = bar.when(resting, |bar| {
+            bar.debug_selector(|| "video-controls-resting".into())
+        });
+        let (from, to) = if resting { (1.0, 0.0) } else { (0.0, 1.0) };
+        let bar = if changes == 0 {
+            bar.opacity(to).into_any_element()
+        } else {
+            let fade = motion_duration(crate::motion::BASE, cx);
+            bar.with_animation(
+                (self.id.clone(), format!("controls-{changes}")),
+                Animation::new(fade),
+                move |bar, t| bar.opacity(crate::motion::lerp(from, to, t)),
+            )
+            .into_any_element()
+        };
         let controls = div()
-            .when(resting, |controls| {
-                controls.debug_selector(|| "video-controls-resting".into())
-            })
             .absolute()
             .left_0()
             .right_0()
@@ -298,28 +317,14 @@ impl RenderOnce for VideoPlayer {
             .gap_2()
             .children(caption)
             .child(bar);
-        let (from, to) = if resting { (1.0, 0.0) } else { (0.0, 1.0) };
-        let controls = if changes == 0 {
-            controls.opacity(to).into_any_element()
-        } else {
-            let fade = motion_duration(crate::motion::BASE, cx);
-            controls
-                .with_animation(
-                    ("controls", changes),
-                    Animation::new(fade),
-                    move |controls, t| controls.opacity(crate::motion::lerp(from, to, t)),
-                )
-                .into_any_element()
-        };
         let frame = self
             .frame
             .map(|frame| img(frame).id((self.id.clone(), "frame")).size_full());
         let moved = watch.clone();
         let keyed = (
-            self.on_play.clone(),
+            toggle,
             self.on_seek.clone(),
-            self.on_captions.clone(),
-            self.captions,
+            turn,
             self.on_fullscreen.clone(),
         );
         framed(self.ratio, cx)
@@ -328,8 +333,7 @@ impl RenderOnce for VideoPlayer {
             .bg(colors.media_backdrop)
             .border_1()
             .border_color(transparent_black())
-            .track_focus(&focus)
-            .focus_ring(cx)
+            .when(keys, |stage| stage.track_focus(&focus).focus_ring(cx))
             .children(frame)
             .child(controls)
             .on_mouse_move(move |_, window, cx| {
@@ -358,11 +362,15 @@ impl RenderOnce for VideoPlayer {
                                 cx.notify();
                             })
                         })
-                        .detach();
+                        .detach_and_log_err(cx);
                 }
             })
             .on_key_down(move |event, window, cx| {
-                let (play, seek, captions, on, fullscreen) = &keyed;
+                let held = &event.keystroke.modifiers;
+                if held.platform || held.control {
+                    return;
+                }
+                let (play, seek, captions, fullscreen) = &keyed;
                 let step = |by: f64| {
                     Duration::from_secs_f64(
                         (at.as_secs_f64() + by).clamp(0.0, length.as_secs_f64()),
@@ -370,7 +378,7 @@ impl RenderOnce for VideoPlayer {
                 };
                 match event.keystroke.key.as_str() {
                     "space" | "k" => match play {
-                        Some(play) => play(!playing, window, cx),
+                        Some(play) => play(window, cx),
                         None => return,
                     },
                     "j" | "l" | "left" | "right" => {
@@ -385,9 +393,9 @@ impl RenderOnce for VideoPlayer {
                         };
                         seek(step(by), window, cx)
                     }
-                    "c" => match (captions, on) {
-                        (Some(set), Some(on)) => set(!on, window, cx),
-                        _ => return,
+                    "c" => match captions {
+                        Some(turn) => turn(window, cx),
+                        None => return,
                     },
                     "f" => match fullscreen {
                         Some(run) => run(window, cx),

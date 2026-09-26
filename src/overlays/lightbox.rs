@@ -68,6 +68,11 @@ pub(crate) fn media_button(
                 .tab_index(0)
                 .focus_ring(cx)
                 .hover(|style| style.bg(light.opacity(0.12)))
+                .on_key_down(|event, _, cx| {
+                    if event.keystroke.key == "space" && !event.keystroke.modifiers.modified() {
+                        cx.stop_propagation();
+                    }
+                })
                 .on_click(move |_, window, cx| run(window, cx))
         })
 }
