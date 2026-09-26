@@ -89,7 +89,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T25d Generative · Sound and motion
 - [x] T25e Generative · Models
 - [x] T25f Generative · Data and prompts
-- [ ] T26a Media · Images
+- [x] T26a Media · Images
 - [ ] T26b Media · Crop and annotate
 - [ ] T26c Media · Video
 - [ ] T26d Media · Audio and controls
@@ -308,3 +308,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25f | 1 | FAIL | a drag on the turned embedding froze past the plot's edge; which version a diff sets against, and its heading, had no test |
 | T25f | 2 | PASS | |
 | T26a | 1 | FAIL | the viewer's picture had no id, so an animated picture never left its first frame |
+| T26a | 2 | PASS | |
