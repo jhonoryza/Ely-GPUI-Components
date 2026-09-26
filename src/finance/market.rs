@@ -40,7 +40,7 @@ pub enum ChartKind {
 pub struct ChartSync {
     pub(crate) visible: Option<Visible>,
     pub(crate) hover: Option<i64>,
-    /// How many candles the shared window last moved for, so one append moves it once.
+    /// The most candles the shared window has moved for: an append moves it once, a lagging chart never.
     pub(crate) seen: usize,
 }
 
@@ -230,37 +230,37 @@ impl RenderOnce for CandlestickChart {
             ..frame
         };
         let total = self.candles.len();
-        let held = match &self.sync {
-            Some(sync) => (sync.read(cx).visible, sync.read(cx).hover),
-            None => (stage.read(cx).visible, stage.read(cx).hover),
+        let own = stage.read(cx).seen;
+        let (held, shared) = match &self.sync {
+            Some(sync) => {
+                let sync = sync.read(cx);
+                ((sync.visible, sync.hover), sync.seen)
+            }
+            None => ((stage.read(cx).visible, stage.read(cx).hover), own),
         };
-        let seen = match &self.sync {
-            Some(sync) => sync.read(cx).seen,
-            None => stage.read(cx).seen,
-        };
+        let fresh = total.saturating_sub(own).min(total.saturating_sub(shared));
         let visible = match held.0 {
             Some(visible)
-                if total > seen
-                    && seen > 0
-                    && visible.start + visible.count >= seen as f64 - 0.5 =>
+                if fresh > 0
+                    && own > 0
+                    && visible.start + visible.count >= (total - fresh) as f64 - 0.5 =>
             {
-                visible.pan((total - seen) as f64, total)
+                visible.pan(fresh as f64, total)
             }
             Some(visible) => visible.fitted(total),
             None => Visible::latest(total, f64::from(main.w / pixels(sizes.candle)).max(1.0)),
         };
-        if seen != total {
-            log::debug!("market chart: {seen} candles to {total}");
-            let kept = held.0.map(|_| visible);
+        if own != total {
+            log::debug!("market chart: {own} candles to {total}");
+            let shrunk = total < own;
+            let kept = held.0.filter(|_| fresh > 0 || shrunk).map(|_| visible);
+            stage.update(cx, |stage, _| stage.seen = total);
             match &self.sync {
                 Some(sync) => sync.update(cx, |sync, _| {
-                    sync.seen = total;
+                    sync.seen = if shrunk { total } else { sync.seen.max(total) };
                     sync.visible = kept.or(sync.visible);
                 }),
-                None => stage.update(cx, |stage, _| {
-                    stage.seen = total;
-                    stage.visible = kept.or(stage.visible);
-                }),
+                None => stage.update(cx, |stage, _| stage.visible = kept.or(stage.visible)),
             }
         }
         let range = visible.range(total);

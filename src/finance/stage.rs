@@ -104,13 +104,17 @@ pub(crate) fn fit(low: f64, high: f64) -> ((f64, f64), Vec<f64>) {
     ((low, high), inside)
 }
 
+/// Digits kept past a step's first; float noise sits near the sixteenth.
+const DIGITS: usize = 6;
+
 /// Places after the point that show every multiple of `step` exactly: none for whole steps, four for 0.0025.
 pub(crate) fn decimals(step: f64) -> usize {
     assert!(
         step.is_finite() && step > 0.0,
         "a step is positive, not {step}"
     );
-    let text = format!("{step:.10}");
+    let leading = (-step.log10().floor()).max(0.0) as usize;
+    let text = format!("{step:.*}", leading + DIGITS);
     let fraction = text.split_once('.').map_or("", |(_, fraction)| fraction);
     fraction.trim_end_matches('0').len()
 }
@@ -207,5 +211,6 @@ mod tests {
             1,
             "float noise from a difference drops away"
         );
+        assert_eq!(decimals(1e-11), 11, "a tiny step keeps its places");
     }
 }

@@ -55,11 +55,11 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T15a Charts · Cartesian
 - [x] T15b Charts · Parts and spreads
 - [x] T15c Charts · Flows and relations
-- [ ] T16a Finance · Market charts
-- [ ] T16b Finance · Technical analysis
-- [ ] T16c Finance · Quotes & book
-- [ ] T16d Finance · Trading
-- [ ] T16e Finance · Markets & assets
+- [x] T16a Finance · Market charts
+- [x] T16b Finance · Technical analysis
+- [x] T16c Finance · Quotes & book
+- [x] T16d Finance · Trading
+- [x] T16e Finance · Markets & assets
 - [ ] T17a Editor · Core
 - [ ] T17b Editor · Intelligence
 - [ ] T17c Editor · Search
@@ -216,8 +216,16 @@ Per-component lines live in `tasks/`. Tags there:
 | T15b | 2 | PASS | |
 | T15c | 1 | FAIL | eight charts kept a pointed part past their data, and the Gantt today line ran past the timeline |
 | T15c | 2 | PASS | |
-| T16a | 1 | — | pending review |
-| T16b | 1 | — | pending review |
-| T16c | 1 | — | pending review |
-| T16d | 1 | — | pending review |
-| T16e | 1 | — | pending review |
+| T16a | 1 | FAIL | an unknown system zone read as UTC, the view window kept its span when data shrank, and the volume profile dropped narrow and flat candles |
+| T16a | 2 | FAIL | synced charts moved their shared window once per chart for one append |
+| T16a | 3 | FAIL | a lagging synced chart moved the shared window again on every redraw; fixed after the cap by tracking each chart's own count, verified by a red-green test, no fourth review |
+| T16b | 1 | FAIL | Fibonacci labels spilled out of their pane |
+| T16b | 2 | FAIL | Fibonacci labels still ran past the price pane's top |
+| T16b | 3 | PASS | |
+| T16c | 1 | FAIL | the DOM ladder lost its tick's decimals, and the tape flashed only once |
+| T16c | 2 | FAIL | ladder prices lost places their tick needed |
+| T16c | 3 | FAIL | a step under 1e-10 showed no places; fixed after the cap by keeping places by magnitude, verified by a red-green test, no fourth review |
+| T16d | 1 | FAIL | typed numbers reached the ticket only on blur, so a press sent the old value |
+| T16d | 2 | PASS | |
+| T16e | 1 | FAIL | a smaller loss than expected read as a miss |
+| T16e | 2 | PASS | |
