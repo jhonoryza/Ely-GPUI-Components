@@ -30,6 +30,7 @@ const SCRIPT: &[Step] = &[
     Step::Wait(300),
     Step::Shot("verdict"),
     Step::DownAt("gen-canvas", 300.0, 70.0),
+    Step::DragTo("gen-canvas", 390.0, 220.0),
     Step::UpAt("gen-canvas", 390.0, 220.0),
     Step::Wait(300),
     Step::Shot("masked"),

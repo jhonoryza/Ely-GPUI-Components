@@ -3,14 +3,14 @@ use std::rc::Rc;
 use gpui::{
     App, Bounds, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, Pixels, Point,
     RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, canvas, div, fill, point,
-    size, transparent_black,
+    prelude::*, size, transparent_black,
 };
 
 use crate::{
     documents::source,
     forms::{Drawing, pen},
     primitives::{FocusRing, Image, checked_ratio, framed, tab_stop},
-    theme::{ActiveTheme, Radius},
+    theme::ActiveTheme,
 };
 
 /// Cells across a mask; rows follow the picture's shape.
@@ -39,34 +39,39 @@ fn reach(p: (f32, f32), a: (f32, f32), b: (f32, f32)) -> f32 {
     x * x + y * y
 }
 
-/// The cells of a `columns` by `rows` grid over a picture `ratio` wide over tall that the strokes cover, row by row: a later stroke wins, and an erasing one clears.
-pub(crate) fn raster(strokes: &[MaskStroke], columns: usize, rows: usize, ratio: f32) -> Vec<bool> {
-    let mut cells = vec![false; columns * rows];
+/// Marks the cells `stroke` reaches on a `columns` by `rows` grid over a picture `ratio` wide over tall, or clears them if it erases; reach is measured in widths, so a dab is as tall as wide.
+fn paint(cells: &mut [bool], stroke: &MaskStroke, columns: usize, rows: usize, ratio: f32) {
     let column = |x: f32| ((x * columns as f32).floor().max(0.0) as usize).min(columns);
     let row = |y: f32| ((y * ratio * rows as f32).floor().max(0.0) as usize).min(rows);
-    for stroke in strokes {
-        let across: Vec<(f32, f32)> = stroke.points.iter().map(|&(x, y)| (x, y / ratio)).collect();
-        let pairs: Vec<_> = match across.as_slice() {
-            [] => continue,
-            [only] => vec![(*only, *only)],
-            _ => across.windows(2).map(|pair| (pair[0], pair[1])).collect(),
-        };
-        let (r, near) = (stroke.radius, stroke.radius * stroke.radius);
-        for (a, b) in pairs {
-            let columns_in = column(a.0.min(b.0) - r)..(column(a.0.max(b.0) + r) + 1).min(columns);
-            let rows_in = row(a.1.min(b.1) - r)..(row(a.1.max(b.1) + r) + 1).min(rows);
-            for j in rows_in {
-                for i in columns_in.clone() {
-                    let center = (
-                        (i as f32 + 0.5) / columns as f32,
-                        (j as f32 + 0.5) / rows as f32 / ratio,
-                    );
-                    if reach(center, a, b) <= near {
-                        cells[j * columns + i] = !stroke.erase;
-                    }
+    let across: Vec<(f32, f32)> = stroke.points.iter().map(|&(x, y)| (x, y / ratio)).collect();
+    let pairs: Vec<_> = match across.as_slice() {
+        [] => return,
+        [only] => vec![(*only, *only)],
+        _ => across.windows(2).map(|pair| (pair[0], pair[1])).collect(),
+    };
+    let (r, near) = (stroke.radius, stroke.radius * stroke.radius);
+    for (a, b) in pairs {
+        let columns_in = column(a.0.min(b.0) - r)..(column(a.0.max(b.0) + r) + 1).min(columns);
+        let rows_in = row(a.1.min(b.1) - r)..(row(a.1.max(b.1) + r) + 1).min(rows);
+        for j in rows_in {
+            for i in columns_in.clone() {
+                let center = (
+                    (i as f32 + 0.5) / columns as f32,
+                    (j as f32 + 0.5) / rows as f32 / ratio,
+                );
+                if reach(center, a, b) <= near {
+                    cells[j * columns + i] = !stroke.erase;
                 }
             }
         }
+    }
+}
+
+/// The cells the strokes cover, row by row: a later stroke wins, and an erasing one clears.
+pub(crate) fn raster(strokes: &[MaskStroke], columns: usize, rows: usize, ratio: f32) -> Vec<bool> {
+    let mut cells = vec![false; columns * rows];
+    for stroke in strokes {
+        paint(&mut cells, stroke, columns, rows, ratio);
     }
     cells
 }
@@ -129,11 +134,24 @@ impl InpaintCanvas {
         ratio: f32,
         strokes: impl IntoIterator<Item = MaskStroke>,
     ) -> Self {
+        let strokes: Vec<MaskStroke> = strokes.into_iter().collect();
+        for stroke in &strokes {
+            assert!(
+                (REACH.0..=REACH.1).contains(&stroke.radius),
+                "a mask stroke's radius of {}",
+                stroke.radius
+            );
+            assert!(
+                (stroke.points.iter())
+                    .all(|&(x, y)| (0.0..=1.0).contains(&x) && (0.0..=1.0).contains(&y)),
+                "a mask stroke outside its picture"
+            );
+        }
         Self {
             id: id.into(),
             picture: picture.into(),
             ratio: checked_ratio(ratio),
-            strokes: strokes.into_iter().collect(),
+            strokes,
             radius: 0.04,
             erase: false,
             on_stroke: None,
@@ -171,28 +189,40 @@ impl InpaintCanvas {
     }
 }
 
-/// The strokes a mask last drew, its rows, and the rectangles they made.
-type Shape = (
-    Vec<MaskStroke>,
-    usize,
-    Rc<Vec<(usize, usize, usize, usize)>>,
-);
+type Rects = Rc<Vec<(usize, usize, usize, usize)>>;
 
-/// The mask's rectangles, made again only when its strokes or rows change, not as the pointer moves.
+/// The strokes a mask last drew, its rows, and the cells and rectangles they made.
+type Shape = (Vec<MaskStroke>, usize, Rc<Vec<bool>>, Rects);
+
+/// The mask's rectangles: the settled strokes' cells kept until they or the rows change, and a stroke under the pen painted over a copy.
 fn shaped(
     cache: &Entity<Shape>,
-    live: Vec<MaskStroke>,
+    strokes: Vec<MaskStroke>,
+    live: Option<MaskStroke>,
     rows: usize,
     ratio: f32,
     cx: &mut App,
-) -> Rc<Vec<(usize, usize, usize, usize)>> {
-    let (kept, kept_rows, rects) = cache.read(cx);
-    if *kept == live && *kept_rows == rows {
-        return rects.clone();
+) -> Rects {
+    let stale = {
+        let (kept, kept_rows, _, _) = cache.read(cx);
+        *kept != strokes || *kept_rows != rows
+    };
+    if stale {
+        let cells = raster(&strokes, COLUMNS, rows, ratio);
+        let rects = Rc::new(spans(&cells, COLUMNS));
+        cache.update(cx, |cache, _| {
+            *cache = (strokes, rows, Rc::new(cells), rects)
+        });
     }
-    let rects = Rc::new(spans(&raster(&live, COLUMNS, rows, ratio), COLUMNS));
-    cache.update(cx, |cache, _| *cache = (live, rows, rects.clone()));
-    rects
+    let (_, _, cells, rects) = cache.read(cx);
+    match live {
+        None => rects.clone(),
+        Some(stroke) => {
+            let mut cells = cells.to_vec();
+            paint(&mut cells, &stroke, COLUMNS, rows, ratio);
+            Rc::new(spans(&cells, COLUMNS))
+        }
+    }
 }
 
 /// `at` as shares of `bounds`.
@@ -216,31 +246,29 @@ impl RenderOnce for InpaintCanvas {
             );
         let cache: Entity<Shape> =
             window.use_keyed_state((self.id.clone(), "shape"), cx, |_, _| {
-                (Vec::new(), 0, Rc::new(Vec::new()))
+                (Vec::new(), 0, Rc::new(Vec::new()), Rc::new(Vec::new()))
             });
-        let focus = tab_stop((self.id.clone(), "focus").into(), true, window, cx);
+        let (keyed, drawn) = (self.on_brush.is_some(), self.on_stroke.is_some());
+        let focus = tab_stop((self.id.clone(), "focus").into(), keyed, window, cx);
         let (bounds, under) = (drawing.read(cx).bounds, drawing.read(cx).stroke.clone());
         let (radius, erase) = (self.radius, self.erase);
-        let mut live = self.strokes;
-        if !under.is_empty() {
-            let points = under.iter().map(|at| share(bounds, *at)).collect();
-            live.push(MaskStroke {
-                points,
-                radius,
-                erase,
-            });
-        }
+        let live = (!under.is_empty()).then(|| MaskStroke {
+            points: under.iter().map(|at| share(bounds, *at)).collect(),
+            radius,
+            erase,
+        });
         let rows = ((COLUMNS as f32 / self.ratio).round() as usize).max(1);
-        let rects = shaped(&cache, live, rows, self.ratio, cx);
+        let rects = shaped(&cache, self.strokes, live, rows, self.ratio, cx);
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let (wash, corner) = (colors.accent.alpha(0.45), theme.radius(Radius::Lg));
+        let wash = colors.accent.alpha(0.45);
         let ring = pointer
             .read(cx)
-            .filter(|_| bounds.size.width > Pixels::ZERO)
+            .filter(|_| drawn && bounds.size.width > Pixels::ZERO)
             .map(|at| {
                 let span = bounds.size.width * radius * 2.0;
                 div()
+                    .debug_selector(|| "inpaint-ring".into())
                     .absolute()
                     .left(at.x - bounds.left() - span / 2.0)
                     .top(at.y - bounds.top() - span / 2.0)
@@ -265,17 +293,11 @@ impl RenderOnce for InpaintCanvas {
         let (id, on_stroke) = (self.id.clone(), self.on_stroke.clone());
         let area = framed(self.ratio, cx)
             .id(self.id.clone())
-            .track_focus(&focus)
-            .rounded(corner)
             .border_1()
             .border_color(transparent_black())
-            .focus_ring(cx)
-            .cursor_crosshair()
-            .child(
-                Image::new((self.id.clone(), "picture"), source(&self.picture))
-                    .size_full()
-                    .rounded(corner),
-            )
+            .when(keyed, |area| area.track_focus(&focus).focus_ring(cx))
+            .when(drawn, |area| area.cursor_crosshair())
+            .child(Image::new((self.id.clone(), "picture"), source(&self.picture)).size_full())
             .child(
                 canvas(
                     move |bounds, _, cx| {
@@ -335,11 +357,11 @@ impl RenderOnce for InpaintCanvas {
                 log::info!("inpaint canvas: brush {next:.3}, erase {swap}");
                 keys(next, swap, window, cx)
             });
+        let Some(on_stroke) = on_stroke else {
+            return area;
+        };
         let sized = drawing.clone();
         pen(area, &drawing, move |stroke, window, cx| {
-            let Some(on_stroke) = &on_stroke else {
-                return;
-            };
             let bounds = sized.read(cx).bounds;
             let points = stroke.iter().map(|at| share(bounds, *at)).collect();
             log::info!("inpaint canvas {id:?}: a stroke of {} points", stroke.len());

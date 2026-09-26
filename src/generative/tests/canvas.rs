@@ -70,6 +70,12 @@ fn painting(cx: &mut TestAppContext) -> (Entity<Painting>, &mut VisualTestContex
 fn a_drag_lands_a_stroke_in_shares_of_the_picture(cx: &mut TestAppContext) {
     let (view, cx) = painting(cx);
     let none = Modifiers::none();
+    cx.simulate_mouse_move(point(px(100.0), px(50.0)), None, none);
+    settle(cx);
+    assert!(
+        cx.debug_bounds("inpaint-ring").is_some(),
+        "a ring follows the pointer"
+    );
     cx.simulate_mouse_down(point(px(100.0), px(50.0)), MouseButton::Left, none);
     for x in [150.0, 200.0, 250.0] {
         cx.simulate_mouse_move(point(px(x), px(50.0)), MouseButton::Left, none);
@@ -126,4 +132,50 @@ fn undo_waits_for_a_stroke(cx: &mut TestAppContext) {
         view.read_with(cx, |view, _| (view.undone, view.strokes.len())),
         (1, 0)
     );
+}
+
+/// A mask shown to read, with nothing to take its strokes or keys.
+struct Shown;
+
+impl Render for Shown {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let stroke = MaskStroke {
+            points: vec![(0.5, 0.5)],
+            radius: 0.05,
+            erase: false,
+        };
+        div()
+            .w(px(400.0))
+            .child(InpaintCanvas::new("shown", "missing.jpg", 2.0, [stroke]))
+    }
+}
+
+#[gpui::test]
+fn a_mask_to_read_takes_no_focus_and_no_pen(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Shown);
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    tab(1, cx);
+    assert!(
+        cx.update(|window, cx| window.focused(cx).is_none()),
+        "no Tab stop"
+    );
+    cx.simulate_mouse_move(point(px(100.0), px(50.0)), None, Modifiers::none());
+    settle(cx);
+    assert!(
+        cx.debug_bounds("inpaint-ring").is_none(),
+        "no ring without a pen"
+    );
+}
+
+#[test]
+#[should_panic(expected = "a mask stroke's radius of 5")]
+fn a_stroke_past_the_brush_fails_loud() {
+    let stroke = MaskStroke {
+        points: vec![(0.5, 0.5)],
+        radius: 5.0,
+        erase: false,
+    };
+    let _ = InpaintCanvas::new("canvas", "missing.jpg", 1.5, [stroke]);
 }

@@ -295,3 +295,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25a | 2 | PASS | |
 | T25b | 1 | FAIL | a done result with nothing to open still took focus on a press and drew a ring the keys could not reach |
 | T25b | 2 | PASS | |
+| T25c | 1 | FAIL | a canvas with no handlers still took Tab, the pen and the ring; strokes from the host went unchecked |
