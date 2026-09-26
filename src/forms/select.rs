@@ -9,7 +9,7 @@ use gpui::{
 use super::{
     Choice,
     input::text_size,
-    options::{OnValue, Pick, Popup, step},
+    options::{OnValue, Pick, Popup, Run, reveal, step},
 };
 use crate::{
     primitives::{Icon, IconName, tab_stop},
@@ -24,6 +24,7 @@ pub(crate) struct Picker {
     pub highlighted: usize,
     pub anchor: Bounds<Pixels>,
     pub scroll: ScrollHandle,
+    pub revealed: Option<usize>,
 }
 
 impl Picker {
@@ -31,9 +32,18 @@ impl Picker {
         state.update(cx, |picker, cx| {
             picker.open = open;
             picker.highlighted = highlighted;
-            picker.scroll.scroll_to_item(highlighted);
             cx.notify();
         });
+    }
+
+    /// The row to scroll into view while the list shows `highlighted`.
+    pub fn reveal(
+        state: &Entity<Picker>,
+        shown: bool,
+        highlighted: usize,
+        cx: &mut App,
+    ) -> Option<(usize, Run)> {
+        reveal(state, |picker| &mut picker.revealed, shown, highlighted, cx)
     }
 }
 
@@ -163,6 +173,7 @@ pub(crate) fn listing(
             picker.scroll.clone(),
         )
     };
+    let reveal = Picker::reveal(&picker, open, highlighted, cx);
     let pick: Pick = {
         let (rows, picker) = (rows.clone(), picker.clone());
         Rc::new(move |ix, window, cx| {
@@ -224,7 +235,7 @@ pub(crate) fn listing(
                         Picker::show(&close, false, at, cx)
                     })),
                     scroll: Some(&scroll),
-                    reveal: None,
+                    reveal,
                 }
                 .render(window, cx),
             )

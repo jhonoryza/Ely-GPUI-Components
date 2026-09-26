@@ -165,6 +165,7 @@ impl RenderOnce for Combobox {
             step(&rows, rows.len().saturating_sub(1), 1)
         };
         let (anchor, scroll) = (picker.read(cx).anchor, picker.read(cx).scroll.clone());
+        let reveal = Picker::reveal(&picker, open, highlighted, cx);
         let pick: Pick = {
             let (id, rows, state, typing, on_change) = (
                 self.id.clone(),
@@ -256,7 +257,7 @@ impl RenderOnce for Combobox {
                         pick,
                         dismiss: None,
                         scroll: Some(&scroll),
-                        reveal: None,
+                        reveal,
                     }
                     .render(window, cx),
                 )

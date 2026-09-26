@@ -1,9 +1,10 @@
 use std::rc::Rc;
 
 use gpui::{
-    Animation, AnimationExt, AnyElement, App, Bounds, Corner, Div, ElementId, InteractiveElement,
-    IntoElement, MouseButton, ParentElement, Pixels, ScrollHandle, SharedString, Stateful,
-    StatefulInteractiveElement, Styled, Window, anchored, canvas, deferred, div, prelude::*,
+    Animation, AnimationExt, AnyElement, App, Bounds, Corner, Div, ElementId, Entity,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, ScrollHandle,
+    SharedString, Stateful, StatefulInteractiveElement, Styled, Window, anchored, canvas, deferred,
+    div, prelude::*,
 };
 
 use crate::{
@@ -209,6 +210,29 @@ pub(crate) fn float_height(
     deferred(placed.snap_to_window())
         .with_priority(1)
         .into_any_element()
+}
+
+/// The row a list scrolls into view: `at` while `shown` and not yet revealed there. A hidden list forgets.
+pub(crate) fn reveal<T: 'static>(
+    state: &Entity<T>,
+    revealed: fn(&mut T) -> &mut Option<usize>,
+    shown: bool,
+    at: usize,
+    cx: &mut App,
+) -> Option<(usize, Run)> {
+    let last = state.update(cx, |state, _| {
+        let last = revealed(state);
+        if !shown {
+            *last = None;
+        }
+        *last
+    });
+    (shown && last != Some(at)).then(|| {
+        let state = state.clone();
+        let mark: Run =
+            Rc::new(move |_, cx| state.update(cx, |state, _| *revealed(state) = Some(at)));
+        (at, mark)
+    })
 }
 
 /// A list floating under `anchor`, at least as wide. Rows leave focus where it was.

@@ -92,6 +92,7 @@ impl RenderOnce for MultiSelect {
                 picker.scroll.clone(),
             )
         };
+        let reveal = Picker::reveal(&picker, open, highlighted, cx);
         let commit: OnValues = {
             let (id, on_change) = (self.id.clone(), self.on_change);
             Rc::new(move |next, window, cx| {
@@ -222,7 +223,7 @@ impl RenderOnce for MultiSelect {
                             Picker::show(&close, false, at, cx)
                         })),
                         scroll: Some(&scroll),
-                        reveal: None,
+                        reveal,
                     }
                     .render(window, cx),
                 )

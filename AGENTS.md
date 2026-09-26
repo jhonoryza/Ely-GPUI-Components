@@ -82,7 +82,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A window keeps one `feedback::Toaster` and renders one `ToastViewport`; anything holding the entity pushes to it. Messages share `primitives::Severity`.
 - Only gpui can build `ExternalPaths` with paths, so drop rules live in `forms::files::dropped`, where tests reach them.
 - gpui runs key bindings before key listeners. A container takes a child's bound key through the action with `capture_action`, as `Form` takes `Submit`.
-- `ScrollHandle::scroll_to_item` runs in the container's prepaint before its bounds are stored, so a first-frame call misfires. Call it from a child's prepaint once the handle has bounds, then request one frame (`navigation::editor_tabs`). Never poll layout with `request_animation_frame`.
+- `ScrollHandle::scroll_to_item` runs in the container's prepaint against last frame's bounds and overflow, so a call before a list's first frame does nothing. Call it from a child's prepaint once the handle has bounds, then request one frame (`navigation::editor_tabs`). A floating list reveals its cursor through `forms::options::reveal`. Never poll layout with `request_animation_frame`.
 - gpui animations run on the wall clock; timers run on the executor's clock, which tests advance by hand. A test that needs an animation settled turns on the theme's reduced motion. Clocks read `background_executor().now()` and wake only their own view.
 - Machine-read marks, QR codes and barcodes, paint `ink` on `paper`: dark on light in both themes, so cameras read them.
 - A layer over pressable content that must still pass scrolls to its ancestors uses `block_mouse_except_scroll`; `occlude` hides them from scrolls too.

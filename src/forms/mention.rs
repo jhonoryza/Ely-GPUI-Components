@@ -7,7 +7,7 @@ use gpui::{
 
 use super::{
     Highlight, Input, TextInput,
-    options::{Choice, Pick, Popup, Run, step},
+    options::{Choice, Pick, Popup, reveal, step},
     text::{Down, Enter, Up},
 };
 use crate::theme::ActiveTheme;
@@ -151,21 +151,16 @@ impl Suggestions {
         let rows: Rc<[Choice]> = self.rows.into();
         let shown = open && anchor.is_some();
         let highlighted = usable(&rows, picking.read(cx).highlighted);
-        let revealed = picking.read(cx).revealed.filter(|_| shown);
-        let stored = (picking.read(cx).highlighted, picking.read(cx).revealed);
-        if (highlighted, revealed) != stored {
-            picking.update(cx, |picking, _| {
-                picking.highlighted = highlighted;
-                picking.revealed = revealed;
-            });
+        if highlighted != picking.read(cx).highlighted {
+            picking.update(cx, |picking, _| picking.highlighted = highlighted);
         }
-        let reveal = (shown && revealed != Some(highlighted)).then(|| {
-            let done = picking.clone();
-            let mark: Run = Rc::new(move |_, cx| {
-                done.update(cx, |picking, _| picking.revealed = Some(highlighted))
-            });
-            (highlighted, mark)
-        });
+        let reveal = reveal(
+            &picking,
+            |picking| &mut picking.revealed,
+            shown,
+            highlighted,
+            cx,
+        );
         let scroll = picking.read(cx).scroll.clone();
         log::debug!(
             "suggestions {:?}: open {open}, {} rows, anchor {anchor:?}",

@@ -1,11 +1,15 @@
 use gpui::{
-    AppContext as _, Context, Entity, IntoElement, KeyUpEvent, Keystroke, Render, SharedString,
-    TestAppContext, VisualTestContext, Window,
+    AppContext as _, Context, Entity, IntoElement, KeyUpEvent, Keystroke, Modifiers, ParentElement,
+    Render, SharedString, Styled, TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
 use super::setup;
-use crate::forms::{
-    Checkbox, Choice, Combobox, MultiSelect, RadioGroup, Rating, Select, Slider, TextInput,
+use crate::{
+    forms::{
+        Checkbox, Choice, Combobox, MultiSelect, RadioGroup, Rating, Select, Slider, TextInput,
+    },
+    motion,
+    theme::{ActiveTheme, ControlSize, Theme},
 };
 
 fn abc(middle_off: bool) -> [Choice; 3] {
@@ -81,6 +85,71 @@ fn select_opens_moves_and_picks_from_the_keyboard(cx: &mut TestAppContext) {
     cx.update(|window, _| window.focus_next());
     cx.simulate_keystrokes("down down enter");
     assert_eq!(view.read_with(cx, |view, _| view.chosen.clone()), "b");
+}
+
+/// A select of thirty rows, low in the window, and the rows it picked.
+struct Long {
+    chosen: SharedString,
+    picks: Vec<SharedString>,
+}
+
+impl Render for Long {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let view = cx.entity();
+        let rows = (0..30).map(|ix| Choice::new(format!("r{ix:02}"), format!("Row {ix:02}")));
+        div().pt(px(200.0)).w(px(240.0)).child(
+            Select::new("long", rows)
+                .selected(self.chosen.clone())
+                .on_change(move |value, _, cx| {
+                    view.update(cx, |view, cx| {
+                        view.chosen = value.clone();
+                        view.picks.push(value.clone());
+                        cx.notify();
+                    })
+                }),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_long_list_opens_with_its_choice_in_view(cx: &mut TestAppContext) {
+    setup(cx);
+    cx.update(|cx| Theme::update(cx, |theme| theme.reduced_motion = true));
+    let (view, cx) = cx.add_window_view(|_, _| Long {
+        chosen: "r25".into(),
+        picks: Vec::new(),
+    });
+    let (trigger, list) = cx.update(|window, cx| {
+        let theme = cx.theme();
+        (
+            theme
+                .control_height(ControlSize::Md)
+                .to_pixels(window.rem_size()),
+            theme.list_max_height().to_pixels(window.rem_size()),
+        )
+    });
+    let field = point(px(40.0), px(200.0) + trigger / 2.0);
+    cx.simulate_mouse_move(field, None, Modifiers::none());
+    cx.simulate_click(field, Modifiers::none());
+    frames(cx);
+    let foot = point(
+        px(40.0),
+        px(200.0) + trigger + motion::NUDGE + list - px(8.0),
+    );
+    cx.simulate_mouse_move(foot, None, Modifiers::none());
+    cx.simulate_click(foot, Modifiers::none());
+    frames(cx);
+    let picks = view.read_with(cx, |view, _| view.picks.clone());
+    assert_eq!(picks, ["r25"], "the list opens with its choice at the foot");
+}
+
+/// Frames 2ms apart, past reduced motion's 1ms entrances.
+fn frames(cx: &mut VisualTestContext) {
+    for _ in 0..3 {
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        cx.update(|window, _| window.refresh());
+        cx.run_until_parked();
+    }
 }
 
 struct Level {
