@@ -4,6 +4,7 @@ use gpui::{
 };
 
 mod changes;
+mod environment;
 mod previews;
 
 use super::{AgentProgress, Permission, PermissionPrompt, ToolApprovalDialog};

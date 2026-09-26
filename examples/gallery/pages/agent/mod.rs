@@ -1,4 +1,5 @@
 mod changes;
+mod environment;
 mod previews;
 mod progress;
 mod tools;
@@ -54,5 +55,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(changes::changes_section(window, cx))
         .child(previews::watching(window, cx))
         .child(previews::artifacts(window, cx))
+        .child(environment::sandbox_section(window, cx))
+        .child(environment::connectors_section(window, cx))
+        .child(environment::memory_section(window, cx))
         .into_any_element()
 }
