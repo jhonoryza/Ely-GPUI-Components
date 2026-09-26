@@ -11,6 +11,8 @@ const EYE: f32 = 4.0;
 pub(crate) const START: (f32, f32) = (0.6, 0.35);
 /// What a key turns the view.
 pub(crate) const STEP: f32 = PI / 12.0;
+/// What a drag turns the view for each pixel.
+pub(crate) const DRAG: f32 = 0.01;
 /// Farthest the view tips up or down, short of looking straight along the upright axis.
 const TIP: f32 = 1.4;
 

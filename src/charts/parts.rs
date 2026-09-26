@@ -64,9 +64,6 @@ impl RenderOnce for ChartLegend {
                         div()
                             .id((self.id.clone(), format!("entry-{ix}")))
                             .flex()
-                            .items_center()
-                            .gap_1p5()
-                            .when(hidden, |entry| entry.opacity(0.4))
                             .when_some(on_toggle, |entry, on_toggle| {
                                 entry
                                     .px_1()
@@ -81,8 +78,15 @@ impl RenderOnce for ChartLegend {
                                     })
                                     .on_click(move |_, window, cx| on_toggle(&key, window, cx))
                             })
-                            .child(div().size(theme.status_dot()).rounded_full().bg(color))
-                            .child(name)
+                            .child(
+                                div()
+                                    .flex()
+                                    .items_center()
+                                    .gap_1p5()
+                                    .when(hidden, |key| key.opacity(0.4))
+                                    .child(div().size(theme.status_dot()).rounded_full().bg(color))
+                                    .child(name),
+                            )
                     }),
             )
     }

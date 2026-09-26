@@ -1,6 +1,6 @@
 use gpui::{
-    AppContext, Bounds, Context, Entity, IntoElement, Modifiers, ParentElement, Pixels, Render,
-    Styled, TestAppContext, VisualTestContext, Window, div, point, px,
+    AppContext, Bounds, Context, Entity, IntoElement, Modifiers, MouseButton, ParentElement,
+    Pixels, Render, Styled, TestAppContext, VisualTestContext, Window, div, point, px,
 };
 use jiff::Timestamp;
 
@@ -9,7 +9,7 @@ use crate::{
     forms::TextInput,
     generative::{
         Embedded, EmbeddingVisualizer, PromptPlayground, PromptVersion, PromptVersionHistory,
-        lens::{Lens, START, STEP, radius, turned},
+        lens::{DRAG, Lens, START, STEP, radius, turned},
     },
 };
 
@@ -103,6 +103,33 @@ fn a_turned_view_takes_tab_and_spins_with_the_arrows(cx: &mut TestAppContext) {
         .debug_bounds("embedding-tip")
         .expect("a is named where it turned to");
     assert!((tip.origin - at).x.abs() < px(0.5) && (tip.origin - at).y.abs() < px(0.5));
+}
+
+#[gpui::test]
+fn a_drag_keeps_turning_past_the_plots_edge(cx: &mut TestAppContext) {
+    let cx = space(true, cx);
+    let middle = cx
+        .debug_bounds("embedding-area")
+        .expect("the area draws")
+        .center();
+    let (none, down) = (Modifiers::none(), |y: f32| middle + point(px(0.0), px(y)));
+    cx.simulate_mouse_down(middle, MouseButton::Left, none);
+    cx.simulate_mouse_move(down(50.0), MouseButton::Left, none);
+    cx.simulate_mouse_move(down(250.0), MouseButton::Left, none);
+    cx.simulate_mouse_up(down(250.0), MouseButton::Left, none);
+    settle(cx);
+    let at = aim(A, Some(turned(START, (0.0, 250.0 * DRAG))), cx);
+    hover(at, cx);
+    let tip = cx
+        .debug_bounds("embedding-tip")
+        .expect("a is named where the whole drag turned it");
+    assert!((tip.origin - at).x.abs() < px(0.5) && (tip.origin - at).y.abs() < px(0.5));
+}
+
+#[gpui::test]
+#[should_panic(expected = "named twice")]
+fn a_group_named_twice_fails_loud() {
+    EmbeddingVisualizer::new("space", points(), ["Docs", "Docs"]);
 }
 
 #[gpui::test]

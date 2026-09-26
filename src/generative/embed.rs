@@ -1,12 +1,13 @@
 use std::{collections::HashSet, rc::Rc};
 
 use gpui::{
-    App, Bounds, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels,
-    Point, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, canvas, div, fill,
-    point, prelude::*, size, transparent_black,
+    App, Bounds, DragMoveEvent, ElementId, EmptyView, EntityId, InteractiveElement, IntoElement,
+    MouseButton, ParentElement, Pixels, Point, RenderOnce, SharedString,
+    StatefulInteractiveElement, Styled, Window, canvas, div, fill, point, prelude::*, size,
+    transparent_black,
 };
 
-use super::lens::{Lens, START, STEP, radius, turned};
+use super::lens::{DRAG, Lens, START, STEP, radius, turned};
 use crate::{
     charts::{ChartLegend, ChartTooltip, anchored},
     primitives::{FocusRing, checked_ratio, tab_stop},
@@ -22,18 +23,18 @@ pub struct Embedded {
     pub at: [f32; 3],
 }
 
-/// What a drag turns the view for each pixel.
-const DRAG: f32 = 0.01;
-
 /// A box's width and height in pixels.
 fn extent(bounds: Bounds<Pixels>) -> (f32, f32) {
     (f32::from(bounds.size.width), f32::from(bounds.size.height))
 }
 
+/// A turning drag, marked with its view.
+struct Spin(EntityId);
+
 /// The view's own state: its turn, where a drag was last, the point under the pointer, the groups the legend hid, and the plot's bounds.
 struct View {
     turn: (f32, f32),
-    from: Option<Point<Pixels>>,
+    from: Point<Pixels>,
     hovered: Option<usize>,
     hidden: HashSet<usize>,
     bounds: Bounds<Pixels>,
@@ -59,6 +60,9 @@ impl EmbeddingVisualizer {
     ) -> Self {
         let points: Vec<Embedded> = points.into_iter().collect();
         let groups: Vec<SharedString> = groups.into_iter().map(Into::into).collect();
+        for (ix, name) in groups.iter().enumerate() {
+            assert!(!groups[..ix].contains(name), "group {name} named twice");
+        }
         for point in &points {
             assert!(
                 point.group < groups.len(),
@@ -100,7 +104,7 @@ impl RenderOnce for EmbeddingVisualizer {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let view = window.use_keyed_state((self.id.clone(), "view"), cx, |_, _| View {
             turn: START,
-            from: None,
+            from: Point::default(),
             hovered: None,
             hidden: HashSet::new(),
             bounds: Bounds::default(),
@@ -158,7 +162,8 @@ impl RenderOnce for EmbeddingVisualizer {
                 cx.notify();
             })
         });
-        let (measure, moved, pressed, lifted, keys, left) = (
+        let owner = view.entity_id();
+        let (measure, moved, pressed, spun, keys, left) = (
             view.clone(),
             view.clone(),
             view.clone(),
@@ -236,19 +241,10 @@ impl RenderOnce for EmbeddingVisualizer {
             )
             .children(tooltip)
             .on_mouse_move(move |event, _, cx| {
+                if event.pressed_button.is_some() {
+                    return;
+                }
                 moved.update(cx, |view, cx| {
-                    if let (true, Some(from), Some(MouseButton::Left)) =
-                        (three, view.from, event.pressed_button)
-                    {
-                        let delta = event.position - from;
-                        view.turn = turned(
-                            view.turn,
-                            (f32::from(delta.x) * DRAG, f32::from(delta.y) * DRAG),
-                        );
-                        (view.from, view.hovered) = (Some(event.position), None);
-                        cx.notify();
-                        return;
-                    }
                     let bounds = view.bounds;
                     let at = (
                         f32::from(event.position.x - bounds.left()),
@@ -266,24 +262,33 @@ impl RenderOnce for EmbeddingVisualizer {
                     }
                 })
             })
-            .on_mouse_down(MouseButton::Left, move |event, _, cx| {
-                pressed.update(cx, |view, _| view.from = Some(event.position))
-            })
-            .on_mouse_up(MouseButton::Left, move |_, _, cx| {
-                lifted.update(cx, |view, _| {
-                    if view.from.take().is_some() && three {
-                        log::info!(
-                            "embedding: turned to {:.2}, {:.2}",
-                            view.turn.0,
-                            view.turn.1
-                        );
+            .when(three, |area| {
+                area.on_mouse_down(MouseButton::Left, move |event, _, cx| {
+                    pressed.update(cx, |view, _| view.from = event.position)
+                })
+                .on_drag(Spin(owner), |_, _, _, cx| {
+                    log::info!("embedding: a drag turns the view");
+                    cx.new(|_| EmptyView)
+                })
+                .on_drag_move(move |event: &DragMoveEvent<Spin>, _, cx| {
+                    if event.drag(cx).0 != owner {
+                        return;
                     }
+                    spun.update(cx, |view, cx| {
+                        let delta = event.event.position - view.from;
+                        view.turn = turned(
+                            view.turn,
+                            (f32::from(delta.x) * DRAG, f32::from(delta.y) * DRAG),
+                        );
+                        (view.from, view.hovered) = (event.event.position, None);
+                        cx.notify();
+                    })
                 })
             })
             .on_hover(move |inside, _, cx| {
                 if !inside {
                     left.update(cx, |view, cx| {
-                        (view.from, view.hovered) = (None, None);
+                        view.hovered = None;
                         cx.notify();
                     })
                 }

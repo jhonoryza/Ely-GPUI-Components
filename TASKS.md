@@ -301,3 +301,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25d | 2 | PASS | |
 | T25e | 1 | FAIL | a description row never wrapped, so a 280px model card broke its facts mid-word; the fine-tune bar's share had no test |
 | T25e | 2 | PASS | |
+| T25f | 1 | FAIL | a drag on the turned embedding froze past the plot's edge; which version a diff sets against, and its heading, had no test |

@@ -91,6 +91,19 @@ impl RenderOnce for PromptDiff {
     }
 }
 
+/// What the chosen version is set against: a heading naming the version before it, and that version's text, empty for the first.
+pub(crate) fn compared(versions: &[PromptVersion], chosen: usize) -> (SharedString, SharedString) {
+    let heading = match versions.len() - chosen {
+        1 => "The first version".into(),
+        place => format!("Changes from version {}", place - 1).into(),
+    };
+    let base = versions
+        .get(chosen + 1)
+        .map(|version| version.text.clone())
+        .unwrap_or_default();
+    (heading, base)
+}
+
 /// A prompt as saved: its key, its words, who saved it, when, and a note on what changed.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PromptVersion {
@@ -163,11 +176,7 @@ impl RenderOnce for PromptVersionHistory {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let chosen = self.chosen;
-        let before = self
-            .versions
-            .get(chosen + 1)
-            .map(|version| version.text.clone())
-            .unwrap_or_default();
+        let (heading, before) = compared(&self.versions, chosen);
         let shown = &self.versions[chosen];
         let restore = self
             .on_restore
@@ -182,10 +191,6 @@ impl RenderOnce for PromptVersionHistory {
                         restore(chosen, window, cx)
                     })
             });
-        let heading = match self.versions.len() - chosen {
-            1 => "The first version".to_string(),
-            place => format!("Changes from version {}", place - 1),
-        };
         let rows = self.versions.iter().zip(focuses).enumerate().map(
             |(ix, (version, (focus, focused)))| {
                 let on = ix == chosen;
@@ -297,7 +302,33 @@ impl RenderOnce for PromptVersionHistory {
 mod tests {
     use similar::ChangeTag;
 
-    use super::changes;
+    use jiff::Timestamp;
+
+    use super::{PromptVersion, changes, compared};
+
+    #[test]
+    fn a_version_compares_with_the_one_before_it() {
+        let version = |n: usize| PromptVersion {
+            key: format!("v{n}").into(),
+            text: format!("text {n}").into(),
+            author: "Mira".into(),
+            at: Timestamp::UNIX_EPOCH,
+            note: format!("note {n}").into(),
+        };
+        let versions: Vec<PromptVersion> = (1..=4).rev().map(version).collect();
+        assert_eq!(
+            compared(&versions, 2),
+            ("Changes from version 1".into(), "text 1".into())
+        );
+        assert_eq!(
+            compared(&versions, 3),
+            ("The first version".into(), "".into())
+        );
+        assert_eq!(
+            compared(&versions, 0),
+            ("Changes from version 3".into(), "text 3".into())
+        );
+    }
 
     #[test]
     fn a_change_keeps_words_and_marks_what_went_and_came() {
