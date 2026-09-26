@@ -286,10 +286,12 @@ impl Popup<'_> {
             })
         });
         let list = surface(self.id, cx)
+            .debug_selector(|| "option-list".into())
             .min_w(theme.tooltip_max_width())
             .when(anchor.size.width > Pixels::ZERO, |list| {
                 list.min_w(anchor.size.width)
             })
+            .max_w(window.viewport_size().width - theme.window_margin() * 2.0)
             .max_h(theme.list_max_height())
             .overflow_y_scroll()
             .when_some(self.scroll, |list, handle| list.track_scroll(handle))

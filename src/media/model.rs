@@ -11,7 +11,7 @@ use crate::{
     layout::seeded::use_seeded,
     motion::Spinner,
     overlays::media_button,
-    primitives::{FocusRing, IconName, framed, tab_stop},
+    primitives::{FocusRing, IconName, checked_ratio, framed, tab_stop},
     theme::{ActiveTheme, ControlSize, Radius},
 };
 
@@ -70,7 +70,6 @@ pub struct ModelViewer {
 impl ModelViewer {
     /// `ratio` is the view's width over its height.
     pub fn new(id: impl Into<ElementId>, ratio: f32, orbit: Orbit) -> Self {
-        assert!(ratio > 0.0, "a view's shape of {ratio}");
         assert!(
             (NEAR..=FAR).contains(&orbit.distance),
             "a distance of {}",
@@ -78,7 +77,7 @@ impl ModelViewer {
         );
         Self {
             id: id.into(),
-            ratio,
+            ratio: checked_ratio(ratio),
             frame: None,
             orbit,
             on_orbit: None,

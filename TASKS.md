@@ -316,3 +316,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T26c | 3 | PASS | |
 | T26d | 1 | FAIL | the playlist's keys started from the first row, not the song under way; the waveform's bar fit sat untested in paint |
 | T26d | 2 | PASS | |
+| T26e | 1 | FAIL | an option list had no width limit, so a long device name ran it past the window |

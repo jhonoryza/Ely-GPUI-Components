@@ -7,7 +7,7 @@ use gpui::{
 
 use crate::{
     forms::{Choice, OnValue, Select},
-    primitives::{Icon, IconName, framed},
+    primitives::{Icon, IconName, checked_ratio, framed},
     theme::{ActiveTheme, IconSize, Radius, TextSize},
     typography::Ellipsis,
 };
@@ -24,10 +24,9 @@ pub struct CameraPreview {
 impl CameraPreview {
     /// `ratio` is the camera's width over its height.
     pub fn new(id: impl Into<ElementId>, ratio: f32) -> Self {
-        assert!(ratio > 0.0, "a camera's shape of {ratio}");
         Self {
             id: id.into(),
-            ratio,
+            ratio: checked_ratio(ratio),
             frame: None,
             name: None,
         }

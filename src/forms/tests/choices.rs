@@ -446,3 +446,32 @@ fn an_open_select_with_nothing_to_pick_fails(cx: &mut TestAppContext) {
     setup(cx);
     cx.add_window_view(|_, _| Empty(false));
 }
+
+/// A select whose one choice runs long.
+struct Named;
+
+impl Render for Named {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let long = Choice::new("long", "A very long microphone name that runs past the box");
+        div()
+            .w(px(200.0))
+            .child(Select::new("long", [long, Choice::new("b", "B")]))
+    }
+}
+
+#[gpui::test]
+fn a_long_choice_keeps_its_list_inside_the_window(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Named);
+    cx.simulate_resize(gpui::size(px(280.0), px(600.0)));
+    cx.run_until_parked();
+    cx.update(|window, _| window.focus_next());
+    cx.simulate_keystrokes("enter");
+    release("enter", cx);
+    cx.run_until_parked();
+    let list = cx.debug_bounds("option-list").expect("the list opens");
+    assert!(
+        list.left() >= px(0.0) && list.right() <= px(280.0),
+        "{list:?}"
+    );
+}
