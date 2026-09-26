@@ -1,3 +1,14 @@
+/// A file under the gallery's assets, by name.
+macro_rules! asset {
+    ($name:literal) => {
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/examples/gallery/assets/",
+            $name
+        )
+    };
+}
+
 mod capture;
 mod pages;
 mod probe;

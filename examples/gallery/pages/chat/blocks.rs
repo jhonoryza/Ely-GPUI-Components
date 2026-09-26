@@ -11,16 +11,6 @@ use gpui::{App, IntoElement, ParentElement, Styled, Window, div, px};
 
 use crate::ui::{keep, noise, section, set};
 
-macro_rules! asset {
-    ($name:literal) => {
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/examples/gallery/assets/",
-            $name
-        )
-    };
-}
-
 const SHORT: &str = "fn lift(c: f32, t: f32) -> f32 {\n    c + t * (1.0 - c)\n}";
 
 const LONG: &str = "/// Every accent in the library, lifted for its theme.\npub struct Accents {\n    base: Hsla,\n    light: f32,\n    dark: f32,\n}\n\nimpl Accents {\n    pub fn new(base: Hsla) -> Self {\n        Self { base, light: 0.5, dark: 0.62 }\n    }\n\n    /// The accent as the theme shows it.\n    pub fn shown(&self, dark: bool) -> Hsla {\n        let t = if dark { self.dark } else { self.light };\n        lift(self.base, t)\n    }\n\n    /// A hover, one step louder.\n    pub fn hover(&self, dark: bool) -> Hsla {\n        lift(self.shown(dark), 0.08)\n    }\n\n    /// A press, two steps louder.\n    pub fn press(&self, dark: bool) -> Hsla {\n        lift(self.shown(dark), 0.16)\n    }\n}";

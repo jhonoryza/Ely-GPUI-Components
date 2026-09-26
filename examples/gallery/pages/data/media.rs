@@ -15,16 +15,6 @@ use crate::{
     ui::{keep, section, set},
 };
 
-macro_rules! asset {
-    ($name:literal) => {
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/examples/gallery/assets/",
-            $name
-        )
-    };
-}
-
 const PICTURES: [(&str, &str); 6] = [
     (asset!("dunes-sun.jpg"), "Sunset over the dunes"),
     (asset!("atrium-stair.jpg"), "A stair that turns"),

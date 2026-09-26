@@ -4,6 +4,7 @@ use gpui::{
 };
 
 mod changes;
+mod previews;
 
 use super::{AgentProgress, Permission, PermissionPrompt, ToolApprovalDialog};
 use crate::{forms, primitives::FocusNext, theme::Theme};

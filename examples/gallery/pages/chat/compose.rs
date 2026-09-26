@@ -19,16 +19,6 @@ use crate::{
     ui::{keep, noise, section, set},
 };
 
-macro_rules! asset {
-    ($name:literal) => {
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/examples/gallery/assets/",
-            $name
-        )
-    };
-}
-
 const SYSTEM: &str = "You answer about color in plain words. Cite sources.";
 
 /// The composer's text, which the prompt menu fills.
