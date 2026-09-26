@@ -304,6 +304,42 @@ fn down_and_enter_play_the_next_song(cx: &mut TestAppContext) {
     assert_eq!(view.read_with(cx, |view, _| view.played.clone()), ["b"]);
 }
 
+/// Four songs with the third under way, and the songs it was told to play.
+struct Midway {
+    played: Vec<SharedString>,
+}
+
+impl Render for Midway {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let owner = cx.entity();
+        let songs = [
+            track("a", "One"),
+            track("b", "Two"),
+            track("c", "Three"),
+            track("d", "Four"),
+        ];
+        div().w(px(320.0)).child(
+            Playlist::new("list", songs)
+                .current("c", true)
+                .on_play(move |key, _, cx| {
+                    owner.update(cx, |view, _| view.played.push(key.clone()))
+                }),
+        )
+    }
+}
+
+#[gpui::test]
+fn the_keys_start_from_the_song_under_way(cx: &mut TestAppContext) {
+    setup(cx);
+    let (view, cx) = cx.add_window_view(|_, _| Midway { played: Vec::new() });
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    tab_to(1, cx);
+    press("down", cx);
+    press("enter", cx);
+    assert_eq!(view.read_with(cx, |view, _| view.played.clone()), ["d"]);
+}
+
 #[test]
 #[should_panic(expected = "no track c")]
 fn the_song_under_way_is_one_of_the_list() {

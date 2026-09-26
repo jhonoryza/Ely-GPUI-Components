@@ -38,13 +38,15 @@ pub(crate) fn picked(
         .collect()
 }
 
-/// The row the keyboard is on and where a Shift range starts, by index and by key so they follow their rows when the owner reorders them, and the scroll that follows them.
+/// The row the keyboard is on and where a Shift range starts, by index and by key so they follow their rows when the owner reorders them, and the scroll that follows them; the owner's last selection, and the one the list last sent.
 #[derive(Default)]
 struct Cursor {
     at: usize,
     anchor: usize,
     keys: Option<(SharedString, SharedString)>,
     scroll: ScrollHandle,
+    seen: Option<Vec<SharedString>>,
+    sent: Option<Vec<SharedString>>,
 }
 
 type OnSelect = Rc<dyn Fn(&[SharedString], &mut Window, &mut App)>;
@@ -125,6 +127,15 @@ impl RenderOnce for SelectableList {
         let cursor =
             window.use_keyed_state((self.id.clone(), "cursor"), cx, |_, _| Cursor::default());
         let keys: Rc<[SharedString]> = self.rows.iter().map(|(key, _)| key.clone()).collect();
+        if cursor.read(cx).seen.as_ref() != Some(&self.selected) {
+            cursor.update(cx, |cursor, _| {
+                let echo = cursor.sent.take().as_ref() == Some(&self.selected);
+                if let Some(first) = self.selected.first().filter(|_| !echo) {
+                    cursor.keys = Some((first.clone(), first.clone()));
+                }
+                cursor.seen = Some(self.selected.clone());
+            });
+        }
         let (at, anchor, scroll) = {
             let cursor = cursor.read(cx);
             let place = |key: Option<&SharedString>, ix: usize| {
@@ -183,6 +194,7 @@ impl RenderOnce for SelectableList {
                         keys[cursor.anchor.min(keys.len() - 1)].clone(),
                     ));
                     cursor.scroll.scroll_to_item(ix);
+                    cursor.sent = Some(next.clone());
                     cx.notify();
                 });
                 log::info!("selectable list {id:?}: {next:?}");

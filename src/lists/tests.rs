@@ -117,6 +117,41 @@ fn presses_pick_one_toggle_with_cmd_and_range_with_shift(cx: &mut TestAppContext
     assert_eq!(picks(&view, cx), NAMES);
 }
 
+#[gpui::test]
+fn the_cursor_starts_on_the_first_selected_row(cx: &mut TestAppContext) {
+    setup(cx);
+    let (view, cx) = cx.add_window_view(|_, _| Picks(vec!["c".into()], Vec::new(), None, false));
+    settle(cx);
+    cx.update(|window, _| window.focus_next());
+    cx.simulate_keystrokes("down");
+    settle(cx);
+    assert_eq!(picks(&view, cx), ["d"]);
+}
+
+#[gpui::test]
+fn a_selection_from_the_owner_moves_the_cursor_and_an_echo_does_not(cx: &mut TestAppContext) {
+    setup(cx);
+    let (view, cx) = cx.add_window_view(|_, _| Picks(vec!["a".into()], Vec::new(), None, false));
+    settle(cx);
+    view.update(cx, |picks, _| picks.0 = vec!["b".into()]);
+    settle(cx);
+    cx.update(|window, _| window.focus_next());
+    cx.simulate_keystrokes("shift-down shift-down");
+    settle(cx);
+    assert_eq!(
+        picks(&view, cx),
+        ["b", "c", "d"],
+        "the range starts where the owner put it"
+    );
+    cx.simulate_keystrokes("up");
+    settle(cx);
+    assert_eq!(
+        picks(&view, cx),
+        ["c"],
+        "its own range left the cursor at its end"
+    );
+}
+
 /// A row with two actions, 144 across; it reports where the row sits and which action ran.
 struct Swiped {
     left: Rc<Cell<Pixels>>,
