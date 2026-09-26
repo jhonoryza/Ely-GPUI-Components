@@ -87,7 +87,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T25b Generative · Queue and results
 - [x] T25c Generative · Canvas
 - [x] T25d Generative · Sound and motion
-- [ ] T25e Generative · Models
+- [x] T25e Generative · Models
 - [ ] T25f Generative · Data and prompts
 - [ ] T26 Media
 - [ ] T27 Files
@@ -300,3 +300,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T25d | 1 | FAIL | the timeline's strip never scrolled, its child stretched to the box; a focused shot past the edge stayed hidden; many voice tags ran past a 280px row |
 | T25d | 2 | PASS | |
 | T25e | 1 | FAIL | a description row never wrapped, so a 280px model card broke its facts mid-word; the fine-tune bar's share had no test |
+| T25e | 2 | PASS | |
