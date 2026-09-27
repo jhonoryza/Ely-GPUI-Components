@@ -107,7 +107,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T29b Mail · Reading
 - [x] T29c Mail · Writing
 - [x] T29d Mail · Sorting
-- [ ] T30a Calendar · Months
+- [x] T30a Calendar · Months
 - [ ] T30b Calendar · Time grid
 - [ ] T30c Calendar · Agenda and people
 - [ ] T30d Calendar · Editing
@@ -354,3 +354,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T29d | 1 | FAIL | the time dialog's rule for a time ahead of now had no test; its test found that a picker opened in a dialog panicked on a deferred draw inside another |
 | T29d | 2 | FAIL | a raise inside a raise took its place in the queue as its namespace, so one appearing before it rebuilt its state and dropped its focus |
 | T29d | 3 | PASS | |
+| T30a | 1 | PASS | |

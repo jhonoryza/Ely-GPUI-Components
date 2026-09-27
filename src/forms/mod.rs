@@ -63,7 +63,7 @@ pub use date::{
     MonthPicker, QuarterPicker, RelativeDatePicker, RelativeRange, TimePicker, TimezoneSelect,
     WeekPicker, YearPicker,
 };
-pub(crate) use date::{Face, dropdown, month_grid, picker_field, week_start};
+pub(crate) use date::{Face, dropdown, month_grid, picker_field, show_span, week_start};
 pub use expression::{ExpressionInput, evaluate, expression_highlights};
 pub use files::{DropZone, FileInput, PICTURES};
 pub(crate) use files::{browse, dropped};

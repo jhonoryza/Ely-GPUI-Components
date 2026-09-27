@@ -6,6 +6,8 @@ use gpui::{
 use jiff::{Timestamp, civil::date, tz::TimeZone};
 
 use super::{CalendarMonthView, Event, YearView};
+
+mod times;
 use crate::{primitives::FocusNext, theme::Theme};
 
 /// A view that shows one calendar part, keeps the month it was told, and what it heard.

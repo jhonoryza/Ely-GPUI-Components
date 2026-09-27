@@ -7,7 +7,7 @@ use gpui::{
 };
 use jiff::civil::Date;
 
-use super::{events, here, quiet};
+use super::{events, here, plan, quiet};
 use crate::{
     probe::probe,
     ui::{change, keep, section, set},
@@ -37,11 +37,12 @@ fn viewing(window: &mut Window, cx: &mut App) -> Entity<Viewing> {
 }
 
 pub fn month(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
-    let (zone, today) = here();
+    let (zone, _) = here();
     let viewing = viewing(window, cx);
     let now = viewing.read(cx).clone();
     let (turned, opened, pressed) = (viewing.clone(), viewing.clone(), viewing);
-    let view = CalendarMonthView::new("calendar-month", now.month, events(today, &zone))
+    let events = plan(window, cx).read(cx).clone();
+    let view = CalendarMonthView::new("calendar-month", now.month, events)
         .zone(zone)
         .on_month(move |first, _, cx| change(&turned, cx, |viewing| viewing.month = first))
         .on_day(move |day, _, cx| {
@@ -92,6 +93,7 @@ pub fn mini(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
 
 pub fn year(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let (zone, today) = here();
+    let events = plan(window, cx).read(cx).clone();
     let said = keep("calendar-year-said", || None::<SharedString>, window, cx);
     let shown = said.read(cx).clone();
     section(
@@ -107,7 +109,7 @@ pub fn year(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .flex_col()
             .gap_3()
             .child(
-                YearView::new("calendar-year", today.year(), events(today, &zone))
+                YearView::new("calendar-year", today.year(), events)
                     .zone(zone)
                     .on_day(move |day, _, cx| {
                         let opened = format!("Opened {}.", day.strftime("%A, %B %-d"));

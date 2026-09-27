@@ -28,45 +28,47 @@ pub(crate) fn weeks(month: Date) -> Vec<Date> {
     mondays
 }
 
-fn column(monday: Date, day: Date) -> usize {
-    let days = monday.until(day).expect("days apart").get_days();
+fn column(first: Date, day: Date) -> usize {
+    let days = first.until(day).expect("days apart").get_days();
     usize::try_from(days).expect("a day in its week")
 }
 
-/// Bars for the week from `monday`: earliest first and longer first, each in the first lane free across its days.
-pub(crate) fn bars(events: &[Event], monday: Date, zone: &TimeZone) -> Vec<Bar> {
-    let sunday = monday.checked_add(6.days()).expect("a week ends");
+/// Bars for the `count` days from `first`: earliest first and longer first, each in the first lane free across its days.
+pub(crate) fn bars(events: &[Event], first: Date, count: usize, zone: &TimeZone) -> Vec<Bar> {
+    let last = first
+        .checked_add((count as i64 - 1).days())
+        .expect("the days end");
     let mut spans: Vec<(usize, Date, Date)> = events
         .iter()
         .enumerate()
         .filter(|(_, event)| event.spans(zone))
         .map(|(ix, event)| {
-            let (first, last) = event.days(zone);
-            (ix, first, last)
+            let (from, to) = event.days(zone);
+            (ix, from, to)
         })
-        .filter(|&(_, first, last)| first <= sunday && last >= monday)
+        .filter(|&(_, from, to)| from <= last && to >= first)
         .collect();
-    spans.sort_by_key(|&(ix, first, last)| (first, Reverse(last), ix));
+    spans.sort_by_key(|&(ix, from, to)| (from, Reverse(to), ix));
     let mut ends: Vec<Date> = Vec::new();
     spans
         .into_iter()
-        .map(|(event, first, last)| {
-            let (from, to) = (first.max(monday), last.min(sunday));
+        .map(|(event, from, to)| {
+            let (shown, until) = (from.max(first), to.min(last));
             let lane = ends
                 .iter()
-                .position(|end| *end < from)
+                .position(|end| *end < shown)
                 .unwrap_or(ends.len());
             match ends.get_mut(lane) {
-                Some(end) => *end = to,
-                None => ends.push(to),
+                Some(end) => *end = until,
+                None => ends.push(until),
             }
             Bar {
                 event,
                 lane,
-                from: column(monday, from),
-                to: column(monday, to),
-                before: first < monday,
-                after: last > sunday,
+                from: column(first, shown),
+                to: column(first, until),
+                before: from < first,
+                after: to > last,
             }
         })
         .collect()
@@ -162,7 +164,7 @@ mod tests {
         ];
         let utc = &TimeZone::UTC;
         assert_eq!(
-            bars(&events, date(2026, 9, 21), utc),
+            bars(&events, date(2026, 9, 21), 7, utc),
             [
                 bar(3, 0, 0, 1),
                 bar(0, 1, 1, 3),
@@ -174,7 +176,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            bars(&events, date(2026, 9, 28), utc),
+            bars(&events, date(2026, 9, 28), 7, utc),
             [Bar {
                 before: true,
                 ..bar(1, 0, 0, 1)

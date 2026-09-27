@@ -2,13 +2,16 @@ use ely_gpui_component::{
     calendar::Event,
     theme::{ActiveTheme, TextSize},
 };
-use gpui::{AnyElement, App, IntoElement, ParentElement, SharedString, Styled, Window, div};
+use gpui::{
+    AnyElement, App, Entity, IntoElement, ParentElement, SharedString, Styled, Window, div,
+};
 use jiff::{Timestamp, ToSpan, civil::Date, tz::TimeZone};
 
 mod months;
+mod times;
 
 use super::Page;
-use crate::script::Step;
+use crate::{script::Step, ui::keep};
 
 pub const PAGE: Page = Page {
     number: 30,
@@ -35,6 +38,13 @@ const SCRIPT: &[Step] = &[
     Step::Key("right"),
     Step::Wait(150),
     Step::Shot("year-cursor"),
+    Step::DownAt("calendar-week", 560.0, 300.0),
+    Step::DragTo("calendar-week", 560.0, 380.0),
+    Step::Wait(150),
+    Step::Shot("week-drafting"),
+    Step::UpAt("calendar-week", 560.0, 380.0),
+    Step::Wait(200),
+    Step::Shot("week-made"),
 ];
 
 /// What a demo says it did, under it.
@@ -51,6 +61,12 @@ fn here() -> (TimeZone, Date) {
     let zone = TimeZone::try_system().expect("the gallery reads the system time zone");
     let today = Timestamp::now().to_zoned(zone.clone()).date();
     (zone, today)
+}
+
+/// The page's events, which a drag on the week or day adds to.
+fn plan(window: &mut Window, cx: &mut App) -> Entity<Vec<Event>> {
+    let (zone, today) = here();
+    keep("calendar-events", || events(today, &zone), window, cx)
 }
 
 /// A studio's weeks around today: meetings, a crowded day, an offsite, a trip past a weekend, a night shoot past midnight.
@@ -83,6 +99,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
     div()
         .child(months::month(window, cx))
         .child(months::mini(window, cx))
+        .child(times::week(window, cx))
+        .child(times::day(window, cx))
         .child(months::year(window, cx))
         .child(months::marks(cx))
         .into_any_element()

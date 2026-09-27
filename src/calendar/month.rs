@@ -255,7 +255,7 @@ impl Row<'_> {
     }
 
     fn week(&self, monday: Date, sizes: &Metrics, cx: &App) -> AnyElement {
-        let bars = bars(self.events, monday, self.zone);
+        let bars = bars(self.events, monday, 7, self.zone);
         let lanes = bars
             .iter()
             .map(|bar| bar.lane + 1)

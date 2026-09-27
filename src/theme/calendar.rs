@@ -11,6 +11,10 @@ pub struct CalendarSizes {
     pub day_rows: usize,
     /// A day in a year's small months, square.
     pub mini_day: Rems,
+    /// An hour in a time grid, tall.
+    pub hour: Rems,
+    /// A time grid's column of hours, wide.
+    pub gutter: Rems,
 }
 
 impl Theme {
@@ -19,6 +23,8 @@ impl Theme {
             chip: px_to_rems(20.0),
             day_rows: 3,
             mini_day: px_to_rems(28.0),
+            hour: px_to_rems(48.0),
+            gutter: px_to_rems(56.0),
         }
     }
 }
