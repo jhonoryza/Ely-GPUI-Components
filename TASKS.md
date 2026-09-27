@@ -113,7 +113,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T30d Calendar · Editing
 - [x] T31a Project · Tasks — `tasks/ch31-43.md`
 - [x] T31b Project · Issues and boards
-- [ ] T31c Project · Plans
+- [x] T31c Project · Plans
 - [ ] T31d Project · Time and databases
 - [ ] T32 Canvas & Design
 - [ ] T33 DB & Dev Tools
@@ -367,3 +367,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T31b | 1 | FAIL | a focused card past the board's fold stayed out of view; left and right steps that keep a card's place went untested |
 | T31b | 2 | PASS | |
 | T31c | 1 | FAIL | a roadmap bar's end and the workload bar's cap went untested |
+| T31c | 2 | PASS | |

@@ -82,6 +82,7 @@ icons! {
     ChartLine => "chart-line",
     ChartPie => "chart-pie",
     CheckCheck => "check-check",
+    ChartGantt => "chart-gantt",
     Check => "check",
     ChevronDown => "chevron-down",
     ChevronLeft => "chevron-left",

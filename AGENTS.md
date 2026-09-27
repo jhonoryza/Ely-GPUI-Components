@@ -101,9 +101,9 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Trackpad momentum arrives as `TouchPhase::Moved` after `Ended`, so a gesture acts only between `Started` and `Ended` (`lists::SwipeableListItem`).
 - Quartz scroll events carry no window. The harness hands them to the window itself, placed in window points (`Step::Swipe`).
 - A chevron that opens and closes is `primitives::Disclosure`.
-- `uniform_list` does not stretch its rows; each row sets `w_full`.
+- `uniform_list` does not stretch its rows; each row sets `w_full`, or `min_w_full` when the same row also sits in a flex column, where it stretches (`tables::DataTable`).
 - Chapters import only earlier chapters, so a select of tree nodes lives in `lists` (`TreeSelect`) and reaches `forms::listing`.
-- Script clicks aim at a probe's corner, so a scripted target must fit in the window; a tall probe puts its top off screen.
+- Script clicks aim at a probe's corner, so a scripted target must fit in the window; a tall probe puts its top off screen. The log names each probe's bounds as the script aims, and a probe around content with no width of its own measures smaller than what it draws, so a scripted demo sets its width.
 - `scripts/check.sh` fails by its exit status; a pipe into `tail` hides it.
 - Reduced motion shortens animations to 1ms on the wall clock. Tests sleep past it between refreshes to see where one ends.
 - The test platform never runs next-frame callbacks, and its text metrics are simplified: each character takes a fixed advance. Tests refresh the window in place of the display link, and click where layout does not hang on text, such as padding and slots.

@@ -127,7 +127,7 @@ impl Body {
                 let content = detail(&key, window, cx);
                 let colors = &cx.theme().colors;
                 div()
-                    .w_full()
+                    .min_w_full()
                     .pl(self.lead_width())
                     .pr_3()
                     .py_3()
@@ -152,7 +152,7 @@ impl Body {
         let colors = &theme.colors;
         let row = div()
             .id((self.id.clone(), format!("group-{name}-{lead}")))
-            .w_full()
+            .min_w_full()
             .h(self.height)
             .flex()
             .items_center()
@@ -204,11 +204,13 @@ impl Body {
         let colors = &theme.colors;
         let press = self.select.clone();
         let open = self.open.contains(&key);
+        let named = key.clone();
         div()
             .id((self.id.clone(), format!("row-{key}-{lead}")))
+            .debug_selector(move || format!("table-row {named}"))
             .flex()
             .items_center()
-            .w_full()
+            .min_w_full()
             .h(self.height)
             .border_b_1()
             .border_color(colors.border)

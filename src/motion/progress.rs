@@ -1,8 +1,8 @@
 use std::f32::consts::{FRAC_PI_2, TAU};
 
 use gpui::{
-    Animation, AnimationExt, App, ElementId, IntoElement, ParentElement, RenderOnce, Styled,
-    Window, canvas, div, prelude::*, relative,
+    Animation, AnimationExt, AnyElement, App, ElementId, IntoElement, ParentElement, Rems,
+    RenderOnce, Styled, Window, canvas, div, prelude::*, relative,
 };
 
 use super::{BASE, SLOW, duration, ease_in_out_cubic, ease_out_cubic, spinner::arc};
@@ -174,12 +174,14 @@ impl RenderOnce for ProgressBar {
     }
 }
 
-/// Progress as a ring that fills clockwise from the top and glides to each new value; the percent can sit inside.
+/// Progress as a ring that fills clockwise from the top and glides to each new value; the percent, or any content, can sit inside.
 #[derive(IntoElement)]
 pub struct ProgressRing {
     id: ElementId,
     value: f32,
     percent: bool,
+    size: Option<Rems>,
+    inside: Option<AnyElement>,
 }
 
 impl ProgressRing {
@@ -188,12 +190,31 @@ impl ProgressRing {
             id: id.into(),
             value: checked(value, "progress"),
             percent: false,
+            size: None,
+            inside: None,
         }
     }
 
     /// Shows the value as a percent inside the ring.
     pub fn percent(mut self) -> Self {
         self.percent = true;
+        self
+    }
+
+    /// A ring this wide; the theme's otherwise. Its stroke keeps the theme ring's weight.
+    pub fn size(mut self, size: Rems) -> Self {
+        self.size = Some(size);
+        self
+    }
+
+    /// What sits in the ring's middle.
+    pub fn inside(mut self, content: impl IntoElement) -> Self {
+        assert!(
+            !self.percent,
+            "progress ring {:?}: a percent or content inside, not both",
+            self.id
+        );
+        self.inside = Some(content.into_any_element());
         self
     }
 }
@@ -205,13 +226,13 @@ impl RenderOnce for ProgressRing {
         let theme = cx.theme();
         let (fill, track) = (theme.colors.fg, theme.colors.border);
         let text = theme.text_size(TextSize::Xs);
-        div()
-            .relative()
+        let stroke = theme.progress_ring().to_pixels(window.rem_size()) / 12.0;
+        let glide = div()
+            .absolute()
+            .inset_0()
             .flex()
-            .flex_none()
             .items_center()
             .justify_center()
-            .size(theme.progress_ring())
             .with_animation(
                 (self.id, format!("glide-{turn}")),
                 Animation::new(duration(BASE, cx)).with_easing(ease_out_cubic),
@@ -226,7 +247,7 @@ impl RenderOnce for ProgressRing {
                             |_, _, _| {},
                             move |bounds, _, window, _| {
                                 let side = bounds.size.width.min(bounds.size.height);
-                                let width = side / 12.0;
+                                let width = stroke;
                                 let (center, radius) = (bounds.center(), side / 2.0 - width);
                                 arc(center, radius, 0.0, TAU, width, track, window);
                                 if at > 0.0 {
@@ -245,6 +266,15 @@ impl RenderOnce for ProgressRing {
                         )
                     })
                 },
-            )
+            );
+        div()
+            .relative()
+            .flex()
+            .flex_none()
+            .items_center()
+            .justify_center()
+            .size(self.size.unwrap_or(theme.progress_ring()))
+            .child(glide)
+            .children(self.inside)
     }
 }

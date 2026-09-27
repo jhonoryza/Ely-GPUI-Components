@@ -172,7 +172,7 @@ impl Person {
     }
 }
 
-/// A piece of work: its key, its issue's name if it has one, what it is, where it stands, how urgent, when it is due, who has it, and its labels.
+/// A piece of work: its key, its issue's name if it has one, what it is, where it stands, how urgent, when it starts and is due, who has it, and its labels.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Task {
     pub key: SharedString,
@@ -180,6 +180,7 @@ pub struct Task {
     pub title: SharedString,
     pub status: Status,
     pub priority: Priority,
+    pub start: Option<Date>,
     pub due: Option<Date>,
     pub assignee: Option<Person>,
     pub labels: Vec<Label>,
@@ -193,6 +194,7 @@ impl Task {
             title: title.into(),
             status: Status::Todo,
             priority: Priority::None,
+            start: None,
             due: None,
             assignee: None,
             labels: Vec::new(),
@@ -211,6 +213,12 @@ impl Task {
 
     pub fn priority(mut self, priority: Priority) -> Self {
         self.priority = priority;
+        self
+    }
+
+    /// The day work begins, for a timeline.
+    pub fn starts(mut self, day: Date) -> Self {
+        self.start = Some(day);
         self
     }
 

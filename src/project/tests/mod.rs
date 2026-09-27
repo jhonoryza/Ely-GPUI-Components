@@ -8,6 +8,7 @@ use super::{AssigneePicker, IssueId, Person, Priority, Status, StatusSelect, Tas
 use crate::{documents::Checklist, forms::bind_keys, primitives::FocusNext, theme::Theme};
 
 mod boards;
+mod time;
 
 /// A view that shows one project part and keeps what it heard.
 struct Desk {

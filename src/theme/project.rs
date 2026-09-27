@@ -9,6 +9,8 @@ pub struct ProjectSizes {
     pub column: Rems,
     /// A roadmap's month at least, wide.
     pub month: Rems,
+    /// A pomodoro's ring, wide.
+    pub pomodoro: Rems,
 }
 
 impl Theme {
@@ -16,6 +18,7 @@ impl Theme {
         ProjectSizes {
             column: px_to_rems(272.0),
             month: px_to_rems(72.0),
+            pomodoro: px_to_rems(176.0),
         }
     }
 }

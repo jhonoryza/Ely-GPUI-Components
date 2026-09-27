@@ -425,6 +425,9 @@ async fn target_bounds(
     if window.update(cx, |gallery, _, cx| gallery.reveal(bounds, cx))? {
         cx.background_executor().timer(FRAME).await;
     }
-    cx.update(|cx| Probes::get(key, cx))?
-        .with_context(|| format!("probe {key} vanished after scrolling"))
+    let bounds = cx
+        .update(|cx| Probes::get(key, cx))?
+        .with_context(|| format!("probe {key} vanished after scrolling"))?;
+    log::info!("script: probe {key} at {bounds:?}");
+    Ok(bounds)
 }

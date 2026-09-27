@@ -1,8 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
 use gpui::{
-    Context, IntoElement, KeyUpEvent, Keystroke, Modifiers, Render, Styled, TestAppContext, Window,
-    point, px,
+    Context, IntoElement, KeyUpEvent, Keystroke, Modifiers, ParentElement, Render, Styled,
+    TestAppContext, Window, div, point, px,
 };
 
 use super::{edit_at, settle};
@@ -150,4 +150,42 @@ fn a_focused_header_past_the_edge_scrolls_into_view(cx: &mut TestAppContext) {
         ["e"],
         "the last header's column sits at the box's end"
     );
+}
+
+/// A table in a column beside a long line, in a box its row measures by content.
+struct Exposed;
+
+impl Render for Exposed {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let table = DataTable::new(
+            "exposed",
+            [Column::new("name", "Name"), Column::new("note", "Note")],
+        )
+        .rows(vec![
+            Row::new("a", ["A".into(), "".into()]),
+            Row::new("b", ["A much longer name".into(), "Note".into()]),
+        ]);
+        let line = "A line long enough to wrap in this box, so the column fills it, and more.";
+        div()
+            .flex()
+            .child(div().child(div().flex().flex_col().child(table).child(line)))
+    }
+}
+
+#[gpui::test]
+fn rows_span_the_table_whatever_their_words(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Exposed);
+    cx.run_until_parked();
+    let short = cx
+        .debug_bounds("table-row a")
+        .expect("row a draws")
+        .size
+        .width;
+    let long = cx
+        .debug_bounds("table-row b")
+        .expect("row b draws")
+        .size
+        .width;
+    assert_eq!(short, long, "a short row keeps the long row's width");
 }

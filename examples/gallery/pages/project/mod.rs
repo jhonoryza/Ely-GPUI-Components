@@ -11,6 +11,7 @@ use jiff::{Timestamp, ToSpan, civil::Date, tz::TimeZone};
 mod boards;
 mod plans;
 mod tasks;
+mod time;
 
 use super::Page;
 use crate::{script::Step, ui::keep};
@@ -42,6 +43,14 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("project-board", 360.0, 110.0),
     Step::Wait(300),
     Step::Shot("board-dropped"),
+    Step::DownAt("project-database", 105.0, 17.0),
+    Step::UpAt("project-database", 105.0, 17.0),
+    Step::Wait(300),
+    Step::Shot("database-board"),
+    Step::DownAt("project-database", 349.0, 17.0),
+    Step::UpAt("project-database", 349.0, 17.0),
+    Step::Wait(300),
+    Step::Shot("database-timeline"),
 ];
 
 /// What a demo says it did, under it.
@@ -100,12 +109,14 @@ fn work(today: Date) -> Vec<Task> {
             .issue(IssueId::new("ARC", 41))
             .status(Status::InProgress)
             .priority(Priority::Urgent)
+            .starts(day(-9))
             .due(day(-1))
             .assignee(who("ana"))
             .label(tag("client")),
         Task::new("samples", "Order plaster samples")
             .issue(IssueId::new("ARC", 44))
             .priority(Priority::High)
+            .starts(day(-3))
             .due(day(0))
             .assignee(who("ben"))
             .label(tag("budget")),
@@ -113,6 +124,7 @@ fn work(today: Date) -> Vec<Task> {
             .issue(IssueId::new("ARC", 38))
             .status(Status::InReview)
             .priority(Priority::Medium)
+            .starts(day(-5))
             .due(day(3))
             .assignee(who("chloe"))
             .label(tag("site"))
@@ -125,6 +137,7 @@ fn work(today: Date) -> Vec<Task> {
             .issue(IssueId::new("ARC", 29))
             .status(Status::Done)
             .priority(Priority::Medium)
+            .starts(day(-16))
             .due(day(-4))
             .assignee(who("dev"))
             .label(tag("site")),
@@ -152,5 +165,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(plans::burndown(cx))
         .child(plans::milestones(cx))
         .child(plans::workload(cx))
+        .child(time::tracker(window, cx))
+        .child(time::pomodoro(window, cx))
+        .child(time::database(window, cx))
         .into_any_element()
 }
