@@ -13,8 +13,9 @@ use gpui::{
 };
 
 pub(crate) use actions::{Backspace, Down, Enter, Redo, Submit, Undo, Up, bind_keys};
+pub use edit::History;
 use edit::Snapshot;
-pub(crate) use edit::{History, from_utf16, to_utf16};
+pub(crate) use edit::{from_utf16, to_utf16};
 pub use highlight::Highlight;
 
 use crate::theme::ActiveTheme;

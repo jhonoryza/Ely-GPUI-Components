@@ -94,7 +94,7 @@ pub(crate) struct Snapshot {
 const JOIN: Duration = Duration::from_millis(900);
 
 /// Undo and redo as whole snapshots of what an editor holds.
-pub(crate) struct History<S> {
+pub struct History<S> {
     undo: Vec<S>,
     redo: Vec<S>,
     typing_since: Option<Instant>,

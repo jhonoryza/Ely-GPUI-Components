@@ -1,10 +1,10 @@
 use gpui::{
-    AnyElement, Context, Entity, IntoElement, KeyBinding, Modifiers, MouseButton, ParentElement,
-    Pixels, Point, Render, SharedString, Size, Styled, TestAppContext, VisualTestContext, Window,
-    div, point, px, size,
+    AnyElement, Axis, Context, Entity, InteractiveElement, IntoElement, KeyBinding, Modifiers,
+    MouseButton, ParentElement, Pixels, Point, Render, SharedString, Size, Styled, TestAppContext,
+    VisualTestContext, Window, div, point, prelude::*, px, size,
 };
 
-use super::{Resizable, Rotatable, SelectionArea};
+use super::{Resizable, Rotatable, RovingFocus, ScrollSync, SelectionArea};
 use crate::{forms, primitives::FocusNext, theme::Theme};
 
 type Part = fn(&Bench, Entity<Bench>) -> AnyElement;
@@ -297,4 +297,105 @@ fn the_keyboard_walks_and_picks_tiles(cx: &mut TestAppContext) {
     tap("left", cx);
     tap("space", cx);
     assert_eq!(picked(&host, cx), ["c"]);
+}
+
+/// A key pressed and let go, as a press on a focused item needs.
+fn press(key: &str, cx: &mut VisualTestContext) {
+    cx.simulate_keystrokes(key);
+    cx.simulate_event(gpui::KeyUpEvent {
+        keystroke: gpui::Keystroke::parse(key).expect("a key"),
+    });
+    settle(cx);
+}
+
+fn roving(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
+    let _ = bench;
+    ["a", "b", "c"]
+        .into_iter()
+        .fold(RovingFocus::new("tools", Axis::Horizontal), |group, key| {
+            group.item(key, div().size(px(24.0)))
+        })
+        .on_press(move |key, _, cx| {
+            let key = key.clone();
+            owner.update(cx, |bench, cx| {
+                bench.selected.push(key);
+                cx.notify();
+            })
+        })
+        .into_any_element()
+}
+
+/// The group is one stop: Right walks focus on, End jumps to the last, and a Tab away and back returns to the item last focused.
+#[gpui::test]
+fn a_group_keeps_one_stop_and_the_arrows_walk_it(cx: &mut TestAppContext) {
+    let (host, cx) = bench(roving, cx);
+    tab(1, cx);
+    tap("right", cx);
+    press("space", cx);
+    tap("end", cx);
+    press("space", cx);
+    tab(1, cx);
+    press("space", cx);
+    assert_eq!(
+        picked(&host, cx),
+        ["b", "c", "c"],
+        "one stop, and it stays on the last item focused"
+    );
+}
+
+fn synced(_: &Bench, _: Entity<Bench>) -> AnyElement {
+    let lines = |side: &'static str| {
+        div().flex().flex_col().children((0..40).map(move |n| {
+            div().h(px(30.0)).when(n == 0, |line| {
+                line.debug_selector(move || format!("{side}-first"))
+            })
+        }))
+    };
+    ScrollSync::new("sync", Axis::Vertical)
+        .w(px(300.0))
+        .h(px(200.0))
+        .pane(lines("left"))
+        .pane(lines("right"))
+        .into_any_element()
+}
+
+/// A wheel on the left pane takes the right one to the same place.
+#[gpui::test]
+fn a_wheel_on_one_pane_takes_the_other_along(cx: &mut TestAppContext) {
+    let (_, cx) = bench(synced, cx);
+    let before = cx
+        .debug_bounds("right-first")
+        .expect("the right pane")
+        .origin
+        .y;
+    cx.simulate_event(gpui::ScrollWheelEvent {
+        position: at(80.0, 100.0),
+        delta: gpui::ScrollDelta::Pixels(point(px(0.0), px(-300.0))),
+        modifiers: Modifiers::none(),
+        touch_phase: gpui::TouchPhase::Moved,
+    });
+    settle(cx);
+    let after = cx
+        .debug_bounds("right-first")
+        .expect("the right pane")
+        .origin
+        .y;
+    assert_eq!(
+        before - after,
+        px(300.0),
+        "the right pane moved with the left"
+    );
+}
+
+/// A press moves the stop to the item pressed and leaves focus where it was: items 26 wide from 20, so b spans 46 to 72.
+#[gpui::test]
+fn a_press_moves_the_stop_and_leaves_focus(cx: &mut TestAppContext) {
+    let (host, cx) = bench(roving, cx);
+    cx.simulate_click(at(59.0, 33.0), Modifiers::none());
+    settle(cx);
+    let focused = cx.update(|window, cx| window.focused(cx).is_some());
+    assert!(!focused, "a press takes no focus");
+    tab(1, cx);
+    press("space", cx);
+    assert_eq!(picked(&host, cx), ["b", "b"]);
 }

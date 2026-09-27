@@ -1,9 +1,11 @@
+use std::time::Duration;
+
 use gpui::{
-    AppContext, Context, Entity, FocusHandle, InteractiveElement, IntoElement, ParentElement,
-    Render, TestAppContext, Window, div,
+    AppContext, Context, Entity, FocusHandle, InteractiveElement, IntoElement, Modifiers,
+    ParentElement, Render, TestAppContext, Window, div,
 };
 
-use super::{enter, settle, setup};
+use super::{Picks, enter, picks, row, settle, setup};
 use crate::{
     buttons::Button,
     forms::{Enter, Input, TextInput},
@@ -91,4 +93,45 @@ fn a_release_that_began_elsewhere_opens_nothing(cx: &mut TestAppContext) {
     enter(cx);
     settle(cx);
     assert!(view.read_with(cx, |view, _| view.heard.is_empty()));
+}
+
+/// Typing a row's first letters moves the cursor there and picks it; after a pause the letters start over.
+#[gpui::test]
+fn letters_move_to_the_row_that_starts_with_them(cx: &mut TestAppContext) {
+    setup(cx);
+    let (view, cx) = cx.add_window_view(|_, _| Picks(Vec::new(), Vec::new(), None, false));
+    settle(cx);
+    cx.simulate_click(row(0), Modifiers::none());
+    settle(cx);
+    cx.simulate_input("c");
+    settle(cx);
+    assert_eq!(picks(&view, cx), ["c"]);
+    cx.executor().advance_clock(Duration::from_secs(1));
+    cx.simulate_input("b");
+    settle(cx);
+    assert_eq!(
+        picks(&view, cx),
+        ["b"],
+        "the pause started the letters over"
+    );
+}
+
+/// A letter held with Command is the app's shortcut, not a letter to move by: Command-A still takes all.
+#[gpui::test]
+fn a_letter_with_command_stays_a_shortcut(cx: &mut TestAppContext) {
+    setup(cx);
+    let (view, cx) = cx.add_window_view(|_, _| Picks(Vec::new(), Vec::new(), None, false));
+    settle(cx);
+    cx.simulate_click(row(1), Modifiers::none());
+    settle(cx);
+    cx.simulate_event(gpui::KeyDownEvent {
+        keystroke: gpui::Keystroke {
+            modifiers: Modifiers::command(),
+            key: "a".into(),
+            key_char: Some("a".into()),
+        },
+        is_held: false,
+    });
+    settle(cx);
+    assert_eq!(picks(&view, cx), ["a", "b", "c", "d"]);
 }

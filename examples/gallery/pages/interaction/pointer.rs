@@ -4,6 +4,7 @@ use ely_gpui_component::{
     motion::Reorder,
     primitives::{FocusRing, Pressable},
     theme::{ActiveTheme, Elevation, Radius, TextSize},
+    typography::format::plural,
 };
 use gpui::{
     App, Context, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
@@ -298,7 +299,7 @@ pub fn shapes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                                 change(&double, cx, |shapes| shapes.doubles += 1)
                             }
                         })
-                        .child(format!("Opened {doubles} times")),
+                        .child(format!("Opened {}", plural(doubles as u64, "time", "times"))),
                     cx,
                 ))
                 .child(specimen(

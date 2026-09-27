@@ -1,4 +1,7 @@
-use std::rc::Rc;
+use std::{
+    rc::Rc,
+    time::{Duration, Instant},
+};
 
 use gpui::{
     App, Div, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
@@ -38,7 +41,7 @@ pub(crate) fn picked(
         .collect()
 }
 
-/// The row the keyboard is on and where a Shift range starts, by index and by key so they follow their rows when the owner reorders them, and the scroll that follows them; the owner's last selection, and the one the list last sent.
+/// The row the keyboard is on and where a Shift range starts, by index and by key so they follow their rows when the owner reorders them, and the scroll that follows them; the owner's last selection, and the one the list last sent; whether Enter's press fell here; the letters typed and when the last one came.
 #[derive(Default)]
 struct Cursor {
     at: usize,
@@ -48,13 +51,36 @@ struct Cursor {
     seen: Option<Vec<SharedString>>,
     sent: Option<Vec<SharedString>>,
     armed: bool,
+    typed: String,
+    typed_at: Option<Instant>,
+}
+
+/// Letters typed within this pause join one prefix.
+const TYPING: Duration = Duration::from_millis(800);
+
+/// The row typed letters go to: one letter moves past the cursor to the next row that starts with it, round to the top; more letters stay on the cursor's row while it still starts with them. Disabled rows are passed over.
+pub(crate) fn typed_to(
+    titles: &[SharedString],
+    off: &[bool],
+    at: usize,
+    typed: &str,
+) -> Option<usize> {
+    let count = titles.len();
+    let from = if typed.chars().count() == 1 {
+        at + 1
+    } else {
+        at
+    };
+    (0..count)
+        .map(|step| (from + step) % count)
+        .find(|ix| !off[*ix] && titles[*ix].to_lowercase().starts_with(typed))
 }
 
 type OnSelect = Rc<dyn Fn(&[SharedString], &mut Window, &mut App)>;
 type OnActivate = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 type Picker = Rc<dyn Fn(usize, Pick, &mut Window, &mut App)>;
 
-/// Rows you select. A press picks one; with `multiple`, Cmd-press adds or drops one and Shift-press takes the range from the last pick. Up and Down move, Shift with them extends, Space toggles, Cmd-A takes all, and Enter activates the row on its release, so an activation that moves focus leaves the release nothing to press. Keys pass over disabled rows, and no pick adds one.
+/// Rows you select. A press picks one; with `multiple`, Cmd-press adds or drops one and Shift-press takes the range from the last pick. Up and Down move, Shift with them extends, Space toggles, Cmd-A takes all, typing a row's first letters moves to it, and Enter activates the row on its release, so an activation that moves focus leaves the release nothing to press. Keys pass over disabled rows, and no pick adds one.
 #[derive(IntoElement)]
 pub struct SelectableList {
     id: ElementId,
@@ -153,6 +179,11 @@ impl RenderOnce for SelectableList {
         if (at, anchor) != (cursor.read(cx).at, cursor.read(cx).anchor) {
             cursor.update(cx, |cursor, _| (cursor.at, cursor.anchor) = (at, anchor));
         }
+        let titles: Rc<[SharedString]> = self
+            .rows
+            .iter()
+            .map(|(_, item)| item.title_text().clone())
+            .collect();
         let off: Rc<[bool]> = self
             .rows
             .iter()
@@ -270,6 +301,31 @@ impl RenderOnce for SelectableList {
                 let at = cursor.read(cx).at.min(count - 1);
                 let extend = if held.shift { Pick::Range } else { Pick::One };
                 let open = |ix: &usize| !off[*ix];
+                let letter = event
+                    .keystroke
+                    .key_char
+                    .as_ref()
+                    .filter(|typed| !typed.trim().is_empty())
+                    .filter(|_| !held.platform && !held.control && !held.alt && !held.function);
+                if let Some(letter) = letter {
+                    let now = cx.background_executor().now();
+                    let typed = cursor.update(cx, |cursor, _| {
+                        if cursor
+                            .typed_at
+                            .is_none_or(|at| now.duration_since(at) > TYPING)
+                        {
+                            cursor.typed.clear();
+                        }
+                        cursor.typed.push_str(&letter.to_lowercase());
+                        cursor.typed_at = Some(now);
+                        cursor.typed.clone()
+                    });
+                    if let Some(to) = typed_to(&titles, &off, at, &typed) {
+                        cx.stop_propagation();
+                        pick(to, Pick::One, window, cx);
+                    }
+                    return;
+                }
                 let (to, how) = match event.keystroke.key.as_str() {
                     "down" => ((at + 1..count).find(open), extend),
                     "up" => ((0..at).rev().find(open), extend),
@@ -314,7 +370,7 @@ pub(crate) fn row_action(button: impl IntoElement) -> gpui::Div {
 mod tests {
     use gpui::SharedString;
 
-    use super::{Pick, picked};
+    use super::{Pick, picked, typed_to};
 
     fn keys(list: &[&'static str]) -> Vec<SharedString> {
         list.iter().map(|key| SharedString::from(*key)).collect()
@@ -341,5 +397,35 @@ mod tests {
             keys(&["b", "c", "d"])
         );
         assert_eq!(picked(&rows, &keys(&["b"]), 0, 0, Pick::All), rows);
+    }
+
+    #[test]
+    fn typed_letters_go_to_the_next_row_that_starts_with_them() {
+        let titles = keys(&["Apple", "Banana", "Blueberry", "Cherry"]);
+        let open = [false; 4];
+        assert_eq!(typed_to(&titles, &open, 0, "b"), Some(1));
+        assert_eq!(
+            typed_to(&titles, &open, 1, "b"),
+            Some(2),
+            "one letter moves on"
+        );
+        assert_eq!(
+            typed_to(&titles, &open, 2, "b"),
+            Some(1),
+            "round to the top"
+        );
+        assert_eq!(
+            typed_to(&titles, &open, 1, "ba"),
+            Some(1),
+            "a prefix stays while it fits"
+        );
+        assert_eq!(typed_to(&titles, &open, 1, "bl"), Some(2));
+        assert_eq!(typed_to(&titles, &open, 0, "z"), None);
+        let off = [false, true, false, false];
+        assert_eq!(
+            typed_to(&titles, &off, 0, "b"),
+            Some(2),
+            "a disabled row is passed over"
+        );
     }
 }

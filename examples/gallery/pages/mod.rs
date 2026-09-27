@@ -94,6 +94,7 @@ pub const ALL: &[Page] = &[
     theme::PAGE,
 ];
 
+pub use interaction::bind_keys;
 pub use shell::{open_about, open_managed};
 
 pub fn find(slug: &str) -> Option<usize> {

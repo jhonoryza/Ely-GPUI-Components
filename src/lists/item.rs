@@ -113,6 +113,10 @@ impl ListItem {
         self.disabled
     }
 
+    pub(crate) fn title_text(&self) -> &SharedString {
+        &self.title
+    }
+
     /// Makes the row pressable; the press keeps focus where it is.
     pub fn on_click(
         mut self,

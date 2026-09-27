@@ -18,7 +18,7 @@ use crate::{
     theme::Theme,
 };
 
-mod release;
+mod keys;
 
 fn setup(cx: &mut TestAppContext) {
     cx.update(|cx| {

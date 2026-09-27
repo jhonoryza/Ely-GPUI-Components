@@ -98,6 +98,7 @@ fn main() -> Result<()> {
         .with_assets(Assets)
         .run(move |cx: &mut App| {
             ely_gpui_component::init(cx);
+            pages::bind_keys(cx);
             cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
             cx.on_action(|_: &Quit, cx| cx.quit());
             menus(cx);
