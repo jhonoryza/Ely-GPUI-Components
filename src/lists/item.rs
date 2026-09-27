@@ -28,6 +28,7 @@ pub struct ListItem {
     disabled: bool,
     strong: bool,
     quiet: bool,
+    struck: bool,
     on_click: Option<OnClick>,
 }
 
@@ -45,6 +46,7 @@ impl ListItem {
             disabled: false,
             strong: false,
             quiet: false,
+            struck: false,
             on_click: None,
         }
     }
@@ -58,6 +60,12 @@ impl ListItem {
     /// Sets the title in the quiet color, as a muted channel has it.
     pub fn quiet(mut self, quiet: bool) -> Self {
         self.quiet = quiet;
+        self
+    }
+
+    /// Strikes the title through, as a finished task has it.
+    pub fn struck(mut self, struck: bool) -> Self {
+        self.struck = struck;
         self
     }
 
@@ -162,6 +170,7 @@ impl RenderOnce for ListItem {
                         line(self.title)
                             .text_size(theme.text_size(TextSize::Base))
                             .when(self.strong, |title| title.font_weight(FontWeight::SEMIBOLD))
+                            .when(self.struck, |title| title.line_through())
                             .text_color(if self.quiet {
                                 colors.fg_muted
                             } else {

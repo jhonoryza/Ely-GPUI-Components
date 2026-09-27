@@ -40,14 +40,7 @@ pub(crate) fn text_width(text: &str, size: Pixels, window: &Window) -> Pixels {
 
 fn shape(text: &str, window: &mut Window) -> ShapedLine {
     let style = window.text_style();
-    let run = TextRun {
-        len: text.len(),
-        font: style.font(),
-        color: style.color,
-        background_color: None,
-        underline: None,
-        strikethrough: None,
-    };
+    let run = style.to_run(text.len());
     let size = style.font_size.to_pixels(window.rem_size());
     window
         .text_system()

@@ -110,8 +110,11 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T30a Calendar · Months
 - [x] T30b Calendar · Time grid
 - [x] T30c Calendar · Agenda and people
-- [ ] T30d Calendar · Editing
-- [ ] T31 Project — `tasks/ch31-43.md`
+- [x] T30d Calendar · Editing
+- [ ] T31a Project · Tasks — `tasks/ch31-43.md`
+- [ ] T31b Project · Issues and boards
+- [ ] T31c Project · Plans
+- [ ] T31d Project · Time and databases
 - [ ] T32 Canvas & Design
 - [ ] T33 DB & Dev Tools
 - [ ] T34 Dashboard
@@ -359,3 +362,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T30b | 2 | PASS | |
 | T30c | 1 | PASS | |
 | T30d | 1 | FAIL | a chosen day outlived the owner's days, and the next render panicked |
+| T30d | 2 | PASS | |

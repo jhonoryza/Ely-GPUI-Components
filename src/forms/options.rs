@@ -8,9 +8,10 @@ use gpui::{
 };
 
 use crate::{
+    data_display::Avatar,
     motion,
     primitives::{Icon, IconName, raise},
-    theme::{ActiveTheme, ControlSize, Elevation, IconSize, Radius, TextSize},
+    theme::{ActiveTheme, AvatarSize, ControlSize, Elevation, IconSize, Radius, TextSize},
     typography::Ellipsis,
 };
 
@@ -20,6 +21,7 @@ pub struct Choice {
     pub value: SharedString,
     pub label: SharedString,
     pub icon: Option<IconName>,
+    pub avatar: Option<SharedString>,
     pub note: Option<SharedString>,
     pub disabled: bool,
     pub depth: usize,
@@ -31,6 +33,7 @@ impl Choice {
             value: value.into(),
             label: label.into(),
             icon: None,
+            avatar: None,
             note: None,
             disabled: false,
             depth: 0,
@@ -45,6 +48,12 @@ impl Choice {
 
     pub fn icon(mut self, icon: IconName) -> Self {
         self.icon = Some(icon);
+        self
+    }
+
+    /// Leads with the initials of `name` on its tone, as a person's row does.
+    pub fn avatar(mut self, name: impl Into<SharedString>) -> Self {
+        self.avatar = Some(name.into());
         self
     }
 
@@ -100,6 +109,7 @@ pub(crate) fn marked_row(
     checked: Option<bool>,
     cx: &App,
 ) -> Stateful<Div> {
+    let id = id.into();
     let theme = cx.theme();
     let colors = &theme.colors;
     let fg = if choice.disabled {
@@ -108,7 +118,7 @@ pub(crate) fn marked_row(
         colors.fg
     };
     div()
-        .id(id)
+        .id(id.clone())
         .flex()
         .items_center()
         .gap_2()
@@ -139,6 +149,9 @@ pub(crate) fn marked_row(
         })
         .when_some(choice.icon, |row, icon| {
             row.child(Icon::new(icon).size(IconSize::Sm).color(colors.fg_muted))
+        })
+        .when_some(choice.avatar.clone(), |row, name| {
+            row.child(Avatar::new((id, "avatar"), name).size(AvatarSize::Xs))
         })
         .children(mark)
         .child(

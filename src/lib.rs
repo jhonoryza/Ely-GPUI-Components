@@ -26,6 +26,7 @@ pub mod motion;
 pub mod navigation;
 pub mod overlays;
 pub mod primitives;
+pub mod project;
 pub mod shell;
 pub mod tables;
 pub mod terminal;

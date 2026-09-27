@@ -24,6 +24,7 @@ mod motion;
 mod navigation;
 mod overlays;
 mod primitives;
+mod project;
 mod shell;
 mod tables;
 mod terminal;
@@ -75,6 +76,7 @@ pub const ALL: &[Page] = &[
     messaging::PAGE,
     mail::PAGE,
     calendar::PAGE,
+    project::PAGE,
     theme::PAGE,
 ];
 

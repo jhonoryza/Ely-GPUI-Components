@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, FontWeight, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
-    Window, div, prelude::*,
+    App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement, RenderOnce,
+    SharedString, Styled, Window, div, prelude::*,
 };
 
 use crate::{
-    forms::{Checkbox, OnFlag},
+    forms::{Checkbox, Enter, Input, OnFlag, OnValue, TextInput},
     motion::ProgressBar,
     theme::{ActiveTheme, TextSize},
     typography::tabular,
@@ -59,13 +59,14 @@ impl RenderOnce for TodoItem {
     }
 }
 
-/// To-dos under a title, with how many are done as a count and a bar.
+/// To-dos under a title, with how many are done as a count and a bar. With `on_add`, a field under them adds one.
 #[derive(IntoElement)]
 pub struct Checklist {
     id: ElementId,
     title: SharedString,
     items: Vec<(SharedString, bool)>,
     on_toggle: Option<OnItem>,
+    adding: Option<(SharedString, OnValue)>,
 }
 
 impl Checklist {
@@ -82,7 +83,18 @@ impl Checklist {
                 .map(|(label, done)| (label.into(), done))
                 .collect(),
             on_toggle: None,
+            adding: None,
         }
+    }
+
+    /// A field under the items: Enter hands on its words, trimmed, and clears it.
+    pub fn on_add(
+        mut self,
+        placeholder: impl Into<SharedString>,
+        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.adding = Some((placeholder.into(), Rc::new(handler)));
+        self
     }
 
     /// Tells which item changed, by index, and whether it is now done.
@@ -96,7 +108,25 @@ impl Checklist {
 }
 
 impl RenderOnce for Checklist {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let add = self.adding.map(|(placeholder, on_add)| {
+            let field = window.use_keyed_state((self.id.clone(), "add"), cx, |window, cx| {
+                TextInput::new(window, cx).placeholder(placeholder)
+            });
+            let (id, typed) = (self.id.clone(), field.clone());
+            div()
+                .capture_action(move |_: &Enter, window, cx| {
+                    let words = typed.read(cx).text().trim().to_string();
+                    if words.is_empty() {
+                        return;
+                    }
+                    cx.stop_propagation();
+                    log::info!("checklist {id:?}: add {words}");
+                    typed.update(cx, |input, cx| input.set_text(String::new(), cx));
+                    on_add(&words.into(), window, cx);
+                })
+                .child(Input::new(&field))
+        });
         let theme = cx.theme();
         let done = self.items.iter().filter(|(_, done)| *done).count();
         let total = self.items.len();
@@ -142,5 +172,6 @@ impl RenderOnce for Checklist {
                         }
                     }),
             )
+            .children(add)
     }
 }

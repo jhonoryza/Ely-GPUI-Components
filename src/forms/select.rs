@@ -12,8 +12,9 @@ use super::{
     options::{OnValue, Pick, Popup, Run, reveal, step},
 };
 use crate::{
+    data_display::Avatar,
     primitives::{Icon, IconName, tab_stop},
-    theme::{ActiveTheme, ControlSize, IconSize, Radius},
+    theme::{ActiveTheme, AvatarSize, ControlSize, IconSize, Radius},
     typography::Ellipsis,
 };
 
@@ -328,6 +329,13 @@ impl RenderOnce for Select {
             shown.as_ref().and_then(|choice| choice.icon),
             |trigger, icon| {
                 trigger.child(Icon::new(icon).size(IconSize::Sm).color(colors.fg_muted))
+            },
+        )
+        .when_some(
+            shown.as_ref().and_then(|choice| choice.avatar.clone()),
+            |trigger, name| {
+                let id = (self.id.clone(), "avatar");
+                trigger.child(Avatar::new(id, name).size(AvatarSize::Xs))
             },
         )
         .child(field_text(
