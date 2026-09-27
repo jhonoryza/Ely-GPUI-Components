@@ -139,7 +139,6 @@ impl RenderOnce for ReminderPicker {
         };
         div()
             .debug_selector(|| "reminders".into())
-            .min_w_full()
             .flex()
             .flex_col()
             .gap_2()

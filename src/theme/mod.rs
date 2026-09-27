@@ -5,6 +5,7 @@ mod generative;
 mod media;
 mod messaging;
 mod palette;
+mod project;
 mod tokens;
 
 use std::time::{Duration, Instant};
@@ -18,7 +19,8 @@ pub use files::FileSizes;
 pub use generative::GenerativeSizes;
 pub use media::MediaSizes;
 pub use messaging::MessagingSizes;
-pub use palette::{Mix, Palette, Syntax};
+pub use palette::{HUE_NAMES, Mix, Palette, Syntax};
+pub use project::ProjectSizes;
 pub use tokens::{
     AvatarSize, ContainerSize, ControlSize, Density, Elevation, IconSize, Radius, TextSize,
 };

@@ -3,7 +3,7 @@ use std::fmt;
 use gpui::SharedString;
 use jiff::civil::Date;
 
-use crate::primitives::IconName;
+use crate::{mail::Label, primitives::IconName};
 
 /// Where a task stands in its workflow.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -83,6 +83,15 @@ pub enum Priority {
 }
 
 impl Priority {
+    /// Most urgent first.
+    pub const ALL: [Priority; 5] = [
+        Priority::Urgent,
+        Priority::High,
+        Priority::Medium,
+        Priority::Low,
+        Priority::None,
+    ];
+
     pub fn words(self) -> &'static str {
         match self {
             Priority::None => "No priority",
@@ -91,6 +100,23 @@ impl Priority {
             Priority::High => "High",
             Priority::Urgent => "Urgent",
         }
+    }
+
+    pub(crate) fn key(self) -> &'static str {
+        match self {
+            Priority::None => "none",
+            Priority::Low => "low",
+            Priority::Medium => "medium",
+            Priority::High => "high",
+            Priority::Urgent => "urgent",
+        }
+    }
+
+    pub(crate) fn of_key(key: &str) -> Priority {
+        Priority::ALL
+            .into_iter()
+            .find(|priority| priority.key() == key)
+            .unwrap_or_else(|| panic!("no priority {key}"))
     }
 
     /// Bars lit of three; urgent has a mark of its own.
@@ -146,7 +172,7 @@ impl Person {
     }
 }
 
-/// A piece of work: its key, its issue's name if it has one, what it is, where it stands, how urgent, when it is due, and who has it.
+/// A piece of work: its key, its issue's name if it has one, what it is, where it stands, how urgent, when it is due, who has it, and its labels.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Task {
     pub key: SharedString,
@@ -156,6 +182,7 @@ pub struct Task {
     pub priority: Priority,
     pub due: Option<Date>,
     pub assignee: Option<Person>,
+    pub labels: Vec<Label>,
 }
 
 impl Task {
@@ -168,6 +195,7 @@ impl Task {
             priority: Priority::None,
             due: None,
             assignee: None,
+            labels: Vec::new(),
         }
     }
 
@@ -193,6 +221,11 @@ impl Task {
 
     pub fn assignee(mut self, person: Person) -> Self {
         self.assignee = Some(person);
+        self
+    }
+
+    pub fn label(mut self, label: Label) -> Self {
+        self.labels.push(label);
         self
     }
 

@@ -18,16 +18,11 @@ use crate::{
         ColorPalette, DatePicker, DateTimePicker, FormError, FormField, Input, InputEvent, Run,
         Switch, TextInput,
     },
-    theme::ActiveTheme,
+    theme::{ActiveTheme, HUE_NAMES},
     typography::format,
 };
 
 type OnDraft = Rc<dyn Fn(&EventDraft, &mut Window, &mut App)>;
-
-/// The chart's hues by name, for the color an event wears.
-const HUES: [&str; 8] = [
-    "Blue", "Teal", "Ochre", "Rose", "Violet", "Green", "Rust", "Cyan",
-];
 
 /// An event's parts as an editor hands them back.
 #[derive(Clone, Debug, PartialEq)]
@@ -362,7 +357,6 @@ impl RenderOnce for EventEditor {
         };
         div()
             .debug_selector(|| "event-editor".into())
-            .min_w_full()
             .flex()
             .flex_col()
             .gap_4()
@@ -402,7 +396,10 @@ impl RenderOnce for EventEditor {
                 FormField::new((self.id.clone(), "color-field"), "Color").child(
                     ColorPalette::new(
                         (self.id.clone(), "color"),
-                        HUES.iter().zip(chart).map(|(name, color)| (*name, color)),
+                        HUE_NAMES
+                            .iter()
+                            .zip(chart)
+                            .map(|(name, color)| (*name, color)),
                     )
                     .selected(chart[draft.hue])
                     .on_change({

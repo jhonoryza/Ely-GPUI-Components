@@ -111,7 +111,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T30b Calendar · Time grid
 - [x] T30c Calendar · Agenda and people
 - [x] T30d Calendar · Editing
-- [ ] T31a Project · Tasks — `tasks/ch31-43.md`
+- [x] T31a Project · Tasks — `tasks/ch31-43.md`
 - [ ] T31b Project · Issues and boards
 - [ ] T31c Project · Plans
 - [ ] T31d Project · Time and databases
@@ -127,7 +127,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [ ] T41 Maps
 - [ ] T42 Misc
 - [ ] T43 Library Tooling
-- [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` move to `min_w_full`, checked at 280px
+- [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark, motion
 - [ ] T46 E2E: Playwright against the built site
 - [ ] T47 Ship: GitHub repo (public), CI, Pages deploy
@@ -363,3 +363,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T30c | 1 | PASS | |
 | T30d | 1 | FAIL | a chosen day outlived the owner's days, and the next render panicked |
 | T30d | 2 | PASS | |
+| T31a | 1 | PASS | |

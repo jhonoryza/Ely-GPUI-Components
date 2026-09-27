@@ -227,7 +227,6 @@ impl RenderOnce for AvailabilityPicker {
         });
         div()
             .debug_selector(|| "availability".into())
-            .min_w_full()
             .flex()
             .flex_col()
             .gap_3()

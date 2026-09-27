@@ -116,7 +116,7 @@ impl RenderOnce for RecurrenceEditor {
             .selected(frequency_key(rule.as_ref().map(|rule| rule.frequency)))
             .on_change(pick);
         let Some(rule) = rule else {
-            return div().min_w_full().child(frequency);
+            return div().child(frequency);
         };
         let unit = match (rule.frequency, rule.interval) {
             (Frequency::Daily, 1) => "day",
@@ -259,7 +259,6 @@ impl RenderOnce for RecurrenceEditor {
         };
         div()
             .debug_selector(|| "recurrence".into())
-            .min_w_full()
             .flex()
             .flex_col()
             .gap_3()

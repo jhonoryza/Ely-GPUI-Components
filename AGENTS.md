@@ -141,7 +141,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A row that holds text beside fixed parts lets the text give way: the text takes `flex_1().min_w_0()` and an `Ellipsis`; counts, icons, dates and chevrons take `flex_none`. A label that must stay whole wraps in that block instead, as `forms::Checkbox`'s does.
 - A mark over a text field reads the field at paint time, from a canvas laid over it (`collab::RemoteCursor`): by then `TextInput::bounds_for` holds this frame's layout, and a still page never renders again to catch up.
 - A callback field holds a named `type` alias; clippy's type_complexity rejects `Option<Rc<dyn Fn(..)>>`. A chapter shares one alias per shape.
-- A component that fills its container says `min_w_full` on its root. As a window's root, or in a flex row, an auto width would shrink to its text's narrowest width. A percent width does not stretch in a flex box, and taffy 0.9 lays a flex box out once at unknown width while a block parent measures its content, then keeps that layout when the width comes out the same: its `w_full` children stay at content width (`forms::FormField`). Roots made before T30d still say `w_full`; T44 moves them.
+- A component that fills its container takes no width on its root: a block or a flex column stretches it. Percents fill badly in taffy 0.9. `w_full` in a flex column that a block measures by content keeps its content's width: taffy lays the column out once at unknown width and keeps that layout when the width comes out the same. `min_w_full` resolves against a block's outer width, padding and all (`forms::FormField`). In a flex row the host gives it `flex_1`; as a window's root it sits in a `size_full` box. Roots made before T30d still say `w_full`; T44 takes it off.
 - A field's `Highlight` sets color, wash, weight, slant and strike per span; measuring and painting share one set of runs, so wrapped heights match.
 - A block editor keeps one undo for the document: text and structure together, as snapshots through `forms::History`; it takes Undo and Redo before its fields do.
 - gpui calls focus listeners only while the window is active. A test that needs focus events activates its window with `window.activate_window()`.
@@ -170,6 +170,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A list whose cursor a field drives marks the cursor only while the field has focus; at rest its first row would look hovered (`mail::LabelPicker`). Its rows are option rows, and `forms::marked_row` leads one with a mark such as a label's hue.
 - A choice that names a person leads with their initials through `forms::Choice::avatar`, in the list and in a Select's trigger alike (`project::AssigneePicker`).
 - `typography::Ellipsis` shapes its line with the text style's own run, so a strike or an underline set on its box shows (`lists::ListItem::struck`, a closed task's title).
+- Focus that must follow an item to another parent is taken by the owner and keyed by the item: a handle gpui makes for an element dies with its path (`project::KanbanBoard`, whose cards keep focus across columns).
+- The chart's hues go by `theme::HUE_NAMES`, for an event's color and a label's alike.
 
 ## Decisions
 

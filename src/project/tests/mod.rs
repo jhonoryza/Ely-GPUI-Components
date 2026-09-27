@@ -7,6 +7,8 @@ use jiff::civil::date;
 use super::{AssigneePicker, IssueId, Person, Priority, Status, StatusSelect, Task, TaskList};
 use crate::{documents::Checklist, forms::bind_keys, primitives::FocusNext, theme::Theme};
 
+mod boards;
+
 /// A view that shows one project part and keeps what it heard.
 struct Desk {
     part: fn(Entity<Desk>) -> AnyElement,

@@ -22,7 +22,7 @@ use crate::{
 type OnTaskToggle = Rc<dyn Fn(&SharedString, bool, &mut Window, &mut App)>;
 
 /// Today by the clock, in the system's zone.
-fn clock_today(user: &str) -> Date {
+pub(super) fn clock_today(user: &str) -> Date {
     Timestamp::now().to_zoned(format::system_zone(user)).date()
 }
 
@@ -208,7 +208,6 @@ impl RenderOnce for TaskList {
         if self.tasks.is_empty() {
             return div()
                 .debug_selector(|| "task-none".into())
-                .min_w_full()
                 .px_3()
                 .py_4()
                 .text_size(theme.text_size(TextSize::Sm))
@@ -241,7 +240,6 @@ impl RenderOnce for TaskList {
         let (id, on_open) = (self.id.clone(), self.on_open);
         div()
             .debug_selector(|| "task-list".into())
-            .min_w_full()
             .child(list.on_activate(move |key, window, cx| {
                 log::info!("task list {id:?}: open {key}");
                 if let Some(on_open) = &on_open {

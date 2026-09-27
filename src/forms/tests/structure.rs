@@ -167,3 +167,31 @@ fn a_field_fills_a_column_its_block_measures_by_content(cx: &mut TestAppContext)
         "the field spans the card inside its padding"
     );
 }
+
+/// A field in a card of a set width, inside its padding.
+struct Padded;
+
+impl Render for Padded {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let control = div().debug_selector(|| "padded-control".into()).h_2();
+        div()
+            .w(px(400.))
+            .p_5()
+            .child(FormField::new("padded", "Name").child(control))
+    }
+}
+
+#[gpui::test]
+fn a_field_keeps_inside_its_cards_padding(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Padded);
+    cx.run_until_parked();
+    let control = cx
+        .debug_bounds("padded-control")
+        .expect("the control draws");
+    assert_eq!(
+        control.size.width,
+        px(360.),
+        "a percent min would take the card's outer width"
+    );
+}

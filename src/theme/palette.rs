@@ -117,6 +117,11 @@ fn c8<const N: usize>(hex: [u32; N]) -> [Hsla; N] {
     hex.map(c)
 }
 
+/// The chart's hues by name, for what wears one: an event, a label.
+pub const HUE_NAMES: [&str; 8] = [
+    "Blue", "Teal", "Ochre", "Rose", "Violet", "Green", "Rust", "Cyan",
+];
+
 impl Palette {
     /// The chart color at `hue`; a hue past the chart fails, naming `owner`.
     pub fn hue(&self, hue: usize, owner: impl std::fmt::Display) -> Hsla {

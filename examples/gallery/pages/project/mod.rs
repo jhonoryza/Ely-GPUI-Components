@@ -1,4 +1,5 @@
 use ely_gpui_component::{
+    mail::Label,
     project::{IssueId, Person, Priority, Status, Task},
     theme::{ActiveTheme, TextSize},
 };
@@ -7,6 +8,7 @@ use gpui::{
 };
 use jiff::{Timestamp, ToSpan, civil::Date, tz::TimeZone};
 
+mod boards;
 mod tasks;
 
 use super::Page;
@@ -31,6 +33,14 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("project-tasks", 26.0, 22.0),
     Step::Wait(200),
     Step::Shot("task-ticked"),
+    Step::DownAt("project-board", 80.0, 80.0),
+    Step::DragTo("project-board", 200.0, 90.0),
+    Step::DragTo("project-board", 360.0, 110.0),
+    Step::Wait(250),
+    Step::Shot("board-drag"),
+    Step::UpAt("project-board", 360.0, 110.0),
+    Step::Wait(300),
+    Step::Shot("board-dropped"),
 ];
 
 /// What a demo says it did, under it.
@@ -57,6 +67,24 @@ fn team() -> Vec<Person> {
     ]
 }
 
+/// The studio's labels.
+fn studio_labels() -> Vec<Label> {
+    vec![
+        Label::new("client", "Client", 0),
+        Label::new("site", "Site", 5),
+        Label::new("render", "Render", 4),
+        Label::new("budget", "Budget", 2),
+    ]
+}
+
+/// One of the studio's labels, by key.
+fn tag(key: &str) -> Label {
+    studio_labels()
+        .into_iter()
+        .find(|label| label.key.as_ref() == key)
+        .expect("one of the studio's labels")
+}
+
 /// A studio's open work around today: late, due soon, in review, done.
 fn work(today: Date) -> Vec<Task> {
     let day = |offset: i64| today.checked_add(offset.days()).expect("a day nearby");
@@ -72,18 +100,22 @@ fn work(today: Date) -> Vec<Task> {
             .status(Status::InProgress)
             .priority(Priority::Urgent)
             .due(day(-1))
-            .assignee(who("ana")),
+            .assignee(who("ana"))
+            .label(tag("client")),
         Task::new("samples", "Order plaster samples")
             .issue(IssueId::new("ARC", 44))
             .priority(Priority::High)
             .due(day(0))
-            .assignee(who("ben")),
+            .assignee(who("ben"))
+            .label(tag("budget")),
         Task::new("model", "Photograph the site model")
             .issue(IssueId::new("ARC", 38))
             .status(Status::InReview)
             .priority(Priority::Medium)
             .due(day(3))
-            .assignee(who("chloe")),
+            .assignee(who("chloe"))
+            .label(tag("site"))
+            .label(tag("render")),
         Task::new("budget", "Revise the lighting budget")
             .issue(IssueId::new("ARC", 47))
             .priority(Priority::Low)
@@ -93,7 +125,8 @@ fn work(today: Date) -> Vec<Task> {
             .status(Status::Done)
             .priority(Priority::Medium)
             .due(day(-4))
-            .assignee(who("dev")),
+            .assignee(who("dev"))
+            .label(tag("site")),
         Task::new("archive", "Archive last year's renders")
             .issue(IssueId::new("ARC", 17))
             .status(Status::Backlog),
@@ -111,5 +144,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(tasks::fields(window, cx))
         .child(tasks::list(window, cx))
         .child(tasks::subtasks(window, cx))
+        .child(boards::kanban(window, cx))
+        .child(boards::panel(window, cx))
+        .child(boards::labels(window, cx))
         .into_any_element()
 }
