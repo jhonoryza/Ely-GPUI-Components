@@ -104,6 +104,17 @@ fn a_key_is_made_by_name_revoked_on_the_second_press_and_its_secret_dismissed(
     write("Deploys", cx);
     tap("enter", cx);
     assert_eq!(said(&host, cx), ["revoke ci", "make Deploys"]);
+    cx.executor()
+        .advance_clock(std::time::Duration::from_secs(10));
+    settle(cx);
+    tab(2, cx);
+    tap("space", cx);
+    tap("space", cx);
+    assert_eq!(
+        said(&host, cx),
+        ["revoke ci", "make Deploys", "revoke ci"],
+        "the name field emptied, so Create rests and the second stop is Revoke"
+    );
     host.update(cx, |bench, cx| {
         bench.sent = true;
         cx.notify();
@@ -111,7 +122,10 @@ fn a_key_is_made_by_name_revoked_on_the_second_press_and_its_secret_dismissed(
     settle(cx);
     tab(2, cx);
     tap("space", cx);
-    assert_eq!(said(&host, cx), ["revoke ci", "make Deploys", "done"]);
+    assert_eq!(
+        said(&host, cx),
+        ["revoke ci", "make Deploys", "revoke ci", "done"]
+    );
 }
 
 fn profile() -> Profile {
@@ -222,4 +236,13 @@ fn this_device_alone_offers_no_sign_out(cx: &mut TestAppContext) {
     tap("space", cx);
     tap("space", cx);
     assert!(said(&host, cx).is_empty());
+}
+
+/// The phone comes first in what the owner hands over, this device second; this device lists first.
+#[gpui::test]
+fn this_device_lists_first(cx: &mut TestAppContext) {
+    let (_, cx) = bench(sessions, cx);
+    let here = cx.debug_bounds("session-mac").expect("this device");
+    let phone = cx.debug_bounds("session-phone").expect("the phone");
+    assert!(here.top() < phone.top(), "{here:?} over {phone:?}");
 }

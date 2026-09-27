@@ -404,3 +404,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T35 | 3 | PASS | |
 | T36a | 1 | FAIL | Sign in waiting for a password and resting while busy, Create account waiting for a name, the other providers resting, and Send again resting while busy untested |
 | T36a | 2 | PASS | |
+| T36b | 1 | FAIL | a long key name hid its ends at 280px; the secret and ends skipped typography::literal; this device's place first and the name clearing after Create untested |

@@ -12,7 +12,7 @@ use crate::{
     forms::{Enter, Input},
     primitives::Severity,
     theme::{ActiveTheme, ControlSize, TextSize},
-    typography::Ellipsis,
+    typography::{Ellipsis, literal},
 };
 
 type OnKey = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
@@ -114,7 +114,7 @@ impl RenderOnce for ApiKeyManager {
                         .gap_2()
                         .child(
                             div().flex().child(
-                                div()
+                                literal(div())
                                     .flex_1()
                                     .min_w_0()
                                     .font_family(mono.clone())
@@ -156,17 +156,17 @@ impl RenderOnce for ApiKeyManager {
                                 .gap_2()
                                 .child(
                                     div()
-                                        .flex_none()
-                                        .font_weight(FontWeight::MEDIUM)
-                                        .child(each.name.clone()),
-                                )
-                                .child(
-                                    div()
                                         .flex_1()
                                         .min_w_0()
+                                        .font_weight(FontWeight::MEDIUM)
+                                        .child(Ellipsis::new(each.name.clone())),
+                                )
+                                .child(
+                                    literal(div())
+                                        .flex_none()
                                         .font_family(mono.clone())
                                         .text_color(theme.colors.fg_muted)
-                                        .child(Ellipsis::new(each.hint.clone())),
+                                        .child(each.hint.clone()),
                                 ),
                         )
                         .child(

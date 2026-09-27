@@ -93,7 +93,9 @@ impl RenderOnce for SessionList {
                         .into_any_element()
                 }
             };
+            let tag = format!("session-{}", session.key);
             div()
+                .debug_selector(move || tag)
                 .flex()
                 .items_center()
                 .gap_3()
