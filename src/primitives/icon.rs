@@ -248,6 +248,7 @@ icons! {
     Repeat => "repeat",
     Repeat1 => "repeat-1",
     Reply => "reply",
+    ReplyAll => "reply-all",
     Rocket => "rocket",
     RotateCcw => "rotate-ccw",
     RotateCw => "rotate-cw",

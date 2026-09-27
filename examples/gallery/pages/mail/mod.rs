@@ -8,6 +8,8 @@ use ely_gpui_component::{
 use gpui::{AnyElement, App, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
 use jiff::{SignedDuration, Timestamp};
 
+mod read;
+
 use super::Page;
 use crate::{
     probe::probe,
@@ -33,6 +35,14 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("mail-list", 417.0, 112.0),
     Step::Wait(200),
     Step::Shot("starred"),
+    Step::DownAt("mail-reader", 12.0, 227.0),
+    Step::UpAt("mail-reader", 12.0, 227.0),
+    Step::Wait(300),
+    Step::Shot("quoted-open"),
+    Step::DownAt("mail-thread", 200.0, 120.0),
+    Step::UpAt("mail-thread", 200.0, 120.0),
+    Step::Wait(300),
+    Step::Shot("thread-opened"),
 ];
 
 fn boxes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
@@ -200,5 +210,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(boxes(window, cx))
         .child(list(window, cx))
         .child(zero(cx))
+        .child(read::reader(cx))
+        .child(read::thread(cx))
         .into_any_element()
 }

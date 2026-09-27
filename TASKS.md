@@ -103,7 +103,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T28c Messaging · People
 - [x] T28d Messaging · Calls
 - [x] T28e Messaging · Stickers and GIFs
-- [ ] T29a Mail · Boxes and lists
+- [x] T29a Mail · Boxes and lists
 - [ ] T29b Mail · Reading
 - [ ] T29c Mail · Writing
 - [ ] T29d Mail · Sorting
@@ -342,3 +342,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T28d | 1 | PASS | |
 | T28e | 1 | FAIL | a GIF focused past the fold stayed out of view |
 | T28e | 2 | PASS | |
+| T29a | 1 | FAIL | Space on a focused star also toggled the list's selection |
+| T29a | 2 | PASS | |

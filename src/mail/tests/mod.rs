@@ -10,6 +10,8 @@ use crate::{
     theme::Theme,
 };
 
+mod read;
+
 fn setup(cx: &mut TestAppContext) {
     cx.update(|cx| {
         Theme::init(cx);
