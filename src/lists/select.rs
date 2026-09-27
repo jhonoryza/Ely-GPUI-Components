@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Div, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, ScrollHandle,
-    SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
+    App, Div, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
+    ScrollHandle, SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
 };
 
 use super::ListItem;
@@ -274,6 +274,23 @@ impl RenderOnce for SelectableList {
             })
             .children(rows)
     }
+}
+
+/// A button inside a pressable row: its press and its Space or Enter stay its own, so the row neither selects nor activates.
+pub(crate) fn row_action(button: impl IntoElement) -> gpui::Div {
+    div()
+        .flex_none()
+        .on_mouse_down(MouseButton::Left, |_, window, cx| {
+            window.prevent_default();
+            cx.stop_propagation();
+        })
+        .on_key_down(|event, _, cx| {
+            let key = event.keystroke.key.as_str();
+            if matches!(key, "space" | "enter") && !event.keystroke.modifiers.modified() {
+                cx.stop_propagation();
+            }
+        })
+        .child(button)
 }
 
 #[cfg(test)]

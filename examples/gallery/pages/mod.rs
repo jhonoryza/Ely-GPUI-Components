@@ -7,6 +7,7 @@ mod chat;
 mod collab;
 mod data;
 mod debug;
+mod devtools;
 mod documents;
 mod editor;
 mod feedback;
@@ -79,6 +80,7 @@ pub const ALL: &[Page] = &[
     calendar::PAGE,
     project::PAGE,
     canvas::PAGE,
+    devtools::PAGE,
     theme::PAGE,
 ];
 

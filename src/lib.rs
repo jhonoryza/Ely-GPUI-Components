@@ -9,6 +9,7 @@ pub mod chat;
 pub mod collab;
 pub mod data_display;
 pub mod debug;
+pub mod devtools;
 pub mod documents;
 pub mod editor;
 pub mod feedback;

@@ -33,6 +33,7 @@ pub struct NodeGraph {
     on_connect: Option<OnEdge>,
     on_disconnect: Option<OnEdge>,
     on_viewport: Option<OnViewport>,
+    fixed: bool,
 }
 
 impl NodeGraph {
@@ -53,7 +54,14 @@ impl NodeGraph {
             on_connect: None,
             on_disconnect: None,
             on_viewport: None,
+            fixed: false,
         }
+    }
+
+    /// Wires stay as the owner gives them: only sockets that hold a wire show, none starts or lifts one, and a press there pans.
+    pub fn fixed_wires(mut self) -> Self {
+        self.fixed = true;
+        self
     }
 
     pub fn selected(mut self, keys: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
@@ -179,6 +187,7 @@ impl RenderOnce for NodeGraph {
                     .on_drag(Pulling { owner }, |_, _, _, cx| cx.new(|_| EmptyView))
                     .child(Ellipsis::new(node.title.clone()));
                 let socket = |out: bool, row: usize, port: &super::graph::Port| {
+                    let fixed = self.fixed;
                     let (press, edges, node_key) = (hold.clone(), edges.clone(), node.key.clone());
                     let (port_key, kind) = (port.key.clone(), port.kind.clone());
                     let nodes = nodes.clone();
@@ -203,6 +212,9 @@ impl RenderOnce for NodeGraph {
                         .bg(hue(&kind))
                         .cursor_crosshair()
                         .on_mouse_down(MouseButton::Left, move |event, _, cx| {
+                            if fixed {
+                                return;
+                            }
                             cx.stop_propagation();
                             let bounds = press.read(cx).bounds;
                             let at = point_of(event.position, bounds);
@@ -275,15 +287,24 @@ impl RenderOnce for NodeGraph {
                                 .children(output.map(|port| Ellipsis::new(port.name.clone()))),
                         )
                 }));
+                let wired = |out: bool, port: &super::graph::Port| {
+                    edges.iter().any(|edge| {
+                        let end = if out { &edge.from } else { &edge.to };
+                        end.0 == node.key && end.1 == port.key
+                    })
+                };
+                let shown = |out: bool, port: &super::graph::Port| !self.fixed || wired(out, port);
                 let sockets: Vec<AnyElement> = node
                     .inputs
                     .iter()
                     .enumerate()
+                    .filter(|(_, port)| shown(false, port))
                     .map(|(row, port)| socket(false, row, port).into_any_element())
                     .chain(
                         node.outputs
                             .iter()
                             .enumerate()
+                            .filter(|(_, port)| shown(true, port))
                             .map(|(row, port)| socket(true, row, port).into_any_element()),
                     )
                     .collect();

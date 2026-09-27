@@ -22,7 +22,11 @@ const KEYWORDS: &[&str] = &[
     "as", "async", "await", "break", "case", "catch", "class", "const", "continue", "def", "do",
     "else", "enum", "export", "fn", "for", "from", "func", "function", "if", "impl", "import",
     "in", "let", "match", "mut", "new", "pub", "return", "static", "struct", "switch", "throw",
-    "try", "type", "use", "var", "while", "yield",
+    "try", "type", "use", "var", "while", "yield", "SELECT", "FROM", "WHERE", "JOIN", "LEFT",
+    "RIGHT", "INNER", "OUTER", "ON", "AND", "OR", "NOT", "AS", "GROUP", "BY", "ORDER", "HAVING",
+    "LIMIT", "OFFSET", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE", "TABLE",
+    "INDEX", "DROP", "ALTER", "DESC", "ASC", "DISTINCT", "UNION", "WITH", "CASE", "WHEN", "THEN",
+    "ELSE", "END", "IS", "IN", "LIKE", "BETWEEN", "EXISTS", "INTERVAL",
 ];
 const CONSTANTS: &[&str] = &[
     "false",
@@ -33,6 +37,9 @@ const CONSTANTS: &[&str] = &[
     "this",
     "true",
     "undefined",
+    "NULL",
+    "TRUE",
+    "FALSE",
 ];
 
 /// Splits source into spans; spaces fall between them.

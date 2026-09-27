@@ -22,6 +22,7 @@ pub use long::{InfiniteList, VirtualList};
 pub use outline::Outline;
 pub(crate) use sections::Sections;
 pub use select::SelectableList;
+pub(crate) use select::row_action;
 pub(crate) use select::{Pick, picked};
 pub use sortable::SortableList;
 pub use swipe::{SwipeAction, SwipeableListItem};
