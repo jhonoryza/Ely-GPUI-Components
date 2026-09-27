@@ -12,7 +12,7 @@ use super::{
         Brush, Gesture, Hand, Handlers, LEAST, OnDraw, OnKeys, OnMove, OnResize, PEN, REACH, Scene,
         commit, path, spanned, stroke_shape, taken,
     },
-    marks::{SelectionBox, SnapIndicator, TransformHandles, handle_boxes},
+    marks::{SelectionBox, SnapIndicator, TransformHandles, handle_boxes, placed},
     plane::{in_view, paint_shape},
     shape::{Shape, ShapeKind},
     view::{Frame, Viewport},
@@ -111,6 +111,10 @@ impl RenderOnce for ToolLayer {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let hand: Entity<Hand> =
             window.use_keyed_state((self.id.clone(), "hand"), cx, |_, _| Hand::default());
+        if self.tool != Tool::Pen && !hand.read(cx).pen.is_empty() {
+            let points = hand.update(cx, |hand, _| std::mem::take(&mut hand.pen));
+            end_path(points, self.on_draw.clone(), window, cx);
+        }
         if self.tool == Tool::Hand {
             return div().into_any_element();
         }
@@ -187,7 +191,9 @@ impl RenderOnce for ToolLayer {
             Gesture::Stroke { points } if points.len() > 1 => {
                 vec![stroke_shape(points, self.brush.size, self.brush.hue)]
             }
-            _ if pen.len() > 1 => vec![stroke_shape(&pen, PEN, self.brush.hue)],
+            _ if tool == Tool::Pen && pen.len() > 1 => {
+                vec![stroke_shape(&pen, PEN, self.brush.hue)]
+            }
             _ => Vec::new(),
         };
         let marquee = match &gesture {
@@ -197,10 +203,16 @@ impl RenderOnce for ToolLayer {
             ))),
             _ => None,
         };
-        let handles = (tool == Tool::Select && matches!(gesture, Gesture::Idle))
+        let chosen = (tool == Tool::Select && matches!(gesture, Gesture::Idle))
             .then_some(whole)
             .flatten()
-            .map(|frame| TransformHandles::new(in_view(&view, &frame)));
+            .map(|frame| in_view(&view, &frame));
+        let handles = chosen
+            .filter(|_| selected.len() == 1)
+            .map(TransformHandles::new);
+        let outline = chosen
+            .filter(|_| selected.len() > 1)
+            .map(|frame| placed(&frame).border_1().border_color(palette.accent));
         let snap = (!guides.is_empty()).then(|| SnapIndicator::new(guides.clone(), view));
         let point_of = move |at: Point<Pixels>, bounds: Bounds<Pixels>| {
             let local = at - bounds.origin;
@@ -402,7 +414,23 @@ impl RenderOnce for ToolLayer {
             )
             .children(marquee)
             .children(handles)
+            .children(outline)
             .children(snap)
             .into_any_element()
     }
+}
+
+/// Ends a pen path the tool left: two points or more go to the owner after this frame, a lone point is dropped.
+fn end_path(points: Vec<(f32, f32)>, on_draw: Option<OnDraw>, window: &mut Window, cx: &mut App) {
+    if points.len() < 2 {
+        log::info!("tool layer: the pen left a lone point, dropped");
+        return;
+    }
+    window.defer(cx, move |window, cx| {
+        let (kind, frame) = path(&points, PEN);
+        log::info!("tool layer: the pen left a path of {} points", points.len());
+        if let Some(on_draw) = &on_draw {
+            on_draw(kind, frame, window, cx);
+        }
+    });
 }

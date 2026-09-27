@@ -4,14 +4,15 @@ use gpui::{
     div, point, px,
 };
 
-use super::{Frame, InfiniteCanvas, MiniMap, Viewport, ZoomControls};
+use super::{Frame, InfiniteCanvas, MiniMap, Tool, Viewport, ZoomControls};
 use crate::{primitives::FocusNext, theme::Theme};
 
 mod tools;
 
 /// A view that shows one canvas part and keeps the viewports and words it heard.
 struct Stage {
-    part: fn(Entity<Stage>) -> AnyElement,
+    part: fn(&Stage, Entity<Stage>) -> AnyElement,
+    tool: Tool,
     heard: Vec<Viewport>,
     said: Vec<String>,
 }
@@ -21,7 +22,7 @@ impl Render for Stage {
         div()
             .w(px(400.0))
             .h(px(300.0))
-            .child((self.part)(cx.entity()))
+            .child((self.part)(self, cx.entity()))
     }
 }
 
@@ -34,7 +35,7 @@ fn settle(cx: &mut VisualTestContext) {
 }
 
 fn stage(
-    part: fn(Entity<Stage>) -> AnyElement,
+    part: fn(&Stage, Entity<Stage>) -> AnyElement,
     cx: &mut TestAppContext,
 ) -> (Entity<Stage>, &mut VisualTestContext) {
     cx.update(|cx| {
@@ -44,6 +45,7 @@ fn stage(
     });
     let (host, cx) = cx.add_window_view(|_, _| Stage {
         part,
+        tool: Tool::Select,
         heard: Vec::new(),
         said: Vec::new(),
     });
@@ -73,7 +75,7 @@ fn heard(host: &Entity<Stage>, cx: &mut VisualTestContext) -> Vec<Viewport> {
     host.read_with(cx, |stage, _| stage.heard.clone())
 }
 
-fn plane(owner: Entity<Stage>) -> AnyElement {
+fn plane(_: &Stage, owner: Entity<Stage>) -> AnyElement {
     InfiniteCanvas::new("plane", Viewport::new(0.0, 0.0, 1.0))
         .on_viewport(move |view, _, cx| hear(&owner, view, cx))
         .into_any_element()
@@ -122,7 +124,7 @@ fn a_drag_on_empty_space_pans(cx: &mut TestAppContext) {
     );
 }
 
-fn zoom(owner: Entity<Stage>) -> AnyElement {
+fn zoom(_: &Stage, owner: Entity<Stage>) -> AnyElement {
     ZoomControls::new("zoom", 1.0)
         .on_zoom(move |zoom, _, cx| hear(&owner, Viewport::new(0.0, 0.0, zoom), cx))
         .into_any_element()
@@ -146,7 +148,7 @@ fn the_zoom_buttons_step_and_the_percent_resets(cx: &mut TestAppContext) {
     assert_eq!(zooms, [0.75, 1.0, 1.5]);
 }
 
-fn map(owner: Entity<Stage>) -> AnyElement {
+fn map(_: &Stage, owner: Entity<Stage>) -> AnyElement {
     MiniMap::new(
         "map",
         [Frame::new(0.0, 0.0, 400.0, 280.0)],

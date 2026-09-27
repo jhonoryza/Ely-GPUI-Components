@@ -375,3 +375,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T31d | 2 | PASS | |
 | T32a | 1 | FAIL | the plain wheel panned against every scroll box; the handlers panned from the render's viewport, so events within a frame overwrote each other; the fit's cap at one went untested |
 | T32a | 2 | PASS | |
+| T32b | 1 | FAIL | handles drawn for a multi-selection fell through to a marquee; the palette ran past a 280px box; an open pen path outlived the tool |

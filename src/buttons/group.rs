@@ -105,9 +105,10 @@ fn toggle_face(
     let colors = &theme.colors;
     let (text, icon_size) = label_size(size);
     let fg = if on { colors.fg } else { colors.fg_muted };
-    let hover = colors.hover;
+    let (hover, value) = (colors.hover, item.value.clone());
     div()
         .id(id)
+        .debug_selector(move || format!("toggle {value}"))
         .flex()
         .flex_none()
         .items_center()
@@ -194,7 +195,7 @@ impl RenderOnce for ToggleButton {
 
 type OnChange = Rc<dyn Fn(&[SharedString], &mut Window, &mut App)>;
 
-/// Toggles side by side. One is chosen, or several with `multiple`.
+/// Toggles side by side, wrapping onto more lines when narrow. One is chosen, or several with `multiple`.
 #[derive(IntoElement)]
 pub struct ToggleGroup {
     id: ElementId,
@@ -280,6 +281,7 @@ impl RenderOnce for ToggleGroup {
         div()
             .id(self.id)
             .flex()
+            .flex_wrap()
             .items_center()
             .gap_0p5()
             .p_0p5()

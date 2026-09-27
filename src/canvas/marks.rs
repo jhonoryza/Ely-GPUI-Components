@@ -1,4 +1,7 @@
-use gpui::{App, Hsla, IntoElement, ParentElement, Pixels, RenderOnce, Styled, Window, div};
+use gpui::{
+    App, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce, Styled, Window,
+    div,
+};
 
 use super::{
     edit::Handle,
@@ -8,7 +11,7 @@ use super::{
 use crate::theme::ActiveTheme;
 
 /// A box in view pixels as an absolute element.
-fn placed(frame: &Frame) -> gpui::Div {
+pub(super) fn placed(frame: &Frame) -> gpui::Div {
     div()
         .absolute()
         .left(Pixels::from(frame.x))
@@ -73,7 +76,13 @@ impl RenderOnce for TransformHandles {
         let side = f32::from(theme.canvas().handle.to_pixels(window.rem_size()));
         let squares = handle_boxes(&self.frame, side)
             .into_iter()
-            .map(move |(_, frame)| placed(&frame).bg(surface).border_1().border_color(accent));
+            .map(move |(handle, frame)| {
+                placed(&frame)
+                    .bg(surface)
+                    .border_1()
+                    .border_color(accent)
+                    .debug_selector(move || format!("handle {handle:?}"))
+            });
         div()
             .absolute()
             .inset_0()
