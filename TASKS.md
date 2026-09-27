@@ -127,7 +127,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T35 Settings — `tasks/ch31-43.md`
 - [x] T36a Account · Sign in — `tasks/ch31-43.md`
 - [x] T36b Account · Profile and access — `tasks/ch31-43.md`
-- [ ] T36c Account · Billing and team
+- [x] T36c Account · Billing and team — `tasks/ch31-43.md`
 - [ ] T37 Onboarding & Help
 - [ ] T38 Interaction
 - [ ] T39 Theme
@@ -407,3 +407,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T36b | 1 | FAIL | a long key name hid its ends at 280px; the secret and ends skipped typography::literal; this device's place first and the name clearing after Create untested |
 | T36b | 2 | PASS | |
 | T36c | 1 | FAIL | a long quota name pushed its count past 280px; a month past 12 read as passed; the Amex shape, the address clearing, the clamped share and the paywall's benefits untested |
+| T36c | 2 | PASS | |
