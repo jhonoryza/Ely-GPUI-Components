@@ -63,6 +63,15 @@ impl FileExplorer {
             path.len(),
             levels.len()
         );
+        for (depth, name) in path.iter().enumerate().skip(1) {
+            assert!(
+                levels[depth - 1]
+                    .iter()
+                    .any(|entry| entry.is_folder() && entry.name() == name),
+                "{name} is no folder in {}",
+                path[depth - 1]
+            );
+        }
         Self {
             id: id.into(),
             path,
@@ -93,7 +102,7 @@ impl FileExplorer {
         self
     }
 
-    /// Gets the path to go to, from the root down.
+    /// Gets the path to go to, from the root down; the pick stays with the folder left, so the host drops it.
     pub fn on_navigate(
         mut self,
         handler: impl Fn(&[SharedString], &mut Window, &mut App) + 'static,

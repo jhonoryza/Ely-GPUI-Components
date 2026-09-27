@@ -107,7 +107,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Keyed state lives while its element renders in consecutive frames. An overlay rendered only while open starts fresh each time.
 - Long grids scroll in a `uniform_list`. gpui has no nearest scroll, so a key move up scrolls with `Top` and down with `Bottom` (`forms::glyphs`).
 - Masks reshape edits inside `TextInput::set_fit`, which sees the replaced range and the typed text. A diff after the fact cannot tell typed characters from kept ones.
-- Ids inside a reusable component carry its owner's id or `EntityId`, animation ids too. Twin ids share focus, click and animation state.
+- Ids inside a reusable component carry its owner's id or `EntityId`, animation ids too. Twin ids share focus, click and animation state. A child keyed by its place inherits the state of what stood there before; key it by what it shows (`files::FileExplorer` keys a column by its folder).
 - Text wraps at the width its box had when measured. A cross-axis `max_w` comes too late, and a flex column counts wrapped text as one line. Put prose in a plain block inside a flex row with `flex_1().max_w(..)` (`feedback::states`).
 - gpui 0.2.2 keeps a no-wrap line's first measure, taken at full width inside flex and scroll boxes, so `.truncate()` clips there instead of ending in an ellipsis. A line that may overflow is a `typography::Ellipsis`.
 - gpui 0.2.2's `line_clamp` wraps once and lays the rest on the last line, cut hard; centered, it loses both ends. A name whose ends matter is a `typography::MiddleEllipsis` on one line (`files::FileGrid`).

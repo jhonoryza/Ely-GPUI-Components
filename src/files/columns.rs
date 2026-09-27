@@ -43,11 +43,12 @@ pub(super) fn columns(
         .iter()
         .enumerate()
         .map(|(depth, entries)| {
+            let folder = path[..=depth].join("/");
             let rows = entries.iter().enumerate().fold(
-                SelectableList::new((id.clone(), format!("column-{depth}"))),
+                SelectableList::new((id.clone(), format!("column-{folder}"))),
                 |list, (ix, entry)| {
                     let row = ListItem::new(
-                        (id.clone(), format!("row-{depth}-{ix}")),
+                        (id.clone(), format!("row-{folder}-{ix}")),
                         entry.name().clone(),
                     )
                     .leading(FileIcon::entry(entry))

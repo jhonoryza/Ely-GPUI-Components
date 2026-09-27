@@ -2,14 +2,14 @@ use std::rc::Rc;
 
 use gpui::{
     App, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*, rems,
 };
 use jiff::Timestamp;
 
 use super::{ListItem, SelectableList};
 use crate::{
     forms::OnValue,
-    layout::seeded::use_seeded,
+    layout::{on_axis, seeded::use_seeded},
     navigation::{Breadcrumb, Crumb},
     primitives::{Icon, IconName, file_icon},
     theme::{ActiveTheme, IconSize, TextSize},
@@ -66,6 +66,9 @@ enum Column {
     Size,
     Modified,
 }
+
+/// Each row's side padding and three gaps, in rems, as `ListItem` lays them.
+const ROW_CHROME: f32 = 3.75;
 
 /// Entries as a listing first shows them: folders first, then by name.
 pub(crate) fn listed(entries: Vec<DirEntry>) -> Vec<DirEntry> {
@@ -188,6 +191,11 @@ impl RenderOnce for DirectoryListing {
         let theme = cx.theme();
         let colors = &theme.colors;
         let (size_width, date_width) = (theme.label_width() * 0.5, theme.label_width() * 0.75);
+        let least = theme.label_width()
+            + size_width
+            + date_width
+            + theme.icon_size(IconSize::Md)
+            + rems(ROW_CHROME);
         let now = Timestamp::now();
         let header = |label: &'static str, this: Column| {
             let order = order.clone();
@@ -237,7 +245,12 @@ impl RenderOnce for DirectoryListing {
             .border_color(colors.border)
             .text_size(theme.text_size(TextSize::Xs))
             .text_color(colors.fg_muted)
-            .child(div().flex_1().child(header("Name", Column::Name)))
+            .child(
+                div()
+                    .debug_selector(|| "listing-name".into())
+                    .flex_1()
+                    .child(header("Name", Column::Name)),
+            )
             .child(
                 div()
                     .w(size_width)
@@ -303,29 +316,32 @@ impl RenderOnce for DirectoryListing {
                 &self.path,
                 self.on_climb,
             ))
-            .child(heading)
             .child(
-                list.on_change(move |keys, window, cx| {
-                    let Some(name) = keys.first() else {
-                        return;
-                    };
-                    store.update(cx, |picked, cx| {
-                        picked.value = Some(name.clone());
-                        cx.notify();
-                    });
-                    if let Some(on_select) = &on_select {
-                        on_select(name, window, cx);
-                    }
-                })
-                .on_activate(move |name, window, cx| {
-                    let entry = shown
-                        .iter()
-                        .find(|entry| entry.name == *name)
-                        .expect("a listed entry");
-                    if let Some(on_open) = &on_open {
-                        on_open(entry, window, cx);
-                    }
-                }),
+                on_axis(div().id((self.id.clone(), "sideways")).overflow_x_scroll()).child(
+                    div().flex().flex_col().min_w(least).child(heading).child(
+                        list.on_change(move |keys, window, cx| {
+                            let Some(name) = keys.first() else {
+                                return;
+                            };
+                            store.update(cx, |picked, cx| {
+                                picked.value = Some(name.clone());
+                                cx.notify();
+                            });
+                            if let Some(on_select) = &on_select {
+                                on_select(name, window, cx);
+                            }
+                        })
+                        .on_activate(move |name, window, cx| {
+                            let entry = shown
+                                .iter()
+                                .find(|entry| entry.name == *name)
+                                .expect("a listed entry");
+                            if let Some(on_open) = &on_open {
+                                on_open(entry, window, cx);
+                            }
+                        }),
+                    ),
+                ),
             )
     }
 }

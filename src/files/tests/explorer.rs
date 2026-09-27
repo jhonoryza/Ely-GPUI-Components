@@ -174,3 +174,83 @@ fn the_pick_is_in_the_folder_shown() {
     let here = vec![DirEntry::file("Brief.md", 10, then())];
     let _ = FileExplorer::new("explorer", ["Home"], [here], FileView::List).selected("Ghost.md");
 }
+
+/// An explorer that goes where it is sent, over a small tree, and the files it opened.
+struct Walking {
+    path: Vec<SharedString>,
+    opened: Vec<SharedString>,
+}
+
+fn folder(path: &[SharedString]) -> Vec<DirEntry> {
+    let names: Vec<&str> = path.iter().map(|level| level.as_ref()).collect();
+    match names.join("/").as_str() {
+        "Home" => vec![
+            DirEntry::folder("Projects", then()),
+            DirEntry::folder("Documents", then()),
+        ],
+        "Home/Projects" => vec![
+            DirEntry::folder("Atrium", then()),
+            DirEntry::folder("Dunes", then()),
+        ],
+        "Home/Projects/Dunes" => vec![DirEntry::file("Survey.csv", 10, then())],
+        "Home/Documents" => vec![
+            DirEntry::file("Contract.docx", 10, then()),
+            DirEntry::file("Invoice.pdf", 10, then()),
+        ],
+        other => panic!("no folder {other}"),
+    }
+}
+
+impl Render for Walking {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let (go, open) = (cx.entity(), cx.entity());
+        let levels = (1..=self.path.len()).map(|depth| folder(&self.path[..depth]));
+        let explorer = FileExplorer::new("explorer", self.path.clone(), levels, FileView::Columns)
+            .on_navigate(move |path, _, cx| {
+                go.update(cx, |host, cx| {
+                    host.path = path.to_vec();
+                    cx.notify();
+                })
+            })
+            .on_open(move |entry, _, cx| {
+                open.update(cx, |host, _| host.opened.push(entry.name().clone()))
+            });
+        div().w(px(640.0)).child(explorer)
+    }
+}
+
+#[gpui::test]
+fn a_new_folder_at_a_depth_starts_its_column_fresh(cx: &mut TestAppContext) {
+    setup(cx);
+    let (host, cx) = cx.add_window_view(|_, _| Walking {
+        path: ["Home", "Projects"].map(SharedString::from).to_vec(),
+        opened: Vec::new(),
+    });
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    tab_to(6, cx);
+    press("down", cx);
+    host.update(cx, |host, cx| {
+        host.path = ["Home", "Documents"].map(SharedString::from).to_vec();
+        cx.notify();
+    });
+    settle(cx);
+    tab_to(6, cx);
+    press("enter", cx);
+    assert_eq!(
+        host.read_with(cx, |host, _| host.opened.clone()),
+        ["Contract.docx"]
+    );
+}
+
+#[test]
+#[should_panic(expected = "Projects is no folder in Home")]
+fn each_folder_on_the_path_is_listed_in_its_parent() {
+    let root = vec![DirEntry::file("Projects", 10, then())];
+    let _ = FileExplorer::new(
+        "explorer",
+        ["Home", "Projects"],
+        [root, Vec::new()],
+        FileView::List,
+    );
+}

@@ -10,8 +10,8 @@ use gpui::{
 };
 
 use super::{
-    InfiniteList, ListItem, SelectableList, SortableList, SwipeAction, SwipeableListItem,
-    VirtualList,
+    DirEntry, DirectoryListing, InfiniteList, ListItem, SelectableList, SortableList, SwipeAction,
+    SwipeableListItem, VirtualList,
 };
 use crate::{
     primitives::{IconName, Measure},
@@ -399,4 +399,35 @@ fn the_cursor_stays_on_its_row_when_the_rows_reorder(cx: &mut TestAppContext) {
     });
     assert_eq!(opened, ["a"], "enter opens the row the cursor was on");
     assert_eq!(picks(&view, cx), ["b"], "up moves from where that row went");
+}
+
+/// A listing 280 wide.
+struct Narrow;
+
+impl Render for Narrow {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let then = jiff::Timestamp::from_second(1_700_000_000).expect("a time");
+        let entries = [
+            DirEntry::folder("Design", then),
+            DirEntry::file("Brief.md", 4_800, then),
+        ];
+        div()
+            .w(px(280.0))
+            .child(DirectoryListing::new("listing", ["Home"], entries))
+    }
+}
+
+#[gpui::test]
+fn a_narrow_listing_keeps_room_for_the_name(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Narrow);
+    settle(cx);
+    let name = cx
+        .debug_bounds("listing-name")
+        .expect("the name heads its column");
+    let least = cx.update(|window, cx| {
+        use crate::theme::ActiveTheme;
+        cx.theme().label_width().to_pixels(window.rem_size())
+    });
+    assert!(name.size.width >= least, "{name:?} under {least:?}");
 }
