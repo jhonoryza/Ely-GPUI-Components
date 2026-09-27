@@ -28,6 +28,7 @@ pub mod menus;
 pub mod messaging;
 pub mod motion;
 pub mod navigation;
+pub mod onboarding;
 pub mod overlays;
 pub mod primitives;
 pub mod project;

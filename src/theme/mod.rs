@@ -6,6 +6,7 @@ mod files;
 mod generative;
 mod media;
 mod messaging;
+mod onboarding;
 mod palette;
 mod project;
 mod tokens;
@@ -23,6 +24,7 @@ pub use files::FileSizes;
 pub use generative::GenerativeSizes;
 pub use media::MediaSizes;
 pub use messaging::MessagingSizes;
+pub use onboarding::OnboardingSizes;
 pub use palette::{HUE_NAMES, Mix, Palette, Syntax};
 pub use project::ProjectSizes;
 pub use tokens::{

@@ -62,7 +62,8 @@ impl Steps {
 
 impl RenderOnce for Steps {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let turn = motion::changes((self.id.clone(), "current"), self.current, window, cx);
+        let id = self.id.clone();
+        let turn = motion::changes((id.clone(), "current"), self.current, window, cx);
         let (current, vertical, count) = (self.current, self.vertical, self.steps.len());
         let duration = motion::duration(motion::SLOW, cx);
         let theme = cx.theme();
@@ -79,7 +80,7 @@ impl RenderOnce for Steps {
             });
             let fill = if filled && ix + 1 == current && turn > 0 {
                 fill.with_animation(
-                    ("step-fill", turn),
+                    (id.clone(), format!("fill-{turn}")),
                     Animation::new(duration).with_easing(motion::ease_out_cubic),
                     move |fill, t| {
                         if vertical {
@@ -155,7 +156,7 @@ impl RenderOnce for Steps {
                 });
             let select = self.on_select.clone().filter(|_| done);
             let head = div()
-                .id(("step", ix))
+                .id((id.clone(), format!("step-{ix}")))
                 .flex()
                 .items_center()
                 .gap_2()
@@ -215,6 +216,7 @@ pub struct Wizard {
     current: usize,
     content: Option<AnyElement>,
     ready: bool,
+    headless: bool,
     on_step: Option<OnStep>,
     on_finish: Option<Run>,
 }
@@ -225,15 +227,28 @@ impl Wizard {
         steps: impl IntoIterator<Item = Choice>,
         current: usize,
     ) -> Self {
+        let steps: Vec<Choice> = steps.into_iter().collect();
+        assert!(
+            current < steps.len(),
+            "step {current} is past the last of {}",
+            steps.len()
+        );
         Self {
             id: id.into(),
-            steps: steps.into_iter().collect(),
+            steps,
             current,
             content: None,
             ready: true,
+            headless: false,
             on_step: None,
             on_finish: None,
         }
+    }
+
+    /// Leaves out the numbered steps; the owner shows where the flow stands.
+    pub(crate) fn headless(mut self) -> Self {
+        self.headless = true;
+        self
     }
 
     /// The current step's content.
@@ -264,28 +279,31 @@ impl RenderOnce for Wizard {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let (current, last) = (self.current, self.steps.len().saturating_sub(1));
         let turn = motion::changes((self.id.clone(), "content"), current, window, cx);
+        let id = self.id.clone();
+        let on_step = self
+            .on_step
+            .unwrap_or_else(|| panic!("wizard {id:?} has no on_step"));
+        let on_finish = self
+            .on_finish
+            .unwrap_or_else(|| panic!("wizard {id:?} has no on_finish"));
         let step: OnStep = {
-            let (id, on_step) = (self.id.clone(), self.on_step);
+            let id = id.clone();
             Rc::new(move |to, window, cx| {
                 log::info!("wizard {id:?}: step {to}");
-                if let Some(on_step) = &on_step {
-                    on_step(to, window, cx);
-                }
+                on_step(to, window, cx);
             })
         };
         let (back, next, jump) = (step.clone(), step.clone(), step);
         let finish = {
-            let (id, on_finish) = (self.id.clone(), self.on_finish);
+            let id = id.clone();
             move |window: &mut Window, cx: &mut App| {
                 log::info!("wizard {id:?}: finished");
-                if let Some(on_finish) = &on_finish {
-                    on_finish(window, cx);
-                }
+                on_finish(window, cx);
             }
         };
         let content = self.content.map(|content| {
             div().child(content).with_animation(
-                ("wizard-step", turn),
+                (id.clone(), format!("step-{turn}")),
                 Animation::new(motion::duration(motion::BASE, cx))
                     .with_easing(motion::ease_out_cubic),
                 move |content, t| {
@@ -298,12 +316,12 @@ impl RenderOnce for Wizard {
             )
         });
         let advance = if current == last {
-            Button::new("wizard-finish", "Finish")
+            Button::new((id.clone(), "finish"), "Finish")
                 .primary()
                 .disabled(!self.ready)
                 .on_click(move |_, window, cx| finish(window, cx))
         } else {
-            Button::new("wizard-next", "Next")
+            Button::new((id.clone(), "next"), "Next")
                 .primary()
                 .disabled(!self.ready)
                 .on_click(move |_, window, cx| next(current + 1, window, cx))
@@ -314,10 +332,12 @@ impl RenderOnce for Wizard {
             .flex_col()
             .gap_6()
             .w_full()
-            .child(
-                Steps::new((self.id, "steps"), self.steps, current)
-                    .on_select(move |to, window, cx| jump(to, window, cx)),
-            )
+            .when(!self.headless, |wizard| {
+                wizard.child(
+                    Steps::new((id.clone(), "steps"), self.steps, current)
+                        .on_select(move |to, window, cx| jump(to, window, cx)),
+                )
+            })
             .children(content)
             .child(
                 div()
@@ -325,7 +345,7 @@ impl RenderOnce for Wizard {
                     .items_center()
                     .justify_between()
                     .child(
-                        Button::new("wizard-back", "Back")
+                        Button::new((id.clone(), "back"), "Back")
                             .variant(ButtonVariant::Ghost)
                             .disabled(current == 0)
                             .on_click(move |_, window, cx| back(current - 1, window, cx)),

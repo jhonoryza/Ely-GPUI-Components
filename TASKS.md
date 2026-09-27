@@ -128,7 +128,8 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T36a Account · Sign in — `tasks/ch31-43.md`
 - [x] T36b Account · Profile and access — `tasks/ch31-43.md`
 - [x] T36c Account · Billing and team — `tasks/ch31-43.md`
-- [ ] T37 Onboarding & Help
+- [ ] T37a Onboarding · Flows and highlights
+- [ ] T37b Onboarding · Help
 - [ ] T38 Interaction
 - [ ] T39 Theme
 - [ ] T40 i18n & a11y

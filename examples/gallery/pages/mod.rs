@@ -26,6 +26,7 @@ mod menus;
 mod messaging;
 mod motion;
 mod navigation;
+mod onboarding;
 mod overlays;
 mod primitives;
 mod project;
@@ -87,6 +88,7 @@ pub const ALL: &[Page] = &[
     dashboard::PAGE,
     settings::PAGE,
     account::PAGE,
+    onboarding::PAGE,
     theme::PAGE,
 ];
 
