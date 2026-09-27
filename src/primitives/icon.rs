@@ -218,6 +218,7 @@ icons! {
     Music => "music",
     Network => "network",
     NotebookPen => "notebook-pen",
+    OctagonAlert => "octagon-alert",
     Package => "package",
     Palette => "palette",
     PanelBottom => "panel-bottom",

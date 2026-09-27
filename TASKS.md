@@ -102,8 +102,11 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T28b Messaging · Messages
 - [x] T28c Messaging · People
 - [x] T28d Messaging · Calls
-- [ ] T28e Messaging · Stickers and GIFs
-- [ ] T29 Mail
+- [x] T28e Messaging · Stickers and GIFs
+- [ ] T29a Mail · Boxes and lists
+- [ ] T29b Mail · Reading
+- [ ] T29c Mail · Writing
+- [ ] T29d Mail · Sorting
 - [ ] T30 Calendar
 - [ ] T31 Project — `tasks/ch31-43.md`
 - [ ] T32 Canvas & Design
@@ -337,3 +340,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T28b | 1 | PASS | |
 | T28c | 1 | PASS | |
 | T28d | 1 | PASS | |
+| T28e | 1 | FAIL | a GIF focused past the fold stayed out of view |
+| T28e | 2 | PASS | |

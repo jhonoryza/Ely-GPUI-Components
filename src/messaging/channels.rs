@@ -1,16 +1,16 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, FontWeight, ImageSource, IntoElement, ParentElement, RenderOnce, SharedString,
-    Styled, Window, div, prelude::*,
+    App, ElementId, ImageSource, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
+    Window, div, prelude::*,
 };
 
 use crate::{
     data_display::{Avatar, CountBadge, Presence},
     forms::OnValue,
-    lists::{ListItem, SelectableList},
+    lists::{ListItem, Sections},
     primitives::{Icon, IconName},
-    theme::{ActiveTheme, AvatarSize, IconSize, TextSize},
+    theme::{ActiveTheme, AvatarSize, IconSize},
 };
 
 /// What unread messages add at a row's end: a count, and a pin before it when pinned.
@@ -247,63 +247,39 @@ impl RenderOnce for ChannelList {
                 .any(|(key, _)| key == open);
             assert!(listed, "no chat {open}");
         }
-        let theme = cx.theme();
-        let colors = &theme.colors;
-        let sections: Vec<_> = self
-            .sections
-            .into_iter()
-            .map(|(title, rows)| {
-                let lit = self
-                    .open
-                    .clone()
-                    .filter(|open| rows.iter().any(|(key, _)| key == open));
-                let list = rows.into_iter().fold(
-                    SelectableList::new((self.id.clone(), format!("section-{title}"))),
-                    |list, (key, row)| {
+        let open: OnValue = {
+            let (id, on_open) = (self.id.clone(), self.on_open.clone());
+            Rc::new(move |key, window, cx| {
+                log::info!("channel list {id:?}: open {key}");
+                if let Some(on_open) = &on_open {
+                    on_open(key, window, cx);
+                }
+            })
+        };
+        let sections = self.sections.into_iter().fold(
+            Sections::new(self.id.clone()),
+            |sections, (title, rows)| {
+                let rows = rows
+                    .into_iter()
+                    .map(|(key, row)| {
                         let item = match row {
                             ChatRow::Channel(item) => item.item(cx),
                             ChatRow::Direct(item) => item.item(cx),
                         };
-                        list.row(key, item)
-                    },
-                );
-                let open: OnValue = {
-                    let (id, on_open) = (self.id.clone(), self.on_open.clone());
-                    Rc::new(move |key, window, cx| {
-                        log::info!("channel list {id:?}: open {key}");
-                        if let Some(on_open) = &on_open {
-                            on_open(key, window, cx);
-                        }
+                        (key, item)
                     })
-                };
-                let picked = open.clone();
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_1()
-                    .child(
-                        div()
-                            .px_3()
-                            .text_size(theme.text_size(TextSize::Xs))
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .text_color(colors.fg_muted)
-                            .child(title),
-                    )
-                    .child(
-                        list.selected(lit)
-                            .on_change(move |keys, window, cx| {
-                                picked(keys.first().expect("a pick names a chat"), window, cx)
-                            })
-                            .on_activate(move |key, window, cx| open(key, window, cx)),
-                    )
-            })
-            .collect();
+                    .collect();
+                sections.section(title, rows)
+            },
+        );
         div()
             .debug_selector(|| "channel-list".into())
             .w_full()
-            .flex()
-            .flex_col()
-            .gap_4()
-            .children(sections)
+            .child(
+                sections
+                    .selected(self.open)
+                    .on_select(open.clone())
+                    .on_activate(open),
+            )
     }
 }

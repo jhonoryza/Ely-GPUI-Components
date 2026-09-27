@@ -20,6 +20,7 @@ pub struct ListItem {
     id: ElementId,
     title: SharedString,
     description: Option<SharedString>,
+    detail: Option<SharedString>,
     leading: Option<AnyElement>,
     trailing: Option<AnyElement>,
     selected: bool,
@@ -36,6 +37,7 @@ impl ListItem {
             id: id.into(),
             title: title.into(),
             description: None,
+            detail: None,
             leading: None,
             trailing: None,
             selected: false,
@@ -62,6 +64,12 @@ impl ListItem {
     /// A second line, quieter than the title.
     pub fn description(mut self, text: impl Into<SharedString>) -> Self {
         self.description = Some(text.into());
+        self
+    }
+
+    /// A third line, quieter still, such as a message's first words.
+    pub fn detail(mut self, text: impl Into<SharedString>) -> Self {
+        self.detail = Some(text.into());
         self
     }
 
@@ -164,6 +172,11 @@ impl RenderOnce for ListItem {
                         line(text)
                             .text_size(theme.text_size(TextSize::Sm))
                             .text_color(colors.fg_muted)
+                    }))
+                    .children(self.detail.map(|text| {
+                        line(text)
+                            .text_size(theme.text_size(TextSize::Sm))
+                            .text_color(colors.fg_subtle)
                     })),
             )
             .children(self.trailing.map(|trailing| {

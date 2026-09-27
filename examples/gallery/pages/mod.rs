@@ -15,6 +15,7 @@ mod generative;
 mod git;
 mod layout;
 mod lists;
+mod mail;
 mod media;
 mod menus;
 mod messaging;
@@ -71,6 +72,7 @@ pub const ALL: &[Page] = &[
     media::PAGE,
     files::PAGE,
     messaging::PAGE,
+    mail::PAGE,
     theme::PAGE,
 ];
 

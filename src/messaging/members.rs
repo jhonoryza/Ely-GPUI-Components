@@ -1,14 +1,14 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, FontWeight, ImageSource, IntoElement, ParentElement, RenderOnce, SharedString,
-    Styled, Window, div, prelude::*,
+    App, ElementId, ImageSource, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
+    Window, div, prelude::*,
 };
 
 use crate::{
     data_display::{Avatar, Badge, Presence},
     forms::OnValue,
-    lists::{ListItem, SelectableList},
+    lists::{ListItem, Sections},
     theme::{ActiveTheme, AvatarSize, TextSize},
 };
 
@@ -128,87 +128,61 @@ impl RenderOnce for MemberList {
         }
         let theme = cx.theme();
         let colors = &theme.colors;
-        let groups: Vec<_> = grouped(&self.members)
-            .into_iter()
-            .map(|(title, group)| {
-                let count = group.len();
-                let lit = self
-                    .selected
-                    .clone()
-                    .filter(|key| group.iter().any(|member| member.key == *key));
-                let list = group.into_iter().fold(
-                    SelectableList::new((self.id.clone(), format!("group-{title}"))),
-                    |list, member| {
-                        let avatar = Avatar::new(
-                            (self.id.clone(), format!("avatar-{}", member.key)),
-                            member.name.clone(),
-                        )
-                        .size(AvatarSize::Sm)
-                        .presence(member.presence);
-                        let avatar = match member.picture.clone() {
-                            Some(picture) => avatar.image(picture),
-                            None => avatar,
-                        };
-                        let row = ListItem::new(
-                            (self.id.clone(), format!("member-{}", member.key)),
-                            member.name.clone(),
-                        )
-                        .leading(avatar)
-                        .quiet(member.presence == Presence::Offline);
-                        let row = match member.status.clone() {
-                            Some(status) => row.description(status),
-                            None => row,
-                        };
-                        let row = match member.role.clone() {
-                            Some(role) => row.trailing(Badge::new(role)),
-                            None => row,
-                        };
-                        list.row(member.key.clone(), row)
-                    },
-                );
-                let (id, select, activate) = (
-                    self.id.clone(),
-                    self.on_select.clone(),
-                    self.on_activate.clone(),
-                );
-                let acted = id.clone();
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_1()
-                    .child(
-                        div()
-                            .px_3()
-                            .flex()
-                            .items_baseline()
-                            .gap_2()
-                            .text_size(theme.text_size(TextSize::Xs))
-                            .child(
-                                div()
-                                    .font_weight(FontWeight::SEMIBOLD)
-                                    .text_color(colors.fg_muted)
-                                    .child(title),
-                            )
-                            .child(div().text_color(colors.fg_subtle).child(count.to_string())),
-                    )
-                    .child(
-                        list.selected(lit)
-                            .on_change(move |keys, window, cx| {
-                                let key = keys.first().expect("a pick names a member");
-                                log::info!("member list {id}: select {key}");
-                                if let Some(select) = &select {
-                                    select(key, window, cx);
-                                }
-                            })
-                            .on_activate(move |key, window, cx| {
-                                log::info!("member list {acted}: activate {key}");
-                                if let Some(activate) = &activate {
-                                    activate(key, window, cx);
-                                }
-                            }),
-                    )
-            })
-            .collect();
+        let row = |member: &Member| {
+            let avatar = Avatar::new(
+                (self.id.clone(), format!("avatar-{}", member.key)),
+                member.name.clone(),
+            )
+            .size(AvatarSize::Sm)
+            .presence(member.presence);
+            let avatar = match member.picture.clone() {
+                Some(picture) => avatar.image(picture),
+                None => avatar,
+            };
+            let row = ListItem::new(
+                (self.id.clone(), format!("member-{}", member.key)),
+                member.name.clone(),
+            )
+            .leading(avatar)
+            .quiet(member.presence == Presence::Offline);
+            let row = match member.status.clone() {
+                Some(status) => row.description(status),
+                None => row,
+            };
+            let row = match member.role.clone() {
+                Some(role) => row.trailing(Badge::new(role)),
+                None => row,
+            };
+            (member.key.clone(), row)
+        };
+        let groups = grouped(&self.members).into_iter().fold(
+            Sections::new(self.id.clone()).counted(),
+            |groups, (title, group)| {
+                groups.section(title.into(), group.into_iter().map(row).collect())
+            },
+        );
+        let (select, activate): (OnValue, OnValue) = {
+            let (id, acted, on_select, on_activate) = (
+                self.id.clone(),
+                self.id.clone(),
+                self.on_select.clone(),
+                self.on_activate.clone(),
+            );
+            (
+                Rc::new(move |key, window, cx| {
+                    log::info!("member list {id}: select {key}");
+                    if let Some(on_select) = &on_select {
+                        on_select(key, window, cx);
+                    }
+                }),
+                Rc::new(move |key, window, cx| {
+                    log::info!("member list {acted}: activate {key}");
+                    if let Some(on_activate) = &on_activate {
+                        on_activate(key, window, cx);
+                    }
+                }),
+            )
+        };
         let empty = self.members.is_empty().then(|| {
             div()
                 .px_3()
@@ -220,11 +194,15 @@ impl RenderOnce for MemberList {
         div()
             .debug_selector(|| "member-list".into())
             .w_full()
-            .flex()
-            .flex_col()
-            .gap_4()
             .children(empty)
-            .children(groups)
+            .when(!self.members.is_empty(), |list| {
+                list.child(
+                    groups
+                        .selected(self.selected)
+                        .on_select(select)
+                        .on_activate(activate),
+                )
+            })
     }
 }
 

@@ -17,6 +17,7 @@ pub mod generative;
 pub mod git;
 pub mod layout;
 pub mod lists;
+pub mod mail;
 pub mod media;
 pub mod menus;
 pub mod messaging;
