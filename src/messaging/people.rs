@@ -12,7 +12,7 @@ use crate::{
     forms::Run,
     primitives::{Icon, IconName},
     theme::{ActiveTheme, AvatarSize, ControlSize, IconSize, TextSize},
-    typography::{Ellipsis, format},
+    typography::{Ellipsis, format, fresh},
 };
 
 /// Where someone stands: a dot in the presence's color and its word.
@@ -115,7 +115,10 @@ impl UserProfileCard {
 }
 
 impl RenderOnce for UserProfileCard {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        if self.zone.is_some() {
+            fresh((self.id.clone(), "clock"), window, cx);
+        }
         let theme = cx.theme();
         let colors = &theme.colors;
         let avatar = Avatar::new((self.id.clone(), "avatar"), self.name.clone())

@@ -181,18 +181,23 @@ impl RelativeTime {
     }
 }
 
+/// Redraws the view each tick while `id` stays on screen.
+pub(crate) fn fresh(id: impl Into<ElementId>, window: &mut Window, cx: &mut App) {
+    window.use_keyed_state(id, cx, |window, cx| -> Task<()> {
+        cx.spawn_in(window, async move |ticker, cx| {
+            loop {
+                cx.background_executor().timer(TICK).await;
+                if ticker.update(cx, |_, cx| cx.notify()).is_err() {
+                    return;
+                }
+            }
+        })
+    });
+}
+
 impl RenderOnce for RelativeTime {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        window.use_keyed_state(self.id, cx, |window, cx| -> Task<()> {
-            cx.spawn_in(window, async move |ticker, cx| {
-                loop {
-                    cx.background_executor().timer(TICK).await;
-                    if ticker.update(cx, |_, cx| cx.notify()).is_err() {
-                        return;
-                    }
-                }
-            })
-        });
+        fresh(self.id, window, cx);
         figure(format::relative(self.at, Timestamp::now()))
     }
 }

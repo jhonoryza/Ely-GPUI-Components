@@ -18,6 +18,7 @@ pub use emoji::Emoji;
 pub use fit::{Ellipsis, EllipsisTooltip, MiddleEllipsis};
 pub(crate) use fit::{LEADING, text_width};
 pub use format::DurationStyle;
+pub(crate) use formatted::fresh;
 pub use formatted::{
     CurrencyText, DateTimeText, DurationText, FileSizeText, NumberText, PercentText, PluralText,
     RelativeTime,

@@ -2,6 +2,7 @@ mod chart;
 mod files;
 mod generative;
 mod media;
+mod messaging;
 mod palette;
 mod tokens;
 
@@ -14,6 +15,7 @@ pub use chart::ChartSizes;
 pub use files::FileSizes;
 pub use generative::GenerativeSizes;
 pub use media::MediaSizes;
+pub use messaging::MessagingSizes;
 pub use palette::{Mix, Palette, Syntax};
 pub use tokens::{
     AvatarSize, ContainerSize, ControlSize, Density, Elevation, IconSize, Radius, TextSize,

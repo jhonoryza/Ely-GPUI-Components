@@ -159,10 +159,10 @@ fn a_suggestion_fills_the_status_and_save_hands_it_over(cx: &mut TestAppContext)
 }
 
 #[gpui::test]
-fn typed_words_save_as_they_stand(cx: &mut TestAppContext) {
+fn typed_words_save_trimmed(cx: &mut TestAppContext) {
     let (host, cx) = setting(None, cx);
     tab_to(2, cx);
-    cx.simulate_input("Reading");
+    cx.simulate_input("  Reading ");
     settle(cx);
     tab_to(5, cx);
     press("space", cx);

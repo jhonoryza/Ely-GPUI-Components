@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, ImageSource, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
+    App, Div, ElementId, ImageSource, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
     Window, div, img, prelude::*,
 };
 
@@ -11,6 +11,26 @@ use crate::{
     theme::{ActiveTheme, IconSize, Radius, TextSize},
     typography::Ellipsis,
 };
+
+/// A name's chip over a frame's lower corner, light on a dark wash.
+pub(crate) fn name_chip(cx: &App) -> Div {
+    let theme = cx.theme();
+    let colors = &theme.colors;
+    div()
+        .absolute()
+        .left_2()
+        .bottom_2()
+        .max_w(gpui::relative(0.8))
+        .flex()
+        .items_center()
+        .gap_1()
+        .px_2()
+        .py_0p5()
+        .rounded(theme.radius(Radius::Sm))
+        .bg(colors.media_backdrop.alpha(0.6))
+        .text_color(colors.on_media)
+        .text_size(theme.text_size(TextSize::Xs))
+}
 
 /// What a camera sees, in its own shape, from frames the host hands in; the host mirrors them if it will. With no frame it shows the camera off.
 #[derive(IntoElement)]
@@ -58,18 +78,8 @@ impl RenderOnce for CameraPreview {
                 .rounded(round)
         });
         let name = self.name.map(|name| {
-            div()
+            name_chip(cx)
                 .debug_selector(|| "camera-name".into())
-                .absolute()
-                .left_2()
-                .bottom_2()
-                .max_w(gpui::relative(0.8))
-                .px_2()
-                .py_0p5()
-                .rounded(theme.radius(Radius::Sm))
-                .bg(colors.media_backdrop.alpha(0.6))
-                .text_color(colors.on_media)
-                .text_size(theme.text_size(TextSize::Xs))
                 .child(Ellipsis::new(name))
         });
         framed(self.ratio, cx)

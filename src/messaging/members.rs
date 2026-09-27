@@ -104,14 +104,14 @@ impl MemberList {
     }
 }
 
-/// The groups `members` fall in, online first, each by name; empty groups drop out.
+/// The groups `members` fall in, online first, each by name whatever its case; empty groups drop out.
 fn grouped(members: &[Member]) -> Vec<(&'static str, Vec<&Member>)> {
     let group = |online: bool| {
         let mut group: Vec<&Member> = members
             .iter()
             .filter(|member| (member.presence != Presence::Offline) == online)
             .collect();
-        group.sort_by(|a, b| a.name.cmp(&b.name));
+        group.sort_by_key(|member| member.name.to_lowercase());
         group
     };
     [("Online", group(true)), ("Offline", group(false))]
@@ -250,13 +250,19 @@ mod tests {
             Member::new("d", "Dev", Presence::Offline),
             Member::new("a", "Ana", Presence::Away),
             Member::new("b", "Ben", Presence::Online),
+            Member::new("e", "bea", Presence::Online),
         ];
         assert_eq!(
             names(&members),
             [
                 (
                     "Online",
-                    vec!["Ana".to_string(), "Ben".into(), "Chloé".into()]
+                    vec![
+                        "Ana".to_string(),
+                        "bea".into(),
+                        "Ben".into(),
+                        "Chloé".into()
+                    ]
                 ),
                 ("Offline", vec!["Dev".into()])
             ]

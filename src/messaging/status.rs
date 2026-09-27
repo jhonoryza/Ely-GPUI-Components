@@ -88,7 +88,7 @@ impl Draft {
     fn status(&self, cx: &App) -> Status {
         Status {
             emoji: self.emoji.clone(),
-            text: self.input.read(cx).text().to_string().into(),
+            text: self.input.read(cx).text().trim().to_string().into(),
             clear: self.clear,
         }
     }

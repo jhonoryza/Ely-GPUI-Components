@@ -7,6 +7,7 @@ use ely_gpui_component::{
 use gpui::{AnyElement, App, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
 use jiff::{SignedDuration, Timestamp};
 
+mod calls;
 mod messages;
 mod people;
 
@@ -51,6 +52,15 @@ const SCRIPT: &[Step] = &[
     Step::Type("On leave till Monday"),
     Step::Wait(200),
     Step::Shot("status-draft"),
+    Step::DownAt("messaging-call", 73.0, 112.0),
+    Step::UpAt("messaging-call", 73.0, 112.0),
+    Step::HoverAt("messaging-share", 10.0, 10.0),
+    Step::Wait(200),
+    Step::Shot("presenting"),
+    Step::DownAt("messaging-incoming", 24.0, 14.0),
+    Step::UpAt("messaging-incoming", 24.0, 14.0),
+    Step::Wait(300),
+    Step::Shot("incoming-call"),
 ];
 
 /// The demo's chats: which is open and what waits unread in each.
@@ -238,5 +248,9 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(people::members(window, cx))
         .child(people::statuses(cx))
         .child(people::setter(window, cx))
+        .child(calls::controls(window, cx))
+        .child(calls::grid(window, cx))
+        .child(calls::share(window, cx))
+        .child(calls::incoming(window, cx))
         .into_any_element()
 }

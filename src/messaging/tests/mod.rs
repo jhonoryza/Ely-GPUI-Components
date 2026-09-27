@@ -9,6 +9,7 @@ use super::{
 };
 use crate::{data_display::Presence, primitives::FocusNext, theme::Theme};
 
+mod calls;
 mod messages;
 mod people;
 

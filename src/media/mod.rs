@@ -22,6 +22,7 @@ mod tests;
 
 pub use annotate::ImageAnnotator;
 pub use audio::{AudioSpectrum, AudioWaveform};
+pub(crate) use camera::name_chip;
 pub use camera::{CameraPreview, Device, DeviceKind, DeviceSelector};
 pub use controls::{MediaControls, PlaybackSpeedControl, Repeat, VolumeControl};
 pub use crop::Crop;
@@ -30,6 +31,7 @@ pub use listen::{AudioPlayer, Playlist, Track};
 pub use marks::{Mark, Tool};
 pub use model::{ModelViewer, Orbit};
 pub use player::{SPEEDS, VideoPlayer};
+pub(crate) use record::device_toggle;
 pub use record::{MicLevelMeter, Recording, ScreenRecorderControls};
 pub use scrubber::Scrubber;
 pub use strip::VideoThumbnailStrip;

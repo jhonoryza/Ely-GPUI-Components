@@ -25,6 +25,26 @@ pub(crate) fn lit(level: f32) -> usize {
     (level * SEGMENTS as f32).round() as usize
 }
 
+/// A device toggle, such as a microphone's: its icon shows on or off, and a press flips it, logged under `owner`.
+pub(crate) fn device_toggle(
+    owner: &'static str,
+    id: &ElementId,
+    key: &'static str,
+    icons: (IconName, IconName),
+    tip: &'static str,
+    (on, set): (bool, OnFlag),
+) -> ToggleButton {
+    let item = ToggleItem::new(key)
+        .icon(if on { icons.0 } else { icons.1 })
+        .tooltip(tip);
+    ToggleButton::new((id.clone(), key), item, on)
+        .size(ControlSize::Sm)
+        .on_toggle(move |to, window, cx| {
+            log::info!("{owner}: {key} {}", if to { "on" } else { "off" });
+            set(to, window, cx)
+        })
+}
+
 /// Where a screen recording stands.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Recording {
@@ -177,17 +197,7 @@ impl RenderOnce for ScreenRecorderControls {
                       icons: (IconName, IconName),
                       tip: &'static str,
                       set: Option<(bool, OnFlag)>| {
-            set.map(|(on, set)| {
-                let item = ToggleItem::new(key)
-                    .icon(if on { icons.0 } else { icons.1 })
-                    .tooltip(tip);
-                ToggleButton::new((id.clone(), key), item, on)
-                    .size(ControlSize::Sm)
-                    .on_toggle(move |to, window, cx| {
-                        log::info!("screen recorder: {key} {}", if to { "on" } else { "off" });
-                        set(to, window, cx)
-                    })
-            })
+            set.map(|set| device_toggle("screen recorder", &id, key, icons, tip, set))
         };
         let devices = self.mic.is_some() || self.camera.is_some();
         div()
