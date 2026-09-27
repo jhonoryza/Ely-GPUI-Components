@@ -212,4 +212,15 @@ mod tests {
         );
         assert!(contrast(blended, white) < contrast(gpui::hsla(0.0, 0.0, 0.0, 1.0), white));
     }
+
+    #[test]
+    fn each_level_starts_at_its_ratio() {
+        let met = |ratio: f32| grades(ratio).map(|(_, met)| met);
+        assert_eq!(met(2.9), [false, false, false, false]);
+        assert_eq!(met(3.1), [false, false, true, false]);
+        assert_eq!(met(4.4), [false, false, true, false]);
+        assert_eq!(met(4.6), [true, false, true, true]);
+        assert_eq!(met(6.9), [true, false, true, true]);
+        assert_eq!(met(7.1), [true, true, true, true]);
+    }
 }

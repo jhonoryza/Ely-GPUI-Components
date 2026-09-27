@@ -81,9 +81,15 @@ pub fn unhex(text: &str) -> Result<Vec<u8>, String> {
         .chunks(2)
         .map(|pair| {
             let digits: String = pair.iter().collect();
-            u8::from_str_radix(&digits, 16).map_err(|_| format!("{digits:?} is not hex"))
+            byte_of(&digits).ok_or_else(|| format!("{digits:?} is not hex"))
         })
         .collect()
+}
+
+/// The byte two hex digits spell; a sign or anything else is none.
+fn byte_of(digits: &str) -> Option<u8> {
+    (digits.len() == 2 && digits.chars().all(|ch| ch.is_ascii_hexdigit()))
+        .then(|| u8::from_str_radix(digits, 16).expect("two hex digits read"))
 }
 
 /// Percent-encoding undone: `%XX` becomes its byte and `+` a space.
@@ -96,10 +102,7 @@ pub fn unpercent(text: &str) -> Result<Vec<u8>, String> {
                 let digits = text
                     .get(ix + 1..ix + 3)
                     .ok_or("a % needs two hex digits after it")?;
-                out.push(
-                    u8::from_str_radix(digits, 16)
-                        .map_err(|_| format!("%{digits} is not an escape"))?,
-                );
+                out.push(byte_of(digits).ok_or_else(|| format!("%{digits} is not an escape"))?);
                 ix += 3;
             }
             b'+' => {
@@ -290,6 +293,13 @@ mod tests {
         assert!(unbase64("TWE").is_err());
         assert!(unbase64("T===").is_err(), "three pads say nothing");
         assert!(unbase64("TQ==TWFu").is_err(), "pads end the text");
+    }
+
+    #[test]
+    fn a_sign_is_no_hex_digit() {
+        assert!(unhex("+f").is_err());
+        assert!(unpercent("%+f").is_err());
+        assert_eq!(unhex("0f").expect("hex"), [15]);
     }
 
     #[test]

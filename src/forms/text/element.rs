@@ -283,21 +283,22 @@ impl Element for TextElement {
         );
         let line_height = window.line_height();
         window.with_content_mask(Some(ContentMask { bounds }), |window| {
+            let mut origins = Vec::with_capacity(prepaint.lines.len());
+            let mut top = Pixels::ZERO;
+            for (_, line) in &prepaint.lines {
+                origins.push(bounds.origin - scroll + point(Pixels::ZERO, top));
+                top += line.size(line_height).height;
+            }
+            for ((_, line), origin) in prepaint.lines.iter().zip(&origins) {
+                line.paint_background(*origin, line_height, TextAlign::Left, None, window, cx)
+                    .expect("text input wash paint failed");
+            }
             for rect in prepaint.selections.drain(..) {
                 window.paint_quad(fill(rect, prepaint.selection_color));
             }
-            let mut top = Pixels::ZERO;
-            for (_, line) in &prepaint.lines {
-                line.paint(
-                    bounds.origin - scroll + point(Pixels::ZERO, top),
-                    line_height,
-                    TextAlign::Left,
-                    None,
-                    window,
-                    cx,
-                )
-                .expect("text input paint failed");
-                top += line.size(line_height).height;
+            for ((_, line), origin) in prepaint.lines.iter().zip(&origins) {
+                line.paint(*origin, line_height, TextAlign::Left, None, window, cx)
+                    .expect("text input paint failed");
             }
             if let Some(caret) = prepaint.caret.take() {
                 window.paint_quad(fill(caret, prepaint.caret_color));

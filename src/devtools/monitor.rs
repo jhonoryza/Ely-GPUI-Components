@@ -1,6 +1,6 @@
 use gpui::{
-    App, ElementId, FontWeight, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
-    Window, div,
+    App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement, RenderOnce,
+    SharedString, Styled, Window, div,
 };
 
 use crate::{
@@ -73,6 +73,7 @@ impl RenderOnce for ResourceMonitor {
             let latest = *reading.values.last().expect("a reading has values");
             let shown = reading_line(reading);
             div()
+                .debug_selector(move || format!("monitor-tile-{ix}"))
                 .flex_1()
                 .min_w(theme.label_width())
                 .flex()
@@ -97,6 +98,8 @@ impl RenderOnce for ResourceMonitor {
                         .gap_2()
                         .child(
                             div()
+                                .flex_1()
+                                .min_w_0()
                                 .text_size(theme.text_size(TextSize::Lg))
                                 .font_weight(FontWeight::SEMIBOLD)
                                 .child(shown),

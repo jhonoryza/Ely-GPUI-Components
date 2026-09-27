@@ -52,6 +52,23 @@ pub struct Container {
 
 type OnKey = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
+/// A container's line under its name: its image, its ports, and its load while it runs.
+fn described(container: &Container) -> String {
+    let ports = match container.ports.is_empty() {
+        true => String::new(),
+        false => format!(" · {}", container.ports.join(", ")),
+    };
+    let load = match container.state == ContainerState::Running {
+        true => format!(
+            " · {} · {}",
+            format::percent(container.cpu as f64, 0, false),
+            format::file_size(container.memory, true)
+        ),
+        false => String::new(),
+    };
+    format!("{}{ports}{load}", container.image)
+}
+
 /// Containers on a host, each with its image and ports, its load while it runs, and where it stands. Its buttons, each shown when the owner handles it, start or stop it, restart it and open its logs; Enter or a double press opens it.
 #[derive(IntoElement)]
 pub struct ContainerList {
@@ -133,24 +150,10 @@ impl RenderOnce for ContainerList {
                         )
                     })
                 };
-                let load = if running {
-                    format!(
-                        " · {} · {}",
-                        format::percent(container.cpu as f64, 0, false),
-                        format::file_size(container.memory, true)
-                    )
-                } else {
-                    String::new()
-                };
-                let ports = if container.ports.is_empty() {
-                    String::new()
-                } else {
-                    format!(" · {}", container.ports.join(", "))
-                };
                 list.row(
                     key.clone(),
                     ListItem::new((id.clone(), format!("row-{key}")), container.name.clone())
-                        .description(format!("{}{ports}{load}", container.image))
+                        .description(described(container))
                         .leading(Icon::new(IconName::Package).size(IconSize::Md).color(muted))
                         .trailing(
                             div()
@@ -354,7 +357,34 @@ impl RenderOnce for PodList {
 
 #[cfg(test)]
 mod tests {
-    use super::{Pod, PodPhase, in_namespace, namespaces, running_for};
+    use super::{
+        Container, ContainerState, Pod, PodPhase, described, in_namespace, namespaces, running_for,
+    };
+    use crate::data_display::Tone;
+
+    #[test]
+    fn a_clean_exit_rests_quiet_and_a_stopped_container_shows_no_load() {
+        assert_eq!(
+            ContainerState::Exited(0).badge(),
+            (Tone::Neutral, "Exited".to_string())
+        );
+        assert_eq!(
+            ContainerState::Exited(1).badge(),
+            (Tone::Danger, "Exited 1".to_string())
+        );
+        let mut web = Container {
+            key: "web".into(),
+            name: "web".into(),
+            image: "img".into(),
+            state: ContainerState::Running,
+            ports: vec!["80:80".into()],
+            cpu: 0.25,
+            memory: 1 << 20,
+        };
+        assert_eq!(described(&web), "img · 80:80 · 25% · 1.0 MiB");
+        web.state = ContainerState::Exited(0);
+        assert_eq!(described(&web), "img · 80:80");
+    }
 
     #[test]
     fn a_pod_runs_from_its_start_and_a_clock_ahead_reads_as_now() {

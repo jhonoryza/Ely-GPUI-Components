@@ -393,3 +393,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T33c | 1 | FAIL | the socket log stayed at its top; a revealed secret stayed open across environments; the collection drew drags it never moved; the builder's refill, Send's rest and Bearer, the indented body, the eye and a field's pick path untested |
 | T33c | 2 | FAIL | where an Inside drop lands in a folder that holds something went untested |
 | T33c | 3 | PASS | |
+| T33d | 1 | FAIL | text fields never painted a highlight's wash; a tile's value ran past 280px; a stray + read as a hex digit; the WCAG thresholds, an exit's badge, a stopped row's load and the meter's clamp untested |
