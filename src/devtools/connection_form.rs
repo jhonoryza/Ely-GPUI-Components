@@ -24,15 +24,23 @@ pub enum TestState {
     Failed(SharedString),
 }
 
-/// The port a field names, from 1 to 65535.
+/// The port `text` names, from 1 to 65535.
+pub(crate) fn parse_port(text: &str) -> Option<u16> {
+    text.trim().parse().ok().filter(|port| *port > 0)
+}
+
 fn port(field: &Entity<TextInput>, cx: &App) -> Option<u16> {
-    field
-        .read(cx)
-        .text()
-        .trim()
-        .parse()
-        .ok()
-        .filter(|port| *port > 0)
+    parse_port(field.read(cx).text())
+}
+
+/// Whether a connection is filled enough to test or save: a name, and a file for SQLite, or a host and a port for the rest.
+pub(crate) fn ready(name: &str, engine: Engine, host: &str, database: &str, port: &str) -> bool {
+    let filled = |text: &str| !text.trim().is_empty();
+    filled(name)
+        && match engine {
+            Engine::Sqlite => filled(database),
+            _ => filled(host) && parse_port(port).is_some(),
+        }
 }
 
 /// The form's own fields, filled from the connection named by `seed`.
@@ -162,9 +170,15 @@ impl RenderOnce for ConnectionForm {
             now.port.clone(),
         );
         let file = engine == Engine::Sqlite;
-        let filled = |input: &Entity<TextInput>| !input.read(cx).text().trim().is_empty();
+        let text = |input: &Entity<TextInput>| input.read(cx).text().to_string();
         let good_port = file || port(&port_field, cx).is_some();
-        let ready = filled(&name) && filled(if file { &database } else { &host }) && good_port;
+        let ready = ready(
+            &text(&name),
+            engine,
+            &text(&host),
+            &text(&database),
+            &text(&port_field),
+        );
         let testing = self.test == Some(TestState::Testing);
         let (chosen, switched) = (fields.clone(), fields.clone());
         let field = |key: &'static str, label: &'static str, control: gpui::AnyElement| {
@@ -278,5 +292,42 @@ impl RenderOnce for ConnectionForm {
                             .on_click(ask(self.on_save, "save")),
                     ),
             )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_port, ready};
+    use crate::devtools::Engine;
+
+    #[test]
+    fn a_port_runs_from_one_to_65535() {
+        assert_eq!(parse_port("5433"), Some(5433));
+        assert_eq!(parse_port(" 22 "), Some(22));
+        assert_eq!(parse_port("0"), None);
+        assert_eq!(parse_port("70000"), None);
+        assert_eq!(parse_port("http"), None);
+    }
+
+    #[test]
+    fn a_connection_waits_for_a_name_and_a_place() {
+        assert!(ready("Shop", Engine::Postgres, "localhost", "", "5432"));
+        assert!(
+            !ready("", Engine::Postgres, "localhost", "", "5432"),
+            "no name"
+        );
+        assert!(!ready("Shop", Engine::Postgres, "", "", "5432"), "no host");
+        assert!(
+            !ready("Shop", Engine::Postgres, "localhost", "", "0"),
+            "a bad port"
+        );
+        assert!(
+            !ready("Notes", Engine::Sqlite, "localhost", "", "5432"),
+            "SQLite waits for a file"
+        );
+        assert!(
+            ready("Notes", Engine::Sqlite, "", "notes.db", ""),
+            "and needs nothing else"
+        );
     }
 }

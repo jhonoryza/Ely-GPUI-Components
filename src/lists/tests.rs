@@ -4,9 +4,9 @@ use std::{
 };
 
 use gpui::{
-    Context, Entity, IntoElement, Modifiers, ParentElement, Pixels, Point, Render, ScrollDelta,
-    ScrollWheelEvent, SharedString, Styled, TestAppContext, TouchPhase, VisualTestContext, Window,
-    div, point, px,
+    Context, Entity, InteractiveElement, IntoElement, Modifiers, ParentElement, Pixels, Point,
+    Render, ScrollDelta, ScrollWheelEvent, SharedString, StatefulInteractiveElement, Styled,
+    TestAppContext, TouchPhase, VisualTestContext, Window, div, point, px,
 };
 
 use super::{
@@ -430,4 +430,42 @@ fn a_narrow_listing_keeps_room_for_the_name(cx: &mut TestAppContext) {
         cx.theme().label_width().to_pixels(window.rem_size())
     });
     assert!(name.size.width >= least, "{name:?} under {least:?}");
+}
+
+/// A list whose row holds a button kept by `row_action`, which keeps what the list reports and what the button heard.
+struct Held(Vec<SharedString>, Rc<Cell<usize>>);
+
+impl Render for Held {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let (view, pressed) = (cx.entity(), self.1.clone());
+        let button = div()
+            .id("held-button")
+            .debug_selector(|| "held-button".into())
+            .size(px(24.0))
+            .on_click(move |_, _, _| pressed.set(pressed.get() + 1));
+        SelectableList::new("held")
+            .row(
+                "a",
+                ListItem::new("a", "A").trailing(super::row_action(button)),
+            )
+            .on_change(move |keys, _, cx| view.update(cx, |held, _| held.0 = keys.to_vec()))
+            .w(px(240.0))
+    }
+}
+
+#[gpui::test]
+fn a_press_on_a_rows_button_leaves_the_row_alone(cx: &mut TestAppContext) {
+    setup(cx);
+    let pressed = Rc::new(Cell::new(0));
+    let heard = pressed.clone();
+    let (view, cx) = cx.add_window_view(move |_, _| Held(Vec::new(), heard));
+    settle(cx);
+    let button = cx.debug_bounds("held-button").expect("the row's button");
+    cx.simulate_click(button.center(), Modifiers::none());
+    settle(cx);
+    assert_eq!(pressed.get(), 1, "the button heard its press");
+    assert!(
+        view.read_with(cx, |held, _| held.0.is_empty()),
+        "the row stayed unselected"
+    );
 }

@@ -1,8 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, AppContext as _, ElementId, Entity, FontWeight, IntoElement, ParentElement, RenderOnce,
-    SharedString, Styled, Window, div, relative,
+    App, AppContext as _, ElementId, Entity, FontWeight, InteractiveElement, IntoElement,
+    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div,
+    relative, rems,
 };
 
 use super::schema::{Field, FieldKey};
@@ -11,6 +12,7 @@ use crate::{
     canvas::{OnEdit, editing},
     data_display::{Badge, Tone},
     forms::{Checkbox, Choice, InlineEdit, Input, MultiSelect, Select, Switch, TextInput},
+    layout::on_axis,
     primitives::IconName,
     theme::{ActiveTheme, TextSize},
     typography::Ellipsis,
@@ -34,9 +36,10 @@ const TYPES: [&str; 10] = [
 const SHARES: [f32; 6] = [0.28, 0.24, 0.1, 0.1, 0.2, 0.08];
 
 fn cells(parts: [gpui::AnyElement; 6]) -> gpui::Div {
-    parts.into_iter().zip(SHARES).fold(
-        div().flex().items_center().w_full(),
-        |row, (part, share)| {
+    parts
+        .into_iter()
+        .zip(SHARES)
+        .fold(div().flex().items_center(), |row, (part, share)| {
             row.child(
                 div()
                     .flex_none()
@@ -45,11 +48,10 @@ fn cells(parts: [gpui::AnyElement; 6]) -> gpui::Div {
                     .pr_2()
                     .child(part),
             )
-        },
-    )
+        })
 }
 
-/// A table's fields to edit in place: a name and a default rewritten on a press, a type from the common ones, whether it may be empty, and the primary key. A foreign key shows where it points. Minus drops a field and Add field appends one; each edit hands the owner every field.
+/// A table's fields to edit in place, scrolling sideways in a box too narrow for their columns: a name and a default rewritten on a press, a type from the common ones, whether it may be empty, and the primary key. A foreign key shows where it points. Minus drops a field and Add field appends one; each edit hands the owner every field.
 #[derive(IntoElement)]
 pub struct TableStructureEditor {
     id: ElementId,
@@ -180,12 +182,22 @@ impl RenderOnce for TableStructureEditor {
                 all.push(Field::new(name, "text").nullable());
             },
         );
+        let least = rems(theme.label_width().0 * 4.0);
         div()
             .flex()
             .flex_col()
             .gap_2()
-            .child(head)
-            .children(rows)
+            .child(
+                on_axis(div().id((id.clone(), "sideways")).overflow_x_scroll()).child(
+                    div()
+                        .min_w(least)
+                        .flex()
+                        .flex_col()
+                        .gap_2()
+                        .child(head)
+                        .children(rows),
+                ),
+            )
             .child(
                 div().flex().child(
                     Button::new((id, "add"), "Add field")

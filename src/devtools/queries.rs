@@ -1,12 +1,14 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window, div,
+    App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, SharedString,
+    StatefulInteractiveElement, Styled, Window, div, rems,
 };
 use jiff::Timestamp;
 
 use crate::{
     forms::{Input, TextInput},
+    layout::on_axis,
     lists::{ListItem, SelectableList},
     primitives::{Icon, IconName},
     tables::{Cell, Column, TreeRow, TreeTable},
@@ -179,7 +181,7 @@ fn row(step: &PlanStep, whole: f64) -> TreeRow {
     .children(step.children.iter().map(|child| row(child, whole)))
 }
 
-/// A query's plan as a tree of steps, each with its share of the whole cost drawn as a bar, the rows it yields and its time. Every step starts open.
+/// A query's plan as a tree of steps, each with its share of the whole cost drawn as a bar, the rows it yields and its time. Every step starts open; a box narrower than its columns scrolls sideways.
 #[derive(IntoElement)]
 pub struct QueryPlanViewer {
     id: ElementId,
@@ -203,20 +205,22 @@ fn keys(step: &PlanStep, out: &mut Vec<SharedString>) {
 
 impl RenderOnce for QueryPlanViewer {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let step = gpui::rems(cx.theme().label_width().0 * 2.0);
+        let wide = cx.theme().label_width();
         let mut open = Vec::new();
         keys(&self.plan, &mut open);
-        TreeTable::new(
-            self.id,
+        let table = TreeTable::new(
+            (self.id.clone(), "table"),
             [
-                Column::new("step", "Step").width(step),
+                Column::new("step", "Step").width(wide),
                 Column::new("cost", "Cost").unsorted(),
                 Column::new("rows", "Rows").end(),
                 Column::new("ms", "Time").end().decimals(1).suffix(" ms"),
             ],
             [row(&self.plan, self.plan.cost)],
         )
-        .open(open)
+        .open(open);
+        on_axis(div().id((self.id, "sideways")).overflow_x_scroll())
+            .child(div().min_w(rems(wide.0 * 2.5)).child(table))
     }
 }
 

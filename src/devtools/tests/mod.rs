@@ -1,20 +1,25 @@
 use gpui::{
-    AnyElement, Context, Entity, IntoElement, KeyBinding, ParentElement, Render, Styled,
+    AnyElement, App, Context, Entity, IntoElement, KeyBinding, ParentElement, Render, Styled,
     TestAppContext, VisualTestContext, Window, div, px,
 };
 
-use super::{Connection, ConnectionManager, Engine, Field, TableStructureEditor};
+use super::{Connection, ConnectionForm, ConnectionManager, Engine, Field, TableStructureEditor};
 use crate::{forms, primitives::FocusNext, theme::Theme};
 
-/// A view that shows one tool and keeps the words it heard.
+type Part = fn(&Bench, &mut Window, &mut App, Entity<Bench>) -> AnyElement;
+
+/// A view that shows one tool, keeps the words it heard, and holds a choice among its part's cases.
 struct Bench {
-    part: fn(Entity<Bench>) -> AnyElement,
+    part: Part,
     said: Vec<String>,
+    choice: usize,
 }
 
 impl Render for Bench {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        div().w(px(640.0)).child((self.part)(cx.entity()))
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let owner = cx.entity();
+        let part = (self.part)(self, window, cx, owner);
+        div().w(px(640.0)).child(part)
     }
 }
 
@@ -26,10 +31,7 @@ fn settle(cx: &mut VisualTestContext) {
     cx.run_until_parked();
 }
 
-fn bench(
-    part: fn(Entity<Bench>) -> AnyElement,
-    cx: &mut TestAppContext,
-) -> (Entity<Bench>, &mut VisualTestContext) {
+fn bench(part: Part, cx: &mut TestAppContext) -> (Entity<Bench>, &mut VisualTestContext) {
     cx.update(|cx| {
         Theme::init(cx);
         Theme::update(cx, |theme| theme.reduced_motion = true);
@@ -39,6 +41,7 @@ fn bench(
     let (host, cx) = cx.add_window_view(|_, _| Bench {
         part,
         said: Vec::new(),
+        choice: 0,
     });
     settle(cx);
     (host, cx)
@@ -71,7 +74,7 @@ fn tap(key: &str, cx: &mut VisualTestContext) {
     settle(cx);
 }
 
-fn manager(owner: Entity<Bench>) -> AnyElement {
+fn manager(_: &Bench, _: &mut Window, _: &mut App, owner: Entity<Bench>) -> AnyElement {
     let [opened, edited, picked] = [(); 3].map(|_| owner.clone());
     ConnectionManager::new(
         "connections",
@@ -97,7 +100,7 @@ fn enter_opens_a_connection_and_a_rows_button_leaves_the_row_alone(cx: &mut Test
     assert_eq!(said(&host, cx), ["open local", "edit local"]);
 }
 
-fn structure(owner: Entity<Bench>) -> AnyElement {
+fn structure(_: &Bench, _: &mut Window, _: &mut App, owner: Entity<Bench>) -> AnyElement {
     TableStructureEditor::new("structure", [Field::new("id", "int").primary()])
         .on_change(move |fields, _, cx| {
             let names: Vec<String> = fields
@@ -130,4 +133,64 @@ fn an_address_names_the_host_or_the_file() {
     let mut file = Connection::new("file", "File", Engine::Sqlite);
     file.database = "app.db".into();
     assert_eq!(file.address(), "app.db");
+}
+
+fn form(bench: &Bench, _: &mut Window, _: &mut App, owner: Entity<Bench>) -> AnyElement {
+    let connection = match bench.choice {
+        0 => {
+            let mut shop = Connection::new("shop", "Shop", Engine::Postgres);
+            shop.database = "shop".into();
+            shop
+        }
+        _ => Connection::new("cache", "Cache", Engine::Redis),
+    };
+    ConnectionForm::new("form", connection)
+        .on_save(move |connection, _, cx| {
+            say(
+                &owner,
+                format!("save {} {}", connection.name, connection.address()),
+                cx,
+            )
+        })
+        .into_any_element()
+}
+
+/// Save is the form's last stop, so a step back from nothing reaches it.
+fn last(cx: &mut VisualTestContext) {
+    cx.update(|window, _| {
+        window.blur();
+        window.focus_prev();
+    });
+    settle(cx);
+}
+
+#[gpui::test]
+fn save_takes_the_form_and_a_new_connection_refills_it(cx: &mut TestAppContext) {
+    let (host, cx) = bench(form, cx);
+    last(cx);
+    tap("space", cx);
+    host.update(cx, |bench, cx| {
+        bench.choice = 1;
+        cx.notify();
+    });
+    settle(cx);
+    last(cx);
+    tap("space", cx);
+    assert_eq!(
+        said(&host, cx),
+        ["save Shop localhost:5432/shop", "save Cache localhost:6379"]
+    );
+}
+
+/// Stops: the name, then the engine.
+#[gpui::test]
+fn another_engine_brings_its_port(cx: &mut TestAppContext) {
+    let (host, cx) = bench(form, cx);
+    tab(2, cx);
+    for key in ["down", "down", "enter"] {
+        tap(key, cx);
+    }
+    last(cx);
+    tap("space", cx);
+    assert_eq!(said(&host, cx), ["save Shop localhost:3306/shop"]);
 }

@@ -237,7 +237,7 @@ impl RenderOnce for RedisKeyBrowser {
             .child(
                 div()
                     .flex_1()
-                    .min_w(theme.label_width() * 2.)
+                    .min_w(theme.label_width())
                     .flex()
                     .flex_col()
                     .gap_2()
@@ -248,7 +248,7 @@ impl RenderOnce for RedisKeyBrowser {
                     .child(format!("{} of {} keys", found.len(), self.keys.len()))
                     .child(list),
             )
-            .child(div().flex_1().min_w(theme.label_width() * 2.).child(detail))
+            .child(div().flex_1().min_w(theme.label_width()).child(detail))
     }
 }
 

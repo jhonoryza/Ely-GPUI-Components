@@ -270,8 +270,7 @@ pub fn structure(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
             .flex_wrap()
             .gap_6()
             .child(
-                div().w(px(620.)).child(
-                    TableStructureEditor::new("devtools-structure", fields)
+                div().w(px(660.)).child(TableStructureEditor::new("devtools-structure", fields)
                         .on_change(move |next, _, cx| change(&edited, cx, |build| build.fields = next)),
                 ),
             )
