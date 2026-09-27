@@ -23,6 +23,7 @@ pub use picker::{DatePicker, DateRangePicker};
 pub(crate) use picker::{Face, dropdown, picker_field};
 pub use relative::{RelativeDatePicker, RelativeRange};
 pub use rule::CronRule;
+pub(crate) use rule::weekday_words;
 pub use time::{DateTimePicker, DurationPicker, TimePicker};
 pub use week::WeekPicker;
 pub use zone::TimezoneSelect;

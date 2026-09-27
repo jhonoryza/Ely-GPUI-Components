@@ -141,7 +141,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A row that holds text beside fixed parts lets the text give way: the text takes `flex_1().min_w_0()` and an `Ellipsis`; counts, icons, dates and chevrons take `flex_none`. A label that must stay whole wraps in that block instead, as `forms::Checkbox`'s does.
 - A mark over a text field reads the field at paint time, from a canvas laid over it (`collab::RemoteCursor`): by then `TextInput::bounds_for` holds this frame's layout, and a still page never renders again to catch up.
 - A callback field holds a named `type` alias; clippy's type_complexity rejects `Option<Rc<dyn Fn(..)>>`. A chapter shares one alias per shape.
-- A component that fills its container says `w_full` on its root. As a window's root, or in a flex row, it would shrink to its text's narrowest width.
+- A component that fills its container says `min_w_full` on its root. As a window's root, or in a flex row, an auto width would shrink to its text's narrowest width. A percent width does not stretch in a flex box, and taffy 0.9 lays a flex box out once at unknown width while a block parent measures its content, then keeps that layout when the width comes out the same: its `w_full` children stay at content width (`forms::FormField`). Roots made before T30d still say `w_full`; T44 moves them.
 - A field's `Highlight` sets color, wash, weight, slant and strike per span; measuring and painting share one set of runs, so wrapped heights match.
 - A block editor keeps one undo for the document: text and structure together, as snapshots through `forms::History`; it takes Undo and Redo before its fields do.
 - gpui calls focus listeners only while the window is active. A test that needs focus events activates its window with `window.activate_window()`.
@@ -156,6 +156,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - The system time zone comes from `typography::format::system_zone`, which fails loud; jiff's `TimeZone::system()` falls back to UTC in silence.
 - A Select with nothing to pick stays shut: disabled, it shows its placeholder; open, it fails (`media::DeviceSelector` says no device was found).
 - A list opens with its cursor on the current choice: Select on the chosen row, Combobox on its value, MultiSelect on the first one ticked, SelectableList on its first selected row. A selection the owner makes, not the echo of the list's own pick, moves SelectableList's cursor there.
+- An event repeats as RFC 5545 has it: weeks count from the start's own week, and a month or a year without the start's date is passed over (`calendar::Recurrence`).
 - A search step, a tool call or an agent's step says where it stands with `chat::StepState` and draws it with `chat::step_mark`.
 - A flex line whose free space goes to an auto margin loses its gaps in taffy 0.9. A row that parts left and right groups its sides and uses `justify_between`; `ml_auto` is safe only beside a `flex_1` item that leaves no free space.
 - A header that holds a name beside counts and actions wraps: `flex_wrap`, the name `flex_1` with `min_w(label_width)`, the rest one `flex_none` group that drops below.

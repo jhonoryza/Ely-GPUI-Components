@@ -273,7 +273,7 @@ fn join(words: &[String]) -> String {
 }
 
 /// Weekdays in words, Monday first, with a run of three or more as a span.
-fn weekday_words(values: &[u8]) -> String {
+pub(crate) fn weekday_words(values: &[u8]) -> String {
     let mut monday_first: Vec<u8> = values.iter().map(|day| (day + 6) % 7).collect();
     monday_first.sort_unstable();
     let name = |monday_zero: u8| DAY_NAMES[((monday_zero + 1) % 7) as usize].to_string();

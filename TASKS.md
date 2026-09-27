@@ -109,7 +109,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T29d Mail · Sorting
 - [x] T30a Calendar · Months
 - [x] T30b Calendar · Time grid
-- [ ] T30c Calendar · Agenda and people
+- [x] T30c Calendar · Agenda and people
 - [ ] T30d Calendar · Editing
 - [ ] T31 Project — `tasks/ch31-43.md`
 - [ ] T32 Canvas & Design
@@ -124,7 +124,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [ ] T41 Maps
 - [ ] T42 Misc
 - [ ] T43 Library Tooling
-- [ ] T44 Capture: every component, light and dark, plus motion clips
+- [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` move to `min_w_full`, checked at 280px
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark, motion
 - [ ] T46 E2E: Playwright against the built site
 - [ ] T47 Ship: GitHub repo (public), CI, Pages deploy
@@ -357,3 +357,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T30a | 1 | PASS | |
 | T30b | 1 | FAIL | the week and day views froze the line at now and today: the moment read once went down as given and turned the ticker off |
 | T30b | 2 | PASS | |
+| T30c | 1 | PASS | |

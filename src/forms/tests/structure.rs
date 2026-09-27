@@ -1,6 +1,6 @@
 use gpui::{
-    AppContext as _, Context, Entity, IntoElement, KeyUpEvent, Keystroke, ParentElement, Render,
-    TestAppContext, VisualTestContext, Window, div,
+    AppContext as _, Context, Entity, InteractiveElement, IntoElement, KeyUpEvent, Keystroke,
+    ParentElement, Render, Styled, TestAppContext, VisualTestContext, Window, div, px,
 };
 
 use super::setup;
@@ -132,5 +132,38 @@ fn field_array_buttons_remove_their_own_row_and_add_one(cx: &mut TestAppContext)
     assert_eq!(
         view.read_with(cx, |view, _| view.rows.clone()),
         ["a", "c", "new"]
+    );
+}
+
+/// A field over a long line in a column that a padded block measures by content.
+struct Narrow;
+
+impl Render for Narrow {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let control = div().debug_selector(|| "narrow-control".into()).h_2();
+        div().w(px(280.)).flex().flex_col().child(
+            div().p_5().child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .child(FormField::new("narrow", "Name").child(control))
+                    .child("A line long enough to wrap in a narrow card, so the column fills it."),
+            ),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_field_fills_a_column_its_block_measures_by_content(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Narrow);
+    cx.run_until_parked();
+    let control = cx
+        .debug_bounds("narrow-control")
+        .expect("the control draws");
+    assert_eq!(
+        control.size.width,
+        px(240.),
+        "the field spans the card inside its padding"
     );
 }

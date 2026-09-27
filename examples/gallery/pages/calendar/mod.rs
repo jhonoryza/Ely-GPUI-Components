@@ -7,6 +7,7 @@ use gpui::{
 };
 use jiff::{Timestamp, ToSpan, civil::Date, tz::TimeZone};
 
+mod editing;
 mod months;
 mod people;
 mod times;
@@ -109,6 +110,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(times::day(window, cx))
         .child(people::agenda(window, cx))
         .child(people::details(window, cx))
+        .child(editing::editor(window, cx))
+        .child(editing::availability(window, cx))
         .child(months::year(window, cx))
         .child(months::marks(cx))
         .into_any_element()

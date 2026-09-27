@@ -275,7 +275,7 @@ impl RenderOnce for FormField {
             .flex()
             .flex_col()
             .gap_1p5()
-            .w_full()
+            .min_w_full()
             .child(self.label)
             .children(self.children)
             .children(note)
