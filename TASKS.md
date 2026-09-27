@@ -101,7 +101,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T28a Messaging · Channels
 - [x] T28b Messaging · Messages
 - [x] T28c Messaging · People
-- [ ] T28d Messaging · Calls
+- [x] T28d Messaging · Calls
 - [ ] T28e Messaging · Stickers and GIFs
 - [ ] T29 Mail
 - [ ] T30 Calendar
@@ -336,3 +336,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T28a | 1 | PASS | |
 | T28b | 1 | PASS | |
 | T28c | 1 | PASS | |
+| T28d | 1 | PASS | |

@@ -12,6 +12,7 @@ use crate::{data_display::Presence, primitives::FocusNext, theme::Theme};
 mod calls;
 mod messages;
 mod people;
+mod pickers;
 
 fn setup(cx: &mut TestAppContext) {
     cx.update(|cx| {

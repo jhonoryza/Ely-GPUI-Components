@@ -108,7 +108,7 @@ impl RenderOnce for CallControls {
             ),
             toggle(
                 "share",
-                (IconName::ScreenShareOff, IconName::ScreenShare),
+                (IconName::ScreenShare, IconName::ScreenShareOff),
                 "Share screen",
                 self.share,
             ),

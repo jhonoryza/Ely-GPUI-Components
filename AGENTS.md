@@ -107,7 +107,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - The test platform never runs next-frame callbacks, and its text metrics are simplified: each character takes a fixed advance. Tests refresh the window in place of the display link, and click where layout does not hang on text, such as padding and slots.
 - An absolute element with no insets sits where it would flow: after the content in a block, inside the padding in a flex box. A canvas that measures its parent pins itself with `.top_0().left_0()`.
 - Keyed state lives while its element renders in consecutive frames. An overlay rendered only while open starts fresh each time.
-- Long grids scroll in a `uniform_list`. gpui has no nearest scroll, so a key move up scrolls with `Top` and down with `Bottom` (`forms::glyphs`).
+- Long grids scroll in a `uniform_list`. gpui has no nearest scroll, so a key move up scrolls with `Top` and down with `Bottom` (`forms::picks`). A searchable grid of picks, emoji, icons or stickers, goes through `forms::picks`'s `Grid`; `uniform_list` gives every row one height, so a grid of large cells shows one group at a time instead of titles (`messaging::StickerPicker`).
 - Masks reshape edits inside `TextInput::set_fit`, which sees the replaced range and the typed text. A diff after the fact cannot tell typed characters from kept ones.
 - Ids inside a reusable component carry its owner's id or `EntityId`, animation ids too. Twin ids share focus, click and animation state. A child keyed by its place inherits the state of what stood there before; key it by what it shows (`files::FileExplorer` keys a column by its folder).
 - Text wraps at the width its box had when measured. A cross-axis `max_w` comes too late, and a flex column counts wrapped text as one line. Put prose in a plain block inside a flex row with `flex_1().max_w(..)` (`feedback::states`).
@@ -159,7 +159,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Every header, row and strip works at 280px: a name keeps its minimum width, the rest wraps below or scrolls, and nothing draws past its box.
 - gpui takes a scroll box's reach from its direct children's bounds, and a block child stretches to the box. Content that scrolls sideways sets its least width on that child (`tables::body::least`).
 - gpui turns a wheel along the other axis onto a box that scrolls one way, and the page around it scrolls too. A box inside a scrolling page keeps its wheel to its axis with `layout::on_axis`, and so does the page.
-- The focus color belongs to the focus ring. A chosen or shown item takes accent, as `forms::glyphs` and `lists::ListItem` do.
+- The focus color belongs to the focus ring. A chosen or shown item takes accent, as `forms::picks` and `lists::ListItem` do.
 - A box that shows a host's picture takes the picture's shape from the host (`ratio`), so nothing is cropped and a point given as a share lands on the picture. A focusable one keeps its focus border on an outer box, so the picture keeps that shape exactly (`media::ImageCropper`).
 - A default only the component can work out, such as a crop fitted to a picture it decodes, reaches the owner once through `window.defer` after render (`media::ImageUpload`).
 

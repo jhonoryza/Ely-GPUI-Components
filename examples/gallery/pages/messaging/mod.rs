@@ -10,6 +10,7 @@ use jiff::{SignedDuration, Timestamp};
 mod calls;
 mod messages;
 mod people;
+mod pickers;
 
 use super::Page;
 use crate::{
@@ -61,6 +62,19 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("messaging-incoming", 24.0, 14.0),
     Step::Wait(300),
     Step::Shot("incoming-call"),
+    Step::Key("escape"),
+    Step::Wait(200),
+    Step::DownAt("messaging-stickers", 96.0, 105.0),
+    Step::UpAt("messaging-stickers", 96.0, 105.0),
+    Step::Wait(200),
+    Step::Shot("sticker-sent"),
+    Step::DownAt("messaging-gifs", 127.0, 48.0),
+    Step::UpAt("messaging-gifs", 127.0, 48.0),
+    Step::Wait(300),
+    Step::DownAt("messaging-gifs", 78.0, 120.0),
+    Step::UpAt("messaging-gifs", 78.0, 120.0),
+    Step::Wait(300),
+    Step::Shot("gif-sent"),
 ];
 
 /// The demo's chats: which is open and what waits unread in each.
@@ -252,5 +266,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(calls::grid(window, cx))
         .child(calls::share(window, cx))
         .child(calls::incoming(window, cx))
+        .child(pickers::stickers(window, cx))
+        .child(pickers::gifs(window, cx))
         .into_any_element()
 }
