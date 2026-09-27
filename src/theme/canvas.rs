@@ -26,6 +26,15 @@ pub struct CanvasSizes {
     pub map: (Rems, Rems),
     /// A handle, square.
     pub handle: Rems,
+    /// An asset's tile, square, and the room around its drawing.
+    pub asset: Rems,
+    pub asset_inset: Rems,
+    /// The constraints picture, square.
+    pub pins: Rems,
+    /// A place in the auto layout grid, square; the chosen one's mark and the rest's pips.
+    pub place: Rems,
+    pub place_mark: Rems,
+    pub place_pip: Rems,
 }
 
 impl Theme {
@@ -42,6 +51,12 @@ impl Theme {
             note_corner: px_to_rems(4.0),
             map: (px_to_rems(200.0), px_to_rems(140.0)),
             handle: px_to_rems(8.0),
+            asset: px_to_rems(64.0),
+            asset_inset: px_to_rems(10.0),
+            pins: px_to_rems(72.0),
+            place: px_to_rems(20.0),
+            place_mark: px_to_rems(8.0),
+            place_pip: px_to_rems(3.0),
         }
     }
 }

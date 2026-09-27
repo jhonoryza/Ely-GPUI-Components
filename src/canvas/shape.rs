@@ -1,6 +1,7 @@
 use gpui::SharedString;
 
 use super::view::Frame;
+use crate::primitives::IconName;
 
 /// What a shape is.
 #[derive(Clone, Debug, PartialEq)]
@@ -21,6 +22,36 @@ pub enum ShapeKind {
     },
     /// A square of paper with words on it.
     Note(SharedString),
+}
+
+impl ShapeKind {
+    /// Its icon in lists and grids.
+    pub(crate) fn icon(&self) -> IconName {
+        match self {
+            ShapeKind::Rect => IconName::Square,
+            ShapeKind::Ellipse => IconName::Circle,
+            ShapeKind::Polygon(_) => IconName::Hexagon,
+            ShapeKind::Line(_) => IconName::Slash,
+            ShapeKind::Arrow(_) => IconName::MoveUpRight,
+            ShapeKind::Text(_) => IconName::Type,
+            ShapeKind::Path { .. } => IconName::PenTool,
+            ShapeKind::Note(_) => IconName::StickyNote,
+        }
+    }
+
+    /// What it is, in a word.
+    pub(crate) fn word(&self) -> &'static str {
+        match self {
+            ShapeKind::Rect => "Rectangle",
+            ShapeKind::Ellipse => "Ellipse",
+            ShapeKind::Polygon(_) => "Polygon",
+            ShapeKind::Line(_) => "Line",
+            ShapeKind::Arrow(_) => "Arrow",
+            ShapeKind::Text(_) => "Text",
+            ShapeKind::Path { .. } => "Path",
+            ShapeKind::Note(_) => "Note",
+        }
+    }
 }
 
 /// A frame's corner, where a line or an arrow ends.

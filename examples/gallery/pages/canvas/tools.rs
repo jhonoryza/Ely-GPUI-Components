@@ -13,15 +13,15 @@ use crate::{
 };
 
 /// The tools demo's drawing: its shapes, what is selected, the tool and brush, the view, and each step with the shapes after it.
-struct Studio {
-    shapes: Vec<Shape>,
-    selected: Vec<SharedString>,
+pub(super) struct Studio {
+    pub(super) shapes: Vec<Shape>,
+    pub(super) selected: Vec<SharedString>,
     tool: Tool,
     brush: Brush,
     view: Viewport,
     steps: Vec<(SharedString, Vec<Shape>)>,
     at: usize,
-    made: usize,
+    pub(super) made: usize,
 }
 
 impl Studio {
@@ -61,14 +61,14 @@ impl Studio {
     }
 
     /// Keeps the shapes as a new step, dropping any steps undone.
-    fn record(&mut self, words: String) {
+    pub(super) fn record(&mut self, words: String) {
         self.steps.truncate(self.at);
         self.steps.push((words.into(), self.shapes.clone()));
         self.at = self.steps.len();
     }
 }
 
-fn studio(window: &mut Window, cx: &mut App) -> Entity<Studio> {
+pub(super) fn studio(window: &mut Window, cx: &mut App) -> Entity<Studio> {
     keep("canvas-studio", Studio::new, window, cx)
 }
 

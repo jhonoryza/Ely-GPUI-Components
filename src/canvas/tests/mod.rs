@@ -7,6 +7,7 @@ use gpui::{
 use super::{Frame, InfiniteCanvas, MiniMap, Tool, Viewport, ZoomControls};
 use crate::{primitives::FocusNext, theme::Theme};
 
+mod panels;
 mod tools;
 
 /// A view that shows one canvas part and keeps the viewports and words it heard.
@@ -41,6 +42,7 @@ fn stage(
     cx.update(|cx| {
         Theme::init(cx);
         Theme::update(cx, |theme| theme.reduced_motion = true);
+        crate::forms::bind_keys(cx);
         cx.bind_keys([gpui::KeyBinding::new("tab", FocusNext, None)]);
     });
     let (host, cx) = cx.add_window_view(|_, _| Stage {

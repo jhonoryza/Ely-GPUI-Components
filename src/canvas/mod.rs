@@ -1,26 +1,45 @@
+mod align;
+mod assets;
+mod autolayout;
+mod constraints;
 mod edit;
+mod export;
 mod gesture;
 mod history;
+mod inspector;
+mod layers;
 mod marks;
 mod minimap;
 mod palette;
+mod panel;
 mod plane;
 mod shape;
+mod style;
 mod tools;
+mod typography;
 mod view;
 mod zoom;
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
 
+pub use align::{Align, AlignmentToolbar, aligned};
+pub use assets::AssetPanel;
+pub use autolayout::{AutoLayout, AutoLayoutControls, Flow, Place};
+pub use constraints::{Constraints, ConstraintsEditor, Pin};
 pub use edit::{Handle, Tool};
+pub use export::{ExportFormat, ExportPanel, ExportSetting, export_files};
 pub use gesture::Brush;
 pub use history::HistoryPanel;
+pub use inspector::InspectorPanel;
+pub use layers::LayerPanel;
 pub use marks::{SelectionBox, SnapIndicator, TransformHandles};
 pub use minimap::MiniMap;
 pub use palette::{BrushSettings, ToolPalette};
 pub use plane::InfiniteCanvas;
 pub use shape::{Artboard, Corner, Guide, Shape, ShapeKind};
+pub use style::{Border, BorderEditor, ColorPanel, Dash, Shadow, ShadowEditor};
 pub use tools::ToolLayer;
+pub use typography::{TypeStyle, TypographyPanel};
 pub use view::{Frame, Viewport};
 pub use zoom::{ZoomControls, ZoomIndicator};
