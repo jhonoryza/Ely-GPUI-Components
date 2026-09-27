@@ -100,8 +100,10 @@ fn a_provider_hands_its_key_and_rests_while_one_is_on_its_way(cx: &mut TestAppCo
         cx.notify();
     });
     settle(cx);
-    tab(1, cx);
-    tap("space", cx);
+    for stop in [1, 2] {
+        tab(stop, cx);
+        tap("space", cx);
+    }
     assert_eq!(
         said(&host, cx),
         ["google"],
@@ -189,4 +191,76 @@ fn a_failed_code_clears_the_boxes_for_the_next(cx: &mut TestAppContext) {
     settle(cx);
     write("654321", cx);
     assert_eq!(said(&host, cx), ["123456", "654321"]);
+}
+
+/// Stops: email, password, its eye, the box, Forgot password.
+#[gpui::test]
+fn sign_in_waits_for_a_password(cx: &mut TestAppContext) {
+    let (host, cx) = bench(login, cx);
+    tab(1, cx);
+    write("ada@example.com", cx);
+    tap("enter", cx);
+    assert!(
+        said(&host, cx).is_empty(),
+        "an address alone signs nobody in"
+    );
+}
+
+fn busy_login(_: &Bench, owner: Entity<Bench>) -> AnyElement {
+    LoginForm::new("login")
+        .busy(true)
+        .on_submit(move |login, _, cx| say(&owner, login.email.to_string(), cx))
+        .into_any_element()
+}
+
+/// Stops: email, password, its eye, the box; Sign in rests while busy, so a fifth Tab wraps to the email.
+#[gpui::test]
+fn sign_in_rests_while_busy(cx: &mut TestAppContext) {
+    let (host, cx) = bench(busy_login, cx);
+    tab(1, cx);
+    write("ada@example.com", cx);
+    tab(2, cx);
+    write("secret", cx);
+    tap("enter", cx);
+    tab(5, cx);
+    tap("space", cx);
+    assert!(said(&host, cx).is_empty());
+}
+
+/// Stops: name, email, password, its eye, the terms.
+#[gpui::test]
+fn sign_up_waits_for_a_name(cx: &mut TestAppContext) {
+    let (host, cx) = bench(signup, cx);
+    tab(2, cx);
+    write("ada@example.com", cx);
+    tab(3, cx);
+    write("abcdefg1", cx);
+    tab(5, cx);
+    tap("space", cx);
+    tab(3, cx);
+    tap("enter", cx);
+    assert!(said(&host, cx).is_empty(), "no name, no account");
+    tab(1, cx);
+    write("Ada", cx);
+    tap("enter", cx);
+    assert_eq!(said(&host, cx), ["Ada ada@example.com abcdefg1"]);
+}
+
+fn busy_sent(_: &Bench, owner: Entity<Bench>) -> AnyElement {
+    let other = owner.clone();
+    MagicLinkForm::new("magic")
+        .sent(true)
+        .busy(true)
+        .on_send(move |address, _, cx| say(&owner, format!("send {address}"), cx))
+        .on_other(move |_, cx| say(&other, "other".into(), cx))
+        .into_any_element()
+}
+
+/// While a link is on its way Send again rests, so the first stop is Use another email.
+#[gpui::test]
+fn send_again_rests_while_busy(cx: &mut TestAppContext) {
+    let (host, cx) = bench(busy_sent, cx);
+    tab(1, cx);
+    tap("space", cx);
+    assert_eq!(said(&host, cx), ["other"]);
 }

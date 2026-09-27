@@ -402,3 +402,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T35 | 1 | FAIL | a row's control kept its full width past a 280px box; a notice's name shrank to nothing; privacy, notices and startup dropped edits with no handler; Apply's and the reset's rest and a box turned off untested |
 | T35 | 2 | FAIL | an accent picker of nine or more presets still ran past a 280px box |
 | T35 | 3 | PASS | |
+| T36a | 1 | FAIL | Sign in waiting for a password and resting while busy, Create account waiting for a name, the other providers resting, and Send again resting while busy untested |
