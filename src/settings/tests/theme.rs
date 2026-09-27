@@ -5,8 +5,12 @@ use gpui::{
 
 use super::{Desk, desk, said, say, settle, tab, tap};
 use crate::{
-    settings::{ThemeDraft, ThemeEditor},
-    theme::{ActiveTheme, Theme},
+    settings::{
+        SyntaxThemePicker, ThemeDraft, ThemeEditor,
+        importer::{self, OnTheme},
+        read_vscode_theme,
+    },
+    theme::{ActiveTheme, Theme, syntax_themes},
 };
 
 fn editor(_: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
@@ -150,4 +154,60 @@ fn the_thumb_covers_the_chosen_segment(cx: &mut TestAppContext) {
         .debug_bounds("segment Standard")
         .expect("the chosen segment");
     assert_eq!(thumb, chosen);
+}
+
+fn syntax(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
+    SyntaxThemePicker::new("syntax", syntax_themes(), "Ely")
+        .on_change(move |name, _, cx| say(&owner, name.to_string(), cx))
+        .into_any_element()
+}
+
+/// Stops: a card for each code palette; Space on the third picks Paper.
+#[gpui::test]
+fn a_card_picks_its_code_palette(cx: &mut TestAppContext) {
+    let (host, cx) = desk(syntax, cx);
+    tab(3, cx);
+    tap("space", cx);
+    assert_eq!(said(&host, cx), ["Paper"]);
+}
+
+fn read_row(_: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
+    let read = read_vscode_theme(
+        r##"{"name": "Mist", "type": "dark", "colors": {"editor.background": "#101418"}}"##,
+    )
+    .expect("a theme");
+    let apply: OnTheme = std::rc::Rc::new(move |read, _, cx| {
+        say(&owner, format!("{:?} {:?}", read.name, read.mode), cx)
+    });
+    importer::read_row(&read, &"mist.json".into(), &"importer".into(), apply, cx)
+}
+
+/// The row a read theme shows: Apply, its one stop, hands the owner that theme.
+#[gpui::test]
+fn apply_hands_the_owner_the_theme_it_read(cx: &mut TestAppContext) {
+    let (host, cx) = desk(read_row, cx);
+    tab(1, cx);
+    tap("space", cx);
+    assert_eq!(said(&host, cx), ["Some(\"Mist\") Dark"]);
+}
+
+fn narrow_syntax(window: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
+    gpui::div()
+        .debug_selector(|| "narrow".into())
+        .w(gpui::px(280.0))
+        .child(syntax(window, cx, owner))
+        .into_any_element()
+}
+
+/// At 280px a card's line of code wraps inside the card instead of running past it.
+#[gpui::test]
+fn a_code_sample_stays_inside_a_narrow_card(cx: &mut TestAppContext) {
+    let (_, cx) = desk(narrow_syntax, cx);
+    settle(cx);
+    let frame = cx.debug_bounds("narrow").expect("the box");
+    let sample = cx.debug_bounds("syntax-sample").expect("a sample");
+    assert!(
+        sample.right() <= frame.right(),
+        "{sample:?} inside {frame:?}"
+    );
 }

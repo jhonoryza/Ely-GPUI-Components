@@ -10,6 +10,7 @@ use gpui::{
 };
 
 mod editing;
+mod importing;
 
 use super::Page;
 use crate::ui::{section, specimen, specimens};
@@ -147,6 +148,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
             .child(track("spring", "spring · damping 0.75", motion::spring, cx)),
         )
         .child(editing::editor(window, cx))
+        .child(importing::importing(window, cx))
         .into_any_element()
 }
 

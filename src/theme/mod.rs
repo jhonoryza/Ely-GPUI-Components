@@ -10,6 +10,7 @@ mod messaging;
 mod onboarding;
 mod palette;
 mod project;
+mod syntax;
 mod tokens;
 
 #[cfg(all(test, feature = "test-support"))]
@@ -32,6 +33,7 @@ pub use messaging::MessagingSizes;
 pub use onboarding::OnboardingSizes;
 pub use palette::{HUE_NAMES, Mix, Palette, Syntax};
 pub use project::ProjectSizes;
+pub use syntax::{SyntaxTheme, syntax_themes};
 pub use tokens::{
     AvatarSize, ContainerSize, ControlSize, Density, Elevation, IconSize, Radius, TextSize,
 };

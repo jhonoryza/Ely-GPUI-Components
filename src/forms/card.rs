@@ -18,10 +18,11 @@ use crate::{
     theme::{ActiveTheme, IconSize, Radius, TextSize},
 };
 
-/// What a card says: a title, a line under it, and an icon at its end.
+/// What a card says: a title, a line under it, a preview under them, and an icon at its end.
 struct Face {
     title: SharedString,
     description: Option<SharedString>,
+    preview: Option<AnyElement>,
     icon: Option<IconName>,
     disabled: bool,
     on: bool,
@@ -32,6 +33,7 @@ impl Face {
         Self {
             title,
             description: None,
+            preview: None,
             icon: None,
             disabled: false,
             on,
@@ -86,9 +88,7 @@ fn card(
         .child(
             div()
                 .flex_1()
-                .flex()
-                .flex_col()
-                .gap_0p5()
+                .min_w_0()
                 .child(
                     div()
                         .text_size(theme.text_size(TextSize::Base))
@@ -99,10 +99,14 @@ fn card(
                 .when_some(face.description, |words, description| {
                     words.child(
                         div()
+                            .mt_0p5()
                             .text_size(theme.text_size(TextSize::Sm))
                             .text_color(colors.fg_muted)
                             .child(description),
                     )
+                })
+                .when_some(face.preview, |words, preview| {
+                    words.child(div().pt_2().child(preview))
                 }),
         )
         .when_some(face.icon, |card, icon| {
@@ -198,6 +202,12 @@ impl RadioCard {
 
     pub fn description(mut self, text: impl Into<SharedString>) -> Self {
         self.face.description = Some(text.into());
+        self
+    }
+
+    /// Shows `element` under the words, such as what the choice looks like.
+    pub fn preview(mut self, element: impl IntoElement) -> Self {
+        self.face.preview = Some(element.into_any_element());
         self
     }
 
