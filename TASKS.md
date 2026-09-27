@@ -98,7 +98,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T27b Files · Explorer
 - [x] T27c Files · Find and look
 - [x] T27d Files · Transfers
-- [ ] T28a Messaging · Channels
+- [x] T28a Messaging · Channels
 - [ ] T28b Messaging · Messages
 - [ ] T28c Messaging · People
 - [ ] T28d Messaging · Calls
@@ -333,3 +333,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T27c | 2 | PASS | |
 | T27d | 1 | FAIL | a press on a finished download's Show button also opened the file through its row |
 | T27d | 2 | PASS | |
+| T28a | 1 | PASS | |

@@ -7,6 +7,8 @@ use ely_gpui_component::{
 use gpui::{AnyElement, App, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
 use jiff::{SignedDuration, Timestamp};
 
+mod messages;
+
 use super::Page;
 use crate::{
     probe::probe,
@@ -29,6 +31,9 @@ const SCRIPT: &[Step] = &[
     Step::Key("down"),
     Step::Wait(200),
     Step::Shot("channel-opened"),
+    Step::HoverAt("messaging-conversation", 200.0, 89.0),
+    Step::Wait(200),
+    Step::Shot("run-time"),
 ];
 
 /// The demo's chats: which is open and what waits unread in each.
@@ -210,5 +215,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(items(cx))
         .child(header(cx))
         .child(pins(window, cx))
+        .child(messages::conversation(window, cx))
+        .child(messages::thread(window, cx))
+        .child(messages::receipts(cx))
         .into_any_element()
 }
