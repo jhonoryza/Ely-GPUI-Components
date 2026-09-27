@@ -126,7 +126,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T34 Dashboard — `tasks/ch31-43.md` (its two maps lines wait for T41)
 - [x] T35 Settings — `tasks/ch31-43.md`
 - [x] T36a Account · Sign in — `tasks/ch31-43.md`
-- [ ] T36b Account · Profile and access
+- [x] T36b Account · Profile and access — `tasks/ch31-43.md`
 - [ ] T36c Account · Billing and team
 - [ ] T37 Onboarding & Help
 - [ ] T38 Interaction
@@ -405,3 +405,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T36a | 1 | FAIL | Sign in waiting for a password and resting while busy, Create account waiting for a name, the other providers resting, and Send again resting while busy untested |
 | T36a | 2 | PASS | |
 | T36b | 1 | FAIL | a long key name hid its ends at 280px; the secret and ends skipped typography::literal; this device's place first and the name clearing after Create untested |
+| T36b | 2 | PASS | |
