@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, ElementId, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div,
-    prelude::*, relative,
+    AnyElement, App, ClickEvent, ElementId, FontWeight, InteractiveElement, IntoElement,
+    MouseButton, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
+    Window, div, prelude::*, relative,
 };
 use smallvec::SmallVec;
 
@@ -25,6 +25,8 @@ pub struct ListItem {
     selected: bool,
     current: bool,
     disabled: bool,
+    strong: bool,
+    quiet: bool,
     on_click: Option<OnClick>,
 }
 
@@ -39,8 +41,22 @@ impl ListItem {
             selected: false,
             current: false,
             disabled: false,
+            strong: false,
+            quiet: false,
             on_click: None,
         }
+    }
+
+    /// Sets the title in the strong weight, as a channel with unread messages has it.
+    pub fn strong(mut self, strong: bool) -> Self {
+        self.strong = strong;
+        self
+    }
+
+    /// Sets the title in the quiet color, as a muted channel has it.
+    pub fn quiet(mut self, quiet: bool) -> Self {
+        self.quiet = quiet;
+        self
     }
 
     /// A second line, quieter than the title.
@@ -137,7 +153,12 @@ impl RenderOnce for ListItem {
                     .child(
                         line(self.title)
                             .text_size(theme.text_size(TextSize::Base))
-                            .text_color(colors.fg),
+                            .when(self.strong, |title| title.font_weight(FontWeight::SEMIBOLD))
+                            .text_color(if self.quiet {
+                                colors.fg_muted
+                            } else {
+                                colors.fg
+                            }),
                     )
                     .children(self.description.map(|text| {
                         line(text)

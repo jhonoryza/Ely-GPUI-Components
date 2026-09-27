@@ -17,6 +17,7 @@ mod layout;
 mod lists;
 mod media;
 mod menus;
+mod messaging;
 mod motion;
 mod navigation;
 mod overlays;
@@ -69,6 +70,7 @@ pub const ALL: &[Page] = &[
     generative::PAGE,
     media::PAGE,
     files::PAGE,
+    messaging::PAGE,
     theme::PAGE,
 ];
 

@@ -97,8 +97,12 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T27a Files · Items
 - [x] T27b Files · Explorer
 - [x] T27c Files · Find and look
-- [ ] T27d Files · Transfers
-- [ ] T28 Messaging
+- [x] T27d Files · Transfers
+- [ ] T28a Messaging · Channels
+- [ ] T28b Messaging · Messages
+- [ ] T28c Messaging · People
+- [ ] T28d Messaging · Calls
+- [ ] T28e Messaging · Stickers and GIFs
 - [ ] T29 Mail
 - [ ] T30 Calendar
 - [ ] T31 Project — `tasks/ch31-43.md`
@@ -328,3 +332,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T27c | 1 | FAIL | recent and found files were keyed by their place, so the cursor left a file an open moved |
 | T27c | 2 | PASS | |
 | T27d | 1 | FAIL | a press on a finished download's Show button also opened the file through its row |
+| T27d | 2 | PASS | |

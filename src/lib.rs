@@ -19,6 +19,7 @@ pub mod layout;
 pub mod lists;
 pub mod media;
 pub mod menus;
+pub mod messaging;
 pub mod motion;
 pub mod navigation;
 pub mod overlays;
