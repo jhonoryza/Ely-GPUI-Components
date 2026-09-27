@@ -118,3 +118,36 @@ fn the_density_strip_fits_a_narrow_box_with_larger_text(cx: &mut TestAppContext)
         .expect("the last segment");
     assert!(last.right() <= frame.right(), "{last:?} inside {frame:?}");
 }
+
+/// At 280px and the base size the strip has room, so each label keeps its whole width: eleven letters to seven.
+#[gpui::test]
+fn a_label_gives_way_only_when_the_strip_lacks_room(cx: &mut TestAppContext) {
+    let (_, cx) = desk(narrow, cx);
+    settle(cx);
+    let compact = cx
+        .debug_bounds("segment-label Compact")
+        .expect("Compact's label");
+    let comfortable = cx
+        .debug_bounds("segment-label Comfortable")
+        .expect("Comfortable's label");
+    let ratio = comfortable.size.width / compact.size.width;
+    assert!(
+        (ratio - 11.0 / 7.0).abs() < 0.01,
+        "{comfortable:?} to {compact:?}"
+    );
+}
+
+/// The thumb covers the chosen segment, top to bottom and side to side.
+#[gpui::test]
+fn the_thumb_covers_the_chosen_segment(cx: &mut TestAppContext) {
+    let (_, cx) = desk(editor, cx);
+    for _ in 0..3 {
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        settle(cx);
+    }
+    let thumb = cx.debug_bounds("segment-thumb").expect("the thumb");
+    let chosen = cx
+        .debug_bounds("segment Standard")
+        .expect("the chosen segment");
+    assert_eq!(thumb, chosen);
+}

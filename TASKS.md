@@ -420,3 +420,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T38a | 2 | PASS | |
 | T38b | 1 | PASS | |
 | T39a | 1 | FAIL | a larger text size cut the density strip at 280px; ten palette colors had no name; the density and sliders untested |
+| T39a | 2 | FAIL | segments split the strip equally and cut a longer label; the thumb lost its padding's height |

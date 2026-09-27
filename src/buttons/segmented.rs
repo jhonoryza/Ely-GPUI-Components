@@ -110,8 +110,9 @@ impl RenderOnce for SegmentedControl {
              }| {
                 div()
                     .absolute()
-                    .top_0p5()
-                    .bottom_0p5()
+                    .top_0()
+                    .bottom_0()
+                    .debug_selector(|| "segment-thumb".into())
                     .rounded(theme.radius(Radius::Md))
                     .bg(colors.surface)
                     .border_1()
@@ -135,13 +136,13 @@ impl RenderOnce for SegmentedControl {
                 let on = ix == chosen;
                 let fg = if on { colors.fg } else { colors.fg_muted };
                 let (focus, reveal) = stops.remove(0);
-                let named = value.clone();
+                let (named, labeled) = (value.clone(), value.clone());
                 let (change, measure) = (self.on_change.clone(), state.clone());
                 let segment = div()
                     .id(("segment", ix))
                     .relative()
                     .flex()
-                    .flex_1()
+                    .flex_auto()
                     .min_w_0()
                     .items_center()
                     .justify_center()
@@ -176,15 +177,20 @@ impl RenderOnce for SegmentedControl {
                         segment.child(Icon::new(icon).size(icon_size).color(fg))
                     })
                     .when(!label.is_empty(), |segment| {
-                        segment.child(div().min_w_0().child(Ellipsis::new(label)))
-                    })
-                    .child(measure_item(measure, ix, Axis::Horizontal));
+                        segment.child(
+                            div()
+                                .min_w_0()
+                                .debug_selector(move || format!("segment-label {labeled}"))
+                                .child(Ellipsis::new(label)),
+                        )
+                    });
                 div()
                     .relative()
                     .flex()
-                    .flex_1()
+                    .flex_auto()
                     .min_w_0()
                     .child(segment)
+                    .child(measure_item(measure, ix, Axis::Horizontal))
                     .child(reveal)
             });
         let control = div()
