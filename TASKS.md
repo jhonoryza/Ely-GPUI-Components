@@ -132,7 +132,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T37b Onboarding · Help — `tasks/ch31-43.md`
 - [x] T38a Interaction · Pointer — `tasks/ch31-43.md`
 - [x] T38b Interaction · Keys, scroll and focus — `tasks/ch31-43.md`
-- [ ] T39a Theme · Editing
+- [x] T39a Theme · Editing — `tasks/ch31-43.md`
 - [ ] T39b Theme · Importing
 - [ ] T39c Theme · Platform
 - [ ] T40 i18n & a11y
@@ -421,3 +421,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T38b | 1 | PASS | |
 | T39a | 1 | FAIL | a larger text size cut the density strip at 280px; ten palette colors had no name; the density and sliders untested |
 | T39a | 2 | FAIL | segments split the strip equally and cut a longer label; the thumb lost its padding's height |
+| T39a | 3 | PASS | |
