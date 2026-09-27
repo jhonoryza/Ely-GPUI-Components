@@ -123,7 +123,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T33b DB & Dev Tools · Data formats — `tasks/ch31-43.md`
 - [x] T33c DB & Dev Tools · APIs — `tasks/ch31-43.md`
 - [x] T33d DB & Dev Tools · Tools and machines — `tasks/ch31-43.md`
-- [ ] T34 Dashboard
+- [x] T34 Dashboard — `tasks/ch31-43.md` (its two maps lines wait for T41)
 - [ ] T35 Settings
 - [ ] T36 Account
 - [ ] T37 Onboarding & Help
@@ -396,3 +396,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T33d | 1 | FAIL | text fields never painted a highlight's wash; a tile's value ran past 280px; a stray + read as a hex digit; the WCAG thresholds, an exit's badge, a stopped row's load and the meter's clamp untested |
 | T33d | 2 | PASS | |
 | T34 | 1 | FAIL | a focused tile's Left and Right, and the guard that leaves arrows to a focused control inside a card, untested |
+| T34 | 2 | PASS | |
