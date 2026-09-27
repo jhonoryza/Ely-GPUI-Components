@@ -169,6 +169,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A default only the component can work out, such as a crop fitted to a picture it decodes, reaches the owner once through `window.defer` after render (`media::ImageUpload`).
 - A ScrubInput shows its number in about 140px beside a short label. In a narrower column a pair hides it, so a long label takes a row of its own (`canvas::TypographyPanel`).
 - Design panels edit a whole value and hand the owner a changed copy through `canvas::panel::editing`. A swatch that opens a picker is `canvas::panel::color_well`.
+- A press that stops propagation also stops the ancestors' focus on press. A layer that takes keys focuses itself in its own press handler (`canvas::ToolLayer`, `canvas::MindMap`), and a field over it stops its own presses.
+- A focus ring on a box whose children measure themselves goes on an overlay child: a border insets the children and shifts what they measure (`canvas::ToolLayer`).
 - A menu of times goes through `mail::times`: each row names its day and hour, a moment comes once (tomorrow is next Monday on a Sunday), and "Pick a time…" opens one dialog that waits for a time ahead of now (`ScheduleSend`, `SnoozePicker`).
 - A list whose cursor a field drives marks the cursor only while the field has focus; at rest its first row would look hovered (`mail::LabelPicker`). Its rows are option rows, and `forms::marked_row` leads one with a mark such as a label's hue.
 - A choice that names a person leads with their initials through `forms::Choice::avatar`, in the list and in a Select's trigger alike (`project::AssigneePicker`).

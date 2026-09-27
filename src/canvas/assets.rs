@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use super::{
-    plane::paint_shape,
+    paint::paint_shape,
     shape::{Shape, ShapeKind},
     view::Viewport,
 };

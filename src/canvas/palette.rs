@@ -28,14 +28,17 @@ fn icon(tool: Tool) -> IconName {
         Tool::Pen => IconName::PenTool,
         Tool::Text => IconName::Type,
         Tool::Brush => IconName::Brush,
+        Tool::Note => IconName::StickyNote,
+        Tool::Connector => IconName::Spline,
     }
 }
 
-/// The canvas's tools in a row, one picked, each named in a tip.
+/// The canvas's tools in a row, one picked, each named in a tip. It offers every tool unless given fewer.
 #[derive(IntoElement)]
 pub struct ToolPalette {
     id: ElementId,
     tool: Tool,
+    tools: Vec<Tool>,
     on_change: Option<OnTool>,
 }
 
@@ -44,8 +47,15 @@ impl ToolPalette {
         Self {
             id: id.into(),
             tool,
+            tools: Tool::ALL.to_vec(),
             on_change: None,
         }
+    }
+
+    /// The tools it offers, in order; the picked one among them.
+    pub fn tools(mut self, tools: impl IntoIterator<Item = Tool>) -> Self {
+        self.tools = tools.into_iter().collect();
+        self
     }
 
     pub fn on_change(mut self, handler: impl Fn(Tool, &mut Window, &mut App) + 'static) -> Self {
@@ -56,8 +66,14 @@ impl ToolPalette {
 
 impl RenderOnce for ToolPalette {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
+        assert!(
+            self.tools.contains(&self.tool),
+            "tool palette {:?}: {} is not offered",
+            self.id,
+            self.tool.words()
+        );
         let on_change = self.on_change;
-        Tool::ALL
+        self.tools
             .into_iter()
             .fold(ToggleGroup::new(self.id), |group, tool| {
                 group.item(

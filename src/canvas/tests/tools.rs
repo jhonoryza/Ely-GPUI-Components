@@ -8,12 +8,12 @@ use crate::canvas::{
     Frame, InfiniteCanvas, Shape, ShapeKind, Tool, ToolLayer, ToolPalette, Viewport,
 };
 
-fn at(x: f32, y: f32) -> gpui::Point<gpui::Pixels> {
+pub(super) fn at(x: f32, y: f32) -> gpui::Point<gpui::Pixels> {
     point(px(x), px(y))
 }
 
 /// Presses at `from`, drags in steps to `to`, and lets go.
-fn drag(from: (f32, f32), to: (f32, f32), cx: &mut VisualTestContext) {
+pub(super) fn drag(from: (f32, f32), to: (f32, f32), cx: &mut VisualTestContext) {
     cx.simulate_mouse_move(at(from.0, from.1), None, Modifiers::none());
     cx.simulate_mouse_down(at(from.0, from.1), MouseButton::Left, Modifiers::none());
     for step in 1..=4 {
@@ -27,7 +27,7 @@ fn drag(from: (f32, f32), to: (f32, f32), cx: &mut VisualTestContext) {
     settle(cx);
 }
 
-fn press(x: f32, y: f32, count: usize, cx: &mut VisualTestContext) {
+pub(super) fn press(x: f32, y: f32, count: usize, cx: &mut VisualTestContext) {
     cx.simulate_event(MouseDownEvent {
         button: MouseButton::Left,
         position: at(x, y),
@@ -44,7 +44,7 @@ fn press(x: f32, y: f32, count: usize, cx: &mut VisualTestContext) {
     settle(cx);
 }
 
-fn pair() -> Vec<Shape> {
+pub(super) fn pair() -> Vec<Shape> {
     vec![
         Shape::new(
             "a",
@@ -61,9 +61,9 @@ fn pair() -> Vec<Shape> {
     ]
 }
 
-fn layer(tool: Tool, selected: &[&'static str], owner: Entity<Stage>) -> AnyElement {
+pub(super) fn layer(tool: Tool, selected: &[&'static str], owner: Entity<Stage>) -> AnyElement {
     let view = Viewport::new(0.0, 0.0, 1.0);
-    let (drawn, chosen, moved, sized) = (owner.clone(), owner.clone(), owner.clone(), owner);
+    let [drawn, chosen, moved, sized, linked, written] = [(); 6].map(|_| owner.clone());
     let layer = ToolLayer::new("layer", tool, view, pair())
         .selected(selected.iter().copied())
         .on_draw(move |kind, frame, _, cx| {
@@ -84,7 +84,9 @@ fn layer(tool: Tool, selected: &[&'static str], owner: Entity<Stage>) -> AnyElem
         .on_move(move |keys, by, _, cx| say(&moved, format!("move {keys:?} {by:?}"), cx))
         .on_resize(move |key, frame, _, cx| {
             say(&sized, format!("resize {key} {} {}", frame.w, frame.h), cx)
-        });
+        })
+        .on_link(move |from, to, _, cx| say(&linked, format!("link {from} {to}"), cx))
+        .on_text(move |key, text, _, cx| say(&written, format!("text {key} {text}"), cx));
     InfiniteCanvas::new("plane", view)
         .shapes(pair())
         .layer(layer)

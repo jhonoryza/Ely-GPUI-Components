@@ -1,5 +1,7 @@
 use gpui::{AnyElement, App, Window, div, prelude::*};
 
+mod boards;
+mod graphs;
 mod looks;
 mod panels;
 mod plane;
@@ -47,5 +49,9 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(panels::arrange(window, cx))
         .child(looks::styles(window, cx))
         .child(looks::rules(window, cx))
+        .child(graphs::nodes(window, cx))
+        .child(boards::flow(window, cx))
+        .child(boards::mind(window, cx))
+        .child(graphs::board(window, cx))
         .into_any_element()
 }

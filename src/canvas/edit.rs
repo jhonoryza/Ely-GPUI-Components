@@ -18,10 +18,12 @@ pub enum Tool {
     Pen,
     Text,
     Brush,
+    Note,
+    Connector,
 }
 
 impl Tool {
-    pub const ALL: [Tool; 10] = [
+    pub const ALL: [Tool; 12] = [
         Tool::Select,
         Tool::Hand,
         Tool::Rect,
@@ -32,6 +34,8 @@ impl Tool {
         Tool::Pen,
         Tool::Text,
         Tool::Brush,
+        Tool::Note,
+        Tool::Connector,
     ];
 
     pub fn words(self) -> &'static str {
@@ -46,6 +50,8 @@ impl Tool {
             Tool::Pen => "Pen",
             Tool::Text => "Text",
             Tool::Brush => "Brush",
+            Tool::Note => "Note",
+            Tool::Connector => "Connector",
         }
     }
 
@@ -62,6 +68,8 @@ impl Tool {
             Tool::Pen => "p",
             Tool::Text => "t",
             Tool::Brush => "b",
+            Tool::Note => "n",
+            Tool::Connector => "c",
         }
     }
 

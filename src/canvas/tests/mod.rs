@@ -7,6 +7,7 @@ use gpui::{
 use super::{Frame, InfiniteCanvas, MiniMap, Tool, Viewport, ZoomControls};
 use crate::{primitives::FocusNext, theme::Theme};
 
+mod boards;
 mod panels;
 mod tools;
 

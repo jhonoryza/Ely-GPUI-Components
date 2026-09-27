@@ -1,21 +1,26 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, AppContext as _, Bounds, ElementId, EmptyView, Entity, EntityId, Hsla,
-    InteractiveElement, IntoElement, ParentElement, PathBuilder, Pixels, Point, RenderOnce,
-    ScrollDelta, StatefulInteractiveElement, Styled, Window, canvas, div, fill, point, size,
+    AnyElement, App, AppContext as _, Bounds, ElementId, EmptyView, Entity, EntityId,
+    InteractiveElement, IntoElement, ParentElement, Pixels, Point, RenderOnce, ScrollDelta,
+    SharedString, StatefulInteractiveElement, Styled, Window, canvas, div, fill, size,
 };
 
 use super::{
-    shape::{Artboard, Guide, Shape, ShapeKind, polygon},
-    view::{Frame, Viewport, marks, step},
+    links::{Link, halfway, route},
+    paint::{at, finish, head, in_view, outline, paint_shape, quad, solid},
+    shape::{Artboard, Guide, Shape, ShapeKind},
+    view::{Viewport, marks, step},
 };
 use crate::{
     layout::seeded::use_seeded,
-    theme::{ActiveTheme, Palette, TextSize},
+    theme::{ActiveTheme, Radius, TextSize},
 };
 
 pub(crate) type OnViewport = Rc<dyn Fn(Viewport, &mut Window, &mut App)>;
+
+/// A link's run in view pixels, with its words.
+type Drawn = (Vec<(f32, f32)>, Option<SharedString>);
 
 /// A drag that pans a canvas, and whose canvas it is.
 struct Pan {
@@ -29,125 +34,13 @@ struct Plane {
     grip: Option<(Point<Pixels>, Viewport)>,
 }
 
-/// The view pixels of a canvas frame.
-pub(crate) fn in_view(view: &Viewport, frame: &Frame) -> Frame {
-    let (x, y) = view.to_view((frame.x, frame.y));
-    Frame::new(x, y, frame.w * view.zoom, frame.h * view.zoom)
-}
-
-fn at(origin: Point<Pixels>, (x, y): (f32, f32)) -> Point<Pixels> {
-    origin + point(Pixels::from(x), Pixels::from(y))
-}
-
-fn quad(origin: Point<Pixels>, frame: &Frame) -> Bounds<Pixels> {
-    Bounds::new(
-        at(origin, (frame.x, frame.y)),
-        size(Pixels::from(frame.w), Pixels::from(frame.h)),
-    )
-}
-
-fn outline(
-    points: &[(f32, f32)],
-    origin: Point<Pixels>,
-    width: Pixels,
-    closed: bool,
-) -> PathBuilder {
-    let mut path = PathBuilder::stroke(width);
-    if let Some(first) = points.first() {
-        path.move_to(at(origin, *first));
-        points[1..]
-            .iter()
-            .for_each(|next| path.line_to(at(origin, *next)));
-        if closed {
-            path.close();
-        }
-    }
-    path
-}
-
-fn solid(points: &[(f32, f32)], origin: Point<Pixels>) -> PathBuilder {
-    let mut path = PathBuilder::fill();
-    if let Some(first) = points.first() {
-        path.move_to(at(origin, *first));
-        points[1..]
-            .iter()
-            .for_each(|next| path.line_to(at(origin, *next)));
-        path.close();
-    }
-    path
-}
-
-fn finish(path: PathBuilder, color: Hsla, window: &mut Window) {
-    match path.build() {
-        Ok(path) => window.paint_path(path, color),
-        Err(error) => log::error!("canvas: a path failed to build: {error:#}"),
-    }
-}
-
-/// Paints a shape's outline and wash in view pixels.
-pub(crate) fn paint_shape(
-    shape: &Shape,
-    view: &Viewport,
-    origin: Point<Pixels>,
-    palette: &Palette,
-    stroke: Pixels,
-    window: &mut Window,
-) {
-    let ink = palette.hue(shape.hue, format_args!("shape {}", shape.key));
-    let wash = ink.alpha(0.14);
-    let frame = in_view(view, &shape.frame);
-    match &shape.kind {
-        ShapeKind::Rect => {
-            window.paint_quad(fill(quad(origin, &frame), wash));
-            let corners = [
-                (frame.x, frame.y),
-                (frame.right(), frame.y),
-                (frame.right(), frame.bottom()),
-                (frame.x, frame.bottom()),
-            ];
-            finish(outline(&corners, origin, stroke, true), ink, window);
-        }
-        ShapeKind::Ellipse | ShapeKind::Polygon(_) => {
-            let sides = match shape.kind {
-                ShapeKind::Polygon(sides) => sides,
-                _ => 64,
-            };
-            let corners = polygon(&frame, sides);
-            finish(solid(&corners, origin), wash, window);
-            finish(outline(&corners, origin, stroke, true), ink, window);
-        }
-        ShapeKind::Line(end) | ShapeKind::Arrow(end) => {
-            let (from, to) = (end.opposite().of(&frame), end.of(&frame));
-            finish(outline(&[from, to], origin, stroke, false), ink, window);
-            if matches!(shape.kind, ShapeKind::Arrow(_)) {
-                let (dx, dy) = (to.0 - from.0, to.1 - from.1);
-                let length = (dx * dx + dy * dy).sqrt().max(1.0);
-                let (ux, uy) = (dx / length, dy / length);
-                let head = f32::from(stroke) * 5.0;
-                let back = (to.0 - ux * head, to.1 - uy * head);
-                let left = (back.0 - uy * head / 2.0, back.1 + ux * head / 2.0);
-                let right = (back.0 + uy * head / 2.0, back.1 - ux * head / 2.0);
-                finish(solid(&[to, left, right], origin), ink, window);
-            }
-        }
-        ShapeKind::Path { points, width } => {
-            let points: Vec<(f32, f32)> = points
-                .iter()
-                .map(|(x, y)| view.to_view((shape.frame.x + x, shape.frame.y + y)))
-                .collect();
-            let wide = Pixels::from(width * view.zoom).max(stroke);
-            finish(outline(&points, origin, wide, false), ink, window);
-        }
-        ShapeKind::Text(_) | ShapeKind::Note(_) => {}
-    }
-}
-
 /// An endless plane: a dot grid that thins as it zooms out, rulers along the top and left, guides, artboards with their names, and shapes. A drag on empty space pans it from where it was pressed, a wheel scrolls it, and Command or Control with the wheel zooms about the pointer. The owner keeps the viewport; a new one from the owner shows at once.
 #[derive(IntoElement)]
 pub struct InfiniteCanvas {
     id: ElementId,
     viewport: Viewport,
     shapes: Vec<Shape>,
+    links: Vec<Link>,
     artboards: Vec<Artboard>,
     guides: Vec<Guide>,
     rulers: bool,
@@ -161,6 +54,7 @@ impl InfiniteCanvas {
             id: id.into(),
             viewport,
             shapes: Vec::new(),
+            links: Vec::new(),
             artboards: Vec::new(),
             guides: Vec::new(),
             rulers: false,
@@ -171,6 +65,12 @@ impl InfiniteCanvas {
 
     pub fn shapes(mut self, shapes: impl IntoIterator<Item = Shape>) -> Self {
         self.shapes = shapes.into_iter().collect();
+        self
+    }
+
+    /// Lines between shapes that follow them, drawn over the shapes; each names two shapes on the canvas.
+    pub fn links(mut self, links: impl IntoIterator<Item = Link>) -> Self {
+        self.links = links.into_iter().collect();
         self
     }
 
@@ -263,6 +163,61 @@ impl RenderOnce for InfiniteCanvas {
                     .into_any_element()
             })
             .collect();
+        let routes: Vec<Drawn> = self
+            .links
+            .iter()
+            .filter_map(|link| {
+                let named = |key: &SharedString| {
+                    self.shapes
+                        .iter()
+                        .find(|shape| shape.key == *key)
+                        .unwrap_or_else(|| {
+                            panic!("link {} names {key}, which is not on the canvas", link.key)
+                        })
+                };
+                let (from, to) = (named(&link.from), named(&link.to));
+                (!from.hidden && !to.hidden).then(|| {
+                    let points = route(&from.frame, &to.frame, link.elbow)
+                        .into_iter()
+                        .map(|point| view.to_view(point))
+                        .collect();
+                    (points, link.label.clone())
+                })
+            })
+            .collect();
+        let chip = theme.text_size(TextSize::Sm).to_pixels(rem) * view.zoom;
+        let chips: Vec<AnyElement> = routes
+            .iter()
+            .filter_map(|(points, label)| {
+                let (x, y) = halfway(points);
+                Some(
+                    div()
+                        .absolute()
+                        .left(Pixels::from(x))
+                        .top(Pixels::from(y))
+                        .size_0()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(
+                            div()
+                                .flex_none()
+                                .whitespace_nowrap()
+                                .px(chip * 0.5)
+                                .rounded(theme.radius(Radius::Sm))
+                                .bg(colors.bg)
+                                .border_1()
+                                .border_color(colors.border)
+                                .text_size(chip)
+                                .line_height(chip * 1.4)
+                                .text_color(colors.fg_muted)
+                                .child(label.clone()?),
+                        )
+                        .into_any_element(),
+                )
+            })
+            .collect();
+        let lines: Vec<Vec<(f32, f32)>> = routes.into_iter().map(|(points, _)| points).collect();
         let texts: Vec<AnyElement> = self
             .shapes
             .iter()
@@ -297,7 +252,15 @@ impl RenderOnce for InfiniteCanvas {
                                 .into_any_element(),
                         )
                     }
-                    _ => None,
+                    _ => shape.label.as_ref().map(|label| {
+                        placed(label)
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .text_center()
+                            .text_color(colors.fg)
+                            .into_any_element()
+                    }),
                 }
             })
             .collect();
@@ -354,6 +317,19 @@ impl RenderOnce for InfiniteCanvas {
                 }
                 for shape in shapes.iter().filter(|shape| !shape.hidden) {
                     paint_shape(shape, &view, origin, &palette, stroke, window);
+                }
+                for points in &lines {
+                    let end = &points[points.len() - 2..];
+                    finish(
+                        outline(points, origin, stroke, false),
+                        palette.fg_muted,
+                        window,
+                    );
+                    finish(
+                        solid(&head(end[0], end[1], stroke), origin),
+                        palette.fg_muted,
+                        window,
+                    );
                 }
                 let line = palette.hue(3, "guide");
                 for guide in &guides {
@@ -454,6 +430,7 @@ impl RenderOnce for InfiniteCanvas {
             .child(painted)
             .children(names)
             .children(texts)
+            .children(chips)
             .children(self.layers)
             .children(rulers.into_iter().flatten())
             .child(measured)

@@ -94,6 +94,8 @@ pub struct Shape {
     pub hue: usize,
     pub hidden: bool,
     pub locked: bool,
+    /// Words shown in its middle.
+    pub label: Option<SharedString>,
 }
 
 impl Shape {
@@ -114,6 +116,7 @@ impl Shape {
             hue: 0,
             hidden: false,
             locked: false,
+            label: None,
         }
     }
 
@@ -130,6 +133,30 @@ impl Shape {
     pub fn locked(mut self, locked: bool) -> Self {
         self.locked = locked;
         self
+    }
+
+    pub fn label(mut self, text: impl Into<SharedString>) -> Self {
+        self.label = Some(text.into());
+        self
+    }
+
+    /// The words it shows: a text's or a note's own, or its label.
+    pub fn words(&self) -> Option<&SharedString> {
+        match &self.kind {
+            ShapeKind::Text(text) | ShapeKind::Note(text) => Some(text),
+            _ => self.label.as_ref(),
+        }
+    }
+
+    /// The shape showing `text`: a text or a note says it, and anything else wears it as its label, or none when it is empty.
+    pub fn written(&self, text: impl Into<SharedString>) -> Shape {
+        let text = text.into();
+        let mut next = self.clone();
+        match &mut next.kind {
+            ShapeKind::Text(words) | ShapeKind::Note(words) => *words = text,
+            _ => next.label = (!text.is_empty()).then_some(text),
+        }
+        next
     }
 }
 

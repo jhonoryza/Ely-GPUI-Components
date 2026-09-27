@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gpui::{App, Bounds, Entity, Pixels, SharedString, Window};
 
 use super::{
-    edit::{Handle, drawn, inside, resized, snapped},
+    edit::{Handle, drawn, hit, inside, resized, snapped},
     shape::{Shape, ShapeKind},
     view::{Frame, Viewport},
 };
@@ -12,6 +12,8 @@ pub(super) type OnKeys = Rc<dyn Fn(&[SharedString], &mut Window, &mut App)>;
 pub(super) type OnDraw = Rc<dyn Fn(ShapeKind, Frame, &mut Window, &mut App)>;
 pub(super) type OnMove = Rc<dyn Fn(&[SharedString], (f32, f32), &mut Window, &mut App)>;
 pub(super) type OnResize = Rc<dyn Fn(&SharedString, Frame, &mut Window, &mut App)>;
+/// A handler for two keys, or a key and its words.
+pub(crate) type OnPair = Rc<dyn Fn(&SharedString, &SharedString, &mut Window, &mut App)>;
 
 /// A brush's width in canvas units and its hue among the chart colors.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -47,15 +49,20 @@ pub(super) enum Gesture {
     Stroke {
         points: Vec<(f32, f32)>,
     },
+    Linking {
+        from: SharedString,
+        to: (f32, f32),
+    },
 }
 
-/// The layer's own state: the gesture under way, whether Shift is held, the box it covers, and the pen's points so far.
+/// The layer's own state: the gesture under way, whether Shift is held, the box it covers, the pen's points so far, and the shape being written on.
 #[derive(Default)]
 pub(super) struct Hand {
     pub(super) gesture: Gesture,
     pub(super) square: bool,
     pub(super) bounds: Bounds<Pixels>,
     pub(super) pen: Vec<(f32, f32)>,
+    pub(super) writing: Option<SharedString>,
 }
 
 /// Shapes a small nudge still counts as a click by, in view pixels.
@@ -109,6 +116,8 @@ pub(super) struct Handlers {
     pub(super) on_draw: Option<OnDraw>,
     pub(super) on_move: Option<OnMove>,
     pub(super) on_resize: Option<OnResize>,
+    pub(super) on_link: Option<OnPair>,
+    pub(super) on_text: Option<OnPair>,
 }
 
 /// What a gesture ends against: the shapes, the selection, the frames to snap to, and the view.
@@ -179,6 +188,20 @@ pub(super) fn commit(
             log::info!("tool layer: draw {kind:?} at {frame:?}");
             if let Some(on_draw) = &handlers.on_draw {
                 on_draw(kind, frame, window, cx);
+            }
+        }
+        Gesture::Linking { from, to } => {
+            let Some(ix) = hit(&scene.shapes, to, REACH / scene.view.zoom) else {
+                log::info!("tool layer: the link from {from} lands on nothing");
+                return;
+            };
+            let target = &scene.shapes[ix].key;
+            if *target == from {
+                return;
+            }
+            log::info!("tool layer: link {from} to {target}");
+            if let Some(on_link) = &handlers.on_link {
+                on_link(&from, target, window, cx);
             }
         }
         Gesture::Stroke { points } if points.len() > 1 => {

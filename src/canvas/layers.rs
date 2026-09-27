@@ -2,10 +2,11 @@ use std::rc::Rc;
 
 use gpui::{App, ElementId, IntoElement, RenderOnce, SharedString, Styled, Window};
 
-use super::{gesture::OnKeys, shape::Shape};
+use super::{
+    gesture::{OnKeys, OnPair},
+    shape::Shape,
+};
 use crate::lists::{DropAt, Tree, TreeNode};
-
-type OnRename = Rc<dyn Fn(&SharedString, &SharedString, &mut Window, &mut App)>;
 
 /// The keys in paint order, bottom first, after `dragged` lands `at` `target` in a list drawn top first.
 pub(crate) fn restacked(
@@ -41,7 +42,7 @@ pub struct LayerPanel {
     selected: Vec<SharedString>,
     on_select: Option<OnKeys>,
     on_show: Option<OnKeys>,
-    on_rename: Option<OnRename>,
+    on_rename: Option<OnPair>,
     on_restack: Option<OnKeys>,
 }
 

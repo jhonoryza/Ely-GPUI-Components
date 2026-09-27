@@ -7,24 +7,26 @@ use gpui::{
 };
 
 use super::{
-    edit::{Tool, drawn, hit, resized, snapped},
+    edit::{Tool, drawn, resized, snapped},
     gesture::{
-        Brush, Gesture, Hand, Handlers, LEAST, OnDraw, OnKeys, OnMove, OnResize, PEN, REACH, Scene,
-        commit, path, spanned, stroke_shape, taken,
+        Brush, Gesture, Hand, Handlers, LEAST, OnDraw, OnKeys, OnMove, OnPair, OnResize, PEN,
+        REACH, Scene, commit, path, spanned, stroke_shape, taken,
     },
-    marks::{SelectionBox, SnapIndicator, TransformHandles, handle_boxes, placed},
-    plane::{in_view, paint_shape},
-    shape::{Shape, ShapeKind},
+    marks::{SelectionBox, SnapIndicator, TransformHandles, placed},
+    paint::{in_view, paint_shape},
+    press::{Press, pressed as pressed_with},
+    shape::{Corner, Shape, ShapeKind},
     view::{Frame, Viewport},
+    writing,
 };
-use crate::theme::ActiveTheme;
+use crate::{forms::Editing, primitives::tab_stop, theme::ActiveTheme};
 
 /// A drag on a tool layer, and whose layer it is.
 struct Tracing {
     owner: EntityId,
 }
 
-/// A layer over an InfiniteCanvas where its tools work. Select presses a shape, Shift adds to the selection, a drag moves it and snaps its edges to others, a handle resizes it, and a drag on empty space draws a SelectionBox. The shape tools draw by a drag, Shift keeping them square; the pen adds a point per press and a double press ends the path; text drops a line where pressed; the brush strokes a path. A drag may end anywhere, in the layer or out of it. Everything asks the owner; the hand leaves the canvas to pan.
+/// A layer over an InfiniteCanvas where its tools work. Select presses a shape, Shift adds to the selection, a drag moves it and snaps its edges to others, a handle resizes it, and a drag on empty space draws a SelectionBox. The shape tools draw by a drag, Shift keeping them square; the pen adds a point per press and a double press ends the path; text drops a line where pressed; the brush strokes a path; a note drops where pressed; the connector links the shape pressed to the one released on. A double press with Select writes on a shape: a text's or a note's words, or any other's label. A press focuses the layer, where Delete or Backspace asks to delete the selection and Escape lets it go. A drag may end anywhere, in the layer or out of it. Everything asks the owner; the hand leaves the canvas to pan.
 #[derive(IntoElement)]
 pub struct ToolLayer {
     id: ElementId,
@@ -37,6 +39,9 @@ pub struct ToolLayer {
     on_draw: Option<OnDraw>,
     on_move: Option<OnMove>,
     on_resize: Option<OnResize>,
+    on_link: Option<OnPair>,
+    on_text: Option<OnPair>,
+    on_delete: Option<OnKeys>,
 }
 
 impl ToolLayer {
@@ -57,6 +62,9 @@ impl ToolLayer {
             on_draw: None,
             on_move: None,
             on_resize: None,
+            on_link: None,
+            on_text: None,
+            on_delete: None,
         }
     }
 
@@ -105,12 +113,41 @@ impl ToolLayer {
         self.on_resize = Some(Rc::new(handler));
         self
     }
+
+    /// Gets the keys of two shapes the connector joined, from first.
+    pub fn on_link(
+        mut self,
+        handler: impl Fn(&SharedString, &SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_link = Some(Rc::new(handler));
+        self
+    }
+
+    /// Gets the selected keys when Delete or Backspace is pressed on the layer.
+    pub fn on_delete(
+        mut self,
+        handler: impl Fn(&[SharedString], &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_delete = Some(Rc::new(handler));
+        self
+    }
+
+    /// Gets a shape's key and the words written on it after a double press.
+    pub fn on_text(
+        mut self,
+        handler: impl Fn(&SharedString, &SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_text = Some(Rc::new(handler));
+        self
+    }
 }
 
 impl RenderOnce for ToolLayer {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let hand: Entity<Hand> =
             window.use_keyed_state((self.id.clone(), "hand"), cx, |_, _| Hand::default());
+        let editing =
+            window.use_keyed_state((self.id.clone(), "writing"), cx, |_, _| Editing::default());
         if self.tool != Tool::Pen && !hand.read(cx).pen.is_empty() {
             let points = hand.update(cx, |hand, _| std::mem::take(&mut hand.pen));
             end_path(points, self.on_draw.clone(), window, cx);
@@ -191,6 +228,16 @@ impl RenderOnce for ToolLayer {
             Gesture::Stroke { points } if points.len() > 1 => {
                 vec![stroke_shape(points, self.brush.size, self.brush.hue)]
             }
+            Gesture::Linking { from, to } => {
+                let start = shapes
+                    .iter()
+                    .find(|shape| shape.key == *from)
+                    .expect("a link starts on a listed shape")
+                    .frame
+                    .center();
+                let (kind, frame) = drawn(ShapeKind::Arrow(Corner::BottomRight), start, *to, false);
+                vec![Shape::new("+link", "Link", kind, frame)]
+            }
             _ if tool == Tool::Pen && pen.len() > 1 => {
                 vec![stroke_shape(&pen, PEN, self.brush.hue)]
             }
@@ -214,24 +261,46 @@ impl RenderOnce for ToolLayer {
             .filter(|_| selected.len() > 1)
             .map(|frame| placed(&frame).border_1().border_color(palette.accent));
         let snap = (!guides.is_empty()).then(|| SnapIndicator::new(guides.clone(), view));
+        let writing_on = hand.read(cx).writing.clone();
+        let field = writing_on
+            .as_ref()
+            .and_then(|key| shapes.iter().find(|shape| shape.key == *key))
+            .and_then(|shape| writing::field(&editing, in_view(&view, &shape.frame), cx));
+        if field.is_none() && writing_on.is_some() && editing.read(cx).field().is_some() {
+            let closing = editing.clone();
+            log::info!("tool layer: the shape written on left the canvas");
+            window.defer(cx, move |window, cx| {
+                closing.update(cx, |editing, cx| editing.finish(true, window, cx))
+            });
+        }
         let point_of = move |at: Point<Pixels>, bounds: Bounds<Pixels>| {
             let local = at - bounds.origin;
             view.to_canvas((f32::from(local.x), f32::from(local.y)))
         };
         let owner = hand.entity_id();
-        let (pressed, moved, dropped, released) =
-            (hand.clone(), hand.clone(), hand.clone(), hand.clone());
-        let (press_shapes, press_selected) = (shapes.clone(), selected.clone());
-        let (select_on_press, draw_on_press, select_on_up) = (
-            self.on_select.clone(),
-            self.on_draw.clone(),
+        let focus = tab_stop((self.id.clone(), "focus").into(), true, window, cx);
+        let (ring, held_focus) = (
+            if focus.is_focused(window) {
+                palette.focus
+            } else {
+                gpui::transparent_black()
+            },
+            focus.clone(),
+        );
+        let (gone, on_delete, let_go) = (
+            selected.clone(),
+            self.on_delete.clone(),
             self.on_select.clone(),
         );
+        let (pressed, moved, dropped, released) =
+            (hand.clone(), hand.clone(), hand.clone(), hand.clone());
         let handlers = Handlers {
             on_select: self.on_select,
             on_draw: self.on_draw,
             on_move: self.on_move,
             on_resize: self.on_resize,
+            on_link: self.on_link,
+            on_text: self.on_text,
         };
         let scene = Rc::new(Scene {
             shapes,
@@ -240,102 +309,62 @@ impl RenderOnce for ToolLayer {
             view,
         });
         let handlers = Rc::new(handlers);
+        let select_on_up = handlers.on_select.clone();
+        let (press_scene, press_handlers, press_editing) =
+            (scene.clone(), handlers.clone(), editing.clone());
         let brush = self.brush;
         let (out_hand, out_scene, out_handlers) = (hand.clone(), scene.clone(), handlers.clone());
         let measured = hand.clone();
         div()
             .id(self.id)
+            .track_focus(&focus)
             .absolute()
             .inset_0()
+            .child(div().absolute().inset_0().border_1().border_color(ring))
             .when(tool != Tool::Select, |layer| layer.cursor_crosshair())
+            .on_key_down(
+                move |event, window, cx| match event.keystroke.key.as_str() {
+                    "backspace" | "delete" if !gone.is_empty() => {
+                        cx.stop_propagation();
+                        log::info!("tool layer: delete {gone:?}");
+                        if let Some(on_delete) = &on_delete {
+                            on_delete(&gone, window, cx);
+                        }
+                    }
+                    "escape" if !gone.is_empty() => {
+                        cx.stop_propagation();
+                        log::info!("tool layer: nothing selected");
+                        if let Some(on_select) = &let_go {
+                            on_select(&[], window, cx);
+                        }
+                    }
+                    _ => {}
+                },
+            )
             .on_mouse_down(MouseButton::Left, move |event, window, cx| {
                 cx.stop_propagation();
+                window.focus(&held_focus);
                 let bounds = pressed.read(cx).bounds;
                 let at = point_of(event.position, bounds);
                 let local = event.position - bounds.origin;
                 let view_at = (f32::from(local.x), f32::from(local.y));
-                let gesture = match tool {
-                    Tool::Select => {
-                        let held = (press_selected.len() == 1)
-                            .then(|| spanned(&press_shapes, &press_selected))
-                            .flatten()
-                            .and_then(|frame| {
-                                handle_boxes(&in_view(&view, &frame), side)
-                                    .into_iter()
-                                    .find(|(_, square)| square.contains(view_at))
-                            });
-                        match (held, hit(&press_shapes, at, REACH / view.zoom)) {
-                            (Some((handle, _)), _) => Gesture::Resizing {
-                                key: press_selected[0].clone(),
-                                handle,
-                                from: at,
-                                to: at,
-                            },
-                            (None, Some(ix)) => {
-                                let key = press_shapes[ix].key.clone();
-                                let next: Vec<SharedString> =
-                                    match (event.modifiers.shift, press_selected.contains(&key)) {
-                                        (true, true) => press_selected
-                                            .iter()
-                                            .filter(|each| **each != key)
-                                            .cloned()
-                                            .collect(),
-                                        (true, false) => {
-                                            press_selected.iter().cloned().chain([key]).collect()
-                                        }
-                                        (false, true) => press_selected.to_vec(),
-                                        (false, false) => vec![key],
-                                    };
-                                if next != *press_selected {
-                                    log::info!("tool layer: select {next:?}");
-                                    if let Some(on_select) = &select_on_press {
-                                        on_select(&next, window, cx);
-                                    }
-                                }
-                                Gesture::Moving { from: at, to: at }
-                            }
-                            (None, None) => Gesture::Marquee { from: at, to: at },
-                        }
-                    }
-                    Tool::Pen => {
-                        let ends = event.click_count >= 2;
-                        let points = pressed.update(cx, |hand, _| {
-                            if !ends {
-                                hand.pen.push(at);
-                            }
-                            match ends {
-                                true => std::mem::take(&mut hand.pen),
-                                false => Vec::new(),
-                            }
-                        });
-                        if ends && points.len() > 1 {
-                            let (kind, frame) = path(&points, PEN);
-                            log::info!("tool layer: a path of {} points", points.len());
-                            if let Some(on_draw) = &draw_on_press {
-                                on_draw(kind, frame, window, cx);
-                            }
-                        }
-                        Gesture::Idle
-                    }
-                    Tool::Text => {
-                        log::info!("tool layer: text at {at:?}");
-                        if let Some(on_draw) = &draw_on_press {
-                            on_draw(
-                                ShapeKind::Text("Text".into()),
-                                Frame::new(at.0, at.1, 160.0, 32.0),
-                                window,
-                                cx,
-                            );
-                        }
-                        Gesture::Idle
-                    }
-                    Tool::Brush => Gesture::Stroke { points: vec![at] },
-                    drawer => Gesture::Drawing {
-                        kind: drawer.draws().expect("the rest draw shapes"),
-                        from: at,
-                        to: at,
-                    },
+                let press = Press {
+                    tool,
+                    at,
+                    view_at,
+                    count: event.click_count,
+                    shift: event.modifiers.shift,
+                    side,
                 };
+                let gesture = pressed_with(
+                    &press,
+                    &press_scene,
+                    &press_handlers,
+                    &pressed,
+                    &press_editing,
+                    window,
+                    cx,
+                );
                 pressed.update(cx, |hand, cx| {
                     hand.gesture = gesture;
                     hand.square = event.modifiers.shift;
@@ -355,7 +384,8 @@ impl RenderOnce for ToolLayer {
                         Gesture::Marquee { to, .. }
                         | Gesture::Moving { to, .. }
                         | Gesture::Resizing { to, .. }
-                        | Gesture::Drawing { to, .. } => *to = at,
+                        | Gesture::Drawing { to, .. }
+                        | Gesture::Linking { to, .. } => *to = at,
                         Gesture::Stroke { points } => points.push(at),
                         Gesture::Idle => {}
                     }
@@ -415,6 +445,7 @@ impl RenderOnce for ToolLayer {
             .children(marquee)
             .children(handles)
             .children(outline)
+            .children(field)
             .children(snap)
             .into_any_element()
     }
