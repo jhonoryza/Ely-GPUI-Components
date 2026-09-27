@@ -261,6 +261,7 @@ impl ApiRequestBuilder {
         self
     }
 
+    /// Gets the request as written, `{{names}}` and all; `resolve` fills them from the environment.
     pub fn on_send(
         mut self,
         handler: impl Fn(ApiRequest, &mut Window, &mut App) + 'static,

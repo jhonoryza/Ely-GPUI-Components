@@ -85,6 +85,11 @@ impl RenderOnce for HeadersTable {
     }
 }
 
+/// A body as the viewer shows it: JSON indented, anything else as it came.
+fn shown_body(body: &str) -> String {
+    reformat(body, true).unwrap_or_else(|| body.to_string())
+}
+
 /// An answer to a request: its status in its tone with the standard words, how long it took and how big it is; then its body, JSON indented, or its headers.
 #[derive(IntoElement)]
 pub struct ResponseViewer {
@@ -109,7 +114,7 @@ impl RenderOnce for ResponseViewer {
         });
         let shown = tab.read(cx).clone();
         let theme = cx.theme();
-        let body = reformat(&response.body, true).unwrap_or_else(|| response.body.to_string());
+        let body = shown_body(&response.body);
         let panel = match shown.as_ref() {
             "headers" => HeadersTable::new(response.headers.clone()).into_any_element(),
             _ => div()
@@ -169,6 +174,7 @@ impl RenderOnce for ResponseViewer {
 
 #[cfg(test)]
 mod tests {
+    use super::shown_body;
     use super::{reason, status_tone};
     use crate::data_display::Tone;
 
@@ -181,5 +187,11 @@ mod tests {
         assert_eq!(status_tone(201), Tone::Success);
         assert_eq!(status_tone(503), Tone::Danger);
         assert_eq!(reason(299), "");
+    }
+
+    #[test]
+    fn a_json_body_shows_indented_and_other_text_as_it_came() {
+        assert_eq!(shown_body(r#"{"a":[1]}"#), "{\n  \"a\": [\n    1\n  ]\n}");
+        assert_eq!(shown_body("plain words"), "plain words");
     }
 }

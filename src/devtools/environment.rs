@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, FontWeight, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
-    Window, div,
+    App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement, RenderOnce,
+    SharedString, Styled, Window, div,
 };
 
 use crate::{
@@ -64,13 +64,16 @@ fn shown_value(value: &SharedString, secret: bool, open: bool) -> SharedString {
     }
 }
 
-/// Opens `name` when it is shut, shuts it when it is open.
-fn flipped(open: &mut Vec<SharedString>, name: &SharedString) {
-    match open.iter().position(|each| each == name) {
+/// A secret by its environment's key and its name.
+type Secret = (SharedString, SharedString);
+
+/// Opens `secret` when it is shut, shuts it when it is open.
+fn flipped(open: &mut Vec<Secret>, secret: &Secret) {
+    match open.iter().position(|each| each == secret) {
         Some(ix) => {
             open.remove(ix);
         }
-        None => open.push(name.clone()),
+        None => open.push(secret.clone()),
     }
 }
 
@@ -88,16 +91,21 @@ impl RenderOnce for EnvironmentSelector {
                 )
             })
             .clone();
-        let shown =
-            window.use_keyed_state((id.clone(), "shown"), cx, |_, _| Vec::<SharedString>::new());
+        let shown = window.use_keyed_state((id.clone(), "shown"), cx, |_, _| Vec::<Secret>::new());
         let theme = cx.theme();
         let on_change = self
             .on_change
             .unwrap_or_else(|| panic!("environment selector {id:?} has no on_change"));
         let rows = chosen.variables.iter().map(|(name, value)| {
             let secret = chosen.secrets.contains(name);
-            let open = shown.read(cx).contains(name);
-            let (flip, name_key) = (shown.clone(), name.clone());
+            let key: Secret = (chosen.key.clone(), name.clone());
+            let open = shown.read(cx).contains(&key);
+            let flip = shown.clone();
+            let seen = format!(
+                "environment-{}-{name}-{}",
+                chosen.key,
+                if secret && !open { "masked" } else { "shown" }
+            );
             div()
                 .flex()
                 .items_center()
@@ -117,6 +125,7 @@ impl RenderOnce for EnvironmentSelector {
                         .min_w_0()
                         .text_size(theme.text_size(TextSize::Sm))
                         .text_color(theme.colors.fg_muted)
+                        .debug_selector(move || seen)
                         .child(Ellipsis::new(shown_value(value, secret, open))),
                 )
                 .children(secret.then(|| {
@@ -135,7 +144,7 @@ impl RenderOnce for EnvironmentSelector {
                     })
                     .on_click(move |_, _, cx| {
                         flip.update(cx, |shown, cx| {
-                            flipped(shown, &name_key);
+                            flipped(shown, &key);
                             cx.notify();
                         })
                     })
@@ -181,10 +190,11 @@ mod tests {
         assert_eq!(shown_value(&value, true, false), "••••••••");
         assert_eq!(shown_value(&value, true, true), "s3cret");
         assert_eq!(shown_value(&value, false, false), "s3cret");
-        let (mut open, name) = (Vec::new(), SharedString::from("token"));
-        flipped(&mut open, &name);
-        assert_eq!(open, std::slice::from_ref(&name));
-        flipped(&mut open, &name);
+        let secret = (SharedString::from("staging"), SharedString::from("token"));
+        let mut open = Vec::new();
+        flipped(&mut open, &secret);
+        assert_eq!(open, std::slice::from_ref(&secret));
+        flipped(&mut open, &secret);
         assert!(open.is_empty(), "a second press shuts it again");
     }
 }

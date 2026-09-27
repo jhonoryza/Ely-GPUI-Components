@@ -390,3 +390,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T33b | 1 | FAIL | YAML lists at their key's indent and quoted `#` misread; a long note hid the key at 280px; XML text paths counted from 0 and entities stayed raw; odd-key paths and Format at rest untested |
 | T33b | 2 | FAIL | quoted YAML scalars kept their escapes and single-quoted keys their quotes; the comment scanner's escape and after-a-space rules untested |
 | T33b | 3 | FAIL | five escape arms untested and a quoted key holding `: ` split inside its quotes; both fixed after the last round with tests that go red on each mutation, no fourth round |
+| T33c | 1 | FAIL | the socket log stayed at its top; a revealed secret stayed open across environments; the collection drew drags it never moved; the builder's refill, Send's rest and Bearer, the indented body, the eye and a field's pick path untested |

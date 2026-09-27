@@ -1,8 +1,8 @@
 use ely_gpui_component::{
     devtools::{
-        ApiRequest, ApiRequestBuilder, ApiResponse, CollectionTree, Direction, Environment,
+        ApiRequest, ApiRequestBuilder, ApiResponse, Auth, CollectionTree, Direction, Environment,
         EnvironmentSelector, GraphQLExplorer, Method, ResponseViewer, Saved, SchemaType,
-        SocketMessage, SocketState, TypeKind, WebSocketConsole,
+        SocketMessage, SocketState, TypeKind, WebSocketConsole, moved,
     },
     editor::CodeEditor,
     forms::TextInput,
@@ -16,43 +16,89 @@ use jiff::Timestamp;
 use crate::ui::{change, keep, section};
 
 fn environments() -> Vec<Environment> {
-    let env = |key: &str, name: &str, host: &str| Environment {
+    let env = |key: &str, name: &str, host: &str, token: &str| Environment {
         key: key.to_string().into(),
         name: name.to_string().into(),
         variables: vec![
             ("host".into(), host.to_string().into()),
-            ("token".into(), "sk_live_4f9a2c".into()),
+            ("token".into(), token.to_string().into()),
         ],
         secrets: vec!["token".into()],
     };
     vec![
-        env("local", "Local", "localhost:8080"),
-        env("staging", "Staging", "staging.api.example.com"),
-        env("production", "Production", "api.example.com"),
+        env("local", "Local", "localhost:8080", "sk_test_local"),
+        env(
+            "staging",
+            "Staging",
+            "staging.api.example.com",
+            "sk_test_4f9a2c",
+        ),
+        env(
+            "production",
+            "Production",
+            "api.example.com",
+            "sk_live_91c07e",
+        ),
     ]
 }
 
-/// The API demo's request, its environment, the answer and the request picked.
+/// The saved requests, each as the builder opens it.
+fn saved_requests() -> Vec<ApiRequest> {
+    let mut list = ApiRequest::new("list-orders", Method::Get, "https://{{host}}/v1/orders");
+    list.params = vec![
+        ("status".into(), "open".into()),
+        ("limit".into(), "20".into()),
+    ];
+    list.headers = vec![("Accept".into(), "application/json".into())];
+    let mut create = ApiRequest::new("create-order", Method::Post, "https://{{host}}/v1/orders");
+    create.body = r#"{"items": [{"sku": "tea", "quantity": 2}]}"#.into();
+    create.auth = Auth::Bearer("{{token}}".into());
+    let cancel = ApiRequest::new(
+        "cancel-order",
+        Method::Delete,
+        "https://{{host}}/v1/orders/1009",
+    );
+    let me = ApiRequest::new("me", Method::Get, "https://{{host}}/v1/me");
+    let mut rename = ApiRequest::new("rename", Method::Patch, "https://{{host}}/v1/me");
+    rename.body = r#"{"name": "Ada"}"#.into();
+    vec![list, create, cancel, me, rename]
+}
+
+/// The API demo's saved requests and their folders, the one open, its environment and the last answer.
 struct Desk {
-    request: ApiRequest,
+    requests: Vec<ApiRequest>,
+    collection: Vec<Saved>,
+    open: SharedString,
     environment: SharedString,
     response: Option<ApiResponse>,
-    picked: Vec<SharedString>,
 }
 
 impl Desk {
     fn new() -> Self {
-        let mut request = ApiRequest::new("list-orders", Method::Get, "https://{{host}}/v1/orders");
-        request.params = vec![
-            ("status".into(), "open".into()),
-            ("limit".into(), "20".into()),
-        ];
-        request.headers = vec![("Accept".into(), "application/json".into())];
         Self {
-            request,
+            requests: saved_requests(),
+            collection: vec![
+                Saved::folder(
+                    "orders",
+                    "Orders",
+                    [
+                        Saved::request("list-orders", "List orders", Method::Get),
+                        Saved::request("create-order", "Create an order", Method::Post),
+                        Saved::request("cancel-order", "Cancel an order", Method::Delete),
+                    ],
+                ),
+                Saved::folder(
+                    "users",
+                    "Users",
+                    [
+                        Saved::request("me", "Who am I", Method::Get),
+                        Saved::request("rename", "Rename", Method::Patch),
+                    ],
+                ),
+            ],
+            open: "list-orders".into(),
             environment: "staging".into(),
             response: Some(answer()),
-            picked: vec!["list-orders".into()],
         }
     }
 }
@@ -74,41 +120,28 @@ fn answer() -> ApiResponse {
 pub fn requests(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let desk = keep("devtools-api", Desk::new, window, cx);
     let now = desk.read(cx);
-    let (request, environment, response, picked) = (
-        now.request.clone(),
+    let (collection, open, environment, response) = (
+        now.collection.clone(),
+        now.open.clone(),
         now.environment.clone(),
         now.response.clone(),
-        now.picked.clone(),
     );
+    let request = now
+        .requests
+        .iter()
+        .find(|request| request.key == open)
+        .expect("the open request is saved")
+        .clone();
     let variables = environments()
         .into_iter()
         .find(|each| each.key == environment)
         .expect("a listed environment")
         .variables;
-    let [sent, chose, opened] = [(); 3].map(|_| desk.clone());
-    let collection = [
-        Saved::folder(
-            "orders",
-            "Orders",
-            [
-                Saved::request("list-orders", "List orders", Method::Get),
-                Saved::request("create-order", "Create an order", Method::Post),
-                Saved::request("cancel-order", "Cancel an order", Method::Delete),
-            ],
-        ),
-        Saved::folder(
-            "users",
-            "Users",
-            [
-                Saved::request("me", "Who am I", Method::Get),
-                Saved::request("rename", "Rename", Method::Patch),
-            ],
-        ),
-    ];
+    let [sent, chose, opened, dragged] = [(); 4].map(|_| desk.clone());
     let theme = cx.theme();
     section(
         "ApiRequestBuilder · ResponseViewer · HeadersTable · QueryParamsEditor → forms::KeyValueInput · EnvironmentSelector · CollectionTree",
-        "Saved requests in folders; the one open, built with its method and address, its query's pairs, headers, body and sign-in, and the address that goes out with the environment's variables filled in. Send brings back an answer: its status, time and size, then its body or its headers.",
+        "Saved requests in folders; a drag moves one, and Enter opens it in the builder with its method and address, its query's pairs, headers, body and sign-in, and the address that goes out with the environment's variables filled in. Send brings back an answer: its status, time and size, then its body or its headers.",
         cx,
     )
     .child(
@@ -136,8 +169,17 @@ pub fn requests(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                             .child(
                                 CollectionTree::new("devtools-collection", collection)
                                     .open(["orders"])
-                                    .selected(picked)
-                                    .on_open(move |key, _, cx| change(&opened, cx, |desk| desk.picked = vec![key.clone()])),
+                                    .selected([open])
+                                    .on_open(move |key, _, cx| {
+                                        change(&opened, cx, |desk| {
+                                            if desk.requests.iter().any(|request| request.key == *key) {
+                                                desk.open = key.clone();
+                                            }
+                                        })
+                                    })
+                                    .on_move(move |key, target, at, _, cx| {
+                                        change(&dragged, cx, |desk| desk.collection = moved(&desk.collection, key, target, at))
+                                    }),
                             ),
                     ),
             )
@@ -147,11 +189,16 @@ pub fn requests(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .flex()
                     .flex_col()
                     .gap_6()
-                    .child(
-                        ApiRequestBuilder::new("devtools-request", request)
-                            .variables(variables)
-                            .on_send(move |_, _, cx| change(&sent, cx, |desk| desk.response = Some(answer()))),
-                    )
+                    .child(ApiRequestBuilder::new("devtools-request", request).variables(variables).on_send(
+                        move |request, _, cx| {
+                            change(&sent, cx, |desk| {
+                                if let Some(saved) = desk.requests.iter_mut().find(|each| each.key == request.key) {
+                                    *saved = request;
+                                }
+                                desk.response = Some(answer());
+                            })
+                        },
+                    ))
                     .children(response.map(|response| ResponseViewer::new("devtools-response", response))),
             ),
     )

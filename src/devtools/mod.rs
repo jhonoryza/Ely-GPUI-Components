@@ -18,7 +18,7 @@ mod xml;
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
 
-pub use collection::{CollectionTree, Saved};
+pub use collection::{CollectionTree, Saved, moved};
 pub use connection_form::{ConnectionForm, TestState};
 pub use connections::{Connection, ConnectionManager, ConnectionState, Engine};
 pub use datum::{Datum, Unread, read_json, read_yaml};

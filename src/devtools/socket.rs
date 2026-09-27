@@ -1,14 +1,15 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, Entity, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window,
-    div, prelude::*,
+    AnyElement, App, ElementId, Entity, IntoElement, ParentElement, RenderOnce, SharedString,
+    Styled, Window, div, prelude::*,
 };
 use jiff::Timestamp;
 
 use super::json_editor::reformat;
 use crate::{
     buttons::{Button, ButtonVariant},
+    chat::MessageList,
     data_display::{Badge, Tone},
     forms::{Input, TextInput},
     primitives::{Icon, IconName},
@@ -94,6 +95,60 @@ impl WebSocketConsole {
     }
 }
 
+/// One message in the log: which way it went, its text, JSON indented, and when; the time drops below in a narrow box.
+fn message_row(message: &SocketMessage, now: Timestamp, ix: usize, cx: &App) -> AnyElement {
+    let theme = cx.theme();
+    let (icon, ink) = match message.direction {
+        Direction::Sent => (IconName::ArrowUpRight, theme.colors.accent),
+        Direction::Received => (IconName::ArrowDownLeft, theme.colors.success),
+        Direction::Note => (IconName::Info, theme.colors.fg_subtle),
+    };
+    let text = reformat(&message.text, true).unwrap_or_else(|| message.text.to_string());
+    div()
+        .flex()
+        .items_start()
+        .gap_2()
+        .py_1p5()
+        .border_b_1()
+        .border_color(theme.colors.border)
+        .child(
+            div()
+                .flex_none()
+                .pt_0p5()
+                .child(Icon::new(icon).size(IconSize::Sm).color(ink)),
+        )
+        .child(
+            div()
+                .flex_1()
+                .min_w_0()
+                .flex()
+                .flex_wrap()
+                .gap_x_3()
+                .gap_y_0p5()
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(theme.label_width())
+                        .font_family(theme.mono_family.clone())
+                        .text_size(theme.text_size(TextSize::Sm))
+                        .when(message.direction == Direction::Note, |line| {
+                            line.text_color(theme.colors.fg_muted)
+                        })
+                        .child(text),
+                )
+                .child(
+                    div()
+                        .flex_none()
+                        .text_size(theme.text_size(TextSize::Xs))
+                        .text_color(theme.colors.fg_subtle)
+                        .child(format::relative(message.at, now)),
+                ),
+        )
+        .w_full()
+        .debug_selector(move || format!("socket-message-{ix}"))
+        .into_any_element()
+}
+
 impl RenderOnce for WebSocketConsole {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
@@ -103,54 +158,7 @@ impl RenderOnce for WebSocketConsole {
             SocketState::Open => (Tone::Success, "Open"),
         };
         let open = self.state == SocketState::Open;
-        let rows = self.messages.iter().map(|message| {
-            let (icon, ink) = match message.direction {
-                Direction::Sent => (IconName::ArrowUpRight, theme.colors.accent),
-                Direction::Received => (IconName::ArrowDownLeft, theme.colors.success),
-                Direction::Note => (IconName::Info, theme.colors.fg_subtle),
-            };
-            let text = reformat(&message.text, true).unwrap_or_else(|| message.text.to_string());
-            div()
-                .flex()
-                .items_start()
-                .gap_2()
-                .py_1p5()
-                .border_b_1()
-                .border_color(theme.colors.border)
-                .child(
-                    div()
-                        .flex_none()
-                        .pt_0p5()
-                        .child(Icon::new(icon).size(IconSize::Sm).color(ink)),
-                )
-                .child(
-                    div()
-                        .flex_1()
-                        .min_w_0()
-                        .flex()
-                        .flex_wrap()
-                        .gap_x_3()
-                        .gap_y_0p5()
-                        .child(
-                            div()
-                                .flex_1()
-                                .min_w(theme.label_width())
-                                .font_family(theme.mono_family.clone())
-                                .text_size(theme.text_size(TextSize::Sm))
-                                .when(message.direction == Direction::Note, |line| {
-                                    line.text_color(theme.colors.fg_muted)
-                                })
-                                .child(text),
-                        )
-                        .child(
-                            div()
-                                .flex_none()
-                                .text_size(theme.text_size(TextSize::Xs))
-                                .text_color(theme.colors.fg_subtle)
-                                .child(format::relative(message.at, self.now)),
-                        ),
-                )
-        });
+        let (messages, now) = (Rc::new(self.messages), self.now);
         let on_send = self
             .on_send
             .unwrap_or_else(|| panic!("websocket console {:?} has no on_send", self.id));
@@ -207,14 +215,17 @@ impl RenderOnce for WebSocketConsole {
             )
             .child(
                 div()
-                    .id((self.id.clone(), "log"))
-                    .max_h(theme.list_max_height())
-                    .overflow_y_scroll()
+                    .debug_selector(|| "socket-log".into())
+                    .h(theme.list_max_height())
                     .px_3()
                     .rounded(theme.radius(Radius::Md))
                     .border_1()
                     .border_color(theme.colors.border)
-                    .children(rows),
+                    .child(MessageList::new(
+                        (self.id.clone(), "log"),
+                        messages.len(),
+                        move |ix, _, cx| message_row(&messages[ix], now, ix, cx),
+                    )),
             )
             .child(
                 div()

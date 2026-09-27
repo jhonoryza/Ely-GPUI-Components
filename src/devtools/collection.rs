@@ -4,7 +4,7 @@ use gpui::{App, ElementId, IntoElement, RenderOnce, SharedString, Styled, Window
 
 use super::request::Method;
 use crate::{
-    lists::{Tree, TreeNode},
+    lists::{DropAt, Tree, TreeNode},
     primitives::IconName,
 };
 
@@ -48,6 +48,12 @@ impl Saved {
         }
     }
 
+    fn key(&self) -> &SharedString {
+        match self {
+            Saved::Folder { key, .. } | Saved::Request { key, .. } => key,
+        }
+    }
+
     fn node(&self) -> TreeNode {
         match self {
             Saved::Folder { key, name, items } => TreeNode::new(key.clone(), name.clone())
@@ -60,10 +66,58 @@ impl Saved {
     }
 }
 
+/// Takes `key` out of `items`, wherever it lies.
+fn taken(items: &mut Vec<Saved>, key: &str) -> Option<Saved> {
+    if let Some(ix) = items.iter().position(|item| item.key() == key) {
+        return Some(items.remove(ix));
+    }
+    items.iter_mut().find_map(|item| match item {
+        Saved::Folder { items, .. } => taken(items, key),
+        Saved::Request { .. } => None,
+    })
+}
+
+/// Sets `item` at `at` of `target`, or hands it back when `target` is not in `items`.
+fn placed(items: &mut Vec<Saved>, item: Saved, target: &str, at: DropAt) -> Result<(), Saved> {
+    if let Some(ix) = items.iter().position(|each| each.key() == target) {
+        match (at, &mut items[ix]) {
+            (DropAt::Before, _) => items.insert(ix, item),
+            (DropAt::After, _) => items.insert(ix + 1, item),
+            (DropAt::Inside, Saved::Folder { items, .. }) => items.push(item),
+            (DropAt::Inside, Saved::Request { key, .. }) => {
+                panic!("collection: {key} is a request, and nothing goes inside it")
+            }
+        }
+        return Ok(());
+    }
+    let mut item = item;
+    for each in items.iter_mut() {
+        if let Saved::Folder { items, .. } = each {
+            match placed(items, item, target, at) {
+                Ok(()) => return Ok(()),
+                Err(back) => item = back,
+            }
+        }
+    }
+    Err(item)
+}
+
+/// `items` with `key` moved to `at` of `target`, as a drop in the tree asks.
+pub fn moved(items: &[Saved], key: &str, target: &str, at: DropAt) -> Vec<Saved> {
+    let mut items = items.to_vec();
+    let item = taken(&mut items, key).unwrap_or_else(|| panic!("collection: no {key} to move"));
+    if let Err(item) = placed(&mut items, item, target, at) {
+        panic!("collection: no {target} to move {} beside", item.key());
+    }
+    log::info!("collection: moved {key} {at:?} {target}");
+    items
+}
+
 type OnKey = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 type OnKeys = Rc<dyn Fn(&[SharedString], &mut Window, &mut App)>;
+type OnMove = Rc<dyn Fn(&SharedString, &SharedString, DropAt, &mut Window, &mut App)>;
 
-/// Saved requests in folders, each with its method. Enter or a double press opens a request; a drag moves one into another folder or among its own. It fills its box, which the host sizes.
+/// Saved requests in folders, each with its method. Enter or a double press opens a request; with `on_move`, a drag moves one into another folder or among its own, and `moved` applies it. It fills its box, which the host sizes.
 #[derive(IntoElement)]
 pub struct CollectionTree {
     id: ElementId,
@@ -72,6 +126,7 @@ pub struct CollectionTree {
     selected: Vec<SharedString>,
     on_open: Option<OnKey>,
     on_select: Option<OnKeys>,
+    on_move: Option<OnMove>,
 }
 
 impl CollectionTree {
@@ -83,6 +138,7 @@ impl CollectionTree {
             selected: Vec::new(),
             on_open: None,
             on_select: None,
+            on_move: None,
         }
     }
 
@@ -103,6 +159,15 @@ impl CollectionTree {
         handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.on_open = Some(Rc::new(handler));
+        self
+    }
+
+    /// Runs with the request or folder dragged, the row it landed on, and where on that row.
+    pub fn on_move(
+        mut self,
+        handler: impl Fn(&SharedString, &SharedString, DropAt, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_move = Some(Rc::new(handler));
         self
     }
 
@@ -130,6 +195,61 @@ impl RenderOnce for CollectionTree {
         if let Some(on_select) = self.on_select {
             tree = tree.on_select(move |keys, window, cx| on_select(keys, window, cx));
         }
+        if let Some(on_move) = self.on_move {
+            tree = tree
+                .on_move(move |key, target, at, window, cx| on_move(key, target, at, window, cx));
+        }
         tree
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Saved, moved};
+    use crate::{devtools::Method, lists::DropAt};
+
+    fn keys(items: &[Saved]) -> Vec<String> {
+        items
+            .iter()
+            .flat_map(|item| match item {
+                Saved::Folder { key, items, .. } => {
+                    let inner = keys(items).join(",");
+                    vec![format!("{key}[{inner}]")]
+                }
+                Saved::Request { key, .. } => vec![key.to_string()],
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_drop_moves_a_request_beside_a_row_or_into_a_folder() {
+        let items = vec![
+            Saved::folder(
+                "a",
+                "A",
+                [
+                    Saved::request("x", "X", Method::Get),
+                    Saved::request("y", "Y", Method::Get),
+                ],
+            ),
+            Saved::folder("b", "B", []),
+            Saved::request("z", "Z", Method::Post),
+        ];
+        assert_eq!(
+            keys(&moved(&items, "x", "b", DropAt::Inside)),
+            ["a[y]", "b[x]", "z"]
+        );
+        assert_eq!(
+            keys(&moved(&items, "z", "x", DropAt::Before)),
+            ["a[z,x,y]", "b[]"]
+        );
+        assert_eq!(
+            keys(&moved(&items, "x", "z", DropAt::After)),
+            ["a[y]", "b[]", "z", "x"]
+        );
+        assert_eq!(
+            keys(&moved(&items, "b", "a", DropAt::Before)),
+            ["b[]", "a[x,y]", "z"]
+        );
     }
 }
