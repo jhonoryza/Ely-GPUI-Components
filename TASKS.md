@@ -118,8 +118,11 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T32a Canvas · Plane — `tasks/ch31-43.md`
 - [x] T32b Canvas · Tools — `tasks/ch31-43.md`
 - [x] T32c Canvas · Panels — `tasks/ch31-43.md`
-- [ ] T32d Canvas · Graphs and boards
-- [ ] T33 DB & Dev Tools
+- [x] T32d Canvas · Graphs and boards — `tasks/ch31-43.md`
+- [ ] T33a DB & Dev Tools · Databases
+- [ ] T33b DB & Dev Tools · Data formats
+- [ ] T33c DB & Dev Tools · APIs
+- [ ] T33d DB & Dev Tools · Tools and machines
 - [ ] T34 Dashboard
 - [ ] T35 Settings
 - [ ] T36 Account
@@ -380,3 +383,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T32c | 1 | PASS | |
 | T32d | 1 | FAIL | Tab in a mind map's rename field added a topic; the replaced wire, the connector released on its own shape and a deleted shape's links went untested |
 | T32d | 2 | FAIL | Enter or Escape in a canvas field handed focus nowhere, so the map's and the layer's keys went dead until the next press |
+| T32d | 3 | PASS | |
