@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, Hsla, IntoElement, ParentElement, Pixels, RenderOnce, SharedString, Styled,
-    Window, div,
+    App, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce,
+    SharedString, Styled, Window, div,
 };
 
 use crate::{
@@ -140,14 +140,17 @@ impl RenderOnce for AccentColorPicker {
         };
         let columns = u16::try_from(self.presets.len()).expect("a handful of presets");
         div()
+            .debug_selector(|| "accent-color-picker".into())
             .flex()
             .items_start()
             .gap_2()
             .child(
-                ColorPalette::new((self.id.clone(), "presets"), self.presets)
-                    .columns(columns)
-                    .selected(self.color)
-                    .on_change(report(picked)),
+                div().flex_1().min_w_0().child(
+                    ColorPalette::new((self.id.clone(), "presets"), self.presets)
+                        .columns(columns)
+                        .selected(self.color)
+                        .on_change(report(picked)),
+                ),
             )
             .child(color_well(
                 (self.id, "custom").into(),

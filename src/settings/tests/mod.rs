@@ -1,13 +1,13 @@
 use gpui::{
     AnyElement, App, Context, Entity, IntoElement, KeyBinding, ParentElement, Render, Styled,
-    TestAppContext, VisualTestContext, Window, div, hsla, px,
+    TestAppContext, VisualTestContext, Window, div, px,
 };
 
 use super::{
-    AccentColorPicker, Appearance, Changed, DeveloperModeToggle, FeatureFlags, Flag,
-    FontSizeControl, ImportExportSettings, Notices, NotificationSettings, Privacy, PrivacySettings,
-    Proxy, ProxySettings, ResetToDefault, SettingEntry, SettingsLayout, SettingsSearch, Stage,
-    Startup, StartupSettings, StorageSettings, Store, ThemeSelector,
+    Appearance, Changed, DeveloperModeToggle, FeatureFlags, Flag, FontSizeControl,
+    ImportExportSettings, Notices, NotificationSettings, Privacy, PrivacySettings, Proxy,
+    ProxySettings, ResetToDefault, SettingEntry, SettingsLayout, SettingsSearch, Stage, Startup,
+    StartupSettings, StorageSettings, Store, ThemeSelector,
 };
 use crate::{
     forms::{self, Choice, TextInput},
@@ -306,22 +306,6 @@ fn the_arrows_open_the_next_section(cx: &mut TestAppContext) {
     assert_eq!(said(&host, cx), ["open b"]);
 }
 
-fn accent(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
-    let (red, blue) = (hsla(0.0, 0.6, 0.5, 1.0), hsla(0.6, 0.6, 0.5, 1.0));
-    AccentColorPicker::new("accent", red, [("Red", red), ("Blue", blue)])
-        .on_change(move |color, _, cx| say(&owner, format!("blue {}", color == blue), cx))
-        .into_any_element()
-}
-
-/// Stops: the presets, Red then Blue, then the custom well.
-#[gpui::test]
-fn a_preset_sets_the_accent(cx: &mut TestAppContext) {
-    let (host, cx) = desk(accent, cx);
-    tab(2, cx);
-    tap("space", cx);
-    assert_eq!(said(&host, cx), ["blue true"]);
-}
-
 fn privacy(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
     let privacy = Privacy {
         telemetry: true,
@@ -455,21 +439,6 @@ fn apply_rests_while_the_port_is_bad(cx: &mut TestAppContext) {
     assert!(said(&host, cx).is_empty());
 }
 
-fn default_size(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
-    FontSizeControl::new("size", 14.0, 14.0, (12.0, 24.0))
-        .on_change(move |size, _, cx| say(&owner, format!("size {size}"), cx))
-        .into_any_element()
-}
-
-/// At the default size the way back rests, so the second stop wraps to the slider.
-#[gpui::test]
-fn the_way_back_rests_at_the_default_size(cx: &mut TestAppContext) {
-    let (host, cx) = desk(default_size, cx);
-    tab(2, cx);
-    tap("space", cx);
-    assert!(said(&host, cx).is_empty());
-}
-
 /// Stops: Do not disturb, then App, which is on.
 #[gpui::test]
 fn a_box_pressed_off_lets_its_pair_go(cx: &mut TestAppContext) {
@@ -478,3 +447,5 @@ fn a_box_pressed_off_lets_its_pair_go(cx: &mut TestAppContext) {
     tap("space", cx);
     assert_eq!(said(&host, cx), ["[] false"]);
 }
+
+mod appearance;
