@@ -9,7 +9,7 @@ use gpui::{
 use crate::{
     primitives::{Icon, IconName, Severity},
     theme::{ActiveTheme, ControlSize, IconSize, Palette, Radius, TextSize},
-    typography::AnimatedNumber,
+    typography::{AnimatedNumber, Ellipsis},
 };
 
 /// How a badge or a tag is tinted: quiet, the accent, or a severity.
@@ -246,7 +246,7 @@ impl RenderOnce for DotBadge {
 
 type OnRemove = Rc<dyn Fn(&mut Window, &mut App)>;
 
-/// A short label for a kind, a topic or a filter: an optional icon, the label, and an x when it can be removed.
+/// A short label for a kind, a topic or a filter: an optional icon, the label, and an x when it can be removed. It is never wider than its container; a long label ends in an ellipsis.
 #[derive(IntoElement)]
 pub struct Tag {
     id: ElementId,
@@ -292,10 +292,12 @@ impl RenderOnce for Tag {
             Tone::Neutral => (colors.hover, colors.fg),
             other => other.colors(colors),
         };
-        let remove = self.id.clone();
+        let (remove, named) = (self.id.clone(), self.id.clone());
         div()
+            .debug_selector(move || format!("tag {named}"))
             .flex()
             .flex_none()
+            .max_w_full()
             .items_center()
             .gap_1()
             .pl_2()
@@ -307,13 +309,18 @@ impl RenderOnce for Tag {
             .text_size(theme.text_size(TextSize::Sm))
             .text_color(text)
             .when_some(self.icon, |tag, icon| {
-                tag.child(Icon::new(icon).size(IconSize::Xs).color(text))
+                tag.child(
+                    div()
+                        .flex_none()
+                        .child(Icon::new(icon).size(IconSize::Xs).color(text)),
+                )
             })
-            .child(self.label)
+            .child(div().flex_1().min_w_0().child(Ellipsis::new(self.label)))
             .when_some(self.on_remove, |tag, remove_it| {
                 tag.child(
                     div()
                         .id(remove)
+                        .flex_none()
                         .rounded(theme.radius(Radius::Sm))
                         .cursor_pointer()
                         .hover(|style| style.bg(colors.active))

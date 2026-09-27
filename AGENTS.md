@@ -119,7 +119,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Paths with `/` between folders become a tree through `lists::Folder::of`, for `FileTree` and `files::ArchiveViewer` alike.
 - A folder's path over its entries is `lists::path_bar`, and its first order is `lists::listed`, folders first by name: DirectoryListing and FileExplorer share both, so every view shows one path and one order.
 - A file's icon comes from `primitives::file_icon`, one map from name to icon for every chapter; `files::FileIcon` draws it. What fits across a width comes from `layout::columns_for`, and `layout::fit` adds the inset that centers it.
-- Badges, tags and avatars live in `data_display`; forms and shell draw theirs from there, and `data_display` imports neither. Avatars take square pictures.
+- Badges, tags and avatars live in `data_display`; forms and shell draw theirs from there, and `data_display` imports neither. Avatars take square pictures. A tag is never wider than its container; a long label ends in an ellipsis beside its remove mark.
 - A picture drawn in code reaches gpui as a `RenderImage`. A host that replaces one frees the old through `App::drop_image`, or every frame stays in the sprite atlas (the gallery's model).
 - `img()` keeps loading state, and moves an animated picture's frames, only with an id. Content masks are rectangles, so rounded corners survive only when the image fills its box without cropping.
 - gpui reads a `&str` picture source as a web address. A file goes through `Path` (`documents::source` in the crate, `Path::new` in the gallery).

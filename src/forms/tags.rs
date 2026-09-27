@@ -206,8 +206,10 @@ impl RenderOnce for TagInput {
             }
             .render(window, cx)
         });
+        let field = self.id.clone();
         div()
             .id(self.id)
+            .debug_selector(move || format!("tag-input {field}"))
             .relative()
             .flex()
             .flex_wrap()

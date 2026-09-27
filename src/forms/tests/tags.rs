@@ -1,6 +1,6 @@
 use gpui::{
-    Context, Entity, IntoElement, KeyUpEvent, Keystroke, Render, SharedString, TestAppContext,
-    VisualTestContext, Window,
+    Context, Entity, IntoElement, KeyUpEvent, Keystroke, ParentElement, Render, SharedString,
+    Styled, TestAppContext, VisualTestContext, Window, div, px,
 };
 
 use super::setup;
@@ -108,4 +108,30 @@ fn escape_sets_the_suggestions_aside(cx: &mut TestAppContext) {
     press("escape", cx);
     press("enter", cx);
     assert_eq!(asked(&host, cx), [vec![SharedString::from("be")]]);
+}
+
+/// A narrow field holding one address whose name runs long.
+struct Narrow;
+
+impl Render for Narrow {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .w(px(200.0))
+            .child(
+                TagInput::new("to", ["ana@atrium.studio"]).suggestions([Choice::new(
+                    "ana@atrium.studio",
+                    "Anastasia Lima-Fernández de la Torre, of the Atrium studio",
+                )]),
+            )
+    }
+}
+
+#[gpui::test]
+fn a_long_chip_ends_inside_its_field(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Narrow);
+    settle(cx);
+    let chip = cx.debug_bounds("tag to-tag-0").expect("the chip draws");
+    let field = cx.debug_bounds("tag-input to").expect("the field draws");
+    assert!(chip.right() <= field.right(), "{chip:?} inside {field:?}");
 }
