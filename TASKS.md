@@ -135,7 +135,8 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T39a Theme · Editing — `tasks/ch31-43.md`
 - [x] T39b Theme · Importing — `tasks/ch31-43.md`
 - [x] T39c Theme · Platform — `tasks/ch31-43.md`
-- [ ] T40 i18n & a11y
+- [ ] T40a i18n
+- [ ] T40b a11y
 - [ ] T41 Maps
 - [ ] T42 Misc
 - [ ] T43 Library Tooling
