@@ -1,5 +1,6 @@
 mod advanced;
 mod appearance;
+mod editor;
 mod network;
 mod preferences;
 mod search;
@@ -14,6 +15,7 @@ pub use advanced::{DeveloperModeToggle, FeatureFlags, Flag, Stage};
 pub use appearance::{
     AccentColorPicker, Appearance, DensitySelector, FontSizeControl, ThemeSelector,
 };
+pub use editor::{ThemeDraft, ThemeEditor};
 pub use network::{Proxy, ProxySettings, manual};
 pub use preferences::{
     Notices, NotificationSettings, Privacy, PrivacySettings, Startup, StartupSettings,

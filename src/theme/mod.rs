@@ -12,6 +12,9 @@ mod palette;
 mod project;
 mod tokens;
 
+#[cfg(all(test, feature = "test-support"))]
+mod tests;
+
 use std::time::{Duration, Instant};
 
 use gpui::{App, Global, SharedString, WindowAppearance};
@@ -56,6 +59,7 @@ pub struct Theme {
     mode: Mode,
     high_contrast: bool,
     transition: u64,
+    custom: [Option<Palette>; 2],
     pub colors: Palette,
     pub density: Density,
     pub radius_scale: f32,
@@ -83,6 +87,7 @@ impl Theme {
             mode: Mode::Light,
             high_contrast: false,
             transition: 0,
+            custom: [None, None],
             colors: Palette::light(false),
             density: Density::Standard,
             radius_scale: 1.0,
@@ -118,6 +123,25 @@ impl Theme {
         Self::fade_to_target(cx);
     }
 
+    /// The owner's palette for `mode`, as an edited or imported theme gives, or none to bring Ely's back. The colors fade to it when `mode` shows. High contrast strengthens Ely's own palettes alone.
+    pub fn set_palette(mode: Mode, palette: Option<Palette>, cx: &mut App) {
+        log::info!(
+            "theme: {mode:?} palette -> {}",
+            if palette.is_some() {
+                "the owner's"
+            } else {
+                "Ely's"
+            }
+        );
+        cx.global_mut::<Theme>().custom[mode as usize] = palette;
+        Self::fade_to_target(cx);
+    }
+
+    /// The palette the shown mode fades to: the owner's, or Ely's.
+    pub fn palette(&self) -> Palette {
+        self.target()
+    }
+
     /// Edits non-color tokens, then repaints.
     pub fn update(cx: &mut App, edit: impl FnOnce(&mut Theme)) {
         edit(cx.global_mut::<Theme>());
@@ -125,6 +149,9 @@ impl Theme {
     }
 
     fn target(&self) -> Palette {
+        if let Some(palette) = &self.custom[self.mode as usize] {
+            return palette.clone();
+        }
         match self.mode {
             Mode::Light => Palette::light(self.high_contrast),
             Mode::Dark => Palette::dark(self.high_contrast),

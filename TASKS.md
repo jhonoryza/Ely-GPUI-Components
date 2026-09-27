@@ -132,7 +132,9 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T37b Onboarding · Help — `tasks/ch31-43.md`
 - [x] T38a Interaction · Pointer — `tasks/ch31-43.md`
 - [x] T38b Interaction · Keys, scroll and focus — `tasks/ch31-43.md`
-- [ ] T39 Theme
+- [ ] T39a Theme · Editing
+- [ ] T39b Theme · Importing
+- [ ] T39c Theme · Platform
 - [ ] T40 i18n & a11y
 - [ ] T41 Maps
 - [ ] T42 Misc

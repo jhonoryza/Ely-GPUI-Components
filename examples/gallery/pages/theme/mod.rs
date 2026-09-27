@@ -9,6 +9,8 @@ use gpui::{
     IntoElement, ParentElement, SharedString, Styled, StyledText, Window, div, px,
 };
 
+mod editing;
+
 use super::Page;
 use crate::ui::{section, specimen, specimens};
 
@@ -21,7 +23,7 @@ pub const PAGE: Page = Page {
     script: &[],
 };
 
-fn render(_: &mut Window, cx: &mut App) -> AnyElement {
+fn render(window: &mut Window, cx: &mut App) -> AnyElement {
     let colors = cx.theme().colors.clone();
     let surfaces = [
         ("bg", colors.bg),
@@ -144,6 +146,7 @@ fn render(_: &mut Window, cx: &mut App) -> AnyElement {
             ))
             .child(track("spring", "spring · damping 0.75", motion::spring, cx)),
         )
+        .child(editing::editor(window, cx))
         .into_any_element()
 }
 

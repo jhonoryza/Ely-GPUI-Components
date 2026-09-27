@@ -56,6 +56,7 @@ pub use checked::{EmailInput, UrlInput, is_email, is_url};
 pub use chips::ChoiceChips;
 pub use code::{CodeInput, JsonInput, code_highlights, json_highlights};
 pub(crate) use code::{Kind, lex};
+pub(crate) use color::hex;
 pub use color::{ColorPalette, ColorPicker, ColorSwatch, EyeDropper, GradientEditor, GradientStop};
 pub use combobox::Combobox;
 pub use date::{

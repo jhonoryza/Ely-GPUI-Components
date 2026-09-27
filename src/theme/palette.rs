@@ -122,7 +122,61 @@ pub const HUE_NAMES: [&str; 8] = [
     "Blue", "Teal", "Ochre", "Rose", "Violet", "Green", "Rust", "Cyan",
 ];
 
+impl Syntax {
+    /// The color of the token kind named `token`, a field's name; any other name fails.
+    pub fn token_mut(&mut self, token: &str) -> &mut Hsla {
+        match token {
+            "keyword" => &mut self.keyword,
+            "string" => &mut self.string,
+            "number" => &mut self.number,
+            "comment" => &mut self.comment,
+            "function" => &mut self.function,
+            "type_name" => &mut self.type_name,
+            "constant" => &mut self.constant,
+            "property" => &mut self.property,
+            "tag" => &mut self.tag,
+            "attribute" => &mut self.attribute,
+            "operator" => &mut self.operator,
+            "punctuation" => &mut self.punctuation,
+            "variable" => &mut self.variable,
+            other => panic!("no syntax color {other}"),
+        }
+    }
+}
+
 impl Palette {
+    /// The color named `token`, a field's name; any other name fails.
+    pub fn token_mut(&mut self, token: &str) -> &mut Hsla {
+        match token {
+            "bg" => &mut self.bg,
+            "surface" => &mut self.surface,
+            "sunken" => &mut self.sunken,
+            "overlay" => &mut self.overlay,
+            "hover" => &mut self.hover,
+            "active" => &mut self.active,
+            "border" => &mut self.border,
+            "border_strong" => &mut self.border_strong,
+            "fg" => &mut self.fg,
+            "fg_muted" => &mut self.fg_muted,
+            "fg_subtle" => &mut self.fg_subtle,
+            "fg_disabled" => &mut self.fg_disabled,
+            "accent" => &mut self.accent,
+            "accent_hover" => &mut self.accent_hover,
+            "on_accent" => &mut self.on_accent,
+            "focus" => &mut self.focus,
+            "link" => &mut self.link,
+            "selection" => &mut self.selection,
+            "success" => &mut self.success,
+            "warning" => &mut self.warning,
+            "danger" => &mut self.danger,
+            "info" => &mut self.info,
+            "tooltip_bg" => &mut self.tooltip_bg,
+            "tooltip_fg" => &mut self.tooltip_fg,
+            "shadow" => &mut self.shadow,
+            other => panic!("no palette color {other}"),
+        }
+    }
+
     /// The chart color at `hue`; a hue past the chart fails, naming `owner`.
     pub fn hue(&self, hue: usize, owner: impl std::fmt::Display) -> Hsla {
         *self
