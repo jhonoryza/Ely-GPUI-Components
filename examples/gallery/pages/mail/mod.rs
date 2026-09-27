@@ -9,6 +9,7 @@ use gpui::{AnyElement, App, IntoElement, ParentElement, SharedString, Styled, Wi
 use jiff::{SignedDuration, Timestamp};
 
 mod read;
+mod write;
 
 use super::Page;
 use crate::{
@@ -43,6 +44,14 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("mail-thread", 200.0, 120.0),
     Step::Wait(300),
     Step::Shot("thread-opened"),
+    Step::DownAt("mail-composer", 270.0, 31.0),
+    Step::UpAt("mail-composer", 270.0, 31.0),
+    Step::Type("an"),
+    Step::Wait(200),
+    Step::Shot("recipient-suggested"),
+    Step::Key("enter"),
+    Step::Wait(200),
+    Step::Shot("recipient-added"),
 ];
 
 fn boxes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
@@ -212,5 +221,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(zero(cx))
         .child(read::reader(cx))
         .child(read::thread(cx))
+        .child(write::composer(window, cx))
+        .child(write::signature(window, cx))
+        .child(write::schedule(window, cx))
         .into_any_element()
 }

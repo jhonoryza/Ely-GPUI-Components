@@ -3,6 +3,7 @@ mod colors;
 mod dates;
 mod other;
 mod structure;
+mod tags;
 mod upload;
 
 use gpui::{

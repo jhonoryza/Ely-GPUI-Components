@@ -104,7 +104,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T28d Messaging · Calls
 - [x] T28e Messaging · Stickers and GIFs
 - [x] T29a Mail · Boxes and lists
-- [ ] T29b Mail · Reading
+- [x] T29b Mail · Reading
 - [ ] T29c Mail · Writing
 - [ ] T29d Mail · Sorting
 - [ ] T30 Calendar
@@ -344,3 +344,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T28e | 2 | PASS | |
 | T29a | 1 | FAIL | Space on a focused star also toggled the list's selection |
 | T29a | 2 | PASS | |
+| T29b | 1 | FAIL | a folded message lost focus as it opened; a long name beside a long date ran past a 280px fold |
+| T29b | 2 | PASS | |
