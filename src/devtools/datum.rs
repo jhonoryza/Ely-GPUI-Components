@@ -51,22 +51,64 @@ pub fn read_json(text: &str) -> Result<Datum, Unread> {
         })
 }
 
-fn scalar(text: &str) -> Datum {
-    let text = text.trim();
-    let unquoted = |quote: char| {
-        text.strip_prefix(quote)
-            .and_then(|rest| rest.strip_suffix(quote))
+/// The inside of a quoted scalar with its escapes read: `\"`, `\\`, `\/`, `\n`, `\t`, `\r` and `\0` in double quotes, `''` in single ones. Plain text is `None`.
+fn unquoted(text: &str) -> Result<Option<String>, String> {
+    if let Some(inner) = text
+        .strip_prefix('\'')
+        .and_then(|rest| rest.strip_suffix('\''))
+    {
+        return Ok(Some(inner.replace("''", "'")));
+    }
+    let Some(inner) = text
+        .strip_prefix('"')
+        .and_then(|rest| rest.strip_suffix('"'))
+    else {
+        return Ok(None);
     };
-    if let Some(inner) = unquoted('"').or_else(|| unquoted('\'')) {
-        return Datum::Text(inner.to_string().into());
+    let mut out = String::with_capacity(inner.len());
+    let mut chars = inner.chars();
+    while let Some(ch) = chars.next() {
+        if ch != '\\' {
+            out.push(ch);
+            continue;
+        }
+        out.push(match chars.next() {
+            Some('"') => '"',
+            Some('\\') => '\\',
+            Some('/') => '/',
+            Some('n') => '\n',
+            Some('t') => '\t',
+            Some('r') => '\r',
+            Some('0') => '\0',
+            Some(other) => return Err(format!("\\{other} is no escape YAML knows")),
+            None => return Err("a quoted text ends in a lone \\".into()),
+        });
     }
-    match text {
-        "" | "~" | "null" => Datum::Null,
-        "true" => Datum::Bool(true),
-        "false" => Datum::Bool(false),
-        _ if text.parse::<f64>().is_ok() => Datum::Number(text.to_string().into()),
-        _ => Datum::Text(text.to_string().into()),
+    Ok(Some(out))
+}
+
+/// A scalar's value, or why its quotes do not read.
+fn scalar(text: &str, line: usize) -> Result<Datum, Unread> {
+    let text = text.trim();
+    if text.starts_with(['|', '>'])
+        && text[1..]
+            .chars()
+            .all(|ch| matches!(ch, '-' | '+' | '0'..='9'))
+    {
+        return Err(Unread {
+            line,
+            why: "block text after | or > is not read".into(),
+        });
     }
+    let quoted = unquoted(text).map_err(|why| Unread { line, why })?;
+    Ok(match (quoted, text) {
+        (Some(inner), _) => Datum::Text(inner.into()),
+        (None, "" | "~" | "null") => Datum::Null,
+        (None, "true") => Datum::Bool(true),
+        (None, "false") => Datum::Bool(false),
+        (None, _) if text.parse::<f64>().is_ok() => Datum::Number(text.to_string().into()),
+        (None, _) => Datum::Text(text.to_string().into()),
+    })
 }
 
 /// Where a line's comment starts: a `#` at its start or after a space, outside a quoted scalar.
@@ -125,7 +167,7 @@ fn block(lines: &[(usize, usize, &str)], at: &mut usize, indent: usize) -> Resul
                 let inner = indent + words.trim_start().len() - rest.len();
                 entries(lines, at, inner, Some((number, rest)))?
             } else {
-                scalar(rest)
+                scalar(rest, number)?
             });
         }
         Ok(Datum::List(items))
@@ -163,9 +205,12 @@ fn entries(
                 }
             },
         };
-        let key = SharedString::from(key.trim().trim_matches('"').to_string());
+        let key = match unquoted(key.trim()).map_err(|why| Unread { line: number, why })? {
+            Some(inner) => SharedString::from(inner),
+            None => SharedString::from(key.trim().to_string()),
+        };
         let value = match lines.get(*at) {
-            _ if !value.trim().is_empty() => scalar(value),
+            _ if !value.trim().is_empty() => scalar(value, number)?,
             Some((_, same, next)) if *same == indent && dashed(next) => block(lines, at, indent)?,
             _ => nested(lines, at, indent)?,
         };
@@ -290,19 +335,56 @@ mod tests {
     #[test]
     fn a_hash_inside_quotes_is_no_comment() {
         assert_eq!(
-            read_yaml("title: \"Issue #12\" # a note\nmessage: 'Fix #42'\nnote: it's #1\n")
-                .expect("yaml"),
+            read_yaml(concat!(
+                "title: \"Issue #12\" # a note\n",
+                "message: 'Fix #42'\n",
+                "note: it's #1\n",
+                "url: http://x/#frag\n",
+                "v: a#b\n",
+                "a: \"x \\\" # y\" # c\n",
+                "b: 'it''s #1' # c\n",
+            ))
+            .expect("yaml"),
             Datum::Map(vec![
                 ("title".into(), text("Issue #12")),
                 ("message".into(), text("Fix #42")),
-                ("note".into(), text("it's"))
+                ("note".into(), text("it's")),
+                ("url".into(), text("http://x/#frag")),
+                ("v".into(), text("a#b")),
+                ("a".into(), text("x \" # y")),
+                ("b".into(), text("it's #1")),
             ])
+        );
+    }
+
+    #[test]
+    fn quoted_text_reads_its_escapes_and_keys_lose_their_quotes() {
+        assert_eq!(
+            read_yaml("a: \"say \\\"hi\\\"\"\nb: 'it''s'\nc: \"tab\\tx\"\n'q': 2\n\"k\": 1\n")
+                .expect("yaml"),
+            Datum::Map(vec![
+                ("a".into(), text("say \"hi\"")),
+                ("b".into(), text("it's")),
+                ("c".into(), text("tab\tx")),
+                ("q".into(), Datum::Number("2".into())),
+                ("k".into(), Datum::Number("1".into())),
+            ])
+        );
+        let unread = read_yaml("a: 1\nb: \"\\q\"\n").expect_err("an unknown escape");
+        assert_eq!(
+            (unread.line, unread.why.as_str()),
+            (2, "\\q is no escape YAML knows")
         );
     }
 
     #[test]
     fn yaml_says_which_line_it_could_not_read() {
         assert_eq!(read_yaml("a: 1\njust words\n").expect_err("no key").line, 2);
+        let block = read_yaml("a: 1\nrun: |-\n  make\n").expect_err("block text");
+        assert_eq!(
+            (block.line, block.why.as_str()),
+            (2, "block text after | or > is not read")
+        );
         assert_eq!(
             read_yaml("a: 1\n    b: 2\n")
                 .expect_err("stray indent")

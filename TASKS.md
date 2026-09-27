@@ -388,3 +388,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T33a | 2 | FAIL | the structure editor's cells kept the narrow box's first measure, and its Tab stops past the sideways fold stayed out of view |
 | T33a | 3 | PASS | |
 | T33b | 1 | FAIL | YAML lists at their key's indent and quoted `#` misread; a long note hid the key at 280px; XML text paths counted from 0 and entities stayed raw; odd-key paths and Format at rest untested |
+| T33b | 2 | FAIL | quoted YAML scalars kept their escapes and single-quoted keys their quotes; the comment scanner's escape and after-a-space rules untested |
