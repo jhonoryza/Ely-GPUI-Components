@@ -230,9 +230,9 @@ impl Theme {
         px_to_rems(46.0)
     }
 
-    /// A Windows caption button's height: the title bar's, less its bottom hairline.
-    pub fn caption_button_height(&self) -> Pixels {
-        self.titlebar_height().to_pixels(self.base_rem()) - px(1.0)
+    /// A Windows caption button's height at a window's rem: the title bar's, less its hairline.
+    pub fn caption_button_height(&self, rem: Pixels) -> Pixels {
+        self.titlebar_height().to_pixels(rem) - px(1.0)
     }
 
     /// Resize margin of a client-drawn window.

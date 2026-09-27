@@ -172,6 +172,7 @@ fn caption_buttons(
         (Control::Maximize, maximize, WindowControlArea::Max),
         (Control::Close, IconName::X, WindowControlArea::Close),
     ];
+    let height = theme.caption_button_height(window.rem_size());
     div()
         .id(id)
         .flex()
@@ -190,7 +191,7 @@ fn caption_buttons(
                 .items_center()
                 .justify_center()
                 .w(theme.caption_button_width())
-                .h(theme.caption_button_height())
+                .h(height)
                 .debug_selector(move || format!("caption-{control:?}"))
                 .window_control_area(area)
                 .hover(|style| style.bg(hover))
@@ -363,6 +364,7 @@ impl RenderOnce for TitleBar {
                 .text_size(theme.text_size(TextSize::Sm))
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(theme.colors.fg_muted)
+                .debug_selector(|| "titlebar-title".into())
                 .child(Ellipsis::new(title))
         });
         let centered = style != Platform::Windows;
@@ -379,33 +381,44 @@ impl RenderOnce for TitleBar {
             .bg(theme.colors.bg)
             .border_b_1()
             .border_color(theme.colors.border);
-        let bar = match (system, style) {
-            (true, _) if fullscreen => bar.pl_3().pr_2(),
-            (true, _) => bar.pl(inset).pr_2(),
-            (false, Platform::Mac) => bar.pl_3().pr_2().children(leading),
-            (false, Platform::Windows) => bar.pl_3(),
-            (false, Platform::Linux) => bar.pl_3().pr_2(),
-        };
-        let bar = bar.children(self.leading);
-        let bar = match (centered, title) {
-            (false, Some(title)) => bar.child(title.flex_1()),
-            (_, title) => bar.when_some(title, |bar, title| {
-                bar.child(
+        let bar = bar.when(!centered, |bar| bar.pl_3());
+        let start = div().flex().child(
+            div()
+                .flex()
+                .items_center()
+                .gap_2()
+                .when(centered, |start| match system && !fullscreen {
+                    true => start.pl(inset),
+                    false => start.pl_3(),
+                })
+                .children(leading)
+                .children(self.leading),
+        );
+        let end = div().flex().justify_end().child(
+            div()
+                .flex()
+                .items_center()
+                .gap_2()
+                .when(centered, |end| end.pr_2())
+                .children(self.actions)
+                .children(trailing.map(|controls| {
                     div()
-                        .absolute()
-                        .top_0()
-                        .bottom_0()
-                        .left(inset)
-                        .right(inset)
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .child(title),
-                )
-            }),
+                        .flex_none()
+                        .debug_selector(|| "titlebar-controls".into())
+                        .child(controls)
+                })),
+        );
+        let middle = match title {
+            Some(title) if centered => title,
+            Some(title) => title.flex_1(),
+            None => div().flex_1(),
         };
-        bar.when(centered, |bar| bar.child(div().flex_1()))
-            .children(self.actions)
-            .children(trailing.map(|controls| div().flex_none().child(controls)))
+        match centered {
+            true => bar.child(start.flex_1()).child(middle).child(end.flex_1()),
+            false => bar
+                .child(start.flex_none())
+                .child(middle)
+                .child(end.flex_none()),
+        }
     }
 }

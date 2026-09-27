@@ -190,3 +190,74 @@ fn caption_buttons_keep_their_height_in_a_wrapping_row(cx: &mut TestAppContext) 
     assert!(combo.top() > row.top(), "the caps wrap below the buttons");
     assert!(combo.bottom() <= row.bottom(), "{combo:?} inside {row:?}");
 }
+
+struct Bar(Option<&'static str>, crate::theme::Platform);
+
+impl Render for Bar {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let bar = super::TitleBar::new("bar").platform(self.1);
+        div()
+            .w(px(280.0))
+            .flex()
+            .flex_col()
+            .child(
+                div()
+                    .debug_selector(|| "bar-box".into())
+                    .child(match self.0 {
+                        Some(title) => bar.title(title),
+                        None => bar,
+                    }),
+            )
+    }
+}
+
+/// A Windows bar with no title still keeps its buttons at its right end.
+#[gpui::test]
+fn an_untitled_windows_bar_keeps_its_buttons_at_the_end(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Bar(None, crate::theme::Platform::Windows));
+    settle(cx);
+    let close = cx.debug_bounds("caption-Close").expect("a close button");
+    assert_eq!(close.right(), px(280.0));
+}
+
+/// A long centered title ends before the Linux round buttons.
+#[gpui::test]
+fn a_long_centered_title_ends_before_the_buttons(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let long = "Ely — Projects at a narrow width, and more besides";
+    let (_, cx) = cx.add_window_view(|_, _| Bar(Some(long), crate::theme::Platform::Linux));
+    settle(cx);
+    let title = cx.debug_bounds("titlebar-title").expect("the title");
+    let controls = cx.debug_bounds("titlebar-controls").expect("the buttons");
+    assert!(
+        title.right() <= controls.left(),
+        "{title:?} before {controls:?}"
+    );
+}
+
+/// At half the rem size the caption buttons shrink with the bar and stay inside it.
+#[gpui::test]
+fn caption_buttons_follow_the_windows_rem(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Bar(None, crate::theme::Platform::Windows));
+    cx.update(|window, _| window.set_rem_size(px(8.0)));
+    settle(cx);
+    let bar = cx.debug_bounds("bar-box").expect("the bar");
+    let close = cx.debug_bounds("caption-Close").expect("a close button");
+    assert!(
+        close.top() >= bar.top() && close.bottom() <= bar.bottom(),
+        "{close:?} inside {bar:?}"
+    );
+}
+
+/// A short title sits at the bar's center, whatever stands at either end.
+#[gpui::test]
+fn a_short_title_sits_at_the_center(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Bar(Some("Notes"), crate::theme::Platform::Linux));
+    settle(cx);
+    let title = cx.debug_bounds("titlebar-title").expect("the title");
+    let middle = title.left() + title.size.width / 2.0;
+    assert!((middle - px(140.0)).abs() < px(1.0), "{title:?} centered");
+}

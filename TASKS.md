@@ -425,3 +425,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T39b | 1 | FAIL | a long theme name pushed its badge past 280px; four-digit colors refused the theme |
 | T39b | 2 | PASS | |
 | T39c | 1 | FAIL | Windows caption buttons took their row's height; a long Windows title pushed the buttons past the bar |
+| T39c | 2 | FAIL | an untitled Windows bar lost its spacer; a centered title ran under the Linux buttons; caption buttons ignored the window's rem |
