@@ -118,6 +118,14 @@ fn c8<const N: usize>(hex: [u32; N]) -> [Hsla; N] {
 }
 
 impl Palette {
+    /// The chart color at `hue`; a hue past the chart fails, naming `owner`.
+    pub fn hue(&self, hue: usize, owner: impl std::fmt::Display) -> Hsla {
+        *self
+            .chart
+            .get(hue)
+            .unwrap_or_else(|| panic!("{owner}: no chart hue {hue}"))
+    }
+
     pub fn light(high_contrast: bool) -> Self {
         let mut palette = Self {
             bg: c(0xfcfaf7),

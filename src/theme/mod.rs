@@ -1,3 +1,4 @@
+mod calendar;
 mod chart;
 mod files;
 mod generative;
@@ -11,6 +12,7 @@ use std::time::{Duration, Instant};
 use gpui::{App, Global, SharedString, WindowAppearance};
 
 use crate::motion;
+pub use calendar::CalendarSizes;
 pub use chart::ChartSizes;
 pub use files::FileSizes;
 pub use generative::GenerativeSizes;

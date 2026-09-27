@@ -37,11 +37,7 @@ impl Label {
 /// Label `name`'s dot in the chart color at `hue`, centered in an icon's box.
 pub(super) fn hue_dot(name: &str, hue: usize, cx: &App) -> Div {
     let theme = cx.theme();
-    let tint = *theme
-        .colors
-        .chart
-        .get(hue)
-        .unwrap_or_else(|| panic!("label {name}: no chart hue {hue}"));
+    let tint = theme.colors.hue(hue, format_args!("label {name}"));
     div()
         .flex_none()
         .size(theme.icon_size(IconSize::Sm))

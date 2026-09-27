@@ -1,5 +1,6 @@
 mod agent;
 mod buttons;
+mod calendar;
 mod charts;
 mod chat;
 mod collab;
@@ -73,6 +74,7 @@ pub const ALL: &[Page] = &[
     files::PAGE,
     messaging::PAGE,
     mail::PAGE,
+    calendar::PAGE,
     theme::PAGE,
 ];
 
