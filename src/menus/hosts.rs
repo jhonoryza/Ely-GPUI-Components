@@ -17,7 +17,7 @@ use crate::{
     primitives::IconName,
 };
 
-type Click = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
+pub(crate) type Click = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
 
 fn state(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity<Open> {
     window.use_keyed_state((id.clone(), "menu"), cx, |_, _| Open::default())
@@ -52,6 +52,19 @@ fn host(
         .child(trigger)
         .child(measure_host(state.clone(), true))
         .children(hang(&id, menu, state, field, window, cx))
+}
+
+/// A menu under a trigger of the caller's making, which runs `click` when pressed.
+pub(crate) fn menu_under(
+    id: ElementId,
+    menu: &Menu,
+    trigger: impl FnOnce(Click) -> AnyElement,
+    window: &mut Window,
+    cx: &mut App,
+) -> Stateful<Div> {
+    let state = state(&id, window, cx);
+    let click = toggle(&state, menu, cx);
+    host(id, trigger(click), menu, &state, None, window, cx)
 }
 
 /// A button that opens a menu under it.

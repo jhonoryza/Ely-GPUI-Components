@@ -1,5 +1,6 @@
 use gpui::{AnyElement, App, Window, div, prelude::*};
 
+mod access;
 mod sign_in;
 
 use super::Page;
@@ -34,6 +35,11 @@ const SCRIPT: &[Step] = &[
     Step::Type("123456"),
     Step::Wait(200),
     Step::Shot("code-failed"),
+    Step::DownAt("account-user", 12.0, 12.0),
+    Step::UpAt("account-user", 12.0, 12.0),
+    Step::Wait(200),
+    Step::Shot("user-menu"),
+    Step::Key("escape"),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
@@ -42,5 +48,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(sign_in::sign_up(window, cx))
         .child(sign_in::by_email(window, cx))
         .child(sign_in::second_factor(window, cx))
+        .child(access::switchers(window, cx))
+        .child(access::profile(window, cx))
+        .child(access::security_page(window, cx))
         .into_any_element()
 }
