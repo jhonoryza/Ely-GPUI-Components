@@ -124,7 +124,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T33c DB & Dev Tools · APIs — `tasks/ch31-43.md`
 - [x] T33d DB & Dev Tools · Tools and machines — `tasks/ch31-43.md`
 - [x] T34 Dashboard — `tasks/ch31-43.md` (its two maps lines wait for T41)
-- [ ] T35 Settings
+- [x] T35 Settings — `tasks/ch31-43.md`
 - [ ] T36 Account
 - [ ] T37 Onboarding & Help
 - [ ] T38 Interaction
@@ -399,3 +399,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T34 | 2 | PASS | |
 | T35 | 1 | FAIL | a row's control kept its full width past a 280px box; a notice's name shrank to nothing; privacy, notices and startup dropped edits with no handler; Apply's and the reset's rest and a box turned off untested |
 | T35 | 2 | FAIL | an accent picker of nine or more presets still ran past a 280px box |
+| T35 | 3 | PASS | |
