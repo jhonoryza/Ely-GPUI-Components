@@ -16,7 +16,7 @@ use crate::{
     layout::seeded::use_seeded,
     primitives::tab_stop,
     theme::{ActiveTheme, TextSize},
-    typography::format,
+    typography::{format, fresh},
 };
 
 const INITIALS: [&str; 7] = ["M", "T", "W", "T", "F", "S", "S"];
@@ -191,6 +191,9 @@ impl Mini<'_> {
 
 impl RenderOnce for YearView {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        if self.today.is_none() {
+            fresh((self.id.clone(), "clock"), window, cx);
+        }
         let zone = self
             .zone
             .unwrap_or_else(|| format::system_zone("year view"));

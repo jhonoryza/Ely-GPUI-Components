@@ -18,7 +18,7 @@ use crate::{
     layout::seeded::use_seeded,
     primitives::{FocusRing, tab_stop},
     theme::{ActiveTheme, Radius, TextSize},
-    typography::{Ellipsis, format},
+    typography::{Ellipsis, format, fresh},
 };
 
 const WEEKDAYS: [&str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -287,6 +287,9 @@ impl Row<'_> {
 
 impl RenderOnce for CalendarMonthView {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        if self.today.is_none() {
+            fresh((self.id.clone(), "clock"), window, cx);
+        }
         let zone = self
             .zone
             .unwrap_or_else(|| format::system_zone("calendar month view"));

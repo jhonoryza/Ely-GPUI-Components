@@ -17,7 +17,7 @@ use crate::{
     forms::{Drawing, OnValue, Stroke, pen},
     layout::on_axis,
     theme::{ActiveTheme, Radius, TextSize},
-    typography::format,
+    typography::{format, fresh},
 };
 
 /// Where a grid first opens: half past seven, or an hour and a half before now when that is later.
@@ -53,7 +53,7 @@ pub struct TimeGrid {
     days: Vec<Date>,
     events: Vec<Event>,
     zone: Option<TimeZone>,
-    now: Option<Timestamp>,
+    pub(crate) now: Option<Timestamp>,
     pub(crate) overlay: Option<TimezoneOverlay>,
     pub(crate) on_create: Option<OnSpan>,
     pub(crate) on_resize: Option<OnResize>,
@@ -361,6 +361,9 @@ impl TimeGrid {
 
 impl RenderOnce for TimeGrid {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        if self.now.is_none() {
+            fresh((self.id.clone(), "clock"), window, cx);
+        }
         let zone = self
             .zone
             .clone()

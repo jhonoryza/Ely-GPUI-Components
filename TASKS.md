@@ -355,3 +355,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T29d | 2 | FAIL | a raise inside a raise took its place in the queue as its namespace, so one appearing before it rebuilt its state and dropped its focus |
 | T29d | 3 | PASS | |
 | T30a | 1 | PASS | |
+| T30b | 1 | FAIL | the week and day views froze the line at now and today: the moment read once went down as given and turned the ticker off |

@@ -262,9 +262,9 @@ impl<const DAYS: usize> RenderOnce for CalendarDays<DAYS> {
             Some(on_event) => whole.on_event(move |key, window, cx| on_event(key, window, cx)),
             None => whole,
         };
-        let mut grid = TimeGrid::new((self.id.clone(), "grid"), days.clone(), self.events)
-            .zone(zone)
-            .now(now);
+        let mut grid =
+            TimeGrid::new((self.id.clone(), "grid"), days.clone(), self.events).zone(zone);
+        grid.now = self.now;
         grid.overlay = self.overlay;
         grid.on_create = self.on_create;
         grid.on_resize = self.on_resize;

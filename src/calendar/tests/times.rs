@@ -226,3 +226,92 @@ fn a_grid_without_today_opens_on_the_morning(cx: &mut TestAppContext) {
     let (_, cx) = planning(nights, cx);
     assert_eq!(opened(cx), px(48.0 * 7.5), "from 07:30");
 }
+
+/// How often the host was told to redraw across a clock tick and a half, with no refresh of its own.
+fn redraws(
+    part: fn(&Planning, Entity<Planning>) -> gpui::AnyElement,
+    cx: &mut TestAppContext,
+) -> usize {
+    let (host, cx) = planning(part, cx);
+    let told = std::rc::Rc::new(std::cell::Cell::new(0));
+    let count = told.clone();
+    cx.update(|_, cx| {
+        cx.observe(&host, move |_, _| count.set(count.get() + 1))
+            .detach()
+    });
+    cx.executor()
+        .advance_clock(std::time::Duration::from_secs(45));
+    cx.run_until_parked();
+    told.get()
+}
+
+fn clocked_day(_: &Planning, _: Entity<Planning>) -> gpui::AnyElement {
+    let today = jiff::Timestamp::now().to_zoned(TimeZone::UTC).date();
+    div()
+        .h(px(600.0))
+        .child(crate::calendar::CalendarDayView::new("day", today, []).zone(TimeZone::UTC))
+        .into_any_element()
+}
+
+fn still_day(_: &Planning, _: Entity<Planning>) -> gpui::AnyElement {
+    div()
+        .h(px(600.0))
+        .child(
+            crate::calendar::CalendarDayView::new("day", date(2026, 9, 22), [])
+                .zone(TimeZone::UTC)
+                .now(at(22, 12)),
+        )
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_day_on_the_clock_redraws_as_it_runs(cx: &mut TestAppContext) {
+    assert!(
+        redraws(clocked_day, cx) > 0,
+        "the line at now moves with the clock"
+    );
+}
+
+#[gpui::test]
+fn a_day_given_its_moment_holds_still(cx: &mut TestAppContext) {
+    assert_eq!(redraws(still_day, cx), 0);
+}
+
+fn clocked_month(_: &Planning, _: Entity<Planning>) -> gpui::AnyElement {
+    crate::calendar::CalendarMonthView::new("month", date(2026, 9, 1), [])
+        .zone(TimeZone::UTC)
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_month_on_the_clock_redraws_so_today_turns_over(cx: &mut TestAppContext) {
+    assert!(redraws(clocked_month, cx) > 0);
+}
+
+fn clocked_year(_: &Planning, _: Entity<Planning>) -> gpui::AnyElement {
+    crate::calendar::YearView::new("year", 2026, [])
+        .zone(TimeZone::UTC)
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_year_on_the_clock_redraws_so_today_turns_over(cx: &mut TestAppContext) {
+    assert!(redraws(clocked_year, cx) > 0);
+}
+
+fn clocked_other_day(_: &Planning, _: Entity<Planning>) -> gpui::AnyElement {
+    div()
+        .h(px(600.0))
+        .child(
+            crate::calendar::CalendarDayView::new("day", date(2026, 9, 22), []).zone(TimeZone::UTC),
+        )
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_day_before_today_still_watches_the_clock_for_midnight(cx: &mut TestAppContext) {
+    assert!(
+        redraws(clocked_other_day, cx) > 0,
+        "no line to tick, the grid itself does"
+    );
+}
