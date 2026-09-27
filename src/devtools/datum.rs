@@ -51,7 +51,17 @@ pub fn read_json(text: &str) -> Result<Datum, Unread> {
         })
 }
 
-/// The inside of a quoted scalar with its escapes read: `\"`, `\\`, `\/`, `\n`, `\t`, `\r` and `\0` in double quotes, `''` in single ones. Plain text is `None`.
+/// The character `digits` hex digits after an escape name.
+fn hex(chars: &mut std::str::Chars, digits: usize, escape: char) -> Result<char, String> {
+    let code: String = chars.by_ref().take(digits).collect();
+    Some(&code)
+        .filter(|code| code.len() == digits && code.chars().all(|ch| ch.is_ascii_hexdigit()))
+        .and_then(|code| u32::from_str_radix(code, 16).ok())
+        .and_then(char::from_u32)
+        .ok_or_else(|| format!("\\{escape}{code} is no character"))
+}
+
+/// The inside of a quoted scalar with its escapes read: YAML's in double quotes, `''` in single ones. Plain text is `None`.
 fn unquoted(text: &str) -> Result<Option<String>, String> {
     if let Some(inner) = text
         .strip_prefix('\'')
@@ -72,16 +82,28 @@ fn unquoted(text: &str) -> Result<Option<String>, String> {
             out.push(ch);
             continue;
         }
-        out.push(match chars.next() {
-            Some('"') => '"',
-            Some('\\') => '\\',
-            Some('/') => '/',
-            Some('n') => '\n',
-            Some('t') => '\t',
-            Some('r') => '\r',
-            Some('0') => '\0',
-            Some(other) => return Err(format!("\\{other} is no escape YAML knows")),
-            None => return Err("a quoted text ends in a lone \\".into()),
+        let Some(escape) = chars.next() else {
+            return Err("a quoted text ends in a lone \\".into());
+        };
+        out.push(match escape {
+            '0' => '\0',
+            'a' => '\x07',
+            'b' => '\x08',
+            't' | '\t' => '\t',
+            'n' => '\n',
+            'v' => '\x0b',
+            'f' => '\x0c',
+            'r' => '\r',
+            'e' => '\x1b',
+            ' ' | '"' | '/' | '\\' => escape,
+            'N' => '\u{85}',
+            '_' => '\u{a0}',
+            'L' => '\u{2028}',
+            'P' => '\u{2029}',
+            'x' => hex(&mut chars, 2, escape)?,
+            'u' => hex(&mut chars, 4, escape)?,
+            'U' => hex(&mut chars, 8, escape)?,
+            other => return Err(format!("\\{other} is no escape YAML knows")),
         });
     }
     Ok(Some(out))
@@ -111,27 +133,66 @@ fn scalar(text: &str, line: usize) -> Result<Datum, Unread> {
     })
 }
 
-/// Where a line's comment starts: a `#` at its start or after a space, outside a quoted scalar.
-fn comment(line: &str) -> Option<usize> {
+/// Each character's offset and whether it stands outside a quoted scalar. A quote opens only at the line's start or after whitespace; `\` escapes inside double quotes and `''` is one quote inside single ones.
+fn outside(line: &str) -> Vec<(usize, char, bool)> {
+    let mut marks = Vec::with_capacity(line.len());
     let mut chars = line.char_indices().peekable();
     let (mut quote, mut last) = (None, ' ');
     while let Some((at, ch)) = chars.next() {
-        match quote {
-            Some('"') if ch == '\\' => {
-                chars.next();
+        let escaped = match quote {
+            Some('"') => ch == '\\',
+            Some('\'') => ch == '\'' && chars.peek().is_some_and(|(_, next)| *next == '\''),
+            _ => false,
+        };
+        if escaped {
+            marks.push((at, ch, false));
+            if let Some((next_at, next)) = chars.next() {
+                marks.push((next_at, next, false));
+                last = next;
             }
-            Some('\'') if ch == '\'' && chars.peek().is_some_and(|(_, next)| *next == '\'') => {
-                chars.next();
-            }
-            Some(open) if ch == open => quote = None,
-            Some(_) => {}
-            None if ch == '#' && last.is_whitespace() => return Some(at),
-            None if matches!(ch, '"' | '\'') && last.is_whitespace() => quote = Some(ch),
-            None => {}
+            continue;
         }
+        let free = match quote {
+            Some(open) if ch == open => {
+                quote = None;
+                false
+            }
+            Some(_) => false,
+            None if matches!(ch, '"' | '\'') && last.is_whitespace() => {
+                quote = Some(ch);
+                false
+            }
+            None => true,
+        };
+        marks.push((at, ch, free));
         last = ch;
     }
-    None
+    marks
+}
+
+/// Where a line's comment starts: a `#` at its start or after whitespace, outside a quoted scalar.
+fn comment(line: &str) -> Option<usize> {
+    let marks = outside(line);
+    (0..marks.len())
+        .find(|&ix| {
+            let (_, ch, free) = marks[ix];
+            free && ch == '#' && (ix == 0 || marks[ix - 1].1.is_whitespace())
+        })
+        .map(|ix| marks[ix].0)
+}
+
+/// A map entry's key and value, split at the first colon outside quotes that ends the line or comes before a space.
+fn entry_parts(words: &str) -> Option<(&str, &str)> {
+    let marks = outside(words);
+    (0..marks.len())
+        .find(|&ix| {
+            let (_, ch, free) = marks[ix];
+            free && ch == ':' && marks.get(ix + 1).is_none_or(|(_, next, _)| *next == ' ')
+        })
+        .map(|ix| {
+            let at = marks[ix].0;
+            (&words[..at], &words[at + 1..])
+        })
 }
 
 /// Whether a line starts a list item.
@@ -163,7 +224,7 @@ fn block(lines: &[(usize, usize, &str)], at: &mut usize, indent: usize) -> Resul
             *at += 1;
             items.push(if rest.is_empty() {
                 nested(lines, at, indent)?
-            } else if rest.contains(": ") || rest.ends_with(':') {
+            } else if entry_parts(rest).is_some() {
                 let inner = indent + words.trim_start().len() - rest.len();
                 entries(lines, at, inner, Some((number, rest)))?
             } else {
@@ -193,17 +254,11 @@ fn entries(
 ) -> Result<Datum, Unread> {
     let mut map = Vec::new();
     let mut entry = |number: usize, words: &str, at: &mut usize| -> Result<(), Unread> {
-        let (key, value) = match words.split_once(": ") {
-            Some((key, value)) => (key, value),
-            None => match words.strip_suffix(':') {
-                Some(key) => (key, ""),
-                None => {
-                    return Err(Unread {
-                        line: number,
-                        why: format!("{words:?} is no key and value"),
-                    });
-                }
-            },
+        let Some((key, value)) = entry_parts(words) else {
+            return Err(Unread {
+                line: number,
+                why: format!("{words:?} is no key and value"),
+            });
         };
         let key = match unquoted(key.trim()).map_err(|why| Unread { line: number, why })? {
             Some(inner) => SharedString::from(inner),
@@ -353,6 +408,52 @@ mod tests {
                 ("v".into(), text("a#b")),
                 ("a".into(), text("x \" # y")),
                 ("b".into(), text("it's #1")),
+            ])
+        );
+    }
+
+    #[test]
+    fn every_escape_reads_and_a_lone_backslash_fails() {
+        assert_eq!(
+            read_yaml(concat!(
+                r#"a: "c:\\dir\/\n\r\0""#,
+                "\n",
+                r#"b: "\a\b\e\f\v\N\_\L\P\ \x41\u00e9\U0001F600""#,
+                "\n",
+                "c: \"x\\\ty\"\n",
+            ))
+            .expect("yaml"),
+            Datum::Map(vec![
+                ("a".into(), text("c:\\dir/\n\r\0")),
+                (
+                    "b".into(),
+                    text("\x07\x08\x1b\x0c\x0b\u{85}\u{a0}\u{2028}\u{2029} Aé😀")
+                ),
+                ("c".into(), text("x\ty")),
+            ])
+        );
+        let lone = read_yaml(r#"a: "abc\""#).expect_err("a lone backslash");
+        assert_eq!(
+            (lone.line, lone.why.as_str()),
+            (1, "a quoted text ends in a lone \\")
+        );
+        let short = read_yaml(r#"a: "\u12""#).expect_err("a short code");
+        assert_eq!(short.why, "\\u12 is no character");
+    }
+
+    #[test]
+    fn a_quoted_key_or_item_keeps_its_colon() {
+        assert_eq!(
+            read_yaml("\"note: important\": true\nlist:\n  - \"a: b\"\n  - c: d\n").expect("yaml"),
+            Datum::Map(vec![
+                ("note: important".into(), Datum::Bool(true)),
+                (
+                    "list".into(),
+                    Datum::List(vec![
+                        text("a: b"),
+                        Datum::Map(vec![("c".into(), text("d"))])
+                    ])
+                ),
             ])
         );
     }

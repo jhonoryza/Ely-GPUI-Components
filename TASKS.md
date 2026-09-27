@@ -120,7 +120,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T32c Canvas · Panels — `tasks/ch31-43.md`
 - [x] T32d Canvas · Graphs and boards — `tasks/ch31-43.md`
 - [x] T33a DB & Dev Tools · Databases — `tasks/ch31-43.md`
-- [ ] T33b DB & Dev Tools · Data formats
+- [x] T33b DB & Dev Tools · Data formats — `tasks/ch31-43.md`
 - [ ] T33c DB & Dev Tools · APIs
 - [ ] T33d DB & Dev Tools · Tools and machines
 - [ ] T34 Dashboard
@@ -389,3 +389,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T33a | 3 | PASS | |
 | T33b | 1 | FAIL | YAML lists at their key's indent and quoted `#` misread; a long note hid the key at 280px; XML text paths counted from 0 and entities stayed raw; odd-key paths and Format at rest untested |
 | T33b | 2 | FAIL | quoted YAML scalars kept their escapes and single-quoted keys their quotes; the comment scanner's escape and after-a-space rules untested |
+| T33b | 3 | FAIL | five escape arms untested and a quoted key holding `: ` split inside its quotes; both fixed after the last round with tests that go red on each mutation, no fourth round |
