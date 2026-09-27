@@ -9,6 +9,7 @@ use crate::{lists::DirEntry, primitives::FocusNext, theme::Theme};
 
 mod explorer;
 mod find;
+mod transfers;
 
 pub(super) fn setup(cx: &mut TestAppContext) {
     cx.update(|cx| {

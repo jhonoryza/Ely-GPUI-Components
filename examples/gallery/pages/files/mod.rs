@@ -9,6 +9,7 @@ use jiff::{Timestamp, ToSpan};
 mod actions;
 mod explorer;
 mod find;
+mod transfers;
 
 use super::Page;
 use crate::{
@@ -216,5 +217,9 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(find::duplicates(window, cx))
         .child(find::archive(cx))
         .child(find::hex(window, cx))
+        .child(transfers::operations(window, cx))
+        .child(transfers::queue(window, cx))
+        .child(transfers::downloads(window, cx))
+        .child(transfers::storage(cx))
         .into_any_element()
 }
