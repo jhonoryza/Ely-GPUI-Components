@@ -1,20 +1,21 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window, div,
+    App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, SharedString,
+    Styled, Window, div,
 };
 
 use crate::{
-    buttons::{Button, ButtonVariant},
+    buttons::{Button, ButtonVariant, CopyButton},
     forms::{Choice, FormField, Input, Run, Select, TextInput},
     primitives::{Icon, IconName},
     theme::{ActiveTheme, IconSize, TextSize},
-    typography::literal,
+    typography::{MiddleEllipsis, literal},
 };
 
 type OnMessage = Rc<dyn Fn(&SharedString, &str, &mut Window, &mut App)>;
 
-/// A way to reach people: a topic and a message, and Send once both are given. It rests while the owner sends, and empties the message once sent, with focus back in it. With `address`, the address to write to instead shows under it.
+/// A way to reach people: a topic and a message, and Send once both are given. It rests while the owner sends, and empties the message once sent, with focus back in it. With `address`, the address to write to instead shows under it, cut in the middle when narrow, with a Copy.
 #[derive(IntoElement)]
 pub struct ContactSupport {
     id: ElementId,
@@ -116,13 +117,20 @@ impl RenderOnce for ContactSupport {
             .children(self.address.map(|address| {
                 div()
                     .flex()
-                    .flex_wrap()
                     .items_center()
-                    .gap_x_1()
+                    .gap_1()
                     .text_size(theme.text_size(TextSize::Sm))
                     .text_color(theme.colors.fg_muted)
-                    .child("Or write to")
-                    .child(literal(div()).text_color(theme.colors.fg).child(address))
+                    .child(div().flex_none().child("Or write to"))
+                    .child(
+                        literal(div())
+                            .debug_selector(|| "support-address".into())
+                            .flex_1()
+                            .min_w_0()
+                            .text_color(theme.colors.fg)
+                            .child(MiddleEllipsis::new(address.clone())),
+                    )
+                    .child(CopyButton::new((id.clone(), "copy-address"), address))
             }))
     }
 }

@@ -47,13 +47,14 @@ struct Cursor {
     scroll: ScrollHandle,
     seen: Option<Vec<SharedString>>,
     sent: Option<Vec<SharedString>>,
+    armed: bool,
 }
 
 type OnSelect = Rc<dyn Fn(&[SharedString], &mut Window, &mut App)>;
 type OnActivate = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 type Picker = Rc<dyn Fn(usize, Pick, &mut Window, &mut App)>;
 
-/// Rows you select. A press picks one; with `multiple`, Cmd-press adds or drops one and Shift-press takes the range from the last pick. Up and Down move, Shift with them extends, Space toggles, Cmd-A takes all. Keys pass over disabled rows, and no pick adds one.
+/// Rows you select. A press picks one; with `multiple`, Cmd-press adds or drops one and Shift-press takes the range from the last pick. Up and Down move, Shift with them extends, Space toggles, Cmd-A takes all, and Enter activates the row on its release, so an activation that moves focus leaves the release nothing to press. Keys pass over disabled rows, and no pick adds one.
 #[derive(IntoElement)]
 pub struct SelectableList {
     id: ElementId,
@@ -235,6 +236,8 @@ impl RenderOnce for SelectableList {
                     })
             })
             .collect();
+        let (lifted, released, barred_rows, keyed) =
+            (cursor.clone(), activate.clone(), off.clone(), keys.clone());
         self.base
             .id(self.id)
             .track_focus(&focus)
@@ -243,6 +246,22 @@ impl RenderOnce for SelectableList {
             .flex()
             .flex_col()
             .gap_0p5()
+            .on_key_up(move |event, window, cx| {
+                if event.keystroke.key != "enter" || count == 0 {
+                    return;
+                }
+                let (armed, at) = lifted.update(cx, |cursor, _| {
+                    (std::mem::take(&mut cursor.armed), cursor.at.min(count - 1))
+                });
+                if !armed {
+                    return;
+                }
+                cx.stop_propagation();
+                if barred_rows[at] {
+                    return;
+                }
+                released(&keyed[at], window, cx);
+            })
             .on_key_down(move |event, window, cx| {
                 if count == 0 {
                     return;
@@ -259,9 +278,7 @@ impl RenderOnce for SelectableList {
                     "space" => (Some(at).filter(open), Pick::Toggle),
                     "enter" => {
                         cx.stop_propagation();
-                        if open(&at) {
-                            activate(&keys[at], window, cx);
-                        }
+                        cursor.update(cx, |cursor, _| cursor.armed = !held.modified());
                         return;
                     }
                     "a" if held.platform => (Some(at), Pick::All),

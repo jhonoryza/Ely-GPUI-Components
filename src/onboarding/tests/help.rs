@@ -48,16 +48,16 @@ fn panel(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
         .into_any_element()
 }
 
-/// Stops on the list: close, the search, each article, then the foot; on an article: close, All articles, then the foot. An article opened by key takes focus to All articles, and the way back takes it to the search, where words narrow the list.
+/// Stops on the list: close, the search, the list, then the foot; on an article: close, All articles, then the foot. Enter on the list's cursor, on the first row at first, opens an article and takes focus to All articles, which the release leaves alone; the way back takes it to the search, where words narrow the list.
 #[gpui::test]
 fn an_article_opens_from_the_list_and_focus_follows(cx: &mut TestAppContext) {
     let (host, cx) = bench(panel, cx);
     tab(3, cx);
-    tap("space", cx);
+    tap("enter", cx);
     tap("space", cx);
     write("email", cx);
     tab(3, cx);
-    tap("space", cx);
+    tap("enter", cx);
     tab(3, cx);
     tap("space", cx);
     tab(4, cx);
@@ -75,6 +75,47 @@ fn an_article_opens_from_the_list_and_focus_follows(cx: &mut TestAppContext) {
             "close"
         ]
     );
+}
+
+fn many(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
+    let articles = (1..=12).map(|n| article(&format!("a{n}"), &format!("Article {n}"), "Words."));
+    let (opener, contact) = (owner.clone(), owner);
+    div()
+        .w(px(280.0))
+        .h(px(300.0))
+        .child(
+            HelpPanel::new("help", articles, &bench.search, bench.open.clone())
+                .on_open(move |key, _, cx| {
+                    let key = key.cloned();
+                    opener.update(cx, |bench, cx| {
+                        bench.said.push(format!(
+                            "open {}",
+                            key.as_ref().map_or("none", |key| key.as_ref())
+                        ));
+                        bench.open = key;
+                        cx.notify();
+                    })
+                })
+                .on_contact(move |_, cx| say(&contact, "contact".into(), cx)),
+        )
+        .into_any_element()
+}
+
+/// Twelve articles in a 300px panel scroll inside the list, so the foot stays in the box, and the cursor walks down to the eighth.
+#[gpui::test]
+fn a_long_list_scrolls_inside_the_panel(cx: &mut TestAppContext) {
+    let (host, cx) = bench(many, cx);
+    let foot = cx.debug_bounds("help-foot").expect("the foot");
+    assert!(
+        foot.bottom() <= px(316.0),
+        "the foot ends inside the 300px panel, which starts 16px down: {foot:?}"
+    );
+    tab(2, cx);
+    for _ in 0..7 {
+        tap("down", cx);
+    }
+    tap("enter", cx);
+    assert_eq!(said(&host, cx), ["open a8"]);
 }
 
 fn cheatsheet(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
@@ -214,6 +255,30 @@ fn a_message_waits_while_busy(cx: &mut TestAppContext) {
     edit(&host, cx, |bench| bench.busy = false);
     tap("space", cx);
     assert_eq!(said(&host, cx), ["bug: It froze"]);
+}
+
+fn long_address(_: &Bench, owner: Entity<Bench>) -> AnyElement {
+    div()
+        .w(px(280.0))
+        .child(
+            ContactSupport::new("support", [Choice::new("bug", "Something broke")])
+                .address("support-and-billing-questions@example-company.com")
+                .on_send(move |topic, message, _, cx| {
+                    say(&owner, format!("{topic}: {message}"), cx)
+                }),
+        )
+        .into_any_element()
+}
+
+/// A long address gives way in the middle, so it ends inside a 280px box, which starts 16px in.
+#[gpui::test]
+fn a_long_address_is_cut_inside_a_narrow_box(cx: &mut TestAppContext) {
+    let (_, cx) = bench(long_address, cx);
+    let address = cx.debug_bounds("support-address").expect("the address");
+    assert!(
+        address.right() <= px(296.0),
+        "the address ends inside the box: {address:?}"
+    );
 }
 
 fn inline(_: &Bench, owner: Entity<Bench>) -> AnyElement {

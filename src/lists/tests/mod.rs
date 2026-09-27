@@ -18,6 +18,8 @@ use crate::{
     theme::Theme,
 };
 
+mod release;
+
 fn setup(cx: &mut TestAppContext) {
     cx.update(|cx| {
         Theme::init(cx);
@@ -322,6 +324,14 @@ fn a_long_list_builds_only_what_is_near_the_view(cx: &mut TestAppContext) {
     assert!((9..60).contains(&most), "built up to row {most} of 1000");
 }
 
+/// Enter, pressed and let go: a row opens on the release.
+fn enter(cx: &mut VisualTestContext) {
+    cx.simulate_keystrokes("enter");
+    cx.simulate_event(gpui::KeyUpEvent {
+        keystroke: gpui::Keystroke::parse("enter").expect("a key"),
+    });
+}
+
 #[gpui::test]
 fn enter_or_a_double_press_opens_a_row(cx: &mut TestAppContext) {
     setup(cx);
@@ -329,7 +339,7 @@ fn enter_or_a_double_press_opens_a_row(cx: &mut TestAppContext) {
     settle(cx);
     cx.simulate_click(row(1), Modifiers::none());
     settle(cx);
-    cx.simulate_keystrokes("enter");
+    enter(cx);
     settle(cx);
     for count in [1, 2] {
         cx.simulate_event(gpui::MouseDownEvent {
@@ -363,7 +373,9 @@ fn keys_pass_over_a_disabled_row_and_never_pick_or_open_it(cx: &mut TestAppConte
     cx.simulate_keystrokes("down");
     settle(cx);
     assert_eq!(picks(&view, cx), ["c"], "down steps over the disabled row");
-    cx.simulate_keystrokes("up enter cmd-a");
+    cx.simulate_keystrokes("up");
+    enter(cx);
+    cx.simulate_keystrokes("cmd-a");
     settle(cx);
     assert_eq!(
         picks(&view, cx),
@@ -392,7 +404,8 @@ fn the_cursor_stays_on_its_row_when_the_rows_reorder(cx: &mut TestAppContext) {
         cx.notify();
     });
     settle(cx);
-    cx.simulate_keystrokes("enter up");
+    enter(cx);
+    cx.simulate_keystrokes("up");
     settle(cx);
     let opened: Vec<String> = view.read_with(cx, |picks, _| {
         picks.1.iter().map(|key| key.to_string()).collect()

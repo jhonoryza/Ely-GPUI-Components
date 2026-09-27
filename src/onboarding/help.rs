@@ -10,9 +10,9 @@ use crate::{
     documents::MarkdownRenderer,
     forms::{Input, Run, TextInput},
     layout::on_axis,
-    primitives::{FocusRing, Icon, IconName, tab_stop},
-    theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
-    typography::Ellipsis,
+    lists::{ListItem, SelectableList},
+    primitives::{Icon, IconName, tab_stop},
+    theme::{ActiveTheme, ControlSize, IconSize, TextSize},
 };
 
 /// A help article: its key, its title, a line on it, and its body in Markdown. A link to `help:<key>` in a body opens that article.
@@ -53,7 +53,7 @@ fn link(url: &str) -> Link<'_> {
 
 type OnOpen = Rc<dyn Fn(Option<&SharedString>, &mut Window, &mut App)>;
 
-/// Help beside the work: a search over the articles and their list, or one article with the way back to all. Focus follows: an article opened takes it to All articles, and the way back takes it to the search. Contact support and Keyboard shortcuts wait at its foot when the owner handles them. It fills its box, which the host sizes.
+/// Help beside the work: a search over the articles and their list, where Enter or a double press opens one, or one article with the way back to all. Focus follows: an article opened takes it to All articles, and the way back takes it to the search. Contact support and Keyboard shortcuts wait at its foot when the owner handles them. It fills its box, which the host sizes.
 #[derive(IntoElement)]
 pub struct HelpPanel {
     id: ElementId,
@@ -182,7 +182,7 @@ impl RenderOnce for HelpPanel {
         let body = match shown {
             Some(article) => {
                 let (back, follow) = (on_open.clone(), on_open.clone());
-                div()
+                let page = div()
                     .flex()
                     .flex_col()
                     .gap_3()
@@ -219,57 +219,52 @@ impl RenderOnce for HelpPanel {
                             }
                             Link::Web(url) => cx.open_url(url),
                         }),
-                    )
-                    .into_any_element()
+                    );
+                on_axis(
+                    div()
+                        .id((id.clone(), "body"))
+                        .flex_1()
+                        .min_h_0()
+                        .overflow_y_scroll()
+                        .p_4()
+                        .child(page),
+                )
+                .into_any_element()
             }
             None => {
                 let query = self.search.read(cx).text().trim().to_string();
                 let listed = found(&self.articles, &query);
                 let none = listed.is_empty();
-                let rows = listed.iter().map(|article| {
-                    let (open, key) = (on_open.clone(), article.key.clone());
-                    div()
-                        .id((id.clone(), format!("row-{}", article.key)))
-                        .flex()
-                        .child(
-                            div()
-                                .flex_1()
-                                .min_w_0()
-                                .child(
-                                    div()
-                                        .font_weight(FontWeight::MEDIUM)
-                                        .child(Ellipsis::new(article.title.clone())),
-                                )
-                                .child(
-                                    div()
-                                        .text_size(theme.text_size(TextSize::Sm))
-                                        .text_color(theme.colors.fg_muted)
-                                        .child(article.summary.clone()),
-                                ),
+                let list = listed.iter().fold(
+                    SelectableList::new((id.clone(), "articles")),
+                    |list, article| {
+                        list.row(
+                            article.key.clone(),
+                            ListItem::new(
+                                (id.clone(), format!("row-{}", article.key)),
+                                article.title.clone(),
+                            )
+                            .description(article.summary.clone()),
                         )
-                        .px_2()
-                        .py_1p5()
-                        .rounded(theme.radius(Radius::Md))
-                        .border_1()
-                        .border_color(gpui::transparent_black())
-                        .cursor_pointer()
-                        .hover(|style| style.bg(theme.colors.hover))
-                        .tab_index(0)
-                        .focus_ring(cx)
-                        .on_click(move |_, window, cx| {
-                            log::info!("help panel: open {key}");
-                            open(Some(&key), window, cx)
-                        })
-                });
+                    },
+                );
                 div()
+                    .flex_1()
+                    .min_h_0()
                     .flex()
                     .flex_col()
                     .gap_3()
+                    .p_4()
                     .child(
                         Input::new(&self.search)
                             .prefix(Icon::new(IconName::Search).size(IconSize::Sm)),
                     )
-                    .child(div().flex().flex_col().gap_0p5().children(rows))
+                    .children((!none).then(|| {
+                        list.on_activate(move |key, window, cx| {
+                            log::info!("help panel: open {key}");
+                            on_open(Some(key), window, cx)
+                        })
+                    }))
                     .children(none.then(|| {
                         div()
                             .text_size(theme.text_size(TextSize::Sm))
@@ -299,6 +294,7 @@ impl RenderOnce for HelpPanel {
         });
         let foot = (contact.is_some() || shortcuts.is_some()).then(|| {
             div()
+                .debug_selector(|| "help-foot".into())
                 .flex()
                 .flex_none()
                 .flex_wrap()
@@ -315,15 +311,7 @@ impl RenderOnce for HelpPanel {
             .flex()
             .flex_col()
             .child(head)
-            .child(on_axis(
-                div()
-                    .id((id.clone(), "body"))
-                    .flex_1()
-                    .min_h_0()
-                    .overflow_y_scroll()
-                    .p_4()
-                    .child(body),
-            ))
+            .child(body)
             .children(foot)
     }
 }

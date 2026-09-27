@@ -30,6 +30,7 @@ const SCRIPT: &[Step] = &[
     Step::Key("escape"),
     Step::DownAt("onboarding-help-panel", 120.0, 124.0),
     Step::UpAt("onboarding-help-panel", 120.0, 124.0),
+    Step::Key("enter"),
     Step::Wait(200),
     Step::Shot("help-article"),
     Step::DownAt("onboarding-shortcuts", 20.0, 16.0),

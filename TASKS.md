@@ -411,3 +411,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T36c | 2 | PASS | |
 | T37a | 1 | FAIL | the wizard's Next and Back dropped focus as the flow turned; Got it stranded focus on a closed tip; the words read and the bar's share untested apart from their selectors |
 | T37a | 2 | PASS | |
+| T37b | 1 | FAIL | the help panel's rows were bare Tab stops, not a list the keyboard walks; a long support address drew past 280px |
