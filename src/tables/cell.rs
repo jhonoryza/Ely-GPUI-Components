@@ -23,6 +23,8 @@ pub enum Cell {
     Person(SharedString),
     /// A label, and the address it opens.
     Link(SharedString, SharedString),
+    /// A length of time in seconds, read in its two largest units; it sorts by length.
+    Duration(u64),
 }
 
 impl Cell {
@@ -34,6 +36,9 @@ impl Cell {
             }
             Self::Number(value) => value.to_string().into(),
             Self::Progress(share) => share.to_string().into(),
+            Self::Duration(seconds) => {
+                format::duration(*seconds, format::DurationStyle::Compact).into()
+            }
             Self::Empty | Self::Spark(_) => SharedString::default(),
         }
     }
@@ -43,6 +48,7 @@ impl Cell {
         match self {
             Self::Number(value) => Some(*value),
             Self::Progress(share) => Some(f64::from(*share)),
+            Self::Duration(seconds) => Some(*seconds as f64),
             _ => None,
         }
     }
@@ -240,6 +246,9 @@ pub(crate) fn draw(cell: &Cell, column: &Column, id: ElementId, cx: &App) -> Any
             .min_w_0()
             .child(Avatar::new(id, name.clone()).size(AvatarSize::Xs))
             .child(Ellipsis::new(name.clone()))
+            .into_any_element(),
+        Cell::Duration(seconds) => tabular(div())
+            .child(format::duration(*seconds, format::DurationStyle::Compact))
             .into_any_element(),
         Cell::Link(label, url) => {
             ExternalLink::new(id, label.clone(), url.clone()).into_any_element()

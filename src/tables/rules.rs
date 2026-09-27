@@ -175,6 +175,16 @@ pub fn to_csv(columns: &[Column], rows: &[Row]) -> String {
 mod tests {
     use super::*;
 
+    #[test]
+    fn durations_sort_by_length_not_by_their_words() {
+        let rows: Vec<Row> = [("a", 600), ("b", 5_100), ("c", 90_000)]
+            .into_iter()
+            .map(|(key, seconds)| Row::new(key, [Cell::Duration(seconds)]))
+            .collect();
+        assert_eq!(sorted_by(&rows, vec![0, 1, 2], &[(0, true)]), [0, 1, 2]);
+        assert_eq!(rows[1].cells[0].words(), "1h 25m");
+    }
+
     fn table() -> (Vec<Column>, Vec<Row>) {
         let columns = vec![
             Column::new("name", "Name"),

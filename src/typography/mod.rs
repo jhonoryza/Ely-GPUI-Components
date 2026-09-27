@@ -28,4 +28,4 @@ pub use link::{ExternalLink, Link};
 pub use math::{Latex, MathError};
 pub use rolling::AnimatedNumber;
 pub use select::SelectableText;
-pub use text::{Caption, Heading, Label, Overline, Paragraph, Subtitle, Title, tabular};
+pub use text::{Caption, Heading, Label, Overline, Paragraph, Subtitle, Title, literal, tabular};

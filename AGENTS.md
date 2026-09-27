@@ -179,6 +179,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - `typography::Ellipsis` shapes its line with the text style's own run, so a strike or an underline set on its box shows (`lists::ListItem::struck`, a closed task's title).
 - Focus that must follow an item to another parent is taken by the owner and keyed by the item: a handle gpui makes for an element dies with its path (`project::KanbanBoard`, whose cards keep focus across columns).
 - The chart's hues go by `theme::HUE_NAMES`, for an event's color and a label's alike.
+- Text whose every character counts, encoded data and keys, goes through `typography::literal`: JetBrains Mono draws `==` and `->` as ligatures (`devtools::Encoder`).
 
 ## Decisions
 

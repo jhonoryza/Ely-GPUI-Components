@@ -17,6 +17,16 @@ pub fn tabular<E: Styled>(mut element: E) -> E {
     element
 }
 
+/// Each character drawn as itself, without ligatures: `==` stays two signs in encoded text and keys.
+pub fn literal<E: Styled>(mut element: E) -> E {
+    let features = FontFeatures(Arc::new(vec![("calt".into(), 0), ("liga".into(), 0)]));
+    element
+        .text_style()
+        .get_or_insert_with(Default::default)
+        .font_features = Some(features);
+    element
+}
+
 struct Spec {
     size: TextSize,
     weight: FontWeight,

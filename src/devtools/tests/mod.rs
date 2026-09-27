@@ -8,6 +8,7 @@ use crate::{editor::CodeEditor, forms, primitives::FocusNext, theme::Theme};
 
 mod api;
 mod formats;
+mod tools;
 
 type Part = fn(&Bench, &mut Window, &mut App, Entity<Bench>) -> AnyElement;
 

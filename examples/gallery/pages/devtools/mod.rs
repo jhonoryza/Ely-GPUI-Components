@@ -4,6 +4,7 @@ mod apis;
 mod data;
 mod db;
 mod formats;
+mod tools;
 
 use super::Page;
 use crate::script::Step;
@@ -30,5 +31,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(apis::requests(window, cx))
         .child(apis::socket(window, cx))
         .child(apis::graphql(window, cx))
+        .child(tools::text(window, cx))
+        .child(tools::machines(window, cx))
         .into_any_element()
 }
