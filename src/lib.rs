@@ -30,6 +30,7 @@ pub mod navigation;
 pub mod overlays;
 pub mod primitives;
 pub mod project;
+pub mod settings;
 pub mod shell;
 pub mod tables;
 pub mod terminal;

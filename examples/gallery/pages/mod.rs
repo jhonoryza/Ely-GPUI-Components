@@ -28,6 +28,7 @@ mod navigation;
 mod overlays;
 mod primitives;
 mod project;
+mod settings;
 mod shell;
 mod tables;
 mod terminal;
@@ -83,6 +84,7 @@ pub const ALL: &[Page] = &[
     canvas::PAGE,
     devtools::PAGE,
     dashboard::PAGE,
+    settings::PAGE,
     theme::PAGE,
 ];
 

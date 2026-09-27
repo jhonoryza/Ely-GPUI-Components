@@ -193,3 +193,4 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - 2026-09-25: SystemNotification is blocked. An unbundled app has no notification center (probed on macOS 27.2), and gpui 0.2.2 has no API.
 - 2026-09-25: `unexpected_cfgs` declares `feature = "cargo-clippy"`, which the objc 0.2 macros test.
 - 2026-09-26: Terminal proven with `alacritty_terminal` 0.26: its grid, parser and pseudo-terminal, drawn by Ely. A replayed grid serves recorded output and tests.
+- 2026-09-27: ThemeSwitcher is `settings::ThemeSelector`: `src/theme` sits under every chapter and cannot draw with buttons.

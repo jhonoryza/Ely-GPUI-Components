@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gpui::{
     App, Bounds, Corners, ElementId, Hsla, InteractiveElement, IntoElement, MouseButton,
     ParentElement, Pixels, Rems, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
-    Window, canvas, div, fill, point, prelude::*, size,
+    Window, canvas, div, fill, point, prelude::*, rems, size,
 };
 
 use super::super::options::Run;
@@ -192,7 +192,10 @@ impl ColorPalette {
 }
 
 impl RenderOnce for ColorPalette {
-    fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let theme = cx.theme();
+        let gap = rems(0.375); // gap_1p5
+        let widest = (theme.control_height(ControlSize::Sm) + gap) * f32::from(self.columns) - gap;
         let swatches: Vec<_> = self
             .colors
             .into_iter()
@@ -200,7 +203,7 @@ impl RenderOnce for ColorPalette {
             .map(|(ix, (name, color))| {
                 let (id, on_change) = (self.id.clone(), self.on_change.clone());
                 let label = name.clone();
-                ColorSwatch::new(("swatch", ix), color)
+                ColorSwatch::new((self.id.clone(), format!("swatch-{ix}")), color)
                     .tooltip(name)
                     .selected(self.selected == Some(color))
                     .on_click(move |window, cx| {
@@ -213,9 +216,10 @@ impl RenderOnce for ColorPalette {
             .collect();
         div()
             .id(self.id)
-            .grid()
-            .grid_cols(self.columns)
+            .flex()
+            .flex_wrap()
             .gap_1p5()
+            .max_w(widest)
             .children(swatches)
     }
 }
