@@ -3,6 +3,7 @@ use ely_gpui_component::{
     i18n::{I18n, LOCALES},
     primitives::{Icon, IconName},
     theme::{ActiveTheme, Radius},
+    typography::Ellipsis,
 };
 use gpui::{AnyElement, App, IntoElement, ParentElement, Styled, Window, div, px};
 use jiff::{Timestamp, tz::TimeZone};
@@ -147,7 +148,7 @@ fn messages(cx: &App) -> impl IntoElement + use<> {
                         .flex()
                         .flex_col()
                         .gap_1()
-                        .children(lines.map(|line| div().child(line))),
+                        .children(lines.map(Ellipsis::new)),
                 ),
                 cx,
             )),
@@ -190,7 +191,7 @@ fn mirrored(cx: &App) -> impl IntoElement + use<> {
             .px_3()
             .py_2()
             .child(Icon::new(IconName::File).color(theme.colors.fg_muted))
-            .child(direction.align(div().flex_1().min_w_0().child(name)))
+            .child(direction.align(div().flex_1().min_w_0().child(Ellipsis::new(name))))
             .child(
                 div()
                     .flex_none()

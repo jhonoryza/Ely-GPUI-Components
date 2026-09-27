@@ -54,6 +54,20 @@ fn a_catalog_with_a_stray_key_fails() {
 }
 
 #[test]
+#[should_panic(expected = "en-US repeats a key")]
+fn a_repeated_key_fails() {
+    I18n::new("en-US").catalog("en-US", &[("hi", "Hello"), ("hi", "Hey")]);
+}
+
+#[test]
+#[should_panic(expected = "en-US has a catalog")]
+fn a_second_catalog_for_a_locale_fails() {
+    I18n::new("en-US")
+        .catalog("en-US", &[("hi", "Hello")])
+        .catalog("en-US", &[("hi", "Hey")]);
+}
+
+#[test]
 #[should_panic(expected = "no locale \"xx-XX\"")]
 fn an_unlisted_locale_fails() {
     Locale::of("xx-XX");
@@ -76,9 +90,9 @@ fn locales_write_their_own_numbers_and_dates() {
     assert_eq!(
         cases,
         [
-            ("en-US", "−1,234,567.89".into(), "9/1/2026".into()),
+            ("en-US", "−1,234,567.89".into(), "9/1/26".into()),
             ("en-GB", "−1,234,567.89".into(), "01/09/2026".into()),
-            ("de-DE", "−1.234.567,89".into(), "01.09.2026".into()),
+            ("de-DE", "−1.234.567,89".into(), "01.09.26".into()),
             (
                 "fr-FR",
                 "−1\u{202f}234\u{202f}567,89".into(),
@@ -86,7 +100,7 @@ fn locales_write_their_own_numbers_and_dates() {
             ),
             ("ja-JP", "−1,234,567.89".into(), "2026/09/01".into()),
             ("zh-CN", "−1,234,567.89".into(), "2026/9/1".into()),
-            ("he-IL", "−1,234,567.89".into(), "1.9.2026".into()),
+            ("he-IL", "\u{200e}−1,234,567.89".into(), "1.9.2026".into()),
         ]
     );
     let rtl: Vec<_> = LOCALES
@@ -94,6 +108,11 @@ fn locales_write_their_own_numbers_and_dates() {
         .filter(|locale| locale.direction == Direction::Rtl)
         .collect();
     assert_eq!(rtl, [&Locale::of("he-IL")]);
+    assert_eq!(
+        Locale::of("he-IL").number(3.5, 1),
+        "3.5",
+        "a gain takes no mark"
+    );
 }
 
 #[cfg(feature = "test-support")]

@@ -1,7 +1,7 @@
 use gpui::{
     App, Div, ElementId, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce,
-    ShapedLine, SharedString, StatefulInteractiveElement, Styled, TextRun, Window, canvas, div,
-    prelude::*, relative, transparent_black,
+    ShapedLine, SharedString, StatefulInteractiveElement, Styled, TextAlign, TextRun, Window,
+    canvas, div, point, prelude::*, relative, transparent_black,
 };
 
 use crate::{
@@ -101,7 +101,17 @@ fn fit_end(text: &str, width: Pixels, window: &mut Window) -> String {
     cut(low)
 }
 
-/// One line in the text style around it, cut by `fit` to its box. gpui 0.2.2 keeps a line's first measure, so its own `truncate` clips instead in flex boxes.
+/// Where a line starts in a box with `free` width to spare.
+fn offset(align: TextAlign, free: Pixels) -> Pixels {
+    let free = free.max(Pixels::ZERO);
+    match align {
+        TextAlign::Left => Pixels::ZERO,
+        TextAlign::Center => free / 2.,
+        TextAlign::Right => free,
+    }
+}
+
+/// One line in the text style around it, cut by `fit` to its box and set by its alignment. gpui 0.2.2 keeps a line's first measure, so its own `truncate` clips instead in flex boxes.
 fn cut_line(text: SharedString, fit: fn(&str, Pixels, &mut Window) -> String) -> Div {
     let line = text.clone();
     div()
@@ -114,9 +124,11 @@ fn cut_line(text: SharedString, fit: fn(&str, Pixels, &mut Window) -> String) ->
             canvas(
                 move |bounds, window, _| shape(&fit(&line, bounds.size.width, window), window),
                 |bounds, shaped, window, cx| {
-                    let line = window.text_style().line_height_in_pixels(window.rem_size());
+                    let style = window.text_style();
+                    let line = style.line_height_in_pixels(window.rem_size());
+                    let x = offset(style.text_align, bounds.size.width - shaped.width);
                     shaped
-                        .paint(bounds.origin, line, window, cx)
+                        .paint(bounds.origin + point(x, Pixels::ZERO), line, window, cx)
                         .expect("a cut line paints");
                 },
             )
@@ -224,7 +236,21 @@ impl RenderOnce for EllipsisTooltip {
 
 #[cfg(test)]
 mod tests {
-    use super::elide;
+    use gpui::{TextAlign, px};
+
+    use super::{elide, offset};
+
+    #[test]
+    fn a_line_starts_by_its_alignment() {
+        assert_eq!(offset(TextAlign::Left, px(40.)), px(0.));
+        assert_eq!(offset(TextAlign::Center, px(40.)), px(20.));
+        assert_eq!(offset(TextAlign::Right, px(40.)), px(40.));
+        assert_eq!(
+            offset(TextAlign::Right, px(-8.)),
+            px(0.),
+            "a cut line fills its box"
+        );
+    }
 
     #[test]
     fn elide_keeps_both_ends() {

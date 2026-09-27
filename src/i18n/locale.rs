@@ -61,7 +61,7 @@ pub const LOCALES: [Locale; 7] = [
         "en-US",
         "English (US)",
         (',', '.'),
-        "%-m/%-d/%Y",
+        "%-m/%-d/%y",
         Direction::Ltr,
     ),
     locale(
@@ -71,7 +71,7 @@ pub const LOCALES: [Locale; 7] = [
         "%d/%m/%Y",
         Direction::Ltr,
     ),
-    locale("de-DE", "Deutsch", ('.', ','), "%d.%m.%Y", Direction::Ltr),
+    locale("de-DE", "Deutsch", ('.', ','), "%d.%m.%y", Direction::Ltr),
     locale(
         "fr-FR",
         "Français",
@@ -93,9 +93,13 @@ impl Locale {
             .unwrap_or_else(|| panic!("no locale {tag:?}"))
     }
 
-    /// `value` with this locale's separators.
+    /// `value` with this locale's separators; a right-to-left locale leads its sign with a left-to-right mark, as CLDR does.
     pub fn number(self, value: f64, decimals: usize) -> String {
-        format::number(value, decimals, self.separators)
+        let number = format::number(value, decimals, self.separators);
+        match (self.direction, number.starts_with(format::MINUS)) {
+            (Direction::Rtl, true) => format!("\u{200e}{number}"),
+            _ => number,
+        }
     }
 
     /// The day `at` falls on in `zone`, written as this locale writes dates.
