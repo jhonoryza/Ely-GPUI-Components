@@ -48,6 +48,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui's `Window::dispatch_event` returns a private type, so the gallery scripts mouse input by posting `NSEvent`s to its own queue.
 - `hover()` needs an element id.
 - gpui applies hover and group-hover styles once an element has a hitbox, in prepaint and paint, but text takes its color at layout, so a hover cannot recolor text. What shows on hover rests `invisible()` and turns `visible()` through `group_hover` (`chat::ConversationItem`, `messaging::ChatMessage`).
+- gpui 0.2.2 panics on a deferred draw inside another. Whatever draws over the page goes through `primitives::raise`: at the top it defers; inside something raised it lays out on its own and draws last there, so a list opened in a dialog lies over the dialog. `scripts/check.sh` refuses gpui's `deferred` anywhere else.
 - `occlude()` blocks the pointer for everything painted before it, its own ancestors too. Put it on the outermost box that should stop the pointer, as the toast stack does, or the ancestors' hover never fires.
 - A drag that pans, turns or slides goes through gpui's drag, whose moves reach the owner in or out of its box; `on_mouse_move` stops at the box's edge. gpui sends a drag's moves to every listener of its type, so each payload carries its owner's `EntityId` and handlers check it.
 - gpui 0.2.2 paints pictures without a transform, so a picture turns by its pixels: `media::turn` turns decoded frames by quarter turns off the main thread, an asset keyed by the picture and the turn.

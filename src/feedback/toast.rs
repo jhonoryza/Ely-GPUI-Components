@@ -6,15 +6,15 @@ use std::{
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ClickEvent, Context, Corner, ElementId, Entity,
     FontWeight, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce, SharedString,
-    StatefulInteractiveElement, Styled, Task, Window, anchored, canvas, deferred, div, point,
-    prelude::*, relative,
+    StatefulInteractiveElement, Styled, Task, Window, anchored, canvas, div, point, prelude::*,
+    relative,
 };
 
 use crate::{
     buttons::{Button, ButtonVariant, IconButton},
     forms::Run,
     motion,
-    primitives::{Icon, IconName, Severity},
+    primitives::{Icon, IconName, Severity, raise},
     theme::{ActiveTheme, ControlSize, Elevation, IconSize, Radius, TextSize},
 };
 
@@ -234,7 +234,7 @@ impl RenderOnce for ToastViewport {
                 hold.update(cx, |toaster, cx| toaster.hold(*hovered, cx))
             })
             .children(cards);
-        deferred(
+        raise(
             anchored()
                 .position(point(viewport.width - margin, viewport.height - margin))
                 .anchor(Corner::BottomRight)

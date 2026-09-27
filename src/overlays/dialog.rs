@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, FocusHandle, FontWeight,
     InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce, SharedString, Styled,
-    Window, anchored, deferred, div, point, prelude::*,
+    Window, anchored, div, point, prelude::*,
 };
 use smallvec::SmallVec;
 
@@ -11,7 +11,7 @@ use crate::{
     buttons::{ButtonVariant, IconButton},
     forms::{Enter, Run},
     motion,
-    primitives::{Backdrop, FocusScope, IconName, give_back, take_focus},
+    primitives::{Backdrop, FocusScope, IconName, give_back, raise, take_focus},
     theme::{ActiveTheme, Elevation, Radius, TextSize},
 };
 
@@ -270,7 +270,7 @@ impl RenderOnce for Dialog {
         if fullscreen {
             let viewport = window.viewport_size();
             let top = cx.theme().titlebar_height().to_pixels(window.rem_size());
-            return deferred(
+            return raise(
                 anchored().position(point(Pixels::ZERO, top)).child(
                     div()
                         .w(viewport.width)

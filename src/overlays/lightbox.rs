@@ -3,14 +3,14 @@ use std::rc::Rc;
 use gpui::{
     Animation, AnimationExt, App, Div, ElementId, ImageSource, InteractiveElement, IntoElement,
     MouseButton, ObjectFit, ParentElement, Pixels, Point, RenderOnce, SharedString, Size, Stateful,
-    StatefulInteractiveElement, Styled, Window, anchored, canvas, deferred, div, prelude::*,
+    StatefulInteractiveElement, Styled, Window, anchored, canvas, div, prelude::*,
 };
 
 use crate::{
     buttons::label_size,
     forms::Run,
     motion,
-    primitives::{FocusRing, FocusScope, Icon, IconName, Image, give_back, take_focus},
+    primitives::{FocusRing, FocusScope, Icon, IconName, Image, give_back, raise, take_focus},
     theme::{ActiveTheme, ControlSize, TextSize},
 };
 
@@ -291,7 +291,7 @@ impl RenderOnce for Lightbox {
                             ),
                     ),
             );
-        deferred(anchored().position(Point::default()).child(stage))
+        raise(anchored().position(Point::default()).child(stage))
             .with_priority(1)
             .into_any_element()
     }

@@ -3,13 +3,13 @@ use std::rc::Rc;
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Bounds, Corner, Div, ElementId, Entity,
     InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, ScrollHandle,
-    SharedString, Stateful, StatefulInteractiveElement, Styled, Window, anchored, canvas, deferred,
-    div, prelude::*,
+    SharedString, Stateful, StatefulInteractiveElement, Styled, Window, anchored, canvas, div,
+    prelude::*,
 };
 
 use crate::{
     motion,
-    primitives::{Icon, IconName},
+    primitives::{Icon, IconName, raise},
     theme::{ActiveTheme, ControlSize, Elevation, IconSize, Radius, TextSize},
     typography::Ellipsis,
 };
@@ -220,7 +220,7 @@ pub(crate) fn float_height(
                     }),
             )
     };
-    deferred(placed.snap_to_window())
+    raise(placed.snap_to_window())
         .with_priority(1)
         .into_any_element()
 }

@@ -15,4 +15,6 @@ done
 components=$(find src -name '*.rs' ! -path 'src/theme/*' ! -path 'src/motion/*' ! -path '*/tests/*' ! -name 'tests.rs')
 raw=$(awk '/#\[cfg\(test\)\]/{nextfile} /(^|[^.[:alnum:]_])px\(/{print FILENAME":"FNR": "$0}' $components)
 [ -z "$raw" ] || { echo "raw px in components:"; echo "$raw"; fail=1; }
+deferred=$(grep -rn 'deferred(' src --include='*.rs' | grep -v '^src/primitives/layer.rs' || true)
+[ -z "$deferred" ] || { echo "gpui deferred outside primitives::raise:"; echo "$deferred"; fail=1; }
 exit $fail

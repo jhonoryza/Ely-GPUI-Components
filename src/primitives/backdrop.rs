@@ -2,11 +2,11 @@ use std::rc::Rc;
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, Point, RenderOnce, Styled, Window, anchored, deferred, div,
-    prelude::*,
+    MouseButton, ParentElement, Point, RenderOnce, Styled, Window, anchored, div, prelude::*,
 };
 use smallvec::SmallVec;
 
+use super::raise;
 use crate::{motion, theme::ActiveTheme};
 
 type Dismiss = Rc<dyn Fn(&mut Window, &mut App)>;
@@ -81,7 +81,7 @@ impl RenderOnce for Backdrop {
                 |scrim, t| scrim.opacity(t),
             );
 
-        deferred(
+        raise(
             anchored().position(Point::default()).child(
                 div()
                     .relative()

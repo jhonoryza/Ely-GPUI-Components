@@ -2,12 +2,13 @@ use gpui::{
     Context, Entity, IntoElement, Modifiers, ParentElement, Render, SharedString, Styled,
     TestAppContext, VisualTestContext, Window, div, px,
 };
-use jiff::{Timestamp, tz::TimeZone};
+use jiff::{Timestamp, ToSpan, tz::TimeZone};
 
 use super::{Mailing, heard, mailing, note, press, settle, setup, tab_to};
 use crate::{
     forms,
-    mail::{Label, LabelPicker, SnoozePicker, snooze::snoozes},
+    mail::{Label, LabelPicker, SnoozePicker, snooze::snoozes, times::at_hour},
+    typography::format::system_zone,
 };
 
 /// Labels the host keeps, the keys on, and what it heard.
@@ -165,4 +166,35 @@ fn the_last_row_asks_for_a_time_of_ones_own(cx: &mut TestAppContext) {
     press("enter", cx);
     assert!(cx.debug_bounds("time-dialog").is_some(), "the dialog shows");
     assert!(heard(&host, cx).is_empty(), "no time yet");
+}
+
+#[gpui::test]
+fn the_dialog_takes_only_a_time_ahead_of_now(cx: &mut TestAppContext) {
+    let (host, cx) = mailing(snoozing, cx);
+    tab_to(1, cx);
+    for key in [
+        "enter", "up", "enter", "tab", "enter", "left", "enter", "escape",
+    ] {
+        press(key, cx);
+    }
+    assert!(
+        cx.debug_bounds("time-late").is_some(),
+        "yesterday has passed"
+    );
+    for key in ["tab", "tab", "enter"] {
+        press(key, cx);
+    }
+    assert!(heard(&host, cx).is_empty(), "Snooze waits for a time ahead");
+    for key in [
+        "right", "right", "right", "enter", "escape", "tab", "tab", "enter",
+    ] {
+        press(key, cx);
+    }
+    let today = Timestamp::now().to_zoned(system_zone("a test")).date();
+    let ahead = at_hour(
+        today.checked_add(2.days()).expect("a day"),
+        0,
+        &TimeZone::UTC,
+    );
+    assert_eq!(heard(&host, cx), [format!("until {ahead}")]);
 }

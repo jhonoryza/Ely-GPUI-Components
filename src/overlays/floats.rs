@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use gpui::{
     AnimationExt, AnyElement, App, Corner, ElementId, Entity, FontWeight, InteractiveElement,
-    IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window, anchored, canvas,
-    deferred, div, point, prelude::*,
+    IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window, anchored, canvas, div,
+    point, prelude::*,
 };
 use smallvec::SmallVec;
 
@@ -12,7 +12,7 @@ use crate::{
     forms::{Run, TextInput, surface},
     layout::Collapsible,
     motion,
-    primitives::IconName,
+    primitives::{IconName, raise},
     theme::{ActiveTheme, ControlSize, TextSize},
 };
 
@@ -68,7 +68,7 @@ impl RenderOnce for FloatingToolbar {
             .when_some(anchor, |host, anchor| {
                 let lift = cx.theme().float_gap().to_pixels(window.rem_size());
                 host.child(
-                    deferred(
+                    raise(
                         anchored()
                             .position(anchor.origin - point(gpui::Pixels::ZERO, lift))
                             .anchor(Corner::BottomLeft)

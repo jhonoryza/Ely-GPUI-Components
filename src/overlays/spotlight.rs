@@ -3,14 +3,14 @@ use std::{cell::RefCell, rc::Rc};
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Bounds, ElementId, FontWeight, InteractiveElement,
     IntoElement, ParentElement, Pixels, Point, RenderOnce, SharedString, Styled, Subscription,
-    Window, anchored, canvas, deferred, div, point, prelude::*, size,
+    Window, anchored, canvas, div, point, prelude::*, size,
 };
 
 use crate::{
     buttons::{Button, ButtonVariant},
     forms::{Run, float_height, surface},
     motion,
-    primitives::{FocusScope, give_back, take_focus},
+    primitives::{FocusScope, give_back, raise, take_focus},
     theme::{ActiveTheme, Radius, TextSize},
 };
 
@@ -192,7 +192,7 @@ fn light(
         );
     div()
         .child(
-            deferred(
+            raise(
                 anchored()
                     .position(Point::default())
                     .child(div().w(viewport.width).h(viewport.height).child(frame)),

@@ -3,10 +3,11 @@ use std::{rc::Rc, time::Duration};
 use gpui::{
     Animation, AnimationExt, AnyElement, AnyView, App, AppContext, Context, Div, ElementId,
     InteractiveElement, IntoElement, ParentElement, Pixels, Point, Render, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Task, Window, anchored, deferred, div, point,
+    SharedString, StatefulInteractiveElement, Styled, Task, Window, anchored, div, point,
     prelude::*,
 };
 
+use super::raise;
 use crate::{
     motion,
     theme::{ActiveTheme, Elevation, Radius, TextSize},
@@ -175,7 +176,7 @@ impl RenderOnce for TooltipTrigger {
             .when(visible, |trigger| {
                 let body = content(window, cx);
                 let below = cx.theme().cursor_offset().to_pixels(window.rem_size());
-                trigger.child(deferred(
+                trigger.child(raise(
                     anchored()
                         .position(mouse + point(Pixels::ZERO, below))
                         .snap_to_window()

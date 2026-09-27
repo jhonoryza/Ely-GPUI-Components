@@ -70,6 +70,11 @@ const SCRIPT: &[Step] = &[
     Step::Key("enter"),
     Step::Wait(300),
     Step::Shot("snooze-dialog"),
+    Step::Key("tab"),
+    Step::Key("enter"),
+    Step::Wait(300),
+    Step::Shot("snooze-when"),
+    Step::Key("escape"),
     Step::Key("escape"),
 ];
 

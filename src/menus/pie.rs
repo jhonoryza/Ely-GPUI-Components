@@ -3,14 +3,14 @@ use std::{f32::consts::TAU, rc::Rc};
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Bounds, ElementId, Entity, FontWeight,
     InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce,
-    SharedString, Styled, Window, anchored, canvas, deferred, div, point,
+    SharedString, Styled, Window, anchored, canvas, div, point,
 };
 use smallvec::SmallVec;
 
 use crate::{
     forms::{Pick, Run},
     motion,
-    primitives::{Icon, IconName, give_back, take_focus},
+    primitives::{Icon, IconName, give_back, raise, take_focus},
     theme::{ActiveTheme, Elevation, IconSize, TextSize},
 };
 
@@ -302,7 +302,7 @@ impl RenderOnce for PieMenu {
                 }
             });
         region.child(
-            deferred(
+            raise(
                 anchored()
                     .position(point(Pixels::ZERO, Pixels::ZERO))
                     .child(

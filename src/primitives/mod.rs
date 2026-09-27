@@ -6,10 +6,14 @@ mod focus;
 mod ghost;
 mod icon;
 mod image;
+mod layer;
 mod measure;
 mod pressable;
 mod severity;
 mod tooltip;
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests;
 
 pub use backdrop::{Backdrop, Place};
 pub use disclosure::Disclosure;
@@ -21,6 +25,7 @@ pub use ghost::DragGhost;
 pub use icon::{Icon, IconName};
 pub use image::Image;
 pub(crate) use image::{checked_ratio, framed};
+pub use layer::{Raised, raise};
 pub use measure::{IntersectionObserver, Measure};
 pub use pressable::Pressable;
 pub use severity::Severity;

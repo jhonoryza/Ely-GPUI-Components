@@ -3,13 +3,15 @@ use std::{cell::Cell, rc::Rc};
 use gpui::{
     AnyElement, App, DragMoveEvent, ElementId, EmptyView, EntityId, FontWeight, InteractiveElement,
     IntoElement, ParentElement, Pixels, Point, RenderOnce, SharedString,
-    StatefulInteractiveElement, StyleRefinement, Styled, Window, anchored, deferred, div, point,
-    prelude::*,
+    StatefulInteractiveElement, StyleRefinement, Styled, Window, anchored, div, point, prelude::*,
 };
 use smallvec::SmallVec;
 
 use super::seeded::use_seeded;
-use crate::theme::{ActiveTheme, ControlSize, Elevation, Radius, TextSize};
+use crate::{
+    primitives::raise,
+    theme::{ActiveTheme, ControlSize, Elevation, Radius, TextSize},
+};
 
 struct Carry {
     owner: EntityId,
@@ -147,7 +149,7 @@ impl RenderOnce for FloatingPanel {
                     .child(self.title),
             )
             .child(div().p_3().children(self.body));
-        deferred(anchored().position(at).child(panel))
+        raise(anchored().position(at).child(panel))
     }
 }
 

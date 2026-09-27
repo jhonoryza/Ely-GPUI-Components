@@ -2,8 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Bounds, ElementId, Entity, InteractiveElement,
-    IntoElement, ParentElement, Pixels, Point, Styled, Window, anchored, canvas, deferred, div,
-    prelude::*,
+    IntoElement, ParentElement, Pixels, Point, Styled, Window, anchored, canvas, div, prelude::*,
 };
 
 use super::{
@@ -13,7 +12,7 @@ use super::{
 use crate::{
     forms::{Down, Enter, Run, TextInput, Up, float},
     motion,
-    primitives::{Icon, IconName, Takeover, give_back, take_focus},
+    primitives::{Icon, IconName, Takeover, give_back, raise, take_focus},
     theme::{ActiveTheme, IconSize},
 };
 
@@ -384,7 +383,7 @@ pub(crate) fn hang(
         });
     let placed = match spot {
         Spot::Under => float(state.read(cx).anchor, menu.entries.len(), root, window, cx),
-        Spot::At(point) => deferred(anchored().position(point).snap_to_window().child(
+        Spot::At(point) => raise(anchored().position(point).snap_to_window().child(
             root.with_animation((id.clone(), "in"), enter.clone(), |root, t| root.opacity(t)),
         ))
         .with_priority(1)
@@ -393,7 +392,7 @@ pub(crate) fn hang(
     let subs = (1..depth).filter_map(|level| {
         let row = state.read(cx).levels[level - 1].row;
         (row != Bounds::default()).then(|| {
-            deferred(
+            raise(
                 anchored().position(row.top_right()).snap_to_window().child(
                     draw::panel(id, menu, state, level, &close, None, cx)
                         .mt_neg_1()

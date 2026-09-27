@@ -40,6 +40,15 @@ pub(super) fn named(name: &str, at: Timestamp, zone: &TimeZone) -> (String, Time
     (format!("{name} · {hour}"), at)
 }
 
+/// The moment `chosen` names in `zone`, once it lies after `now`.
+pub(super) fn ahead(chosen: DateTime, zone: &TimeZone, now: Timestamp) -> Option<Timestamp> {
+    let at = chosen
+        .to_zoned(zone.clone())
+        .expect("the zone holds the time")
+        .timestamp();
+    (at > now).then_some(at)
+}
+
 /// `times` less each moment an earlier one names, as tomorrow names next Monday on a Sunday.
 pub(super) fn distinct(
     times: impl IntoIterator<Item = (String, Timestamp)>,
@@ -99,16 +108,16 @@ pub(super) fn time_dialog(
         return None;
     }
     let chosen = now.chosen;
-    let at = chosen.map(|chosen| {
-        chosen
-            .to_zoned(zone.clone())
-            .expect("the zone holds the time")
-            .timestamp()
-    });
-    let ahead = at.filter(|at| *at > Timestamp::now());
+    let ahead = chosen.and_then(|chosen| ahead(chosen, zone, Timestamp::now()));
     let (closing, choosing, id) = (picking.clone(), picking.clone(), id.clone());
-    let late = (at.is_some() && ahead.is_none())
-        .then(|| FormError::new((id.clone(), "late"), "That time has passed."));
+    let late = (chosen.is_some() && ahead.is_none()).then(|| {
+        div()
+            .debug_selector(|| "time-late".into())
+            .child(FormError::new(
+                (id.clone(), "late"),
+                "That time has passed.",
+            ))
+    });
     let dialog = Dialog::new((id.clone(), "dialog"), ask.title, move |_, cx| {
         closing.update(cx, |picking, cx| {
             *picking = Picking::default();
@@ -154,4 +163,39 @@ pub(super) fn time_dialog(
             })
     });
     Some(dialog)
+}
+
+#[cfg(test)]
+mod tests {
+    use jiff::{
+        SignedDuration,
+        civil::date,
+        tz::{TimeZone, offset},
+    };
+
+    use super::{ahead, at_hour};
+
+    #[test]
+    fn a_picked_time_counts_once_it_lies_ahead_of_now() {
+        let day = date(2026, 9, 27);
+        let now = at_hour(day, 9, &TimeZone::UTC);
+        let utc = &TimeZone::UTC;
+        assert_eq!(
+            ahead(day.at(8, 59, 0, 0), utc, now),
+            None,
+            "a minute behind"
+        );
+        assert_eq!(ahead(day.at(9, 0, 0, 0), utc, now), None, "now itself");
+        assert_eq!(
+            ahead(day.at(9, 1, 0, 0), utc, now),
+            Some(now + SignedDuration::from_mins(1)),
+            "a minute ahead"
+        );
+        let tokyo = TimeZone::fixed(offset(9));
+        assert_eq!(
+            ahead(day.at(10, 0, 0, 0), &tokyo, now),
+            None,
+            "10:00 in Tokyo is 01:00 here"
+        );
+    }
 }
