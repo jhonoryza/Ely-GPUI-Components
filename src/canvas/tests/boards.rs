@@ -5,7 +5,7 @@ use super::{
     tools::{drag, layer, pair, press},
 };
 use crate::canvas::{
-    Board, Edge, MindMap, Node, NodeGraph, Port, Tool, Topic, Viewport, Whiteboard,
+    Board, Edge, Link, MindMap, Node, NodeGraph, Port, Tool, Topic, Viewport, Whiteboard,
 };
 
 fn tap(key: &str, cx: &mut VisualTestContext) {
@@ -91,12 +91,13 @@ fn map(_: &Stage, owner: Entity<Stage>) -> AnyElement {
         .child(Topic::new("a", "Site"))
         .child(Topic::new("b", "Press"))
         .child(Topic::new("c", "Budget"));
-    let [picked, added, removed] = [(); 3].map(|_| owner.clone());
+    let [picked, added, removed, renamed] = [(); 4].map(|_| owner.clone());
     MindMap::new("map", root, Viewport::new(-60.0, -150.0, 1.0))
         .selected(Some("a"))
         .on_select(move |key, _, cx| say(&picked, format!("select {key:?}"), cx))
         .on_add(move |key, _, cx| say(&added, format!("add under {key}"), cx))
         .on_remove(move |key, _, cx| say(&removed, format!("remove {key}"), cx))
+        .on_rename(move |key, text, _, cx| say(&renamed, format!("rename {key} {text}"), cx))
         .into_any_element()
 }
 
@@ -125,7 +126,7 @@ fn board(_: &Stage, owner: Entity<Stage>) -> AnyElement {
         "board",
         Board {
             shapes: pair(),
-            links: Vec::new(),
+            links: vec![Link::new("ab", "a", "b")],
         },
     )
     .on_change(move |board, _, cx| {
@@ -134,7 +135,11 @@ fn board(_: &Stage, owner: Entity<Stage>) -> AnyElement {
             .iter()
             .map(|shape| shape.key.to_string())
             .collect();
-        say(&owner, format!("shapes {keys:?}"), cx)
+        say(
+            &owner,
+            format!("shapes {keys:?} links {}", board.links.len()),
+            cx,
+        )
     })
     .into_any_element()
 }
@@ -144,5 +149,61 @@ fn backspace_takes_the_selection_off_the_board(cx: &mut TestAppContext) {
     let (host, cx) = stage(board, cx);
     press(250.0, 50.0, 1, cx);
     tap("backspace", cx);
-    assert_eq!(said(&host, cx), ["shapes [\"a\"]"]);
+    assert_eq!(
+        said(&host, cx),
+        ["shapes [\"a\"] links 0"],
+        "a link goes with its shape"
+    );
+}
+
+#[gpui::test]
+fn tab_in_a_topic_being_rewritten_keeps_the_words_and_adds_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = stage(map, cx);
+    press(276.0, 126.0, 1, cx);
+    tap("f2", cx);
+    cx.simulate_input("Web");
+    tap("tab", cx);
+    assert_eq!(said(&host, cx), ["select Some(\"a\")", "rename a Web"]);
+}
+
+fn three(_: &Stage, owner: Entity<Stage>) -> AnyElement {
+    let (joined, parted) = (owner.clone(), owner);
+    let gain = Node::new("gain", "Gain", (0.0, 150.0)).output(Port::new("image", "Image", "image"));
+    let wired = Edge::new(("load", "image"), ("blur", "image"));
+    let edge = |edge: &Edge| {
+        format!(
+            "{}.{} {}.{}",
+            edge.from.0, edge.from.1, edge.to.0, edge.to.1
+        )
+    };
+    NodeGraph::new(
+        "graph",
+        Viewport::new(0.0, 0.0, 1.0),
+        nodes().into_iter().chain([gain]),
+        [wired],
+    )
+    .on_connect(move |made, _, cx| say(&joined, format!("connect {}", edge(made)), cx))
+    .on_disconnect(move |gone, _, cx| say(&parted, format!("disconnect {}", edge(gone)), cx))
+    .into_any_element()
+}
+
+/// Gain's output sits on its right side, a title and half a row down: 150 + 32 + 14.
+#[gpui::test]
+fn a_new_wire_into_a_wired_input_replaces_the_old(cx: &mut TestAppContext) {
+    let (host, cx) = stage(three, cx);
+    drag((200.0, 196.0), (301.0, 47.0), cx);
+    assert_eq!(
+        said(&host, cx),
+        [
+            "disconnect load.image blur.image",
+            "connect gain.image blur.image"
+        ]
+    );
+}
+
+#[gpui::test]
+fn a_link_released_on_its_own_shape_links_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = stage(|_, owner| layer(Tool::Connector, &[], owner), cx);
+    drag((50.0, 50.0), (60.0, 70.0), cx);
+    assert!(said(&host, cx).is_empty());
 }

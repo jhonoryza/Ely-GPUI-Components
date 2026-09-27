@@ -378,3 +378,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T32b | 1 | FAIL | handles drawn for a multi-selection fell through to a marquee; the palette ran past a 280px box; an open pen path outlived the tool |
 | T32b | 2 | PASS | |
 | T32c | 1 | PASS | |
+| T32d | 1 | FAIL | Tab in a mind map's rename field added a topic; the replaced wire, the connector released on its own shape and a deleted shape's links went untested |

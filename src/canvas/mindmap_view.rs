@@ -23,7 +23,7 @@ use crate::{
 type OnTopic = Rc<dyn Fn(Option<&SharedString>, &mut Window, &mut App)>;
 type OnKey = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
-/// Topics branching from a root on an endless plane, half to each side. A press selects a topic; arrows walk, Tab asks for a child, Enter for a sibling, Delete or Backspace to remove one, and F2 or a double press rewrites it; Escape lets the selection go, so Tab moves on. The owner keeps the map and answers each ask with `Topic::adding`, `removing` and `renaming`.
+/// Topics branching from a root on an endless plane, half to each side. A press selects a topic; arrows walk, Tab asks for a child, Enter for a sibling, Delete or Backspace to remove one, and F2 or a double press rewrites it; Escape lets the selection go, so Tab moves on. While a topic is being rewritten its field takes every key; Tab keeps the words and hands focus back to the map. The owner keeps the map and answers each ask with `Topic::adding`, `removing` and `renaming`.
 #[derive(IntoElement)]
 pub struct MindMap {
     id: ElementId,
@@ -245,7 +245,9 @@ impl RenderOnce for MindMap {
             None => plane,
         };
         let (keys, tabbed, parent_of) = (placed.clone(), selected.clone(), self.root.clone());
-        let adding = on_add.clone();
+        let (adding, writing_tab, writing_keys) =
+            (on_add.clone(), editing.clone(), editing.clone());
+        let back = focus.clone();
         div()
             .id(id)
             .track_focus(&focus)
@@ -256,6 +258,12 @@ impl RenderOnce for MindMap {
                     let (Some(key), Some(on_add)) = (&tabbed, &adding) else {
                         return;
                     };
+                    if writing_tab.read(cx).field().is_some() {
+                        cx.stop_propagation();
+                        writing_tab.update(cx, |editing, cx| editing.finish(false, window, cx));
+                        window.focus(&back);
+                        return;
+                    }
                     cx.stop_propagation();
                     log::info!("mind map: a child under {key}");
                     on_add(key, window, cx);
@@ -265,6 +273,9 @@ impl RenderOnce for MindMap {
                 let Some(at) = &selected else {
                     return;
                 };
+                if writing_keys.read(cx).field().is_some() {
+                    return;
+                }
                 let key = event.keystroke.key.as_str();
                 match key {
                     "up" | "down" | "left" | "right" => {
