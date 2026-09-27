@@ -133,7 +133,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T38a Interaction · Pointer — `tasks/ch31-43.md`
 - [x] T38b Interaction · Keys, scroll and focus — `tasks/ch31-43.md`
 - [x] T39a Theme · Editing — `tasks/ch31-43.md`
-- [ ] T39b Theme · Importing
+- [x] T39b Theme · Importing — `tasks/ch31-43.md`
 - [ ] T39c Theme · Platform
 - [ ] T40 i18n & a11y
 - [ ] T41 Maps
@@ -423,3 +423,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T39a | 2 | FAIL | segments split the strip equally and cut a longer label; the thumb lost its padding's height |
 | T39a | 3 | PASS | |
 | T39b | 1 | FAIL | a long theme name pushed its badge past 280px; four-digit colors refused the theme |
+| T39b | 2 | PASS | |
