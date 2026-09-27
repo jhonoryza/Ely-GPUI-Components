@@ -387,3 +387,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T33a | 1 | FAIL | the plan, the Redis browser and the structure editor drew past a 280px box; the form's rules and a row button's press went untested |
 | T33a | 2 | FAIL | the structure editor's cells kept the narrow box's first measure, and its Tab stops past the sideways fold stayed out of view |
 | T33a | 3 | PASS | |
+| T33b | 1 | FAIL | YAML lists at their key's indent and quoted `#` misread; a long note hid the key at 280px; XML text paths counted from 0 and entities stayed raw; odd-key paths and Format at rest untested |

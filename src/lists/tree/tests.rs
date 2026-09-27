@@ -34,7 +34,8 @@ impl Render for Explorer {
                 TreeNode::new("ui", "ui").child(TreeNode::new("button", "button.rs")),
             ]),
             docs,
-            TreeNode::new("readme", "README.md"),
+            TreeNode::new("readme", "README.md")
+                .note("a note long enough to take the whole row and more"),
         ];
         let (select, check, load, rename, moved) = (
             view.clone(),
@@ -93,6 +94,20 @@ fn row(ix: usize) -> Point<Pixels> {
 
 fn read<T>(view: &Entity<Explorer>, cx: &mut VisualTestContext, f: impl Fn(&Explorer) -> T) -> T {
     view.read_with(cx, |explorer, _| f(explorer))
+}
+
+#[gpui::test]
+fn a_long_note_leaves_the_label_half_the_row(cx: &mut TestAppContext) {
+    let (_, cx) = explorer(false, cx);
+    let note = cx.debug_bounds("tree-note").expect("the readme's note");
+    assert!(
+        note.size.width <= px(150.0),
+        "the note takes at most half the row: {note:?}"
+    );
+    assert!(
+        note.size.width > px(100.0),
+        "the note keeps its half: {note:?}"
+    );
 }
 
 #[gpui::test]

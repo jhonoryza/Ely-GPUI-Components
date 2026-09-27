@@ -3,7 +3,7 @@ use std::{ops::Range, rc::Rc};
 use gpui::{
     AnyElement, App, DragMoveEvent, ElementId, Entity, EntityId, FocusHandle, InteractiveElement,
     IntoElement, MouseButton, ParentElement, SharedString, StatefulInteractiveElement, Styled,
-    Window, div, prelude::*,
+    Window, div, prelude::*, relative,
 };
 
 use super::{
@@ -210,10 +210,12 @@ fn row(rows: &Rows, ix: usize, window: &mut Window, cx: &mut App) -> AnyElement 
         .child(body)
         .children(note.map(|note| {
             div()
+                .debug_selector(|| "tree-note".into())
                 .flex_none()
+                .max_w(relative(0.5))
                 .text_size(theme.text_size(TextSize::Xs))
                 .text_color(ink.unwrap_or(colors.fg_subtle))
-                .child(note)
+                .child(Ellipsis::new(note))
         }))
         .children(landing.filter(|at| *at != DropAt::Inside).map(line))
         .on_click(move |event, window, cx| {

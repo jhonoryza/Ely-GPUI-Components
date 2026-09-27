@@ -32,15 +32,51 @@ struct Reader<'a> {
 }
 
 impl<'a> Reader<'a> {
-    fn line(&self) -> usize {
-        self.text[..self.at].matches('\n').count() + 1
+    /// Fails on the line `ahead` bytes past where the reader stands.
+    fn fail_at<T>(&self, ahead: usize, why: impl Into<String>) -> Result<T, Unread> {
+        Err(Unread {
+            line: self.text[..self.at + ahead].matches('\n').count() + 1,
+            why: why.into(),
+        })
     }
 
     fn fail<T>(&self, why: impl Into<String>) -> Result<T, Unread> {
-        Err(Unread {
-            line: self.line(),
-            why: why.into(),
-        })
+        self.fail_at(0, why)
+    }
+
+    /// The `len` bytes where the reader stands, their entity references read.
+    fn decoded(&self, len: usize) -> Result<String, Unread> {
+        let raw = &self.rest()[..len];
+        let mut out = String::with_capacity(len);
+        let mut done = 0;
+        while let Some(amp) = raw[done..].find('&').map(|at| done + at) {
+            out.push_str(&raw[done..amp]);
+            let Some(end) = raw[amp..].find(';').map(|at| amp + at) else {
+                return self.fail_at(amp, "& starts no entity");
+            };
+            let name = &raw[amp + 1..end];
+            if name.is_empty() || name.contains(|c: char| c.is_whitespace() || c == '&') {
+                return self.fail_at(amp, "& starts no entity");
+            }
+            let number = match name.strip_prefix("#x") {
+                Some(hex) => u32::from_str_radix(hex, 16).ok(),
+                None => name.strip_prefix('#').and_then(|dec| dec.parse().ok()),
+            };
+            out.push(match name {
+                "amp" => '&',
+                "lt" => '<',
+                "gt" => '>',
+                "quot" => '"',
+                "apos" => '\'',
+                _ => match number.and_then(char::from_u32) {
+                    Some(ch) => ch,
+                    None => return self.fail_at(amp, format!("&{name}; is no entity")),
+                },
+            });
+            done = end + 1;
+        }
+        out.push_str(&raw[done..]);
+        Ok(out)
     }
 
     fn rest(&self) -> &'a str {
@@ -112,7 +148,7 @@ impl<'a> Reader<'a> {
             let Some(end) = self.rest().find(quote) else {
                 return self.fail(format!("{key} in <{name}> is never closed"));
             };
-            attributes.push((key, self.rest()[..end].to_string().into()));
+            attributes.push((key, self.decoded(end)?.into()));
             self.at += end + 1;
         }
         let children = self.content()?;
@@ -152,9 +188,9 @@ impl<'a> Reader<'a> {
                 children.push(XmlNode::Element(self.element()?));
             } else {
                 let end = rest.find('<').unwrap_or(rest.len());
-                let words = rest[..end].trim();
-                if !words.is_empty() {
-                    children.push(XmlNode::Text(words.to_string().into()));
+                let words = self.decoded(end)?;
+                if !words.trim().is_empty() {
+                    children.push(XmlNode::Text(words.trim().to_string().into()));
                 }
                 self.at += end;
             }
@@ -189,12 +225,15 @@ pub fn read_xml(text: &str) -> Result<XmlElement, Unread> {
 /// Rows for what `element` holds, each element's path listed in `open`.
 fn nodes(element: &XmlElement, path: &str, open: &mut Vec<SharedString>) -> Vec<TreeNode> {
     let mut counts: Vec<(SharedString, usize)> = Vec::new();
+    let mut texts = 0;
     element
         .children
         .iter()
-        .enumerate()
-        .map(|(ix, child)| match child {
-            XmlNode::Text(text) => TreeNode::new(format!("{path}/text()[{ix}]"), text.clone()),
+        .map(|child| match child {
+            XmlNode::Text(text) => {
+                texts += 1;
+                TreeNode::new(format!("{path}/text()[{texts}]"), text.clone())
+            }
             XmlNode::Element(child) => {
                 let seen = match counts.iter_mut().find(|(name, _)| *name == child.name) {
                     Some((_, count)) => {
@@ -289,7 +328,35 @@ impl RenderOnce for XmlViewer {
 
 #[cfg(test)]
 mod tests {
-    use super::{XmlNode, read_xml};
+    use super::{XmlNode, nodes, read_xml};
+
+    #[test]
+    fn entities_read_in_text_and_attributes() {
+        let root =
+            read_xml("<title a=\"Tom &amp; Jerry\">Tom &amp; Jerry &lt;3 &#65;&#x42;</title>")
+                .expect("xml");
+        assert_eq!(root.attributes, [("a".into(), "Tom & Jerry".into())]);
+        assert_eq!(root.children, [XmlNode::Text("Tom & Jerry <3 AB".into())]);
+        let unread = read_xml("<a>\n  &nope;</a>").expect_err("an unknown entity");
+        assert_eq!(
+            (unread.line, unread.why.as_str()),
+            (2, "&nope; is no entity")
+        );
+        assert_eq!(
+            read_xml("<a>Q&A</a>").expect_err("a bare ampersand").why,
+            "& starts no entity"
+        );
+    }
+
+    #[test]
+    fn a_text_path_counts_text_nodes_from_one() {
+        let root = read_xml("<a>x<b/>y</a>").expect("xml");
+        let keys: Vec<_> = nodes(&root, "/a", &mut Vec::new())
+            .into_iter()
+            .map(|node| node.key)
+            .collect();
+        assert_eq!(keys, ["/a/text()[1]", "/a/b[1]", "/a/text()[2]"]);
+    }
 
     #[test]
     fn elements_attributes_and_text_read_in_order() {

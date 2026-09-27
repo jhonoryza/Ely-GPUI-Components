@@ -80,9 +80,8 @@ impl RenderOnce for JsonEditor {
                 .disabled(read.is_err())
                 .on_click(move |_, _, cx| {
                     let text = editor.read(cx).text().to_string();
-                    let Some(out) = reformat(&text, pretty) else {
-                        return;
-                    };
+                    let out = reformat(&text, pretty)
+                        .expect("Format and Minify rest until the JSON reads");
                     log::info!("json editor: {label}");
                     editor.update(cx, |editor, cx| editor.set_text(out, cx));
                 })

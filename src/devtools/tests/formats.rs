@@ -1,4 +1,7 @@
-use gpui::{AnyElement, App, AppContext as _, Entity, IntoElement, TestAppContext, Window, div};
+use gpui::{
+    AnyElement, App, AppContext as _, Entity, Focusable as _, IntoElement, TestAppContext, Window,
+    div,
+};
 
 use super::{Bench, bench, settle, tab, tap};
 use crate::{
@@ -59,5 +62,22 @@ fn format_indents_the_json_and_minify_folds_it(cx: &mut TestAppContext) {
     assert_eq!(
         editor.read_with(cx, |editor, _| editor.text().to_string()),
         r#"{"a":[1,2]}"#
+    );
+}
+
+/// Stops: the editor alone, the buttons resting while the JSON does not read.
+#[gpui::test]
+fn format_and_minify_rest_while_the_json_does_not_read(cx: &mut TestAppContext) {
+    let (host, cx) = bench(editor, cx);
+    let editor = cx.update(|window, cx| cx.new(|cx| CodeEditor::new("{", window, cx)));
+    host.update(cx, |bench, cx| {
+        bench.editor = Some(editor.clone());
+        cx.notify();
+    });
+    settle(cx);
+    tab(1, cx);
+    assert!(
+        cx.update(|window, cx| editor.focus_handle(cx).is_focused(window)),
+        "Tab passes Format and Minify"
     );
 }

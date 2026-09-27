@@ -69,16 +69,41 @@ fn scalar(text: &str) -> Datum {
     }
 }
 
+/// Where a line's comment starts: a `#` at its start or after a space, outside a quoted scalar.
+fn comment(line: &str) -> Option<usize> {
+    let mut chars = line.char_indices().peekable();
+    let (mut quote, mut last) = (None, ' ');
+    while let Some((at, ch)) = chars.next() {
+        match quote {
+            Some('"') if ch == '\\' => {
+                chars.next();
+            }
+            Some('\'') if ch == '\'' && chars.peek().is_some_and(|(_, next)| *next == '\'') => {
+                chars.next();
+            }
+            Some(open) if ch == open => quote = None,
+            Some(_) => {}
+            None if ch == '#' && last.is_whitespace() => return Some(at),
+            None if matches!(ch, '"' | '\'') && last.is_whitespace() => quote = Some(ch),
+            None => {}
+        }
+        last = ch;
+    }
+    None
+}
+
+/// Whether a line starts a list item.
+fn dashed(words: &str) -> bool {
+    let words = words.trim_start();
+    words.starts_with("- ") || words == "-"
+}
+
 /// Lines of a YAML block: each one's number, indent and words, without comments and blank lines.
 fn lines(text: &str) -> Vec<(usize, usize, &str)> {
     text.lines()
         .enumerate()
         .filter_map(|(ix, line)| {
-            let words = match line.find(" #") {
-                Some(at) => &line[..at],
-                None if line.trim_start().starts_with('#') => "",
-                None => line,
-            };
+            let words = &line[..comment(line).unwrap_or(line.len())];
             let indent = words.len() - words.trim_start().len();
             (!words.trim().is_empty() && words.trim() != "---")
                 .then(|| (ix + 1, indent, words.trim_end()))
@@ -88,18 +113,11 @@ fn lines(text: &str) -> Vec<(usize, usize, &str)> {
 
 /// The block that starts at `at` and holds the lines at `indent`.
 fn block(lines: &[(usize, usize, &str)], at: &mut usize, indent: usize) -> Result<Datum, Unread> {
-    let list = lines[*at].2.trim_start().starts_with("- ") || lines[*at].2.trim() == "-";
-    if list {
+    if dashed(lines[*at].2) {
         let mut items = Vec::new();
-        while *at < lines.len() && lines[*at].1 == indent {
+        while *at < lines.len() && lines[*at].1 == indent && dashed(lines[*at].2) {
             let (number, _, words) = lines[*at];
-            let Some(rest) = words.trim_start().strip_prefix('-') else {
-                return Err(Unread {
-                    line: number,
-                    why: "a list holds only items starting with -".into(),
-                });
-            };
-            let rest = rest.trim_start();
+            let rest = words.trim_start()[1..].trim_start();
             *at += 1;
             items.push(if rest.is_empty() {
                 nested(lines, at, indent)?
@@ -146,10 +164,10 @@ fn entries(
             },
         };
         let key = SharedString::from(key.trim().trim_matches('"').to_string());
-        let value = if value.trim().is_empty() {
-            nested(lines, at, indent)?
-        } else {
-            scalar(value)
+        let value = match lines.get(*at) {
+            _ if !value.trim().is_empty() => scalar(value),
+            Some((_, same, next)) if *same == indent && dashed(next) => block(lines, at, indent)?,
+            _ => nested(lines, at, indent)?,
         };
         map.push((key, value));
         Ok(())
@@ -240,6 +258,44 @@ mod tests {
             Datum::Map(vec![
                 ("name".into(), text("https")),
                 ("port".into(), Datum::Number("443".into()))
+            ])
+        );
+    }
+
+    #[test]
+    fn yaml_reads_a_list_at_its_key_indent() {
+        let steps = |run: &str| Datum::Map(vec![("run".into(), text(run))]);
+        assert_eq!(
+            read_yaml("steps:\n- run: build\n- run: test\nname: ci\n").expect("yaml"),
+            Datum::Map(vec![
+                (
+                    "steps".into(),
+                    Datum::List(vec![steps("build"), steps("test")])
+                ),
+                ("name".into(), text("ci"))
+            ])
+        );
+        assert_eq!(
+            read_yaml("ports:\n- 80\n- 443\n").expect("yaml"),
+            Datum::Map(vec![(
+                "ports".into(),
+                Datum::List(vec![
+                    Datum::Number("80".into()),
+                    Datum::Number("443".into())
+                ])
+            )])
+        );
+    }
+
+    #[test]
+    fn a_hash_inside_quotes_is_no_comment() {
+        assert_eq!(
+            read_yaml("title: \"Issue #12\" # a note\nmessage: 'Fix #42'\nnote: it's #1\n")
+                .expect("yaml"),
+            Datum::Map(vec![
+                ("title".into(), text("Issue #12")),
+                ("message".into(), text("Fix #42")),
+                ("note".into(), text("it's"))
             ])
         );
     }
