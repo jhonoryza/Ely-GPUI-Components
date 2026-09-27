@@ -207,3 +207,41 @@ fn a_link_released_on_its_own_shape_links_nothing(cx: &mut TestAppContext) {
     drag((50.0, 50.0), (60.0, 70.0), cx);
     assert!(said(&host, cx).is_empty());
 }
+
+#[gpui::test]
+fn enter_and_escape_in_a_topic_hand_the_keys_back_to_the_map(cx: &mut TestAppContext) {
+    let (host, cx) = stage(map, cx);
+    press(276.0, 126.0, 1, cx);
+    tap("f2", cx);
+    cx.simulate_input("Web");
+    tap("enter", cx);
+    tap("down", cx);
+    tap("f2", cx);
+    cx.simulate_input("Gone");
+    tap("escape", cx);
+    tap("down", cx);
+    assert_eq!(
+        said(&host, cx),
+        [
+            "select Some(\"a\")",
+            "rename a Web",
+            "select Some(\"b\")",
+            "select Some(\"b\")",
+        ],
+        "the owner keeps a selected, so each Down steps from a"
+    );
+}
+
+#[gpui::test]
+fn after_writing_on_a_shape_its_board_still_takes_backspace(cx: &mut TestAppContext) {
+    let (host, cx) = stage(board, cx);
+    press(250.0, 50.0, 1, cx);
+    press(250.0, 50.0, 2, cx);
+    cx.simulate_input("Idea");
+    tap("enter", cx);
+    tap("backspace", cx);
+    assert_eq!(
+        said(&host, cx),
+        ["shapes [\"a\", \"b\"] links 1", "shapes [\"a\"] links 0"]
+    );
+}

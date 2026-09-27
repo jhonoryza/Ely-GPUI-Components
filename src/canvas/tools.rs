@@ -355,6 +355,7 @@ impl RenderOnce for ToolLayer {
                     count: event.click_count,
                     shift: event.modifiers.shift,
                     side,
+                    back: held_focus.clone(),
                 };
                 let gesture = pressed_with(
                     &press,

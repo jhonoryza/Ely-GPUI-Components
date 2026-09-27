@@ -54,11 +54,11 @@ impl Editing {
     }
 
     /// Focus goes back here after Enter or Escape.
-    fn returning(&mut self, back: FocusHandle) {
+    pub(crate) fn returning(&mut self, back: FocusHandle) {
         self.back = Some(back);
     }
 
-    fn give_back(&mut self, window: &mut Window) {
+    pub(crate) fn give_back(&mut self, window: &mut Window) {
         if let Some(back) = self.back.take() {
             log::info!("inline edit: focus handed back");
             window.focus(&back);

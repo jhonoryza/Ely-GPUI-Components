@@ -125,15 +125,27 @@ impl RenderOnce for MindMap {
             );
         }
         let rename = {
-            let (editing, placed, on_rename) =
-                (editing.clone(), placed.clone(), self.on_rename.clone());
+            let (editing, placed, on_rename, home) = (
+                editing.clone(),
+                placed.clone(),
+                self.on_rename.clone(),
+                focus.clone(),
+            );
             move |key: &SharedString, window: &mut Window, cx: &mut App| {
                 let topic = placed
                     .iter()
                     .find(|topic| topic.key == *key)
                     .expect("a placed topic");
                 let words = topic.text.to_string();
-                writing::begin(&editing, key.clone(), words, on_rename.clone(), window, cx);
+                writing::begin(
+                    &editing,
+                    key.clone(),
+                    words,
+                    on_rename.clone(),
+                    home.clone(),
+                    window,
+                    cx,
+                );
             }
         };
         let rename = Rc::new(rename);

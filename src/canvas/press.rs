@@ -1,4 +1,4 @@
-use gpui::{App, Entity, SharedString, Window};
+use gpui::{App, Entity, FocusHandle, SharedString, Window};
 
 use super::{
     edit::{Tool, hit},
@@ -11,7 +11,7 @@ use super::{
 };
 use crate::forms::Editing;
 
-/// A press on a tool layer: the tool, where it landed in canvas units and in view pixels, how many presses it counts, whether Shift is held, and a handle's side.
+/// A press on a tool layer: the tool, where it landed in canvas units and in view pixels, how many presses it counts, whether Shift is held, a handle's side, and the layer's focus, which a field hands back.
 pub(super) struct Press {
     pub tool: Tool,
     pub at: (f32, f32),
@@ -19,6 +19,7 @@ pub(super) struct Press {
     pub count: usize,
     pub shift: bool,
     pub side: f32,
+    pub back: FocusHandle,
 }
 
 /// The gesture a press sets going, after what it asks the owner at once: a selection, a dropped text or note, an ended path, or words to rewrite.
@@ -68,6 +69,7 @@ pub(super) fn pressed(
                         shape.key.clone(),
                         words,
                         handlers.on_text.clone(),
+                        press.back.clone(),
                         window,
                         cx,
                     );

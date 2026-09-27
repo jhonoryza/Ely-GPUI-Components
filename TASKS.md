@@ -379,3 +379,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T32b | 2 | PASS | |
 | T32c | 1 | PASS | |
 | T32d | 1 | FAIL | Tab in a mind map's rename field added a topic; the replaced wire, the connector released on its own shape and a deleted shape's links went untested |
+| T32d | 2 | FAIL | Enter or Escape in a canvas field handed focus nowhere, so the map's and the layer's keys went dead until the next press |
