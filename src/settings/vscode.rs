@@ -271,7 +271,7 @@ pub fn read_vscode_theme(text: &str) -> Result<VsCodeTheme> {
 
 #[cfg(test)]
 mod tests {
-    use gpui::rgb;
+    use gpui::{rgb, rgba};
 
     use super::{plain, read_vscode_theme};
     use crate::theme::{Mode, Palette};
@@ -309,6 +309,14 @@ mod tests {
         };
         assert_eq!(mode("hc-black"), Mode::Dark);
         assert_eq!(mode("hc-light"), Mode::Light);
+    }
+
+    #[test]
+    fn a_four_digit_color_reads_with_its_alpha() {
+        let theme =
+            read_vscode_theme(r##"{"type": "dark", "colors": {"widget.shadow": "#0008"}}"##)
+                .expect("a theme");
+        assert_eq!(theme.colors.shadow, rgba(0x00000088).into());
     }
 
     #[test]

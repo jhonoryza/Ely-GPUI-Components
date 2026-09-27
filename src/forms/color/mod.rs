@@ -65,15 +65,13 @@ impl Hsva {
     }
 }
 
-/// Reads `#rgb`, `#rrggbb` or `#rrggbbaa`, with or without the hash.
+/// Reads `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`, with or without the hash.
 pub(crate) fn parse_hex(text: &str) -> Result<Rgba, String> {
     let digits = text.trim().trim_start_matches('#');
+    let doubled = || digits.chars().flat_map(|ch| [ch, ch]);
     let long: String = match digits.len() {
-        3 => digits
-            .chars()
-            .flat_map(|ch| [ch, ch])
-            .chain("ff".chars())
-            .collect(),
+        3 => doubled().chain("ff".chars()).collect(),
+        4 => doubled().collect(),
         6 => format!("{digits}ff"),
         8 => digits.to_string(),
         _ => return Err(format!("{text:?} is not a hex color")),
@@ -149,10 +147,11 @@ mod tests {
     }
 
     #[test]
-    fn hex_reads_three_six_and_eight_digits() {
+    fn hex_reads_three_four_six_and_eight_digits() {
         assert_eq!(hex(parse_hex("#0af").unwrap()), "#00aaff");
         assert_eq!(hex(parse_hex("3772bb").unwrap()), "#3772bb");
         assert_eq!(hex(parse_hex("#3772bb80").unwrap()), "#3772bb80");
+        assert_eq!(hex(parse_hex("#0008").unwrap()), "#00000088");
         assert!(parse_hex("#12345").is_err());
         assert!(parse_hex("#zzzzzz").is_err());
     }

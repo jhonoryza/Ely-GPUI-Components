@@ -422,3 +422,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T39a | 1 | FAIL | a larger text size cut the density strip at 280px; ten palette colors had no name; the density and sliders untested |
 | T39a | 2 | FAIL | segments split the strip equally and cut a longer label; the thumb lost its padding's height |
 | T39a | 3 | PASS | |
+| T39b | 1 | FAIL | a long theme name pushed its badge past 280px; four-digit colors refused the theme |

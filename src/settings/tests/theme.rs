@@ -211,3 +211,32 @@ fn a_code_sample_stays_inside_a_narrow_card(cx: &mut TestAppContext) {
         "{sample:?} inside {frame:?}"
     );
 }
+
+fn narrow_read_row(_: &mut Window, cx: &mut App, _: Entity<Desk>) -> AnyElement {
+    let read = read_vscode_theme(
+        r##"{"name": "GitHub Dark Default Colorblind Edition", "type": "dark", "colors": {}}"##,
+    )
+    .expect("a theme");
+    let apply: OnTheme = std::rc::Rc::new(|_, _, _| {});
+    gpui::div()
+        .debug_selector(|| "narrow".into())
+        .w(gpui::px(280.0))
+        .child(importer::read_row(
+            &read,
+            &"long.json".into(),
+            &"importer".into(),
+            apply,
+            cx,
+        ))
+        .into_any_element()
+}
+
+/// At 280px a long theme name gives way, and its mode badge stays inside the box.
+#[gpui::test]
+fn a_long_theme_name_gives_way_to_its_badge(cx: &mut TestAppContext) {
+    let (_, cx) = desk(narrow_read_row, cx);
+    settle(cx);
+    let frame = cx.debug_bounds("narrow").expect("the box");
+    let badge = cx.debug_bounds("theme-import-mode").expect("the badge");
+    assert!(badge.right() <= frame.right(), "{badge:?} inside {frame:?}");
+}

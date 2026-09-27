@@ -13,6 +13,7 @@ use crate::{
     forms::DropZone,
     primitives::Severity,
     theme::{ActiveTheme, Mode, TextSize},
+    typography::Ellipsis,
 };
 
 /// What the importer read last: a theme and the file it came from, or why the file did not read.
@@ -127,13 +128,22 @@ pub(super) fn read_row(
                         .gap_2()
                         .child(
                             div()
+                                .flex_1()
+                                .min_w_0()
                                 .font_weight(FontWeight::MEDIUM)
-                                .child(read.name.clone().map_or(file.clone(), SharedString::from)),
+                                .child(Ellipsis::new(
+                                    read.name.clone().map_or(file.clone(), SharedString::from),
+                                )),
                         )
-                        .child(Badge::new(match read.mode {
-                            Mode::Light => "Light",
-                            Mode::Dark => "Dark",
-                        })),
+                        .child(
+                            div()
+                                .flex_none()
+                                .debug_selector(|| "theme-import-mode".into())
+                                .child(Badge::new(match read.mode {
+                                    Mode::Light => "Light",
+                                    Mode::Dark => "Dark",
+                                })),
+                        ),
                 )
                 .child(
                     div()
