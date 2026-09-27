@@ -130,7 +130,8 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T36c Account · Billing and team — `tasks/ch31-43.md`
 - [x] T37a Onboarding · Flows and highlights — `tasks/ch31-43.md`
 - [x] T37b Onboarding · Help — `tasks/ch31-43.md`
-- [ ] T38 Interaction
+- [ ] T38a Interaction · Pointer
+- [ ] T38b Interaction · Keys, scroll and focus
 - [ ] T39 Theme
 - [ ] T40 i18n & a11y
 - [ ] T41 Maps

@@ -20,6 +20,7 @@ pub mod finance;
 pub mod forms;
 pub mod generative;
 pub mod git;
+pub mod interaction;
 pub mod layout;
 pub mod lists;
 pub mod mail;

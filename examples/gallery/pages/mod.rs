@@ -18,6 +18,7 @@ mod finance;
 mod forms;
 mod generative;
 mod git;
+mod interaction;
 mod layout;
 mod lists;
 mod mail;
@@ -89,6 +90,7 @@ pub const ALL: &[Page] = &[
     settings::PAGE,
     account::PAGE,
     onboarding::PAGE,
+    interaction::PAGE,
     theme::PAGE,
 ];
 
