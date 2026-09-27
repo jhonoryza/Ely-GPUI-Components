@@ -1,3 +1,4 @@
+mod account;
 mod agent;
 mod buttons;
 mod calendar;
@@ -85,6 +86,7 @@ pub const ALL: &[Page] = &[
     devtools::PAGE,
     dashboard::PAGE,
     settings::PAGE,
+    account::PAGE,
     theme::PAGE,
 ];
 

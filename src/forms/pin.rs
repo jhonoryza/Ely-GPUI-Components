@@ -13,6 +13,7 @@ type OnCode = Rc<dyn Fn(&str, &mut Window, &mut App)>;
 struct Pin {
     input: Entity<TextInput>,
     length: usize,
+    attempt: usize,
     on_complete: Option<OnCode>,
     _events: Subscription,
 }
@@ -24,6 +25,7 @@ pub struct PinInput {
     length: usize,
     letters: bool,
     masked: bool,
+    attempt: usize,
     on_complete: Option<OnCode>,
 }
 
@@ -35,8 +37,15 @@ impl PinInput {
             length,
             letters: false,
             masked: false,
+            attempt: 0,
             on_complete: None,
         }
+    }
+
+    /// Clears the boxes whenever `attempt` changes, so a code that failed makes way for the next.
+    pub fn attempt(mut self, attempt: usize) -> Self {
+        self.attempt = attempt;
+        self
     }
 
     /// Accepts letters as well as digits.
@@ -60,7 +69,7 @@ impl PinInput {
 
 impl RenderOnce for PinInput {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let (length, letters) = (self.length, self.letters);
+        let (length, letters, attempt) = (self.length, self.letters, self.attempt);
         let state = window.use_keyed_state(self.id.clone(), cx, |window, cx: &mut Context<Pin>| {
             let input = cx.new(|cx| {
                 TextInput::new(window, cx)
@@ -79,11 +88,19 @@ impl RenderOnce for PinInput {
             Pin {
                 input,
                 length,
+                attempt,
                 on_complete: None,
                 _events: events,
             }
         });
-        state.update(cx, |pin, _| pin.on_complete = self.on_complete.clone());
+        state.update(cx, |pin, cx| {
+            pin.on_complete = self.on_complete.clone();
+            if pin.attempt != attempt {
+                pin.attempt = attempt;
+                log::info!("pin input: cleared for attempt {attempt}");
+                pin.input.update(cx, |field, cx| field.set_text("", cx));
+            }
+        });
         let input = state.read(cx).input.clone();
         let (code, focused, caret_on) = {
             let field = input.read(cx);

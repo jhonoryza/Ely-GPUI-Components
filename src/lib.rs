@@ -1,3 +1,4 @@
+pub mod account;
 pub mod agent;
 mod assets;
 
