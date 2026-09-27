@@ -81,15 +81,46 @@ pub fn luhn(digits: &str) -> bool {
     !digits.is_empty() && sum % 10 == 0
 }
 
+/// Why an expiry cannot be used.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ExpiryError {
+    /// Not written "MM/YY".
+    Unread,
+    NoMonth(i8),
+    Passed,
+}
+
 /// The month and year of an expiry written "MM/YY", when it reads and has not passed `now`, a year and month.
-pub fn expiry(text: &str, now: (i32, i8)) -> Option<(i8, i32)> {
-    let (month, year) = text.split_once('/')?;
-    let (month, year) = (
-        month.trim().parse::<i8>().ok()?,
-        year.trim().parse::<i32>().ok()?,
-    );
-    let year = 2000 + year;
-    ((1..=12).contains(&month) && (year, month) >= now).then_some((month, year))
+pub fn expiry(text: &str, now: (i32, i8)) -> Result<(i8, i32), ExpiryError> {
+    let (month, year) = text.split_once('/').ok_or(ExpiryError::Unread)?;
+    let month = month
+        .trim()
+        .parse::<i8>()
+        .map_err(|_| ExpiryError::Unread)?;
+    let year = 2000
+        + year
+            .trim()
+            .parse::<i32>()
+            .map_err(|_| ExpiryError::Unread)?;
+    if !(1..=12).contains(&month) {
+        return Err(ExpiryError::NoMonth(month));
+    }
+    if (year, month) < now {
+        return Err(ExpiryError::Passed);
+    }
+    Ok((month, year))
+}
+
+/// What Expires says under a whole date it refuses.
+fn expiry_fault(text: &str, now: (i32, i8)) -> Option<String> {
+    if text.len() != "MM/YY".len() {
+        return None;
+    }
+    match expiry(text, now) {
+        Err(ExpiryError::NoMonth(month)) => Some(format!("There is no month {month:02}.")),
+        Err(ExpiryError::Passed) => Some("This date has passed.".into()),
+        Err(ExpiryError::Unread) | Ok(_) => None,
+    }
 }
 
 /// A card as its form hands it over.
@@ -165,10 +196,12 @@ impl RenderOnce for PaymentMethodForm {
         let complete = typed.len() == length;
         let checks = complete && luhn(&typed);
         let now = Timestamp::now().to_zoned(system_zone("payment method form"));
-        let expires = expiry(until.read(cx).text(), (now.year() as i32, now.month()));
+        let today = (now.year() as i32, now.month());
+        let expires = expiry(until.read(cx).text(), today);
         let cvc = digits(code.read(cx).text());
         let holder: SharedString = name.read(cx).text().trim().to_string().into();
         let card = expires
+            .ok()
             .filter(|_| checks && cvc.len() == code_length && !holder.is_empty())
             .map(|(month, year)| CardDetails {
                 brand,
@@ -192,10 +225,9 @@ impl RenderOnce for PaymentMethodForm {
         } else if brand != CardBrand::Other {
             number_field = number_field.description(brand.name());
         }
-        let late = until.read(cx).text().len() == "MM/YY".len() && expires.is_none();
         let mut until_field = FormField::new((id.clone(), "expiry-field"), "Expires");
-        if late {
-            until_field = until_field.error("This date has passed.");
+        if let Some(fault) = expiry_fault(until.read(cx).text(), today) {
+            until_field = until_field.error(fault);
         }
         div()
             .flex()
@@ -258,7 +290,7 @@ impl RenderOnce for PaymentMethodForm {
 
 #[cfg(test)]
 mod tests {
-    use super::{CardBrand, expiry, luhn};
+    use super::{CardBrand, ExpiryError, expiry, expiry_fault, luhn};
 
     #[test]
     fn a_number_tells_its_network_and_checks_out() {
@@ -279,12 +311,35 @@ mod tests {
         let now = (2026, 9);
         assert_eq!(
             expiry("09/26", now),
-            Some((9, 2026)),
+            Ok((9, 2026)),
             "this month still counts"
         );
-        assert_eq!(expiry("12/31", now), Some((12, 2031)));
-        assert_eq!(expiry("08/26", now), None, "last month has passed");
-        assert_eq!(expiry("13/30", now), None, "there is no thirteenth month");
-        assert_eq!(expiry("1230", now), None);
+        assert_eq!(expiry("12/31", now), Ok((12, 2031)));
+        assert_eq!(expiry("08/26", now), Err(ExpiryError::Passed));
+        assert_eq!(expiry("13/30", now), Err(ExpiryError::NoMonth(13)));
+        assert_eq!(expiry("1230", now), Err(ExpiryError::Unread));
+    }
+
+    #[test]
+    fn a_whole_expiry_says_why_it_is_refused() {
+        let now = (2026, 9);
+        assert_eq!(
+            expiry_fault("13/30", now).as_deref(),
+            Some("There is no month 13.")
+        );
+        assert_eq!(
+            expiry_fault("00/30", now).as_deref(),
+            Some("There is no month 00.")
+        );
+        assert_eq!(
+            expiry_fault("08/26", now).as_deref(),
+            Some("This date has passed.")
+        );
+        assert_eq!(expiry_fault("09/26", now), None);
+        assert_eq!(
+            expiry_fault("13/3", now),
+            None,
+            "a date still being typed says nothing"
+        );
     }
 }

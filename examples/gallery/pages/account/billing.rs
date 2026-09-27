@@ -59,7 +59,7 @@ pub fn plan(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     UsageQuota::new(
                         "account-quota",
                         [
-                            quota("seats", "Seats", 9.0, 12.0, "seats"),
+                            quota("seats", "Seats across every workspace you own", 9.0, 12.0, "seats"),
                             quota("storage", "Storage", 96.5, 100.0, "GB"),
                             quota("runs", "Automation runs", 1_240.0, 2_000.0, "runs"),
                         ],

@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, FontWeight, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
-    Window, div,
+    App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement, RenderOnce,
+    SharedString, Styled, Window, div,
 };
 
 use super::login::Run;
@@ -121,7 +121,14 @@ impl RenderOnce for UpgradePrompt {
                         )
                         .child(words),
                 )
-                .child(div().flex().flex_col().gap_1p5().children(benefits))
+                .child(
+                    div()
+                        .debug_selector(|| "paywall-benefits".into())
+                        .flex()
+                        .flex_col()
+                        .gap_1p5()
+                        .children(benefits),
+                )
                 .child(actions),
             false => div()
                 .flex()

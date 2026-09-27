@@ -406,3 +406,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T36a | 2 | PASS | |
 | T36b | 1 | FAIL | a long key name hid its ends at 280px; the secret and ends skipped typography::literal; this device's place first and the name clearing after Create untested |
 | T36b | 2 | PASS | |
+| T36c | 1 | FAIL | a long quota name pushed its count past 280px; a month past 12 read as passed; the Amex shape, the address clearing, the clamped share and the paywall's benefits untested |

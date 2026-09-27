@@ -1,9 +1,10 @@
-use gpui::{AnyElement, Entity, IntoElement, TestAppContext};
+use gpui::{AnyElement, Entity, IntoElement, ParentElement, Styled, TestAppContext, div, px};
 
 use super::{Bench, bench, said, say, settle, tab, tap, write};
 use crate::account::{
     BillingHistory, Invitation, InvitationList, Invoice, InvoiceState, Member, PaymentMethodForm,
-    Role, Standing, Subscription, SubscriptionCard, TeamMemberTable, UpgradePrompt,
+    Quota, Role, Standing, Subscription, SubscriptionCard, TeamMemberTable, UpgradePrompt,
+    UsageQuota,
 };
 
 fn plan(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
@@ -55,11 +56,12 @@ fn card(_: &Bench, owner: Entity<Bench>) -> AnyElement {
             say(
                 &owner,
                 format!(
-                    "{} {} {}/{} {}",
+                    "{} {} {}/{} {} {}",
                     card.brand.name(),
                     card.number,
                     card.month,
                     card.year,
+                    card.cvc,
                     card.name
                 ),
                 cx,
@@ -92,7 +94,7 @@ fn a_card_saves_once_its_number_checks_out(cx: &mut TestAppContext) {
     tap("enter", cx);
     assert_eq!(
         said(&host, cx),
-        ["Visa 4242424242424242 12/2040 Ada Lovelace"]
+        ["Visa 4242424242424242 12/2040 123 Ada Lovelace"]
     );
 }
 
@@ -273,5 +275,100 @@ fn a_card_waits_for_a_whole_code_and_a_name(cx: &mut TestAppContext) {
     assert!(said(&host, cx).is_empty(), "no name on the card");
     write("Ada", cx);
     tap("enter", cx);
-    assert_eq!(said(&host, cx), ["Visa 4242424242424242 12/2040 Ada"]);
+    assert_eq!(said(&host, cx), ["Visa 4242424242424242 12/2040 123 Ada"]);
+}
+
+/// Stops: number, expiry, code, name; an American Express number takes fifteen digits and a code of four.
+#[gpui::test]
+fn an_american_express_card_takes_its_own_shape(cx: &mut TestAppContext) {
+    let (host, cx) = bench(card, cx);
+    tab(1, cx);
+    write("378282246310005", cx);
+    tab(2, cx);
+    write("1240", cx);
+    tab(3, cx);
+    write("1234", cx);
+    tab(4, cx);
+    write("Ada", cx);
+    tap("enter", cx);
+    assert_eq!(
+        said(&host, cx),
+        ["American Express 378282246310005 12/2040 1234 Ada"]
+    );
+}
+
+/// Stops: the address, the role, then Invite once the address reads; after it goes, Invite rests and the third stop is Resend.
+#[gpui::test]
+fn an_invitation_empties_the_address_once_it_goes(cx: &mut TestAppContext) {
+    let (host, cx) = bench(invites, cx);
+    tab(1, cx);
+    write("cy@example.com", cx);
+    tap("enter", cx);
+    tab(3, cx);
+    tap("space", cx);
+    assert_eq!(
+        said(&host, cx),
+        ["invite cy@example.com member", "resend bo"]
+    );
+}
+
+/// One quota in a 280px box.
+fn usage(name: &'static str, used: f64, limit: f64) -> AnyElement {
+    let quota = Quota {
+        key: "seats".into(),
+        name: name.into(),
+        used,
+        limit,
+        unit: "seats".into(),
+    };
+    div()
+        .w(px(280.0))
+        .child(UsageQuota::new("usage", [quota]))
+        .into_any_element()
+}
+
+fn long_name(_: &Bench, _: Entity<Bench>) -> AnyElement {
+    usage("Seats across every workspace you own", 9.0, 12.0)
+}
+
+/// A long name gives way, so the count stays whole inside a 280px box.
+#[gpui::test]
+fn a_long_quota_name_leaves_its_count_inside_the_box(cx: &mut TestAppContext) {
+    let (_, cx) = bench(long_name, cx);
+    let count = cx.debug_bounds("meter-detail").expect("the count");
+    assert!(
+        count.right() <= px(280.0),
+        "the count ends inside the box: {count:?}"
+    );
+}
+
+fn past_limit(_: &Bench, _: Entity<Bench>) -> AnyElement {
+    usage("Seats", 12.4, 10.0)
+}
+
+/// A quota past its limit draws a full bar and says how far past.
+#[gpui::test]
+fn a_quota_past_its_limit_draws_full(cx: &mut TestAppContext) {
+    let (_, cx) = bench(past_limit, cx);
+    assert!(cx.debug_bounds("meter-detail").is_some(), "the quota drew");
+}
+
+fn line(_: &Bench, owner: Entity<Bench>) -> AnyElement {
+    UpgradePrompt::new("line", "Unlock history")
+        .on_upgrade(move |_, cx| say(&owner, "upgrade".into(), cx))
+        .into_any_element()
+}
+
+/// With benefits the prompt is a paywall that lists them.
+#[gpui::test]
+fn a_paywall_lists_its_benefits(cx: &mut TestAppContext) {
+    let (_, cx) = bench(wall, cx);
+    assert!(cx.debug_bounds("paywall-benefits").is_some());
+}
+
+/// Without benefits the prompt stands as one line, with no list.
+#[gpui::test]
+fn a_prompt_without_benefits_stands_as_a_line(cx: &mut TestAppContext) {
+    let (_, cx) = bench(line, cx);
+    assert!(cx.debug_bounds("paywall-benefits").is_none());
 }

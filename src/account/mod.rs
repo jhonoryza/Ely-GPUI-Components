@@ -24,7 +24,7 @@ pub use keys::{ApiKey, ApiKeyManager};
 pub use login::{Login, LoginForm};
 pub use mail::{ForgotPassword, MagicLinkForm};
 pub use oauth::OAuthButtons;
-pub use payment::{CardBrand, CardDetails, PaymentMethodForm, expiry, luhn};
+pub use payment::{CardBrand, CardDetails, ExpiryError, PaymentMethodForm, expiry, luhn};
 pub use profile::{Profile, ProfileCard, ProfileEditor};
 pub use sessions::{Session, SessionList};
 pub use signup::{Signup, SignupForm, password_rules};

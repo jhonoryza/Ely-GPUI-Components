@@ -4,14 +4,14 @@ use std::{
 };
 
 use gpui::{
-    Animation, AnimationExt, App, ElementId, FontWeight, Hsla, IntoElement, ParentElement,
-    RenderOnce, SharedString, Styled, Window, canvas, div, prelude::*, relative,
+    Animation, AnimationExt, App, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement,
+    ParentElement, RenderOnce, SharedString, Styled, Window, canvas, div, prelude::*, relative,
 };
 
 use crate::{
     motion,
     theme::{ActiveTheme, Palette, TextSize},
-    typography::{AnimatedNumber, format, tabular},
+    typography::{AnimatedNumber, Ellipsis, format, tabular},
 };
 
 /// Where a filled share stands against a meter's thresholds; it indexes `tones`.
@@ -135,8 +135,20 @@ impl RenderOnce for Meter {
             .justify_between()
             .gap_3()
             .text_size(theme.text_size(TextSize::Sm))
-            .child(div().text_color(colors.fg).child(self.label))
-            .child(tabular(div()).text_color(colors.fg_muted).child(detail));
+            .child(
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .text_color(colors.fg)
+                    .child(Ellipsis::new(self.label)),
+            )
+            .child(
+                tabular(div())
+                    .debug_selector(|| "meter-detail".into())
+                    .flex_none()
+                    .text_color(colors.fg_muted)
+                    .child(detail),
+            );
         let limits = self.thresholds;
         let bar = gliding(self.id, self.share, window, cx, move |at| {
             div().relative().h(track).rounded_full().bg(lane).child(
