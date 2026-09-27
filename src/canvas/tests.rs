@@ -155,3 +155,53 @@ fn a_press_on_the_map_centers_the_view_there(cx: &mut TestAppContext) {
         "the view centers on the point pressed: {middle:?}"
     );
 }
+
+fn wheel(at: (f32, f32), dy: f32, modifiers: Modifiers) -> ScrollWheelEvent {
+    ScrollWheelEvent {
+        position: point(px(at.0), px(at.1)),
+        delta: ScrollDelta::Pixels(point(px(0.0), px(dy))),
+        modifiers,
+        touch_phase: TouchPhase::Moved,
+    }
+}
+
+#[gpui::test]
+fn a_plain_wheel_moves_the_content_as_a_scroll_box_does(cx: &mut TestAppContext) {
+    let (host, cx) = stage(plane, cx);
+    cx.simulate_event(wheel((100.0, 50.0), -50.0, Modifiers::none()));
+    settle(cx);
+    let view = *heard(&host, cx).last().expect("a scroll");
+    assert_eq!(
+        view.to_view((0.0, 0.0)),
+        (0.0, -50.0),
+        "the content went up with the wheel"
+    );
+}
+
+#[gpui::test]
+fn wheels_and_moves_add_up(cx: &mut TestAppContext) {
+    let (host, cx) = stage(plane, cx);
+    for dy in [-10.0, -10.0, -10.0, 0.0] {
+        cx.simulate_event(wheel((100.0, 50.0), dy, Modifiers::none()));
+    }
+    settle(cx);
+    let view = *heard(&host, cx).last().expect("a scroll");
+    assert_eq!(
+        view.y, 30.0,
+        "three wheels add up, and an end that moves nothing leaves it"
+    );
+    let at = |x: f32, y: f32| point(px(x), px(y));
+    cx.simulate_mouse_move(at(200.0, 150.0), None, Modifiers::none());
+    cx.simulate_mouse_down(at(200.0, 150.0), MouseButton::Left, Modifiers::none());
+    for x in [190.0, 180.0, 170.0, 160.0] {
+        cx.simulate_mouse_move(at(x, 150.0), Some(MouseButton::Left), Modifiers::none());
+    }
+    cx.simulate_mouse_up(at(160.0, 150.0), MouseButton::Left, Modifiers::none());
+    settle(cx);
+    let view = *heard(&host, cx).last().expect("a pan");
+    assert_eq!(
+        (view.x, view.y),
+        (40.0, 30.0),
+        "the drag pans from the press by the pointer's whole way"
+    );
+}

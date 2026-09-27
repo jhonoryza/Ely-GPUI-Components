@@ -373,3 +373,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T31c | 2 | PASS | |
 | T31d | 1 | FAIL | a focused segment past the strip's fold stayed hidden; the tracker lost focus as Start and Stop swapped; Stop and Skip went untested; percent did not refuse content |
 | T31d | 2 | PASS | |
+| T32a | 1 | FAIL | the plain wheel panned against every scroll box; the handlers panned from the render's viewport, so events within a frame overwrote each other; the fit's cap at one went untested |

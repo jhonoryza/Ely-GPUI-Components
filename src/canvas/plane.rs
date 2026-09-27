@@ -22,11 +22,11 @@ struct Pan {
     owner: EntityId,
 }
 
-/// The canvas's box and the pointer of a pan under way.
+/// The canvas's box, and the pointer and viewport at the press of a pan under way.
 #[derive(Default)]
 struct Plane {
     bounds: Bounds<Pixels>,
-    grip: Option<Point<Pixels>>,
+    grip: Option<(Point<Pixels>, Viewport)>,
 }
 
 /// The view pixels of a canvas frame.
@@ -400,6 +400,7 @@ impl RenderOnce for InfiniteCanvas {
         let owner = plane.entity_id();
         let (wheel, pan, drop) = (set.clone(), set, plane.clone());
         let (scrolled, dragged, pressed) = (plane.clone(), plane.clone(), plane);
+        let (live, held) = (local.clone(), local.clone());
         div()
             .id(id)
             .relative()
@@ -416,34 +417,37 @@ impl RenderOnce for InfiniteCanvas {
                         (lines.x * line, lines.y * line)
                     }
                 };
+                if delta == (0.0, 0.0) {
+                    return;
+                }
                 let pointer = event.position - bounds.origin;
                 let about = (f32::from(pointer.x), f32::from(pointer.y));
-                let now = view;
+                let now = live.read(cx).value;
                 let next = match event.modifiers.platform || event.modifiers.control {
                     true => now.zoomed((-delta.1 / 240.0).exp(), about),
-                    false => now.panned((-delta.0, -delta.1)),
+                    false => now.panned(delta),
                 };
                 cx.stop_propagation();
                 wheel(next, window, cx);
             })
             .on_mouse_down(gpui::MouseButton::Left, move |event, _, cx| {
-                pressed.update(cx, |plane, _| plane.grip = Some(event.position))
+                let now = held.read(cx).value;
+                pressed.update(cx, |plane, _| plane.grip = Some((event.position, now)))
             })
             .on_drag(Pan { owner }, |_, _, _, cx| cx.new(|_| EmptyView))
             .on_drag_move::<Pan>(move |event, window, cx| {
                 if event.drag(cx).owner != owner {
                     return;
                 }
-                let pointer = event.event.position;
-                let last = dragged.update(cx, |plane, _| plane.grip.replace(pointer));
-                if let Some(last) = last {
-                    let delta = pointer - last;
-                    pan(
-                        view.panned((f32::from(delta.x), f32::from(delta.y))),
-                        window,
-                        cx,
-                    );
-                }
+                let Some((press, start)) = dragged.read(cx).grip else {
+                    return;
+                };
+                let way = event.event.position - press;
+                pan(
+                    start.panned((f32::from(way.x), f32::from(way.y))),
+                    window,
+                    cx,
+                );
             })
             .on_drop(move |_: &Pan, _, cx| drop.update(cx, |plane, _| plane.grip = None))
             .child(painted)

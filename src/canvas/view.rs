@@ -159,6 +159,9 @@ mod tests {
         let view = Viewport::fitting(Frame::new(0.0, 0.0, 800.0, 400.0), (440.0, 440.0), 20.0);
         assert_eq!(view.zoom, 0.5);
         assert_eq!(view.to_view((400.0, 200.0)), (220.0, 220.0));
+        let small = Viewport::fitting(Frame::new(0.0, 0.0, 100.0, 50.0), (440.0, 440.0), 20.0);
+        assert_eq!(small.zoom, 1.0, "no nearer than a zoom of one");
+        assert_eq!(small.to_view((50.0, 25.0)), (220.0, 220.0));
     }
 
     #[test]
