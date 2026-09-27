@@ -125,7 +125,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T33d DB & Dev Tools · Tools and machines — `tasks/ch31-43.md`
 - [x] T34 Dashboard — `tasks/ch31-43.md` (its two maps lines wait for T41)
 - [x] T35 Settings — `tasks/ch31-43.md`
-- [ ] T36a Account · Sign in
+- [x] T36a Account · Sign in — `tasks/ch31-43.md`
 - [ ] T36b Account · Profile and access
 - [ ] T36c Account · Billing and team
 - [ ] T37 Onboarding & Help
@@ -403,3 +403,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T35 | 2 | FAIL | an accent picker of nine or more presets still ran past a 280px box |
 | T35 | 3 | PASS | |
 | T36a | 1 | FAIL | Sign in waiting for a password and resting while busy, Create account waiting for a name, the other providers resting, and Send again resting while busy untested |
+| T36a | 2 | PASS | |
