@@ -186,6 +186,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - `typography::Ellipsis` shapes its line with the text style's own run, so a strike or an underline set on its box shows (`lists::ListItem::struck`, a closed task's title).
 - Focus that must follow an item to another parent is taken by the owner and keyed by the item: a handle gpui makes for an element dies with its path (`project::KanbanBoard`, whose cards keep focus across columns).
 - The theme's `platform`, the system's to start, decides the window buttons Ely draws, the title bar's layout and key caps, `secondary` included (`typography::keys::keystroke`). A title bar whose buttons the OS draws follows the OS.
+- A centered title sits between a start and an end that grow alike from a zero basis, their padding on a box inside them, since taffy counts padding in the flex base; their content is their least width, so the title gives way before either end (`shell::TitleBar`).
 - A pane the window's blur shows through is `shell::Vibrancy`, filled with the palette's `glass`, in a window opened `WindowBackgroundAppearance::Blurred`: vibrancy on macOS, acrylic on Windows. gpui 0.2.2 has no Mica.
 - The chart's hues go by `theme::HUE_NAMES`, for an event's color and a label's alike.
 - Text whose every character counts, encoded data and keys, goes through `typography::literal`: JetBrains Mono draws `==` and `->` as ligatures (`devtools::Encoder`).

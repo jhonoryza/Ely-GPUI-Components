@@ -134,7 +134,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T38b Interaction · Keys, scroll and focus — `tasks/ch31-43.md`
 - [x] T39a Theme · Editing — `tasks/ch31-43.md`
 - [x] T39b Theme · Importing — `tasks/ch31-43.md`
-- [ ] T39c Theme · Platform
+- [x] T39c Theme · Platform — `tasks/ch31-43.md`
 - [ ] T40 i18n & a11y
 - [ ] T41 Maps
 - [ ] T42 Misc
@@ -426,3 +426,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T39b | 2 | PASS | |
 | T39c | 1 | FAIL | Windows caption buttons took their row's height; a long Windows title pushed the buttons past the bar |
 | T39c | 2 | FAIL | an untitled Windows bar lost its spacer; a centered title ran under the Linux buttons; caption buttons ignored the window's rem |
+| T39c | 3 | PASS | |
