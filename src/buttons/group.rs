@@ -275,7 +275,14 @@ impl RenderOnce for ToggleGroup {
                         change(&next, window, cx);
                     }
                 });
-                toggle_face(("toggle", ix).into(), item, on, self.size, press, cx)
+                toggle_face(
+                    (self.id.clone(), format!("toggle-{ix}")).into(),
+                    item,
+                    on,
+                    self.size,
+                    press,
+                    cx,
+                )
             })
             .collect();
         div()

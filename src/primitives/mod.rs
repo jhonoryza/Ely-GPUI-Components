@@ -29,4 +29,4 @@ pub use layer::{Raised, raise};
 pub use measure::{IntersectionObserver, Measure};
 pub use pressable::Pressable;
 pub use severity::Severity;
-pub use tooltip::{Tooltip, TooltipTrigger};
+pub use tooltip::{HelpTooltip, Tooltip, TooltipTrigger};

@@ -2,15 +2,14 @@ use std::rc::Rc;
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, InteractiveElement, IntoElement,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div,
-    prelude::*,
+    ParentElement, RenderOnce, SharedString, Styled, Window, div, prelude::*,
 };
 use smallvec::SmallVec;
 
 use super::{options::Run, text::Submit};
 use crate::{
     motion,
-    primitives::{Icon, IconName, Tooltip},
+    primitives::{HelpTooltip, Icon, IconName},
     theme::{ActiveTheme, IconSize, TextSize},
     typography::{Caption, Heading, Label},
 };
@@ -159,16 +158,7 @@ impl RenderOnce for FormLabel {
                 label.child(div().text_color(colors.danger).child("*"))
             })
             .when_some(self.help, |label, help| {
-                label.child(
-                    div()
-                        .id((self.id, "help"))
-                        .child(
-                            Icon::new(IconName::CircleHelp)
-                                .size(IconSize::Xs)
-                                .color(colors.fg_subtle),
-                        )
-                        .tooltip(Tooltip::text(help)),
-                )
+                label.child(HelpTooltip::new((self.id, "help"), help))
             })
     }
 }

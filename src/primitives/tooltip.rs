@@ -7,10 +7,10 @@ use gpui::{
     prelude::*,
 };
 
-use super::raise;
+use super::{Icon, IconName, raise};
 use crate::{
     motion,
-    theme::{ActiveTheme, Elevation, Radius, TextSize},
+    theme::{ActiveTheme, Elevation, IconSize, Radius, TextSize},
 };
 
 type Content = Rc<dyn Fn(&mut Window, &mut App) -> AnyElement>;
@@ -192,4 +192,34 @@ fn hide(trigger: &mut TriggerState, cx: &mut Context<TriggerState>) {
     trigger.visible = false;
     trigger._pending = None;
     cx.notify();
+}
+
+/// A help mark, ?, whose tip shows on hover.
+#[derive(IntoElement)]
+pub struct HelpTooltip {
+    id: ElementId,
+    text: SharedString,
+}
+
+impl HelpTooltip {
+    pub fn new(id: impl Into<ElementId>, text: impl Into<SharedString>) -> Self {
+        Self {
+            id: id.into(),
+            text: text.into(),
+        }
+    }
+}
+
+impl RenderOnce for HelpTooltip {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        div()
+            .id(self.id)
+            .flex_none()
+            .child(
+                Icon::new(IconName::CircleHelp)
+                    .size(IconSize::Xs)
+                    .color(cx.theme().colors.fg_subtle),
+            )
+            .tooltip(Tooltip::text(self.text))
+    }
 }

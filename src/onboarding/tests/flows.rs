@@ -1,103 +1,13 @@
-use gpui::{
-    AnyElement, App, Context, Entity, FocusHandle, IntoElement, KeyBinding, ParentElement, Render,
-    Styled, TestAppContext, VisualTestContext, Window, div, px,
-};
+use gpui::{AnyElement, Entity, IntoElement, ParentElement, TestAppContext, div, px};
 
-use super::{
-    FeatureHighlight, Hotspot, OnboardingStep, OnboardingWizard, SetupChecklist, SetupTask,
-};
+use super::{Bench, bench, edit, said, say, tab, tap};
 use crate::{
     buttons::Button,
-    forms,
-    primitives::{FocusNext, FocusScope, IconName},
-    theme::Theme,
+    onboarding::{
+        FeatureHighlight, Hotspot, OnboardingStep, OnboardingWizard, SetupChecklist, SetupTask,
+    },
+    primitives::{FocusScope, IconName},
 };
-
-type Part = fn(&Bench, Entity<Bench>) -> AnyElement;
-
-/// A view that shows one onboarding part, keeps what it heard, and holds the owner's step, readiness and what it hid, with the root focus an app keeps.
-struct Bench {
-    part: Part,
-    said: Vec<String>,
-    root: FocusHandle,
-    hidden: bool,
-    step: usize,
-    ready: bool,
-    all_done: bool,
-}
-
-impl Render for Bench {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .w(px(360.0))
-            .p_4()
-            .child((self.part)(self, cx.entity()))
-    }
-}
-
-fn bench(part: Part, cx: &mut TestAppContext) -> (Entity<Bench>, &mut VisualTestContext) {
-    cx.update(|cx| {
-        Theme::init(cx);
-        Theme::update(cx, |theme| theme.reduced_motion = true);
-        forms::bind_keys(cx);
-        cx.bind_keys([KeyBinding::new("tab", FocusNext, None)]);
-    });
-    let (host, cx) = cx.add_window_view(|_, cx| Bench {
-        part,
-        said: Vec::new(),
-        root: cx.focus_handle(),
-        hidden: false,
-        step: 0,
-        ready: true,
-        all_done: false,
-    });
-    settle(cx);
-    (host, cx)
-}
-
-fn settle(cx: &mut VisualTestContext) {
-    for _ in 0..3 {
-        cx.run_until_parked();
-        cx.update(|window, _| window.refresh());
-    }
-    cx.run_until_parked();
-}
-
-fn say(owner: &Entity<Bench>, words: String, cx: &mut App) {
-    owner.update(cx, |bench, cx| {
-        bench.said.push(words);
-        cx.notify();
-    });
-}
-
-fn said(host: &Entity<Bench>, cx: &mut VisualTestContext) -> Vec<String> {
-    host.read_with(cx, |bench, _| bench.said.clone())
-}
-
-fn edit(host: &Entity<Bench>, cx: &mut VisualTestContext, change: impl FnOnce(&mut Bench)) {
-    host.update(cx, |bench, cx| {
-        change(bench);
-        cx.notify();
-    });
-    settle(cx);
-}
-
-/// Focus on the `stops`th Tab stop from the top.
-fn tab(stops: usize, cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
-        (0..stops).for_each(|_| window.focus_next());
-    });
-    settle(cx);
-}
-
-fn tap(key: &str, cx: &mut VisualTestContext) {
-    cx.simulate_keystrokes(key);
-    cx.simulate_event(gpui::KeyUpEvent {
-        keystroke: gpui::Keystroke::parse(key).expect("a key"),
-    });
-    settle(cx);
-}
 
 fn wizard(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
     let steps = ["name", "invite", "theme"].map(|key| OnboardingStep {
