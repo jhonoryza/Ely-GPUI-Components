@@ -121,7 +121,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T32d Canvas · Graphs and boards — `tasks/ch31-43.md`
 - [x] T33a DB & Dev Tools · Databases — `tasks/ch31-43.md`
 - [x] T33b DB & Dev Tools · Data formats — `tasks/ch31-43.md`
-- [ ] T33c DB & Dev Tools · APIs
+- [x] T33c DB & Dev Tools · APIs — `tasks/ch31-43.md`
 - [ ] T33d DB & Dev Tools · Tools and machines
 - [ ] T34 Dashboard
 - [ ] T35 Settings
@@ -392,3 +392,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T33b | 3 | FAIL | five escape arms untested and a quoted key holding `: ` split inside its quotes; both fixed after the last round with tests that go red on each mutation, no fourth round |
 | T33c | 1 | FAIL | the socket log stayed at its top; a revealed secret stayed open across environments; the collection drew drags it never moved; the builder's refill, Send's rest and Bearer, the indented body, the eye and a field's pick path untested |
 | T33c | 2 | FAIL | where an Inside drop lands in a folder that holds something went untested |
+| T33c | 3 | PASS | |
