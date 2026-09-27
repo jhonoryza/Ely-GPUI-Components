@@ -382,10 +382,25 @@ pub(crate) fn hang(
             }
         });
     let placed = match spot {
-        Spot::Under => float(state.read(cx).anchor, menu.entries.len(), root, window, cx),
-        Spot::At(point) => raise(anchored().position(point).snap_to_window().child(
-            root.with_animation((id.clone(), "in"), enter.clone(), |root, t| root.opacity(t)),
-        ))
+        Spot::Under => float(
+            (id.clone(), "panel"),
+            state.read(cx).anchor,
+            menu.entries.len(),
+            root,
+            window,
+            cx,
+        ),
+        Spot::At(point) => raise(
+            (id.clone(), "panel"),
+            anchored()
+                .position(point)
+                .snap_to_window()
+                .child(
+                    root.with_animation((id.clone(), "in"), enter.clone(), |root, t| {
+                        root.opacity(t)
+                    }),
+                ),
+        )
         .with_priority(1)
         .into_any_element(),
     };
@@ -393,6 +408,7 @@ pub(crate) fn hang(
         let row = state.read(cx).levels[level - 1].row;
         (row != Bounds::default()).then(|| {
             raise(
+                (id.clone(), format!("level-{level}")),
                 anchored().position(row.top_right()).snap_to_window().child(
                     draw::panel(id, menu, state, level, &close, None, cx)
                         .mt_neg_1()

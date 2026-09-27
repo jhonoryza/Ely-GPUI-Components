@@ -271,6 +271,7 @@ impl RenderOnce for Dialog {
             let viewport = window.viewport_size();
             let top = cx.theme().titlebar_height().to_pixels(window.rem_size());
             return raise(
+                (self.id.clone(), "raised"),
                 anchored().position(point(Pixels::ZERO, top)).child(
                     div()
                         .w(viewport.width)

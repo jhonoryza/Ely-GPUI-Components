@@ -303,6 +303,7 @@ impl RenderOnce for PieMenu {
             });
         region.child(
             raise(
+                (self.id.clone(), "raised"),
                 anchored()
                     .position(point(Pixels::ZERO, Pixels::ZERO))
                     .child(

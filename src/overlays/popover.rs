@@ -176,6 +176,13 @@ impl RenderOnce for Popover {
                 .left_0()
                 .size_full(),
             );
-        host.child(float_height(anchor, height, panel, window, cx))
+        host.child(float_height(
+            self.id.clone(),
+            anchor,
+            height,
+            panel,
+            window,
+            cx,
+        ))
     }
 }

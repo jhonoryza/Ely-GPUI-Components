@@ -349,3 +349,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T29c | 1 | FAIL | a long chip ran past its tag field at 280px |
 | T29c | 2 | PASS | |
 | T29d | 1 | FAIL | the time dialog's rule for a time ahead of now had no test; its test found that a picker opened in a dialog panicked on a deferred draw inside another |
+| T29d | 2 | FAIL | a raise inside a raise took its place in the queue as its namespace, so one appearing before it rebuilt its state and dropped its focus |

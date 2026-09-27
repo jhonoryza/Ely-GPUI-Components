@@ -5,8 +5,8 @@ use gpui::{
     InspectorElementId, IntoElement, LayoutId, Pixels, Point, Position, Style, Window, size,
 };
 
-/// What was raised while a layer prepaints its content, each with where it sits and its priority.
-type Queue = Vec<(AnyElement, Point<Pixels>, usize)>;
+/// What was raised while a layer prepaints its content, each by its owner's id, with where it sits and its priority.
+type Queue = Vec<(ElementId, AnyElement, Point<Pixels>, usize)>;
 
 thread_local! {
     static LAYERS: RefCell<Vec<Queue>> = const { RefCell::new(Vec::new()) };
@@ -16,12 +16,13 @@ fn nested() -> bool {
     LAYERS.with_borrow(|layers| !layers.is_empty())
 }
 
-/// Draws `child` over the page, as gpui's `deferred` does. gpui cannot defer a draw inside a deferred one, so what is raised inside something raised is laid out and drawn last within it: a list opened in a dialog lies over the dialog.
-pub fn raise(child: impl IntoElement) -> Raised {
+/// Draws `child` over the page, as gpui's `deferred` does. gpui cannot defer a draw inside a deferred one, so what is raised inside something raised is laid out and drawn last within it, under `id`: a list opened in a dialog lies over the dialog and keeps its state.
+pub fn raise(id: impl Into<ElementId>, child: impl IntoElement) -> Raised {
     let layer = Layer {
         child: child.into_any_element(),
     };
     Raised {
+        id: id.into(),
         child: Some(layer.into_any_element()),
         priority: 0,
         nested: false,
@@ -30,6 +31,7 @@ pub fn raise(child: impl IntoElement) -> Raised {
 
 /// An element drawn over the page; see [`raise`].
 pub struct Raised {
+    id: ElementId,
     child: Option<AnyElement>,
     priority: usize,
     nested: bool,
@@ -100,7 +102,7 @@ impl Element for Raised {
             let queue = layers
                 .last_mut()
                 .expect("a nested element prepaints in its layer");
-            queue.push((child, bounds.origin, self.priority));
+            queue.push((self.id.clone(), child, bounds.origin, self.priority));
         });
     }
 
@@ -141,7 +143,7 @@ fn collect(f: impl FnOnce()) -> Queue {
 
 impl Element for Layer {
     type RequestLayoutState = ();
-    type PrepaintState = Vec<AnyElement>;
+    type PrepaintState = Vec<(ElementId, AnyElement)>;
 
     fn id(&self) -> Option<ElementId> {
         None
@@ -171,11 +173,11 @@ impl Element for Layer {
         _: &mut (),
         window: &mut Window,
         cx: &mut App,
-    ) -> Vec<AnyElement> {
+    ) -> Vec<(ElementId, AnyElement)> {
         let mut raised = collect(|| {
             self.child.prepaint(window, cx);
         });
-        raised.sort_by_key(|(_, _, priority)| *priority);
+        raised.sort_by_key(|(_, _, _, priority)| *priority);
         let viewport = window.viewport_size();
         let space = size(
             AvailableSpace::Definite(viewport.width),
@@ -183,12 +185,11 @@ impl Element for Layer {
         );
         raised
             .into_iter()
-            .enumerate()
-            .map(|(ix, (mut element, at, _))| {
-                window.with_element_namespace(("raised", ix), |window| {
+            .map(|(id, mut element, at, _)| {
+                window.with_element_namespace(id.clone(), |window| {
                     element.prepaint_as_root(at, space, window, cx)
                 });
-                element
+                (id, element)
             })
             .collect()
     }
@@ -199,13 +200,13 @@ impl Element for Layer {
         _: Option<&InspectorElementId>,
         _: Bounds<Pixels>,
         _: &mut (),
-        raised: &mut Vec<AnyElement>,
+        raised: &mut Vec<(ElementId, AnyElement)>,
         window: &mut Window,
         cx: &mut App,
     ) {
         self.child.paint(window, cx);
-        for (ix, element) in raised.iter_mut().enumerate() {
-            window.with_element_namespace(("raised", ix), |window| element.paint(window, cx));
+        for (id, element) in raised.iter_mut() {
+            window.with_element_namespace(id.clone(), |window| element.paint(window, cx));
         }
     }
 }

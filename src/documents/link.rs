@@ -198,7 +198,9 @@ impl RenderOnce for LinkEditor {
                         }),
                 ),
             );
-        div().id(self.id).child(float(anchor, 1, panel, window, cx))
+        div()
+            .id(self.id.clone())
+            .child(float(self.id, anchor, 1, panel, window, cx))
     }
 }
 

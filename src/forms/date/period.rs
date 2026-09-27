@@ -228,6 +228,7 @@ fn period_picker(
             };
             let grid = period_grid(&key, build(shown), grid, window, cx);
             float(
+                key.clone(),
                 anchor,
                 6,
                 surface((key.clone(), "popup"), cx)

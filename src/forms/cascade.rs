@@ -265,6 +265,7 @@ impl RenderOnce for Cascader {
             });
             let close = state.clone();
             float(
+                self.id.clone(),
                 anchor,
                 deepest,
                 surface((self.id.clone(), "columns"), cx)

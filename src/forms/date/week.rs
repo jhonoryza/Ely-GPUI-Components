@@ -77,6 +77,7 @@ impl RenderOnce for WeekPicker {
                 }
                 let (escape, out, on_change) = (close.clone(), close.clone(), on_change.clone());
                 float(
+                    id.clone(),
                     anchor,
                     CALENDAR_ROWS,
                     surface((id.clone(), "popup"), cx)

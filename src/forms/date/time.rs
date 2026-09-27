@@ -256,6 +256,7 @@ impl RenderOnce for TimePicker {
                 let columns = time_columns(&id, time, step, commit.clone(), window, cx);
                 let out = close.clone();
                 float(
+                    id.clone(),
                     anchor,
                     CALENDAR_ROWS,
                     surface((id.clone(), "popup"), cx)
@@ -368,6 +369,7 @@ impl RenderOnce for DateTimePicker {
                 );
                 let out = close.clone();
                 float(
+                    id.clone(),
                     anchor,
                     CALENDAR_ROWS,
                     surface((id.clone(), "popup"), cx)

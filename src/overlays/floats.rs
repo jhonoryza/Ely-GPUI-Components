@@ -69,6 +69,7 @@ impl RenderOnce for FloatingToolbar {
                 let lift = cx.theme().float_gap().to_pixels(window.rem_size());
                 host.child(
                     raise(
+                        (self.id.clone(), "raised"),
                         anchored()
                             .position(anchor.origin - point(gpui::Pixels::ZERO, lift))
                             .anchor(Corner::BottomLeft)

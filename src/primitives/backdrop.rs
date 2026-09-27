@@ -76,12 +76,13 @@ impl RenderOnce for Backdrop {
                 scrim.on_mouse_down(MouseButton::Left, move |_, window, cx| dismiss(window, cx))
             })
             .with_animation(
-                self.id,
+                self.id.clone(),
                 Animation::new(fade).with_easing(motion::ease_out_cubic),
                 |scrim, t| scrim.opacity(t),
             );
 
         raise(
+            (self.id, "raised"),
             anchored().position(Point::default()).child(
                 div()
                     .relative()

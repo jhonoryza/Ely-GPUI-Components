@@ -166,8 +166,9 @@ pub(crate) fn surface(id: impl Into<ElementId>, cx: &App) -> Stateful<Div> {
         .text_size(theme.text_size(TextSize::Sm))
 }
 
-/// Floats `content` of about `rows` rows under `anchor`, or over it when only above has room.
+/// Floats `content` of about `rows` rows under `anchor`, or over it when only above has room; `id` is its owner's.
 pub(crate) fn float(
+    id: impl Into<ElementId>,
     anchor: Bounds<Pixels>,
     rows: usize,
     content: impl IntoElement,
@@ -178,7 +179,7 @@ pub(crate) fn float(
     let rem = window.rem_size();
     let row = theme.control_height(ControlSize::Md).to_pixels(rem);
     let height = (row * (rows + 1) as f32).min(theme.list_max_height().to_pixels(rem));
-    float_height(anchor, height, content, window, cx)
+    float_height(id, anchor, height, content, window, cx)
 }
 
 /// Whether `height` goes over `anchor`: it does not fit below, and above has more room.
@@ -187,8 +188,9 @@ pub(crate) fn opens_up(anchor: Bounds<Pixels>, height: Pixels, viewport: Pixels)
     height > below && anchor.top() > below
 }
 
-/// Floats `content` of a known `height` under `anchor`, or over it when only above has room.
+/// Floats `content` of a known `height` under `anchor`, or over it when only above has room; `id` is its owner's.
 pub(crate) fn float_height(
+    id: impl Into<ElementId>,
     anchor: Bounds<Pixels>,
     height: Pixels,
     content: impl IntoElement,
@@ -220,7 +222,7 @@ pub(crate) fn float_height(
                     }),
             )
     };
-    raise(placed.snap_to_window())
+    raise(id, placed.snap_to_window())
         .with_priority(1)
         .into_any_element()
 }
@@ -298,7 +300,7 @@ impl Popup<'_> {
                 })
             })
         });
-        let list = surface(self.id, cx)
+        let list = surface(self.id.clone(), cx)
             .debug_selector(|| "option-list".into())
             .min_w(theme.tooltip_max_width())
             .when(anchor.size.width > Pixels::ZERO, |list| {
@@ -319,7 +321,7 @@ impl Popup<'_> {
                 self.scroll.zip(self.reveal),
                 |list, (handle, (ix, done))| list.child(revealer(handle, ix, done)),
             );
-        float(anchor, self.rows.len(), list, window, cx)
+        float(self.id, anchor, self.rows.len(), list, window, cx)
     }
 }
 

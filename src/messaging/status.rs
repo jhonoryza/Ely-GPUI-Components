@@ -197,6 +197,7 @@ impl RenderOnce for StatusSetter {
                         done(window, cx);
                     });
                 float_height(
+                    popup_id.clone(),
                     anchor,
                     height,
                     surface((popup_id, "popup"), cx)

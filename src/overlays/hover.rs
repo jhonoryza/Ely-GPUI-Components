@@ -132,6 +132,13 @@ impl RenderOnce for HoverCard {
                 .size_full(),
             );
         let (anchor, height) = (state.read(cx).host, state.read(cx).height);
-        host.child(float_height(anchor, height, card, window, cx))
+        host.child(float_height(
+            self.id.clone(),
+            anchor,
+            height,
+            card,
+            window,
+            cx,
+        ))
     }
 }

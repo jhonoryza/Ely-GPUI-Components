@@ -236,7 +236,14 @@ impl RenderOnce for NavigationMenu {
                 .on_mouse_down_out(move |_, _, cx| show(&close, None, cx))
                 .children(links);
             let rows = entries[entry].1.len().div_ceil(2) * 2;
-            float(state.read(cx).anchors[entry], rows, content, window, cx)
+            float(
+                (self.id.clone(), format!("menu-{entry}")),
+                state.read(cx).anchors[entry],
+                rows,
+                content,
+                window,
+                cx,
+            )
         });
         let (keys, key_entries, enter) = (state.clone(), entries.clone(), pick);
         div()

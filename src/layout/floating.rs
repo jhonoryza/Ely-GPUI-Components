@@ -101,7 +101,7 @@ impl RenderOnce for FloatingPanel {
         };
         let panel = self
             .base
-            .id(self.id)
+            .id(self.id.clone())
             .flex()
             .flex_col()
             .overflow_hidden()
@@ -149,7 +149,7 @@ impl RenderOnce for FloatingPanel {
                     .child(self.title),
             )
             .child(div().p_3().children(self.body));
-        raise(anchored().position(at).child(panel))
+        raise((self.id, "raised"), anchored().position(at).child(panel))
     }
 }
 

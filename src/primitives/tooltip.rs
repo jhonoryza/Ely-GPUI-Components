@@ -139,6 +139,7 @@ impl RenderOnce for TooltipTrigger {
         let (delay, follow) = (self.delay, self.follow);
         let content = self.content;
 
+        let id = self.id.clone();
         div()
             .id(self.id)
             .child(self.child)
@@ -177,6 +178,7 @@ impl RenderOnce for TooltipTrigger {
                 let body = content(window, cx);
                 let below = cx.theme().cursor_offset().to_pixels(window.rem_size());
                 trigger.child(raise(
+                    (id, "raised"),
                     anchored()
                         .position(mouse + point(Pixels::ZERO, below))
                         .snap_to_window()

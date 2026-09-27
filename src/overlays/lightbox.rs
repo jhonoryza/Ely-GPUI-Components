@@ -291,8 +291,11 @@ impl RenderOnce for Lightbox {
                             ),
                     ),
             );
-        raise(anchored().position(Point::default()).child(stage))
-            .with_priority(1)
-            .into_any_element()
+        raise(
+            (self.id.clone(), "raised"),
+            anchored().position(Point::default()).child(stage),
+        )
+        .with_priority(1)
+        .into_any_element()
     }
 }

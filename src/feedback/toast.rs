@@ -225,7 +225,7 @@ impl RenderOnce for ToastViewport {
             cards.push(card(&self.id, ix, &self.toaster, window, cx));
         }
         let stack = div()
-            .id(self.id)
+            .id(self.id.clone())
             .occlude()
             .flex()
             .flex_col()
@@ -235,6 +235,7 @@ impl RenderOnce for ToastViewport {
             })
             .children(cards);
         raise(
+            (self.id, "raised"),
             anchored()
                 .position(point(viewport.width - margin, viewport.height - margin))
                 .anchor(Corner::BottomRight)

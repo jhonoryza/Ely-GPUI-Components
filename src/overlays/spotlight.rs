@@ -193,13 +193,21 @@ fn light(
     div()
         .child(
             raise(
+                (id.clone(), "raised"),
                 anchored()
                     .position(Point::default())
                     .child(div().w(viewport.width).h(viewport.height).child(frame)),
             )
             .with_priority(1),
         )
-        .child(float_height(target, card_height, card, window, cx))
+        .child(float_height(
+            (id.clone(), "card"),
+            target,
+            card_height,
+            card,
+            window,
+            cx,
+        ))
         .into_any_element()
 }
 

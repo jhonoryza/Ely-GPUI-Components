@@ -246,6 +246,7 @@ impl RenderOnce for DatePicker {
                 }
                 let (escape, done) = (close.clone(), close.clone());
                 float(
+                    id.clone(),
                     anchor,
                     CALENDAR_ROWS,
                     surface((id.clone(), "popup"), cx)
@@ -347,6 +348,7 @@ impl RenderOnce for DateRangePicker {
                 }
                 let (hover, pick, escape) = (state.clone(), state.clone(), close.clone());
                 float(
+                    id.clone(),
                     anchor,
                     CALENDAR_ROWS,
                     surface((id.clone(), "popup"), cx)
