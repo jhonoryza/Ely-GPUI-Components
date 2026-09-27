@@ -364,3 +364,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T30d | 1 | FAIL | a chosen day outlived the owner's days, and the next render panicked |
 | T30d | 2 | PASS | |
 | T31a | 1 | PASS | |
+| T31b | 1 | FAIL | a focused card past the board's fold stayed out of view; left and right steps that keep a card's place went untested |

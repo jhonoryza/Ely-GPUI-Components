@@ -1,6 +1,6 @@
 use gpui::{
-    AnyElement, Entity, IntoElement, Modifiers, MouseButton, SharedString, TestAppContext, point,
-    px,
+    AnyElement, Entity, IntoElement, Modifiers, MouseButton, ParentElement, SharedString, Styled,
+    TestAppContext, point, px,
 };
 use jiff::civil::date;
 
@@ -89,6 +89,25 @@ fn option_arrows_move_the_focused_card_and_enter_opens_it(cx: &mut TestAppContex
     assert_eq!(
         heard(&host, cx),
         ["move a todo 1", "move a doing 0", "open a"]
+    );
+}
+
+fn narrow(owner: Entity<Desk>) -> AnyElement {
+    gpui::div()
+        .w(px(300.0))
+        .child(board(owner))
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_focused_card_past_the_fold_scrolls_into_view(cx: &mut TestAppContext) {
+    let (_, cx) = desk(narrow, cx);
+    tab_to(3, cx);
+    let board = cx.debug_bounds("kanban-board").expect("the board draws");
+    let card = cx.debug_bounds("card c").expect("card c draws");
+    assert!(
+        board.left() <= card.left() && card.right() <= board.right(),
+        "card c at {card:?} shows inside the board at {board:?}"
     );
 }
 

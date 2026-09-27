@@ -54,5 +54,20 @@ mod tests {
         assert_eq!(stepped(&lens, 2, 1, "left"), Some((1, 0)));
         assert_eq!(stepped(&lens, 2, 1, "right"), None);
         assert_eq!(stepped(&lens, 1, 0, "home"), None);
+        assert_eq!(
+            stepped(&[3, 2], 0, 1, "right"),
+            Some((1, 1)),
+            "the same place"
+        );
+        assert_eq!(
+            stepped(&[3, 2], 1, 1, "left"),
+            Some((0, 1)),
+            "the same place"
+        );
+        assert_eq!(
+            stepped(&[3, 2], 0, 2, "right"),
+            Some((1, 2)),
+            "the end of a shorter column"
+        );
     }
 }
