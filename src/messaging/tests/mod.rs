@@ -221,6 +221,17 @@ fn a_press_on_unpin_unpins_and_opens_nothing(cx: &mut TestAppContext) {
     );
 }
 
+#[gpui::test]
+fn space_on_unpin_unpins_and_opens_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = pinning(cx);
+    tab_to(2, cx);
+    press("space", cx);
+    assert_eq!(
+        host.read_with(cx, |host, _| host.asked.clone()),
+        ["unpin newer"]
+    );
+}
+
 #[test]
 #[should_panic(expected = "pin a twice")]
 fn a_message_is_pinned_once() {

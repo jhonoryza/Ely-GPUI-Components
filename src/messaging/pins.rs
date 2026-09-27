@@ -90,6 +90,14 @@ impl RenderOnce for PinnedMessages {
                     div()
                         .debug_selector(move || format!("unpin {named}"))
                         .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                        .on_key_down(|event, _, cx| {
+                            let key = event.keystroke.key.as_str();
+                            if matches!(key, "space" | "enter")
+                                && !event.keystroke.modifiers.modified()
+                            {
+                                cx.stop_propagation();
+                            }
+                        })
                         .child(
                             IconButton::new(
                                 (self.id.clone(), format!("unpin-{key}")),

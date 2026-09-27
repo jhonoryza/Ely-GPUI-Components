@@ -166,6 +166,14 @@ impl MailItem {
                             window.prevent_default();
                             cx.stop_propagation();
                         })
+                        .on_key_down(|event, _, cx| {
+                            let key = event.keystroke.key.as_str();
+                            if matches!(key, "space" | "enter")
+                                && !event.keystroke.modifiers.modified()
+                            {
+                                cx.stop_propagation();
+                            }
+                        })
                         .on_click(move |_, window, cx| {
                             log::info!("mail {key}: star {}", !starred);
                             set(!starred, window, cx)

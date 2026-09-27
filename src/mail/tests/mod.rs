@@ -188,6 +188,16 @@ fn a_star_toggles_and_leaves_the_selection(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+fn space_on_a_star_stars_and_leaves_the_selection(cx: &mut TestAppContext) {
+    let (host, cx) = mailing(mails, cx);
+    tab_to(2, cx);
+    press("space", cx);
+    tab_to(2, cx);
+    press("enter", cx);
+    assert_eq!(heard(&host, cx), ["star m1 true", "star m1 true"]);
+}
+
+#[gpui::test]
 fn no_mail_says_so_and_takes_no_tab_stop(cx: &mut TestAppContext) {
     let (_, cx) = mailing(
         |_| MailList::new("mails", Vec::new()).into_any_element(),
