@@ -3,6 +3,7 @@ mod assets;
 
 pub mod buttons;
 pub mod calendar;
+pub mod canvas;
 pub mod charts;
 pub mod chat;
 pub mod collab;

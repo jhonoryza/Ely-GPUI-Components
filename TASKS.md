@@ -114,8 +114,11 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T31a Project · Tasks — `tasks/ch31-43.md`
 - [x] T31b Project · Issues and boards
 - [x] T31c Project · Plans
-- [ ] T31d Project · Time and databases
-- [ ] T32 Canvas & Design
+- [x] T31d Project · Time and databases
+- [ ] T32a Canvas · Plane — `tasks/ch31-43.md`
+- [ ] T32b Canvas · Tools
+- [ ] T32c Canvas · Panels
+- [ ] T32d Canvas · Graphs and boards
 - [ ] T33 DB & Dev Tools
 - [ ] T34 Dashboard
 - [ ] T35 Settings
@@ -369,3 +372,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T31c | 1 | FAIL | a roadmap bar's end and the workload bar's cap went untested |
 | T31c | 2 | PASS | |
 | T31d | 1 | FAIL | a focused segment past the strip's fold stayed hidden; the tracker lost focus as Start and Stop swapped; Stop and Skip went untested; percent did not refuse content |
+| T31d | 2 | PASS | |

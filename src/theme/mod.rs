@@ -1,4 +1,5 @@
 mod calendar;
+mod canvas;
 mod chart;
 mod files;
 mod generative;
@@ -14,6 +15,7 @@ use gpui::{App, Global, SharedString, WindowAppearance};
 
 use crate::motion;
 pub use calendar::CalendarSizes;
+pub use canvas::CanvasSizes;
 pub use chart::ChartSizes;
 pub use files::FileSizes;
 pub use generative::GenerativeSizes;
