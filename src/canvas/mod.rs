@@ -53,7 +53,7 @@ pub use mindmap_view::MindMap;
 pub use minimap::MiniMap;
 pub use nodes::NodeGraph;
 pub use palette::{BrushSettings, ToolPalette};
-pub(crate) use panel::{OnEdit, editing};
+pub(crate) use panel::{OnEdit, caption, editing};
 pub use plane::InfiniteCanvas;
 pub use shape::{Artboard, Corner, Guide, Shape, ShapeKind};
 pub use style::{Border, BorderEditor, ColorPanel, Dash, Shadow, ShadowEditor};

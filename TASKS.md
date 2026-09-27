@@ -385,3 +385,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T32d | 2 | FAIL | Enter or Escape in a canvas field handed focus nowhere, so the map's and the layer's keys went dead until the next press |
 | T32d | 3 | PASS | |
 | T33a | 1 | FAIL | the plan, the Redis browser and the structure editor drew past a 280px box; the form's rules and a row button's press went untested |
+| T33a | 2 | FAIL | the structure editor's cells kept the narrow box's first measure, and its Tab stops past the sideways fold stayed out of view |

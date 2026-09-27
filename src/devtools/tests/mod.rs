@@ -194,3 +194,50 @@ fn another_engine_brings_its_port(cx: &mut TestAppContext) {
     tap("space", cx);
     assert_eq!(said(&host, cx), ["save Shop localhost:3306/shop"]);
 }
+
+fn narrow(_: &Bench, _: &mut Window, _: &mut App, _: Entity<Bench>) -> AnyElement {
+    div()
+        .w(px(280.0))
+        .child(TableStructureEditor::new(
+            "structure",
+            [
+                Field::new("user_id", "timestamptz"),
+                Field::new("total", "numeric"),
+            ],
+        ))
+        .into_any_element()
+}
+
+/// In 280px each field stacks on its own, its default under its name, and nothing runs past the box.
+#[gpui::test]
+fn a_narrow_editor_stacks_each_field_inside_its_box(cx: &mut TestAppContext) {
+    let (_, cx) = bench(narrow, cx);
+    let name = cx
+        .debug_bounds("inline-edit structure-name-0")
+        .expect("the first name");
+    let default = cx
+        .debug_bounds("inline-edit structure-default-0")
+        .expect("the first default");
+    assert!(
+        default.top() > name.bottom(),
+        "the default sits under the name"
+    );
+    assert!(
+        default.right() <= px(280.0) && name.right() <= px(280.0),
+        "inside the box: {default:?}"
+    );
+}
+
+/// In 640px the fields line up as a table, the default beside the name.
+#[gpui::test]
+fn a_wide_editor_lines_the_fields_up_as_a_table(cx: &mut TestAppContext) {
+    let (_, cx) = bench(structure, cx);
+    let name = cx
+        .debug_bounds("inline-edit structure-name-0")
+        .expect("the first name");
+    let default = cx
+        .debug_bounds("inline-edit structure-default-0")
+        .expect("the first default");
+    assert_eq!(default.top(), name.top());
+    assert!(default.left() > name.right());
+}

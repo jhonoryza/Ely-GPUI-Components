@@ -1,20 +1,18 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, AppContext as _, ElementId, Entity, FontWeight, InteractiveElement, IntoElement,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div,
-    relative, rems,
+    App, AppContext as _, ElementId, Entity, FontWeight, IntoElement, ParentElement, Rems,
+    RenderOnce, SharedString, Styled, Window, canvas, div, rems,
 };
 
 use super::schema::{Field, FieldKey};
 use crate::{
     buttons::{Button, ButtonVariant, IconButton},
-    canvas::{OnEdit, editing},
+    canvas::{OnEdit, caption, editing},
     data_display::{Badge, Tone},
     forms::{Checkbox, Choice, InlineEdit, Input, MultiSelect, Select, Switch, TextInput},
-    layout::on_axis,
     primitives::IconName,
-    theme::{ActiveTheme, TextSize},
+    theme::{ActiveTheme, Radius, TextSize},
     typography::Ellipsis,
 };
 
@@ -32,10 +30,11 @@ const TYPES: [&str; 10] = [
     "jsonb",
 ];
 
-/// Each column's share of a row: name, type, may be empty, primary key, default, and the remove button.
-const SHARES: [f32; 6] = [0.28, 0.24, 0.1, 0.1, 0.2, 0.08];
+/// Each column's share of the table's least width: name, type, may be empty, primary key, default, and the remove button.
+const SHARES: [f32; 6] = [0.26, 0.26, 0.1, 0.1, 0.2, 0.08];
 
-fn cells(parts: [gpui::AnyElement; 6]) -> gpui::Div {
+/// A row of the table, each cell a fixed share of `least`, so what a cell holds is measured at its final width.
+fn cells(parts: [gpui::AnyElement; 6], least: Rems) -> gpui::Div {
     parts
         .into_iter()
         .zip(SHARES)
@@ -43,7 +42,7 @@ fn cells(parts: [gpui::AnyElement; 6]) -> gpui::Div {
             row.child(
                 div()
                     .flex_none()
-                    .w(relative(share))
+                    .w(rems(least.0 * share))
                     .min_w_0()
                     .pr_2()
                     .child(part),
@@ -51,7 +50,52 @@ fn cells(parts: [gpui::AnyElement; 6]) -> gpui::Div {
         })
 }
 
-/// A table's fields to edit in place, scrolling sideways in a box too narrow for their columns: a name and a default rewritten on a press, a type from the common ones, whether it may be empty, and the primary key. A foreign key shows where it points. Minus drops a field and Add field appends one; each edit hands the owner every field.
+/// A field stacked to fit a narrow box: its name and remove button, then its type with its flags, then its default.
+fn stacked(parts: [gpui::AnyElement; 6], cx: &App) -> gpui::Div {
+    let theme = cx.theme();
+    let [name, ty, empty, key, default, remove] = parts;
+    let flag = |part: gpui::AnyElement, words: &'static str| {
+        div()
+            .flex()
+            .items_center()
+            .gap_1()
+            .child(part)
+            .child(caption(words, cx))
+    };
+    div()
+        .flex()
+        .flex_col()
+        .gap_2()
+        .p_2()
+        .rounded(theme.radius(Radius::Md))
+        .border_1()
+        .border_color(theme.colors.border)
+        .child(
+            div()
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(div().flex_1().min_w_0().child(name))
+                .child(div().flex_none().child(remove)),
+        )
+        .child(
+            div()
+                .flex()
+                .flex_wrap()
+                .items_center()
+                .gap_3()
+                .child(div().w(theme.label_width()).child(ty))
+                .child(flag(empty, "Empty"))
+                .child(flag(key, "Key")),
+        )
+        .child(default)
+}
+
+/// The editor's own measure of its width, in pixels.
+#[derive(Default)]
+struct Room(f32);
+
+/// A table's fields to edit in place, as a table where there is room for its columns and each field stacked on its own where there is not: a name and a default rewritten on a press, a type from the common ones, whether it may be empty, and the primary key. A foreign key shows where it points. Minus drops a field and Add field appends one; each edit hands the owner every field.
 #[derive(IntoElement)]
 pub struct TableStructureEditor {
     id: ElementId,
@@ -78,9 +122,13 @@ impl TableStructureEditor {
 }
 
 impl RenderOnce for TableStructureEditor {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let (id, fields, on_change) = (self.id, self.fields, &self.on_change);
+        let room = window.use_keyed_state((id.clone(), "room"), cx, |_, _| Room::default());
+        let rem = window.rem_size();
         let theme = cx.theme();
+        let least = rems(theme.label_width().0 * 3.75);
+        let wide = room.read(cx).0 >= f32::from(least.to_pixels(rem));
         let heading = |text: &'static str| {
             div()
                 .text_size(theme.text_size(TextSize::Xs))
@@ -88,14 +136,19 @@ impl RenderOnce for TableStructureEditor {
                 .child(text)
                 .into_any_element()
         };
-        let head = cells([
-            heading("Name"),
-            heading("Type"),
-            heading("Empty"),
-            heading("Key"),
-            heading("Default"),
-            div().into_any_element(),
-        ]);
+        let head = wide.then(|| {
+            cells(
+                [
+                    heading("Name"),
+                    heading("Type"),
+                    heading("Empty"),
+                    heading("Key"),
+                    heading("Default"),
+                    div().into_any_element(),
+                ],
+                least,
+            )
+        });
         let rows = fields.iter().enumerate().map(|(ix, field)| {
             let at = |edit: fn(&mut Field, SharedString)| {
                 editing(
@@ -145,7 +198,7 @@ impl RenderOnce for TableStructureEditor {
                 .on_change(move |on, window, cx| primary(on, window, cx))
                 .into_any_element(),
             };
-            cells([
+            let parts = [
                 InlineEdit::new((id.clone(), format!("name-{ix}")), field.name.clone())
                     .on_commit(move |name, window, cx| named(name.clone(), window, cx))
                     .into_any_element(),
@@ -168,7 +221,11 @@ impl RenderOnce for TableStructureEditor {
                     .tooltip("Remove the field")
                     .on_click(move |_, window, cx| remove((), window, cx))
                     .into_any_element(),
-            ])
+            ];
+            match wide {
+                true => cells(parts, least),
+                false => stacked(parts, cx),
+            }
         });
         let add = editing(
             "table structure",
@@ -182,22 +239,29 @@ impl RenderOnce for TableStructureEditor {
                 all.push(Field::new(name, "text").nullable());
             },
         );
-        let least = rems(theme.label_width().0 * 4.0);
         div()
+            .relative()
             .flex()
             .flex_col()
             .gap_2()
             .child(
-                on_axis(div().id((id.clone(), "sideways")).overflow_x_scroll()).child(
-                    div()
-                        .min_w(least)
-                        .flex()
-                        .flex_col()
-                        .gap_2()
-                        .child(head)
-                        .children(rows),
-                ),
+                canvas(
+                    move |bounds, window, cx| {
+                        let now = f32::from(bounds.size.width);
+                        if room.read(cx).0 != now {
+                            room.update(cx, |room, _| room.0 = now);
+                            window.request_animation_frame();
+                        }
+                    },
+                    |_, _, _, _| {},
+                )
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full(),
             )
+            .children(head)
+            .children(rows)
             .child(
                 div().flex().child(
                     Button::new((id, "add"), "Add field")
