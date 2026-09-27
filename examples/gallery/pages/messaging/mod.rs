@@ -8,6 +8,7 @@ use gpui::{AnyElement, App, IntoElement, ParentElement, SharedString, Styled, Wi
 use jiff::{SignedDuration, Timestamp};
 
 mod messages;
+mod people;
 
 use super::Page;
 use crate::{
@@ -34,6 +35,22 @@ const SCRIPT: &[Step] = &[
     Step::HoverAt("messaging-conversation", 200.0, 89.0),
     Step::Wait(200),
     Step::Shot("run-time"),
+    Step::DownAt("messaging-members", 200.0, 91.0),
+    Step::UpAt("messaging-members", 200.0, 91.0),
+    Step::Wait(200),
+    Step::Shot("member-chosen"),
+    Step::DownAt("messaging-status", 35.0, 48.0),
+    Step::UpAt("messaging-status", 35.0, 48.0),
+    Step::Wait(200),
+    Step::Key("tab"),
+    Step::Type("palm tree"),
+    Step::Wait(200),
+    Step::Shot("status-emoji"),
+    Step::Key("enter"),
+    Step::Key("tab"),
+    Step::Type("On leave till Monday"),
+    Step::Wait(200),
+    Step::Shot("status-draft"),
 ];
 
 /// The demo's chats: which is open and what waits unread in each.
@@ -218,5 +235,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(messages::conversation(window, cx))
         .child(messages::thread(window, cx))
         .child(messages::receipts(cx))
+        .child(people::members(window, cx))
+        .child(people::statuses(cx))
+        .child(people::setter(window, cx))
         .into_any_element()
 }

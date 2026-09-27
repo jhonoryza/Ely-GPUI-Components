@@ -82,7 +82,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - `primitives::Severity` names info, success, warning and danger with their colors and icons, for alerts and feedback alike.
 - Rows that move are keyed. `motion::Flip` places them absolutely from last frame's heights, so no frame shows a row at its new place before it glides there, and drives the glide from elapsed time: an animation id that changes per move would rebuild the row's keyed state. `Reorder` holds a row by key, drags with an empty ghost and moves the held row itself.
 - A marker that slides between items (segment thumb, tab line) measures them with `motion::slide` and eases with `glide`.
-- A picker hands focus to its popup on open and back to its trigger on pick or Escape; it closes once focus leaves both (`forms::date::picker`).
+- A picker hands focus to its popup on open and back to its trigger on pick or Escape; it closes once focus leaves both (`forms::date::picker`). Its trigger acts on press and keys, not on click, so a pick made on Enter's press cannot reopen it on the release; `messaging::StatusSetter`'s emoji field reuses it.
 - Motion for a value change keys its animation on `motion::changes`, so it replays per change and stays still on first paint. Key only the part that moves: a keyed ancestor gives every descendant a new id, and focused buttons lose focus.
 - A spotlight or tour takes its target's box from `primitives::Measure`; the lit box glides between targets.
 - Thumbs stay inside their component's box: the track is padded by half a thumb (`Slider`, `ColorPicker`, `GradientEditor`, `media::ImageCropper`).

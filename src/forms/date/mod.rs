@@ -19,6 +19,7 @@ pub use calendar::Calendar;
 pub use cron::CronEditor;
 pub use period::{MonthPicker, QuarterPicker, YearPicker};
 pub use picker::{DatePicker, DateRangePicker};
+pub(crate) use picker::{Face, dropdown, picker_field};
 pub use relative::{RelativeDatePicker, RelativeRange};
 pub use rule::CronRule;
 pub use time::{DateTimePicker, DurationPicker, TimePicker};

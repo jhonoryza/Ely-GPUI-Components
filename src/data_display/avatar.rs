@@ -18,12 +18,21 @@ pub enum Presence {
 }
 
 impl Presence {
-    fn color(self, colors: &Palette) -> Hsla {
+    pub fn color(self, colors: &Palette) -> Hsla {
         match self {
             Self::Online => colors.success,
             Self::Away => colors.warning,
             Self::Busy => colors.danger,
             Self::Offline => colors.fg_subtle,
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Online => "Online",
+            Self::Away => "Away",
+            Self::Busy => "Busy",
+            Self::Offline => "Offline",
         }
     }
 }

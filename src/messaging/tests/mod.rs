@@ -10,6 +10,7 @@ use super::{
 use crate::{data_display::Presence, primitives::FocusNext, theme::Theme};
 
 mod messages;
+mod people;
 
 fn setup(cx: &mut TestAppContext) {
     cx.update(|cx| {
