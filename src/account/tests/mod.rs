@@ -83,4 +83,5 @@ pub(super) fn write(text: &str, cx: &mut VisualTestContext) {
 }
 
 mod access;
+mod billing;
 mod sign_in;

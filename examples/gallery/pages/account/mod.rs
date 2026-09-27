@@ -1,6 +1,7 @@
 use gpui::{AnyElement, App, Window, div, prelude::*};
 
 mod access;
+mod billing;
 mod sign_in;
 
 use super::Page;
@@ -51,5 +52,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(access::switchers(window, cx))
         .child(access::profile(window, cx))
         .child(access::security_page(window, cx))
+        .child(billing::plan(window, cx))
+        .child(billing::history(window, cx))
+        .child(billing::members(window, cx))
         .into_any_element()
 }
