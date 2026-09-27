@@ -135,7 +135,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T39a Theme · Editing — `tasks/ch31-43.md`
 - [x] T39b Theme · Importing — `tasks/ch31-43.md`
 - [x] T39c Theme · Platform — `tasks/ch31-43.md`
-- [ ] T40a i18n
+- [x] T40a i18n — `tasks/ch31-43.md`
 - [ ] T40b a11y
 - [ ] T41 Maps
 - [ ] T42 Misc
@@ -428,3 +428,6 @@ Per-component lines live in `tasks/`. Tags there:
 | T39c | 1 | FAIL | Windows caption buttons took their row's height; a long Windows title pushed the buttons past the bar |
 | T39c | 2 | FAIL | an untitled Windows bar lost its spacer; a centered title ran under the Linux buttons; caption buttons ignored the window's rem |
 | T39c | 3 | PASS | |
+| T40a | 1 | FAIL | a wrapped right-to-left line came out garbled, since gpui wraps glyphs in drawn order; a Hebrew minus sat right of its digits; two dates claimed CLDR's short year; two catalog guards untested |
+| T40a | 2 | FAIL | a Hebrew line that opened with a signed number laid out left to right, since gpui sets no paragraph direction |
+| T40a | 3 | PASS | |
