@@ -1,7 +1,7 @@
 use std::{cell::Cell, rc::Rc};
 
 use gpui::{
-    AnyElement, App, Axis, CursorStyle, DragMoveEvent, ElementId, EmptyView, EntityId,
+    AnyElement, App, Axis, CursorStyle, DragMoveEvent, ElementId, EmptyView, EntityId, Hsla,
     InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce, Stateful,
     StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
@@ -11,8 +11,17 @@ use crate::theme::ActiveTheme;
 
 /// Thin divider with a wide grab area. `axis` is the split's direction.
 pub fn resize_handle(id: impl Into<ElementId>, axis: Axis, cx: &App) -> Stateful<gpui::Div> {
+    handle(id, axis, cx.theme().colors.border, cx)
+}
+
+/// A resize handle whose line shows only while hovered, on an edge whose box draws its own border.
+pub fn resize_edge(id: impl Into<ElementId>, axis: Axis, cx: &App) -> Stateful<gpui::Div> {
+    handle(id, axis, gpui::transparent_black(), cx)
+}
+
+fn handle(id: impl Into<ElementId>, axis: Axis, line: Hsla, cx: &App) -> Stateful<gpui::Div> {
     let theme = cx.theme();
-    let (line, lit, hit) = (theme.colors.border, theme.colors.focus, theme.handle_hit());
+    let (lit, hit) = (theme.colors.focus, theme.handle_hit());
     let base = div()
         .id(id)
         .group("resize")

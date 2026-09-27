@@ -109,16 +109,43 @@ fn a_box_resizes_from_its_grip_and_its_edge_within_its_limits(cx: &mut TestAppCo
     let stepped = host.read_with(cx, |bench, _| bench.size);
     assert_eq!(stepped, size(px(208.0), px(128.0)));
     drag(
-        at(228.0, 60.0),
-        &[at(240.0, 60.0), at(260.0, 60.0), at(400.0, 60.0)],
+        at(225.0, 60.0),
+        &[at(240.0, 80.0), at(260.0, 100.0), at(400.0, 120.0)],
         Modifiers::none(),
         cx,
     );
-    let dragged = host.read_with(cx, |bench, _| bench.size);
+    let widened = host.read_with(cx, |bench, _| bench.size);
     assert_eq!(
-        dragged,
+        widened,
         size(px(300.0), px(128.0)),
-        "the edge stops at the widest"
+        "the right edge only widens, and stops at the widest"
+    );
+    drag(
+        at(100.0, 145.0),
+        &[at(150.0, 160.0), at(180.0, 180.0), at(200.0, 200.0)],
+        Modifiers::none(),
+        cx,
+    );
+    let deepened = host.read_with(cx, |bench, _| bench.size);
+    assert_eq!(
+        deepened,
+        size(px(300.0), px(183.0)),
+        "the bottom edge only deepens, by the pointer's way from the press"
+    );
+}
+
+/// The grip and the edges' handles lie inside the box, the grip in its lower right corner.
+#[gpui::test]
+fn the_grip_lies_inside_the_box(cx: &mut TestAppContext) {
+    let (_, cx) = bench(resizable, cx);
+    let (grip, frame) = (
+        cx.debug_bounds("resizable-grip").expect("the grip"),
+        cx.debug_bounds("resizable-box").expect("the box"),
+    );
+    assert_eq!(
+        (grip.right(), grip.bottom()),
+        (frame.right(), frame.bottom()),
+        "the grip ends at the box's corner: {grip:?} in {frame:?}"
     );
 }
 
@@ -156,6 +183,23 @@ fn a_dial_turns_toward_its_dragged_knob(cx: &mut TestAppContext) {
         cx,
     );
     assert_eq!(host.read_with(cx, |bench, _| bench.angle), 90.0);
+}
+
+/// Without Shift the same drag turns the dial to the pointer's own angle.
+#[gpui::test]
+fn a_free_drag_turns_to_the_pointer(cx: &mut TestAppContext) {
+    let (host, cx) = bench(rotatable, cx);
+    drag(
+        at(70.0, 26.0),
+        &[at(90.0, 40.0), at(110.0, 55.0), at(130.0, 66.0)],
+        Modifiers::none(),
+        cx,
+    );
+    let angle = host.read_with(cx, |bench, _| bench.angle);
+    assert!(
+        (angle - 86.19).abs() < 0.05,
+        "turned to 86 degrees: {angle}"
+    );
 }
 
 fn area(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
@@ -220,6 +264,24 @@ fn presses_and_keys_pick_tiles(cx: &mut TestAppContext) {
     assert_eq!(picked(&host, cx), ["a", "b", "c"]);
     tap("escape", cx);
     assert!(picked(&host, cx).is_empty());
+}
+
+/// With "a" selected, a band over "c" with Shift adds it.
+#[gpui::test]
+fn a_band_with_shift_adds_to_the_selection(cx: &mut TestAppContext) {
+    let (host, cx) = bench(area, cx);
+    host.update(cx, |bench, cx| {
+        bench.selected = vec!["a".into()];
+        cx.notify();
+    });
+    settle(cx);
+    drag(
+        at(200.0, 100.0),
+        &[at(190.0, 90.0), at(170.0, 70.0), at(160.0, 60.0)],
+        Modifiers::shift(),
+        cx,
+    );
+    assert_eq!(picked(&host, cx), ["a", "c"]);
 }
 
 /// The box is one stop: the arrows walk the cursor and Space adds or drops the tile it is on.

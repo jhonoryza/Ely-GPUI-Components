@@ -174,6 +174,14 @@ mod tests {
         assert_eq!(angle_at(ring, point(px(100.0), px(50.0)), false), 90.0);
         assert_eq!(angle_at(ring, point(px(50.0), px(100.0)), false), 180.0);
         assert_eq!(angle_at(ring, point(px(0.0), px(50.0)), false), 270.0);
+        let eleven = point(
+            px(50.0 + 50.0 * 11f32.to_radians().sin()),
+            px(50.0 - 50.0 * 11f32.to_radians().cos()),
+        );
+        assert!(
+            (angle_at(ring, eleven, false) - 11.0).abs() < 1e-3,
+            "free, it stays at 11°"
+        );
         let near = angle_at(ring, point(px(60.0), px(0.0)), true);
         assert_eq!(near, 15.0, "11° snaps to the nearest notch");
     }

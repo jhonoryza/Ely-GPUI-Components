@@ -1,14 +1,14 @@
-use std::{cell::Cell, rc::Rc};
+use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, AppContext, Axis, CursorStyle, DragMoveEvent, ElementId, EmptyView, EntityId,
-    InteractiveElement, IntoElement, ParentElement, Pixels, Point, RenderOnce, Size,
-    StatefulInteractiveElement, Styled, Window, div, point, size,
+    InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement, Pixels, Point,
+    RenderOnce, Size, StatefulInteractiveElement, Styled, Window, div, point, size,
 };
 use smallvec::SmallVec;
 
 use crate::{
-    layout::{resize_handle, seeded::use_seeded},
+    layout::{resize_edge, seeded::use_seeded},
     primitives::FocusRing,
     theme::{ActiveTheme, Radius},
 };
@@ -25,7 +25,6 @@ struct ResizeDrag {
     owner: EntityId,
     side: Side,
     start: Size<Pixels>,
-    anchor: Rc<Cell<Option<Point<Pixels>>>>,
 }
 
 /// The size after moving `side` by `delta` from `start`, kept within `min` and `max`.
@@ -113,6 +112,8 @@ impl RenderOnce for Resizable {
             .unwrap_or_else(|| panic!("resizable {id:?} has no on_resize"));
         let limits = self.limits;
         let held = use_seeded((id.clone(), "size"), self.size, window, cx);
+        let pressed =
+            window.use_keyed_state((id.clone(), "press"), cx, |_, _| None::<Point<Pixels>>);
         let (owner, now) = (held.entity_id(), held.read(cx).value);
         let report: OnResize = Rc::new(move |next, window, cx| {
             log::info!("resizable: {:?} by {:?}", next.width, next.height);
@@ -123,17 +124,26 @@ impl RenderOnce for Resizable {
             on_resize(next, window, cx);
         });
         let theme = cx.theme();
-        let (hit, grip) = (theme.handle_hit(), theme.interaction().grip);
+        let grip = theme.interaction().grip;
         let step = theme.interaction().step.to_pixels(window.rem_size());
-        let drag = move |side| ResizeDrag {
-            owner,
-            side,
-            start: now,
-            anchor: Rc::new(Cell::new(None)),
+        let grab = |side| {
+            let drag = ResizeDrag {
+                owner,
+                side,
+                start: now,
+            };
+            let at = pressed.clone();
+            let press = move |event: &MouseDownEvent, _: &mut Window, cx: &mut App| {
+                at.update(cx, |at, _| *at = Some(event.position))
+            };
+            (drag, press)
         };
+        let ((right, right_press), (bottom, bottom_press), (corner, corner_press)) =
+            (grab(Side::Right), grab(Side::Bottom), grab(Side::Corner));
         let (dragged, keyed) = (report.clone(), report);
         div()
             .id(id.clone())
+            .debug_selector(|| "resizable-box".into())
             .relative()
             .w(now.width)
             .h(now.height)
@@ -143,10 +153,7 @@ impl RenderOnce for Resizable {
                     return;
                 }
                 let at = event.event.position;
-                let anchor = drag.anchor.get().unwrap_or_else(|| {
-                    drag.anchor.set(Some(at));
-                    at
-                });
+                let anchor = pressed.read(cx).expect("a resize starts from a press");
                 let next = resized(drag.start, drag.side, at - anchor, limits);
                 if next != now {
                     dragged(next, window, cx);
@@ -154,25 +161,30 @@ impl RenderOnce for Resizable {
             })
             .children(self.children)
             .child(
-                resize_handle((id.clone(), "right"), Axis::Horizontal, cx)
+                resize_edge((id.clone(), "right"), Axis::Horizontal, cx)
                     .absolute()
                     .top_0()
-                    .right(hit * -0.5)
-                    .on_drag(drag(Side::Right), |_, _, _, cx| cx.new(|_| EmptyView)),
+                    .right_0()
+                    .justify_end()
+                    .on_mouse_down(MouseButton::Left, right_press)
+                    .on_drag(right, |_, _, _, cx| cx.new(|_| EmptyView)),
             )
             .child(
-                resize_handle((id.clone(), "bottom"), Axis::Vertical, cx)
+                resize_edge((id.clone(), "bottom"), Axis::Vertical, cx)
                     .absolute()
                     .left_0()
-                    .bottom(hit * -0.5)
-                    .on_drag(drag(Side::Bottom), |_, _, _, cx| cx.new(|_| EmptyView)),
+                    .bottom_0()
+                    .items_end()
+                    .on_mouse_down(MouseButton::Left, bottom_press)
+                    .on_drag(bottom, |_, _, _, cx| cx.new(|_| EmptyView)),
             )
             .child(
                 div()
                     .id((id, "corner"))
+                    .debug_selector(|| "resizable-grip".into())
                     .absolute()
-                    .right(grip * -0.5)
-                    .bottom(grip * -0.5)
+                    .right_0()
+                    .bottom_0()
                     .size(grip)
                     .rounded(theme.radius(Radius::Sm))
                     .border_1()
@@ -195,7 +207,8 @@ impl RenderOnce for Resizable {
                             keyed(next, window, cx);
                         }
                     })
-                    .on_drag(drag(Side::Corner), |_, _, _, cx| cx.new(|_| EmptyView)),
+                    .on_mouse_down(MouseButton::Left, corner_press)
+                    .on_drag(corner, |_, _, _, cx| cx.new(|_| EmptyView)),
             )
     }
 }
