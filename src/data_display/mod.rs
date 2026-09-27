@@ -19,6 +19,7 @@ mod watermark;
 
 pub use avatar::{Avatar, AvatarGroup, Presence, UserChip};
 pub(crate) use avatar::{more, tucked};
+pub(crate) use badge::color_mark;
 pub use badge::{Badge, CountBadge, DotBadge, Tag, Tone};
 pub use before_after::BeforeAfter;
 pub use carousel::Carousel;

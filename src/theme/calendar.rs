@@ -15,6 +15,8 @@ pub struct CalendarSizes {
     pub hour: Rems,
     /// A time grid's column of hours, wide.
     pub gutter: Rems,
+    /// An event's details in a panel, wide.
+    pub card: Rems,
 }
 
 impl Theme {
@@ -25,6 +27,7 @@ impl Theme {
             mini_day: px_to_rems(28.0),
             hour: px_to_rems(48.0),
             gutter: px_to_rems(56.0),
+            card: px_to_rems(320.0),
         }
     }
 }

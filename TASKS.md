@@ -108,7 +108,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T29c Mail · Writing
 - [x] T29d Mail · Sorting
 - [x] T30a Calendar · Months
-- [ ] T30b Calendar · Time grid
+- [x] T30b Calendar · Time grid
 - [ ] T30c Calendar · Agenda and people
 - [ ] T30d Calendar · Editing
 - [ ] T31 Project — `tasks/ch31-43.md`
@@ -356,3 +356,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T29d | 3 | PASS | |
 | T30a | 1 | PASS | |
 | T30b | 1 | FAIL | the week and day views froze the line at now and today: the moment read once went down as given and turned the ticker off |
+| T30b | 2 | PASS | |

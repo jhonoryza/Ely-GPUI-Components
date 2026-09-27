@@ -7,13 +7,14 @@ use gpui::{
 };
 
 use crate::{
+    data_display::color_mark,
     forms::{
         Choice, Down, Enter, OnValue, OnValues, Pick, SearchInput, TextInput, Up, marked_row,
         reveal, revealer,
     },
     layout::on_axis,
     primitives::IconName,
-    theme::{ActiveTheme, IconSize, TextSize},
+    theme::{ActiveTheme, TextSize},
 };
 
 /// A label: its key, its name, and its hue among the theme's chart colors.
@@ -36,15 +37,7 @@ impl Label {
 
 /// Label `name`'s dot in the chart color at `hue`, centered in an icon's box.
 pub(super) fn hue_dot(name: &str, hue: usize, cx: &App) -> Div {
-    let theme = cx.theme();
-    let tint = theme.colors.hue(hue, format_args!("label {name}"));
-    div()
-        .flex_none()
-        .size(theme.icon_size(IconSize::Sm))
-        .flex()
-        .items_center()
-        .justify_center()
-        .child(div().size(theme.status_dot()).rounded_full().bg(tint))
+    color_mark(cx.theme().colors.hue(hue, format_args!("label {name}")), cx)
 }
 
 /// The search field, the row under the keyboard, the query it was set for, and the list's scroll.

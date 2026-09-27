@@ -8,6 +8,7 @@ use gpui::{
 use jiff::{Timestamp, ToSpan, civil::Date, tz::TimeZone};
 
 mod months;
+mod people;
 mod times;
 
 use super::Page;
@@ -45,6 +46,11 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("calendar-week", 560.0, 380.0),
     Step::Wait(200),
     Step::Shot("week-made"),
+    Step::DownAt("calendar-popover", 60.0, 10.0),
+    Step::UpAt("calendar-popover", 60.0, 10.0),
+    Step::Wait(300),
+    Step::Shot("popover-open"),
+    Step::Key("escape"),
 ];
 
 /// What a demo says it did, under it.
@@ -101,6 +107,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(months::mini(window, cx))
         .child(times::week(window, cx))
         .child(times::day(window, cx))
+        .child(people::agenda(window, cx))
+        .child(people::details(window, cx))
         .child(months::year(window, cx))
         .child(months::marks(cx))
         .into_any_element()

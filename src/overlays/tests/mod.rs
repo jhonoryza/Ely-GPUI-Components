@@ -13,7 +13,7 @@ use super::{AlertDialog, ConfirmDialog, Dialog, HoverCard, Popover, PromptDialog
 use crate::{
     buttons::Button,
     forms::TextInput,
-    primitives::{FocusNext, FocusScope, Severity},
+    primitives::{FocusNext, FocusScope, IconName, Severity},
     theme::{ActiveTheme, ControlSize, Theme},
 };
 
@@ -425,4 +425,10 @@ fn a_tall_dialog_body_keeps_its_height_and_scrolls(cx: &mut TestAppContext) {
         before.top() - px(300.0),
         "a scroll moves the body"
     );
+}
+
+#[test]
+#[should_panic(expected = "an icon is for its own button")]
+fn a_popover_opened_by_its_owner_takes_no_icon() {
+    let _ = Popover::with_opener("own", |_| div(), |_, _| div()).icon(IconName::Clock);
 }

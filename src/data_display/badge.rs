@@ -196,6 +196,18 @@ impl RenderOnce for CountBadge {
     }
 }
 
+/// A dot in `color` centered in an icon's box, as a label or an event wears its hue in a row.
+pub(crate) fn color_mark(color: Hsla, cx: &App) -> gpui::Div {
+    let theme = cx.theme();
+    div()
+        .flex_none()
+        .size(theme.icon_size(IconSize::Sm))
+        .flex()
+        .items_center()
+        .justify_center()
+        .child(div().size(theme.status_dot()).rounded_full().bg(color))
+}
+
 /// A small dot that says something is new or live. Set `over` an icon, it sits on the top-right corner.
 #[derive(IntoElement)]
 pub struct DotBadge {

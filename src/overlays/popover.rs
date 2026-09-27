@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use gpui::{
     AnyElement, App, Bounds, ElementId, Entity, InteractiveElement, IntoElement, ParentElement,
     Pixels, RenderOnce, SharedString, Styled, Window, canvas, div, prelude::*,
@@ -5,12 +7,27 @@ use gpui::{
 
 use crate::{
     buttons::{Button, ButtonVariant},
-    forms::{float_height, surface},
+    forms::{Run, float_height, surface},
     primitives::{FocusScope, IconName, Takeover, give_back, take_focus},
     theme::ControlSize,
 };
 
 type Content = Box<dyn FnOnce(&mut Window, &mut App) -> AnyElement>;
+type Own = Box<dyn FnOnce(Run) -> AnyElement>;
+
+/// A popover's own button: its label and look.
+struct Face {
+    label: SharedString,
+    icon: Option<IconName>,
+    variant: ButtonVariant,
+    size: ControlSize,
+}
+
+/// What opens the panel: its own button, or an element of the owner's, built with the run that opens and closes it.
+enum Opener {
+    Button(Face),
+    Own(Own),
+}
 
 /// Whether the panel is open, where the trigger sits, and the focus to hand back.
 #[derive(Default)]
@@ -37,10 +54,7 @@ fn close(state: &Entity<Pop>, window: &mut Window, cx: &mut App) {
 #[derive(IntoElement)]
 pub struct Popover {
     id: ElementId,
-    label: SharedString,
-    icon: Option<IconName>,
-    variant: ButtonVariant,
-    size: ControlSize,
+    opener: Opener,
     content: Content,
 }
 
@@ -53,27 +67,50 @@ impl Popover {
     ) -> Self {
         Self {
             id: id.into(),
-            label: label.into(),
-            icon: None,
-            variant: ButtonVariant::Secondary,
-            size: ControlSize::default(),
+            opener: Opener::Button(Face {
+                label: label.into(),
+                icon: None,
+                variant: ButtonVariant::Secondary,
+                size: ControlSize::default(),
+            }),
             content: Box::new(move |window, cx| content(window, cx).into_any_element()),
         }
     }
 
+    /// A panel that opens from an element of the owner's: `opener` builds it with the run that opens and closes the panel.
+    pub fn with_opener<T: IntoElement, E: IntoElement>(
+        id: impl Into<ElementId>,
+        opener: impl FnOnce(Run) -> T + 'static,
+        content: impl FnOnce(&mut Window, &mut App) -> E + 'static,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            opener: Opener::Own(Box::new(move |toggle| opener(toggle).into_any_element())),
+            content: Box::new(move |window, cx| content(window, cx).into_any_element()),
+        }
+    }
+
+    /// The popover's own button, which a popover with an opener of the owner's does not have.
+    fn face(&mut self, what: &str) -> &mut Face {
+        match &mut self.opener {
+            Opener::Button(face) => face,
+            Opener::Own(_) => panic!("popover {:?}: {what} is for its own button", self.id),
+        }
+    }
+
     pub fn icon(mut self, icon: IconName) -> Self {
-        self.icon = Some(icon);
+        self.face("an icon").icon = Some(icon);
         self
     }
 
     /// `Link` sets the trigger inline in running text.
     pub fn variant(mut self, variant: ButtonVariant) -> Self {
-        self.variant = variant;
+        self.face("a variant").variant = variant;
         self
     }
 
     pub fn size(mut self, size: ControlSize) -> Self {
-        self.size = size;
+        self.face("a size").size = size;
         self
     }
 }
@@ -82,22 +119,29 @@ impl RenderOnce for Popover {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let state = window.use_keyed_state((self.id.clone(), "popover"), cx, |_, _| Pop::default());
         let open = state.read(cx).open;
-        let toggle = state.clone();
-        let trigger = Button::new((self.id.clone(), "trigger"), self.label)
-            .variant(self.variant)
-            .size(self.size)
-            .when_some(self.icon, |button, icon| button.icon(icon))
-            .on_click(move |_, window, cx| {
+        let toggle: Run = {
+            let state = state.clone();
+            Rc::new(move |window, cx| {
                 if open {
-                    close(&toggle, window, cx);
+                    close(&state, window, cx);
                 } else {
                     log::info!("popover: open");
-                    toggle.update(cx, |pop, cx| {
+                    state.update(cx, |pop, cx| {
                         pop.open = true;
                         cx.notify();
                     });
                 }
-            });
+            })
+        };
+        let trigger = match self.opener {
+            Opener::Button(face) => Button::new((self.id.clone(), "trigger"), face.label)
+                .variant(face.variant)
+                .size(face.size)
+                .when_some(face.icon, |button, icon| button.icon(icon))
+                .on_click(move |_, window, cx| toggle(window, cx))
+                .into_any_element(),
+            Opener::Own(build) => build(toggle),
+        };
         let measure = state.clone();
         let host = div()
             .id(self.id.clone())
