@@ -1,6 +1,6 @@
 use gpui::{TestAppContext, hsla};
 
-use super::{ActiveTheme, Mode, Palette, Theme};
+use super::{ActiveTheme, Mode, Palette, Syntax, Theme};
 
 /// An owner's palette serves its own mode; the other keeps Ely's, and none brings Ely's back.
 #[gpui::test]
@@ -19,12 +19,29 @@ fn an_owners_palette_serves_its_mode_alone(cx: &mut TestAppContext) {
     assert_eq!(cx.read(|cx| cx.theme().palette()), Palette::light(false));
 }
 
+/// Every color of the palette and of code answers to its field's name, the quiet fills too.
 #[test]
-fn every_named_color_answers() {
+fn every_color_answers_to_its_name() {
     let mut palette = Palette::light(false);
-    *palette.token_mut("accent") = hsla(0.1, 0.2, 0.3, 1.0);
-    assert_eq!(palette.accent, hsla(0.1, 0.2, 0.3, 1.0));
-    *palette.syntax.token_mut("comment") = hsla(0.4, 0.2, 0.3, 1.0);
+    for (ix, name) in Palette::NAMES.iter().enumerate() {
+        *palette.token_mut(name) = hsla(ix as f32 / 64.0, 0.5, 0.5, 1.0);
+    }
+    assert_eq!(Palette::NAMES.len(), 35, "every color of the palette");
+    let at = |name: &str| {
+        Palette::NAMES
+            .iter()
+            .position(|each| *each == name)
+            .expect("a name")
+    };
+    assert_eq!(
+        palette.success_subtle,
+        hsla(at("success_subtle") as f32 / 64.0, 0.5, 0.5, 1.0)
+    );
+    assert_eq!(palette.ink, hsla(at("ink") as f32 / 64.0, 0.5, 0.5, 1.0));
+    for name in Syntax::NAMES {
+        *palette.syntax.token_mut(name) = hsla(0.4, 0.2, 0.3, 1.0);
+    }
+    assert_eq!(Syntax::NAMES.len(), 13, "every color of code");
     assert_eq!(palette.syntax.comment, hsla(0.4, 0.2, 0.3, 1.0));
 }
 

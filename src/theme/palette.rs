@@ -31,16 +31,33 @@ impl<const N: usize> Mix for [Hsla; N] {
 }
 
 macro_rules! mixable {
-    ($(#[$meta:meta])* $name:ident { $($field:ident: $ty:ty),* $(,)? }) => {
+    ($(#[$meta:meta])* $name:ident { $($color:ident),* $(,)? ; $($field:ident: $ty:ty),* $(,)? }) => {
         $(#[$meta])*
         #[derive(Clone, Debug, PartialEq)]
         pub struct $name {
+            $(pub $color: Hsla,)*
             $(pub $field: $ty,)*
         }
 
         impl Mix for $name {
             fn mix(&self, to: &Self, t: f32) -> Self {
-                Self { $($field: self.$field.mix(&to.$field, t),)* }
+                Self {
+                    $($color: self.$color.mix(&to.$color, t),)*
+                    $($field: self.$field.mix(&to.$field, t),)*
+                }
+            }
+        }
+
+        impl $name {
+            /// The names of its colors, each a field's.
+            pub const NAMES: &'static [&'static str] = &[$(stringify!($color)),*];
+
+            /// The color named `token`, a field's name; any other name fails.
+            pub fn token_mut(&mut self, token: &str) -> &mut Hsla {
+                match token {
+                    $(stringify!($color) => &mut self.$color,)*
+                    other => panic!("no {} color {other}", stringify!($name).to_lowercase()),
+                }
             }
         }
     };
@@ -49,60 +66,62 @@ macro_rules! mixable {
 mixable!(
     /// Code token colors.
     Syntax {
-        keyword: Hsla,
-        string: Hsla,
-        number: Hsla,
-        comment: Hsla,
-        function: Hsla,
-        type_name: Hsla,
-        constant: Hsla,
-        property: Hsla,
-        tag: Hsla,
-        attribute: Hsla,
-        operator: Hsla,
-        punctuation: Hsla,
-        variable: Hsla,
+        keyword,
+        string,
+        number,
+        comment,
+        function,
+        type_name,
+        constant,
+        property,
+        tag,
+        attribute,
+        operator,
+        punctuation,
+        variable,
+        ;
     }
 );
 
 mixable!(
     /// Semantic colors. Components read these, never literals.
     Palette {
-        bg: Hsla,
-        surface: Hsla,
-        sunken: Hsla,
-        overlay: Hsla,
-        hover: Hsla,
-        active: Hsla,
-        border: Hsla,
-        border_strong: Hsla,
-        fg: Hsla,
-        fg_muted: Hsla,
-        fg_subtle: Hsla,
-        fg_disabled: Hsla,
-        accent: Hsla,
-        accent_hover: Hsla,
-        on_accent: Hsla,
-        on_media: Hsla,
-        focus: Hsla,
-        link: Hsla,
-        selection: Hsla,
-        success: Hsla,
-        warning: Hsla,
-        danger: Hsla,
-        info: Hsla,
-        success_subtle: Hsla,
-        warning_subtle: Hsla,
-        danger_subtle: Hsla,
-        info_subtle: Hsla,
-        backdrop: Hsla,
-        media_backdrop: Hsla,
-        shimmer: Hsla,
-        shadow: Hsla,
-        tooltip_bg: Hsla,
-        tooltip_fg: Hsla,
-        paper: Hsla,
-        ink: Hsla,
+        bg,
+        surface,
+        sunken,
+        overlay,
+        hover,
+        active,
+        border,
+        border_strong,
+        fg,
+        fg_muted,
+        fg_subtle,
+        fg_disabled,
+        accent,
+        accent_hover,
+        on_accent,
+        on_media,
+        focus,
+        link,
+        selection,
+        success,
+        warning,
+        danger,
+        info,
+        success_subtle,
+        warning_subtle,
+        danger_subtle,
+        info_subtle,
+        backdrop,
+        media_backdrop,
+        shimmer,
+        shadow,
+        tooltip_bg,
+        tooltip_fg,
+        paper,
+        ink,
+        ;
         chart: [Hsla; 8],
         ansi: [Hsla; 16],
         syntax: Syntax,
@@ -122,61 +141,7 @@ pub const HUE_NAMES: [&str; 8] = [
     "Blue", "Teal", "Ochre", "Rose", "Violet", "Green", "Rust", "Cyan",
 ];
 
-impl Syntax {
-    /// The color of the token kind named `token`, a field's name; any other name fails.
-    pub fn token_mut(&mut self, token: &str) -> &mut Hsla {
-        match token {
-            "keyword" => &mut self.keyword,
-            "string" => &mut self.string,
-            "number" => &mut self.number,
-            "comment" => &mut self.comment,
-            "function" => &mut self.function,
-            "type_name" => &mut self.type_name,
-            "constant" => &mut self.constant,
-            "property" => &mut self.property,
-            "tag" => &mut self.tag,
-            "attribute" => &mut self.attribute,
-            "operator" => &mut self.operator,
-            "punctuation" => &mut self.punctuation,
-            "variable" => &mut self.variable,
-            other => panic!("no syntax color {other}"),
-        }
-    }
-}
-
 impl Palette {
-    /// The color named `token`, a field's name; any other name fails.
-    pub fn token_mut(&mut self, token: &str) -> &mut Hsla {
-        match token {
-            "bg" => &mut self.bg,
-            "surface" => &mut self.surface,
-            "sunken" => &mut self.sunken,
-            "overlay" => &mut self.overlay,
-            "hover" => &mut self.hover,
-            "active" => &mut self.active,
-            "border" => &mut self.border,
-            "border_strong" => &mut self.border_strong,
-            "fg" => &mut self.fg,
-            "fg_muted" => &mut self.fg_muted,
-            "fg_subtle" => &mut self.fg_subtle,
-            "fg_disabled" => &mut self.fg_disabled,
-            "accent" => &mut self.accent,
-            "accent_hover" => &mut self.accent_hover,
-            "on_accent" => &mut self.on_accent,
-            "focus" => &mut self.focus,
-            "link" => &mut self.link,
-            "selection" => &mut self.selection,
-            "success" => &mut self.success,
-            "warning" => &mut self.warning,
-            "danger" => &mut self.danger,
-            "info" => &mut self.info,
-            "tooltip_bg" => &mut self.tooltip_bg,
-            "tooltip_fg" => &mut self.tooltip_fg,
-            "shadow" => &mut self.shadow,
-            other => panic!("no palette color {other}"),
-        }
-    }
-
     /// The chart color at `hue`; a hue past the chart fails, naming `owner`.
     pub fn hue(&self, hue: usize, owner: impl std::fmt::Display) -> Hsla {
         *self

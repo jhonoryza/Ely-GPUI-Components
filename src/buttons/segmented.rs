@@ -12,11 +12,12 @@ use crate::{
     motion::{self, Axis, Marker, glide, measure_item, measure_origin, slide},
     primitives::{FocusRing, Icon, IconName, tab_stop},
     theme::{ActiveTheme, ControlSize, Elevation, Radius},
+    typography::Ellipsis,
 };
 
 type OnChange = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
-/// Mutually exclusive segments. A thumb slides to the chosen one; too narrow for them, the strip scrolls sideways and a focused segment comes into view.
+/// Mutually exclusive segments. A thumb slides to the chosen one. Narrow, the segments give way and their labels end in an ellipsis, down to twice a control's height each; narrower still, the strip scrolls sideways and a focused segment comes into view.
 #[derive(IntoElement)]
 pub struct SegmentedControl {
     id: ElementId,
@@ -99,6 +100,7 @@ impl RenderOnce for SegmentedControl {
         let theme = cx.theme();
         let colors = &theme.colors;
         let (text, icon_size) = label_size(self.size);
+        let (least, count) = (theme.control_height(self.size) * 2.0, values.len());
         let duration = motion::duration(motion::SLOW, cx);
         let thumb = marker.map(
             |Marker {
@@ -140,6 +142,7 @@ impl RenderOnce for SegmentedControl {
                     .relative()
                     .flex()
                     .flex_1()
+                    .min_w_0()
                     .items_center()
                     .justify_center()
                     .gap_1p5()
@@ -172,12 +175,15 @@ impl RenderOnce for SegmentedControl {
                     .when_some(icon, |segment, icon| {
                         segment.child(Icon::new(icon).size(icon_size).color(fg))
                     })
-                    .when(!label.is_empty(), |segment| segment.child(label))
+                    .when(!label.is_empty(), |segment| {
+                        segment.child(div().min_w_0().child(Ellipsis::new(label)))
+                    })
                     .child(measure_item(measure, ix, Axis::Horizontal));
                 div()
                     .relative()
                     .flex()
                     .flex_1()
+                    .min_w_0()
                     .child(segment)
                     .child(reveal)
             });
@@ -186,13 +192,9 @@ impl RenderOnce for SegmentedControl {
             .relative()
             .flex()
             .flex_grow()
-            .flex_shrink_0()
+            .flex_shrink()
+            .min_w(least * count as f32)
             .items_center()
-            .p_0p5()
-            .rounded(theme.radius(Radius::Lg))
-            .bg(colors.sunken)
-            .border_1()
-            .border_color(colors.border)
             .child(measure_origin(state.clone(), Axis::Horizontal))
             .children(thumb)
             .children(segments);
@@ -201,7 +203,12 @@ impl RenderOnce for SegmentedControl {
                 .id((self.id, "strip"))
                 .flex()
                 .overflow_x_scroll()
-                .track_scroll(&scroll),
+                .track_scroll(&scroll)
+                .p_0p5()
+                .rounded(theme.radius(Radius::Lg))
+                .bg(colors.sunken)
+                .border_1()
+                .border_color(colors.border),
         )
         .child(control)
     }

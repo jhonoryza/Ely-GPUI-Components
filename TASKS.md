@@ -419,3 +419,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T38a | 1 | FAIL | the resize grip and edge handles hung half outside the box; the edges' sides, a free turn and a band with Shift untested |
 | T38a | 2 | PASS | |
 | T38b | 1 | PASS | |
+| T39a | 1 | FAIL | a larger text size cut the density strip at 280px; ten palette colors had no name; the density and sliders untested |

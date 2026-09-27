@@ -1,9 +1,12 @@
-use gpui::{AnyElement, App, Entity, IntoElement, TestAppContext, Window};
+use gpui::{
+    AnyElement, App, Entity, InteractiveElement, IntoElement, ParentElement, Styled,
+    TestAppContext, Window,
+};
 
-use super::{Desk, desk, said, say, tab, tap};
+use super::{Desk, desk, said, say, settle, tab, tap};
 use crate::{
     settings::{ThemeDraft, ThemeEditor},
-    theme::ActiveTheme,
+    theme::{ActiveTheme, Theme},
 };
 
 fn editor(_: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
@@ -61,4 +64,57 @@ fn a_color_well_sets_its_own_color(cx: &mut TestAppContext) {
     cx.simulate_input("#224466");
     tap("enter", cx);
     assert_eq!(said(&host, cx), ["#224466"]);
+}
+
+fn look(_: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
+    ThemeEditor::new("editor", ThemeDraft::of(cx.theme()))
+        .on_change(move |draft, _, cx| {
+            let words = format!(
+                "{:?} corners {} text {}",
+                draft.density, draft.radius_scale, draft.font_scale
+            );
+            say(&owner, words, cx)
+        })
+        .into_any_element()
+}
+
+/// Stops: Compact, Standard, Comfortable, corners, text size. Compact picks the density alone, and Right on each slider moves its own measure a step.
+#[gpui::test]
+fn the_density_and_the_sliders_move_their_own_field(cx: &mut TestAppContext) {
+    let (host, cx) = desk(look, cx);
+    tab(1, cx);
+    tap("space", cx);
+    tab(4, cx);
+    tap("right", cx);
+    tab(5, cx);
+    tap("right", cx);
+    assert_eq!(
+        said(&host, cx),
+        [
+            "Compact corners 1 text 1",
+            "Standard corners 1.25 text 1",
+            "Standard corners 1 text 1.05"
+        ]
+    );
+}
+
+fn narrow(window: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
+    gpui::div()
+        .debug_selector(|| "narrow".into())
+        .w(gpui::px(280.0))
+        .child(editor(window, cx, owner))
+        .into_any_element()
+}
+
+/// At 280px with the text a step and a half larger, the density strip keeps every segment inside the box, its labels giving way.
+#[gpui::test]
+fn the_density_strip_fits_a_narrow_box_with_larger_text(cx: &mut TestAppContext) {
+    let (_, cx) = desk(narrow, cx);
+    cx.update(|_, cx| Theme::update(cx, |theme| theme.font_scale = 1.15));
+    settle(cx);
+    let frame = cx.debug_bounds("narrow").expect("the box");
+    let last = cx
+        .debug_bounds("segment Comfortable")
+        .expect("the last segment");
+    assert!(last.right() <= frame.right(), "{last:?} inside {frame:?}");
 }
