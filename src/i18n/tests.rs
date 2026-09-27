@@ -25,6 +25,26 @@ fn a_message_fills_its_arguments() {
     assert_eq!(fill("{b}", &[("a", "x")]), Err("no argument \"b\"".into()));
 }
 
+/// A right-to-left message leads with its mark, so one that starts with Latin letters or a signed number still reads right to left.
+#[test]
+fn a_right_to_left_message_leads_with_its_mark() {
+    let he = I18n::new("he-IL").catalog(
+        "he-IL",
+        &[("change", "{change}% מאז אתמול"), ("sent", "{name} שלח")],
+    );
+    let change = Locale::of("he-IL").number(-3.5, 1);
+    assert_eq!(
+        he.text("change", &[("change", &change)]),
+        "\u{200f}\u{200e}−3.5% מאז אתמול"
+    );
+    assert_eq!(he.text("sent", &[("name", "Ada")]), "\u{200f}Ada שלח");
+    assert_eq!(
+        i18n().text("hi", &[]),
+        "Hello",
+        "a left-to-right message takes no mark"
+    );
+}
+
 #[test]
 #[should_panic(expected = "\"files\" in en-US: no argument \"folder\"")]
 fn a_missing_argument_fails() {
@@ -160,7 +180,10 @@ mod shown {
         assert!(first.left() < second.left(), "left to right in en-US");
         cx.update(|_, cx| I18n::set_locale("he-IL", cx));
         cx.run_until_parked();
-        assert_eq!(cx.read(|cx| cx.global::<I18n>().text("hi", &[])), "שלום");
+        assert_eq!(
+            cx.read(|cx| cx.global::<I18n>().text("hi", &[])),
+            "\u{200f}שלום"
+        );
         let first = cx.debug_bounds("first").expect("the first mark");
         let second = cx.debug_bounds("second").expect("the second mark");
         assert!(

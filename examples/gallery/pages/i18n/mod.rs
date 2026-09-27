@@ -45,6 +45,7 @@ pub fn install(cx: &mut App) {
                     ("welcome", "Welcome back, {name}"),
                     ("files", "{count} files in {folder}"),
                     ("saved", "Last saved {date}"),
+                    ("change", "{change}% since yesterday"),
                 ],
             )
             .catalog(
@@ -53,6 +54,7 @@ pub fn install(cx: &mut App) {
                     ("welcome", "Welcome back, {name}"),
                     ("files", "{count} files in {folder}"),
                     ("saved", "Last saved {date}"),
+                    ("change", "{change}% since yesterday"),
                 ],
             )
             .catalog(
@@ -61,6 +63,7 @@ pub fn install(cx: &mut App) {
                     ("welcome", "Willkommen zurück, {name}"),
                     ("files", "{count} Dateien in {folder}"),
                     ("saved", "Zuletzt gespeichert am {date}"),
+                    ("change", "{change} % seit gestern"),
                 ],
             )
             .catalog(
@@ -69,6 +72,7 @@ pub fn install(cx: &mut App) {
                     ("welcome", "Bon retour, {name}"),
                     ("files", "{count} fichiers dans {folder}"),
                     ("saved", "Enregistré le {date}"),
+                    ("change", "{change}\u{202f}% depuis hier"),
                 ],
             )
             .catalog(
@@ -77,6 +81,7 @@ pub fn install(cx: &mut App) {
                     ("welcome", "おかえりなさい、{name}さん"),
                     ("files", "{folder}に{count}個のファイル"),
                     ("saved", "最終保存：{date}"),
+                    ("change", "昨日から{change}%"),
                 ],
             )
             .catalog(
@@ -85,6 +90,7 @@ pub fn install(cx: &mut App) {
                     ("welcome", "欢迎回来，{name}"),
                     ("files", "{folder}中有{count}个文件"),
                     ("saved", "上次保存于{date}"),
+                    ("change", "较昨日{change}%"),
                 ],
             )
             .catalog(
@@ -93,6 +99,7 @@ pub fn install(cx: &mut App) {
                     ("welcome", "ברוך שובך, {name}"),
                     ("files", "{count} קבצים ב־{folder}"),
                     ("saved", "נשמר לאחרונה ב־{date}"),
+                    ("change", "{change}% מאז אתמול"),
                 ],
             ),
     );
@@ -117,6 +124,7 @@ fn messages(cx: &App) -> impl IntoElement + use<> {
             &[("count", &locale.number(1204.0, 0)), ("folder", "Docs")],
         ),
         i18n.text("saved", &[("date", &locale.date(saved, &TimeZone::UTC))]),
+        i18n.text("change", &[("change", &locale.number(-3.5, 1))]),
     ];
     section(
         "I18nProvider · Trans / LocalizedText",

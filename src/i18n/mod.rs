@@ -71,7 +71,7 @@ impl I18n {
         cx.refresh_windows();
     }
 
-    /// The shown locale's message for `key`, each `{name}` filled from `args`; fails on a missing key or argument.
+    /// The shown locale's message for `key`, each `{name}` filled from `args`; fails on a missing key or argument. gpui sets no paragraph direction, so a right-to-left message leads with a right-to-left mark: CoreText would lay out one that starts with Latin letters or a signed number left to right.
     pub fn text(&self, key: &str, args: &[(&str, &str)]) -> SharedString {
         let (_, catalog) = self
             .catalogs
@@ -81,9 +81,12 @@ impl I18n {
         let message = catalog
             .get(key)
             .unwrap_or_else(|| panic!("no message {key:?} in {}", self.locale.tag));
-        fill(message, args)
-            .unwrap_or_else(|error| panic!("{key:?} in {}: {error}", self.locale.tag))
-            .into()
+        let text = fill(message, args)
+            .unwrap_or_else(|error| panic!("{key:?} in {}: {error}", self.locale.tag));
+        match self.locale.direction {
+            Direction::Ltr => text.into(),
+            Direction::Rtl => format!("\u{200f}{text}").into(),
+        }
     }
 }
 
