@@ -129,7 +129,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T36b Account · Profile and access — `tasks/ch31-43.md`
 - [x] T36c Account · Billing and team — `tasks/ch31-43.md`
 - [x] T37a Onboarding · Flows and highlights — `tasks/ch31-43.md`
-- [ ] T37b Onboarding · Help
+- [x] T37b Onboarding · Help — `tasks/ch31-43.md`
 - [ ] T38 Interaction
 - [ ] T39 Theme
 - [ ] T40 i18n & a11y
@@ -412,3 +412,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T37a | 1 | FAIL | the wizard's Next and Back dropped focus as the flow turned; Got it stranded focus on a closed tip; the words read and the bar's share untested apart from their selectors |
 | T37a | 2 | PASS | |
 | T37b | 1 | FAIL | the help panel's rows were bare Tab stops, not a list the keyboard walks; a long support address drew past 280px |
+| T37b | 2 | PASS | |
