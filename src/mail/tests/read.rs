@@ -1,8 +1,11 @@
-use gpui::{Entity, IntoElement, ParentElement, TestAppContext, div};
-use jiff::{Timestamp, tz::TimeZone};
+use gpui::{Entity, IntoElement, Modifiers, ParentElement, Styled, TestAppContext, div, px};
+use jiff::{SignedDuration, Timestamp, tz::TimeZone};
 
-use super::{Mailing, heard, mailing, note, press, tab_to};
-use crate::mail::{Contact, MailReader, MailThreadView, Message, QuotedText};
+use super::{Mailing, heard, mailing, note, press, settle, tab_to};
+use crate::{
+    buttons::Button,
+    mail::{Contact, MailReader, MailThreadView, Message, QuotedText},
+};
 
 fn ana() -> Contact {
     Contact::new("Ana Lima", "ana@atrium.studio")
@@ -115,4 +118,84 @@ fn quoted_words_stay_folded_until_asked(cx: &mut TestAppContext) {
     tab_to(1, cx);
     press("space", cx);
     assert!(cx.debug_bounds("quoted quote").is_some());
+}
+
+/// A button, then a thread of three whose Reply the host hears.
+fn answered(owner: Entity<Mailing>) -> gpui::AnyElement {
+    let (before, reply) = (owner.clone(), owner);
+    let message = |key: &'static str| {
+        Message::new(key, ana(), Timestamp::UNIX_EPOCH)
+            .to([ben()])
+            .snippet("Earlier words")
+    };
+    div()
+        .child(
+            Button::new("before", "Before")
+                .on_click(move |_, _, cx| note(&before, "before".into(), cx)),
+        )
+        .child(
+            MailThreadView::new("thread", "Friday's review")
+                .zone(TimeZone::UTC)
+                .on_reply(move |key, _, cx| note(&reply, format!("reply {key}"), cx))
+                .message(message("m1"), div().child("First"))
+                .message(message("m2"), div().child("Second"))
+                .message(message("m3"), div().child("Newest")),
+        )
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_press_on_a_fold_leaves_focus_alone(cx: &mut TestAppContext) {
+    let (host, cx) = mailing(answered, cx);
+    tab_to(1, cx);
+    let fold = cx.debug_bounds("fold m1").expect("the first fold draws");
+    cx.simulate_click(fold.center(), Modifiers::none());
+    settle(cx);
+    press("space", cx);
+    assert_eq!(heard(&host, cx), ["before"], "the button kept focus");
+}
+
+#[gpui::test]
+fn space_on_a_fold_keeps_focus_on_the_message(cx: &mut TestAppContext) {
+    let (host, cx) = mailing(answered, cx);
+    tab_to(2, cx);
+    press("space", cx);
+    cx.update(|window, _| window.focus_next());
+    settle(cx);
+    press("space", cx);
+    assert_eq!(
+        heard(&host, cx),
+        ["reply m1"],
+        "Tab went on to the opened message's Reply"
+    );
+}
+
+#[gpui::test]
+fn a_fold_keeps_its_parts_inside_at_280(cx: &mut TestAppContext) {
+    let (_, cx) = mailing(
+        |_| {
+            let long = Contact::new(
+                "Anastasia Lima-Fernández de la Torre",
+                "anastasia@atrium.studio",
+            );
+            let old = Timestamp::now() - SignedDuration::from_hours(24 * 20);
+            div()
+                .w(px(280.0))
+                .child(
+                    MailThreadView::new("thread", "Samples")
+                        .zone(TimeZone::UTC)
+                        .message(
+                            Message::new("m1", long, old)
+                                .snippet("The lime reads warmest by the windows."),
+                            div().child("Earlier"),
+                        )
+                        .message(Message::new("m2", ana(), old), div().child("Newest")),
+                )
+                .into_any_element()
+        },
+        cx,
+    );
+    let fold = cx.debug_bounds("fold m1").expect("the fold draws");
+    let date = cx.debug_bounds("fold-date m1").expect("its date draws");
+    assert!(date.right() <= fold.right(), "{date:?} inside {fold:?}");
 }

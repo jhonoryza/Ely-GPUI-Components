@@ -1,8 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    AnyElement, App, ElementId, FocusHandle, FontWeight, InteractiveElement, IntoElement,
+    MouseButton, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
+    Window, div, prelude::*,
 };
 use jiff::{Timestamp, tz::TimeZone};
 use smallvec::SmallVec;
@@ -10,7 +11,7 @@ use smallvec::SmallVec;
 use super::reader::{Asks, Message, open_letter};
 use crate::{
     data_display::Avatar,
-    primitives::FocusRing,
+    primitives::{FocusRing, tab_stop},
     theme::{ActiveTheme, AvatarSize, Radius, TextSize},
     typography::{Ellipsis, format},
 };
@@ -103,21 +104,34 @@ impl RenderOnce for MailThreadView {
         let now = Timestamp::now();
         let newest = self.messages.len() - 1;
         let open_now = opened.read(cx).clone();
+        let focuses: Vec<FocusHandle> = self
+            .messages
+            .iter()
+            .enumerate()
+            .map(|(ix, (message, _))| {
+                let folded = ix != newest && !open_now.contains(&message.key);
+                let id = (self.id.clone(), format!("message-{}", message.key)).into();
+                tab_stop(id, folded, window, cx)
+            })
+            .collect();
         let theme = cx.theme();
         let colors = &theme.colors;
-        let messages = self
-            .messages
-            .into_iter()
-            .enumerate()
-            .map(|(ix, (message, body))| {
+        let messages = self.messages.into_iter().zip(focuses).enumerate().map(
+            |(ix, ((message, body), focus))| {
                 let open = ix == newest || open_now.contains(&message.key);
                 let part = if open {
-                    open_letter(&self.id, &message, body, &zone, &self.asks, cx).into_any_element()
+                    open_letter(&self.id, &message, body, &zone, &self.asks, cx)
+                        .track_focus(&focus)
+                        .into_any_element()
                 } else {
                     let (key, opening, id) = (message.key.clone(), opened.clone(), self.id.clone());
                     let date = format::relative(message.at, now);
                     div()
                         .id((self.id.clone(), format!("fold-{}", message.key)))
+                        .debug_selector({
+                            let key = message.key.clone();
+                            move || format!("fold {key}")
+                        })
                         .flex()
                         .items_center()
                         .gap_3()
@@ -126,11 +140,12 @@ impl RenderOnce for MailThreadView {
                         .rounded(theme.radius(Radius::Md))
                         .border_1()
                         .border_color(gpui::transparent_black())
-                        .tab_index(0)
+                        .track_focus(&focus)
                         .focus_ring(cx)
                         .cursor_pointer()
                         .hover(|style| style.bg(colors.hover))
                         .text_size(theme.text_size(TextSize::Sm))
+                        .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
                         .on_click(move |_, _, cx| {
                             log::info!("mail thread {id}: open {key}");
                             opening.update(cx, |opened, cx| {
@@ -149,7 +164,7 @@ impl RenderOnce for MailThreadView {
                         )
                         .child(
                             div()
-                                .flex_none()
+                                .min_w_0()
                                 .max_w(theme.label_width())
                                 .font_weight(FontWeight::SEMIBOLD)
                                 .text_color(colors.fg)
@@ -164,6 +179,10 @@ impl RenderOnce for MailThreadView {
                         )
                         .child(
                             div()
+                                .debug_selector({
+                                    let key = message.key.clone();
+                                    move || format!("fold-date {key}")
+                                })
                                 .flex_none()
                                 .text_size(theme.text_size(TextSize::Xs))
                                 .text_color(colors.fg_subtle)
@@ -176,7 +195,8 @@ impl RenderOnce for MailThreadView {
                         row.pt_3().border_t_1().border_color(colors.border)
                     })
                     .child(part)
-            });
+            },
+        );
         div()
             .debug_selector(|| "mail-thread".into())
             .w_full()
