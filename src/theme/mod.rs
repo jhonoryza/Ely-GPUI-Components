@@ -1,6 +1,7 @@
 mod calendar;
 mod canvas;
 mod chart;
+mod dashboard;
 mod files;
 mod generative;
 mod media;
@@ -17,6 +18,7 @@ use crate::motion;
 pub use calendar::CalendarSizes;
 pub use canvas::CanvasSizes;
 pub use chart::ChartSizes;
+pub use dashboard::DashboardSizes;
 pub use files::FileSizes;
 pub use generative::GenerativeSizes;
 pub use media::MediaSizes;

@@ -7,6 +7,7 @@ pub mod canvas;
 pub mod charts;
 pub mod chat;
 pub mod collab;
+pub mod dashboard;
 pub mod data_display;
 pub mod debug;
 pub mod devtools;

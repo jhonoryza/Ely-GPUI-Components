@@ -5,6 +5,7 @@ mod canvas;
 mod charts;
 mod chat;
 mod collab;
+mod dashboard;
 mod data;
 mod debug;
 mod devtools;
@@ -81,6 +82,7 @@ pub const ALL: &[Page] = &[
     project::PAGE,
     canvas::PAGE,
     devtools::PAGE,
+    dashboard::PAGE,
     theme::PAGE,
 ];
 
