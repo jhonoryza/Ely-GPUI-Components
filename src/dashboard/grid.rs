@@ -137,6 +137,11 @@ fn stacked(
                 .child(card)
         })
         .collect();
+    assert!(
+        cards.is_empty(),
+        "dashboard grid: cards with no tile: {:?}",
+        cards.iter().map(|(key, _)| key).collect::<Vec<_>>()
+    );
     div()
         .id(id)
         .relative()
@@ -293,6 +298,11 @@ impl RenderOnce for DashboardGrid {
                     .into_any_element()
             })
             .collect();
+        assert!(
+            cards.is_empty(),
+            "dashboard grid: cards with no tile: {:?}",
+            cards.iter().map(|(key, _)| key).collect::<Vec<_>>()
+        );
         let ghost = landing.as_ref().map(|tile| {
             div()
                 .absolute()

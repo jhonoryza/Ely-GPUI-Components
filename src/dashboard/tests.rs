@@ -1,6 +1,6 @@
 use gpui::{
-    AnyElement, App, Context, Entity, IntoElement, KeyBinding, ParentElement, Render, Styled,
-    TestAppContext, VisualTestContext, Window, div, px,
+    AnyElement, App, Context, Entity, FocusHandle, IntoElement, KeyBinding, ParentElement, Render,
+    Styled, TestAppContext, VisualTestContext, Window, div, px,
 };
 
 use super::{
@@ -8,6 +8,7 @@ use super::{
     EventStream, MonitorAlert, StreamEvent, Tile, TimeWindow,
 };
 use crate::{
+    buttons::Button,
     data_display::Tone,
     forms::Choice,
     primitives::{FocusNext, Severity},
@@ -19,6 +20,7 @@ struct Wall {
     tiles: Vec<Tile>,
     heard: Vec<Vec<Tile>>,
     width: f32,
+    inside: FocusHandle,
 }
 
 impl Render for Wall {
@@ -32,7 +34,14 @@ impl Render for Wall {
                     cx.notify();
                 })
             }),
-            |grid, tile| grid.card(tile.key.clone(), DashboardCard::new(tile.key.clone())),
+            |grid, tile| {
+                let card = DashboardCard::new(tile.key.clone());
+                let card = match tile.key.as_ref() {
+                    "b" => card.body(Button::new("inside", "Inside").focus_handle(&self.inside)),
+                    _ => card,
+                };
+                grid.card(tile.key.clone(), card)
+            },
         );
         div().w(px(self.width)).child(grid)
     }
@@ -52,7 +61,7 @@ fn wall(cx: &mut TestAppContext) -> (Entity<Wall>, &mut VisualTestContext) {
         Theme::update(cx, |theme| theme.reduced_motion = true);
         cx.bind_keys([KeyBinding::new("tab", FocusNext, None)]);
     });
-    let (host, cx) = cx.add_window_view(|_, _| Wall {
+    let (host, cx) = cx.add_window_view(|_, cx| Wall {
         tiles: vec![
             Tile::new("a", (0, 0), (6, 2)),
             Tile::new("b", (6, 0), (6, 2)),
@@ -60,6 +69,7 @@ fn wall(cx: &mut TestAppContext) -> (Entity<Wall>, &mut VisualTestContext) {
         ],
         heard: Vec::new(),
         width: 1200.0,
+        inside: cx.focus_handle(),
     });
     settle(cx);
     (host, cx)
@@ -95,6 +105,24 @@ fn arrows_step_a_focused_tile_past_its_neighbours_and_shift_grows_it(cx: &mut Te
     assert_eq!(place(&host, "a", cx), (0, 0, 7, 2), "a grew a column");
     assert_eq!(place(&host, "b", cx), (6, 2, 6, 2), "pushing b below it");
     assert_eq!(place(&host, "c", cx), (0, 4, 12, 2), "and c below b");
+    press("right", cx);
+    assert_eq!(place(&host, "a", cx).0, 1, "Right moves a column over");
+    press("left", cx);
+    assert_eq!(place(&host, "a", cx).0, 0, "and Left back");
+}
+
+#[gpui::test]
+fn arrows_in_a_control_inside_a_card_leave_the_tiles_where_they_are(cx: &mut TestAppContext) {
+    let (host, cx) = wall(cx);
+    let inside = host.read_with(cx, |wall, _| wall.inside.clone());
+    cx.update(|window, _| window.focus(&inside));
+    settle(cx);
+    press("right", cx);
+    press("down", cx);
+    assert!(
+        host.read_with(cx, |wall, _| wall.heard.is_empty()),
+        "the button keeps its keys"
+    );
 }
 
 type Part = fn(&Board, Entity<Board>) -> AnyElement;
