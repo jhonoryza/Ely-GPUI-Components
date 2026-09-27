@@ -325,3 +325,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T27a | 2 | PASS | |
 | T27b | 1 | FAIL | the listing's fixed columns left no room for names at 280px; a column keyed by its depth handed its cursor to the next folder there |
 | T27b | 2 | PASS | |
+| T27c | 1 | FAIL | recent and found files were keyed by their place, so the cursor left a file an open moved |

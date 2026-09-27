@@ -30,7 +30,7 @@ pub(crate) fn kind(entry: &DirEntry) -> String {
         return "Folder".into();
     }
     match entry.name().rsplit_once('.') {
-        Some((stem, extension)) if !stem.is_empty() => extension.to_uppercase(),
+        Some((_, extension)) if !extension.is_empty() => extension.to_uppercase(),
         _ => "File".into(),
     }
 }

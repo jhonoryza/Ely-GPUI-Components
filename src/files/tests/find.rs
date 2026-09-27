@@ -30,7 +30,11 @@ fn tab_to(nth: usize, cx: &mut VisualTestContext) {
 fn a_kind_reads_from_the_extension() {
     assert_eq!(kind(&DirEntry::file("Brief.md", 1, then())), "MD");
     assert_eq!(kind(&DirEntry::file("Makefile", 1, then())), "File");
-    assert_eq!(kind(&DirEntry::file(".env", 1, then())), "File");
+    assert_eq!(
+        kind(&DirEntry::file(".env", 1, then())),
+        "ENV",
+        "as the icon map reads it"
+    );
     assert_eq!(kind(&DirEntry::folder("Design", then())), "Folder");
 }
 
@@ -308,4 +312,83 @@ fn an_archive_lists_a_path_once() {
         packed: 1,
     };
     let _ = ArchiveViewer::new("archive", "a.zip", [entry.clone(), entry]);
+}
+
+/// Three files opened today; an open moves a file to the top, as a host records it.
+struct Reopening {
+    files: Vec<RecentFile>,
+    opened: Vec<SharedString>,
+}
+
+impl Render for Reopening {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let owner = cx.entity();
+        div().w(px(320.0)).child(
+            RecentFiles::new("recent", self.files.clone())
+                .zone(TimeZone::UTC)
+                .on_open(move |file, _, cx| {
+                    owner.update(cx, |host, cx| {
+                        host.opened.push(file.name.clone());
+                        let now = Timestamp::now();
+                        for kept in &mut host.files {
+                            if kept.name == file.name {
+                                kept.opened = now;
+                            }
+                        }
+                        cx.notify();
+                    })
+                }),
+        )
+    }
+}
+
+#[gpui::test]
+fn the_cursor_stays_on_a_file_an_open_moves(cx: &mut TestAppContext) {
+    setup(cx);
+    let midnight = Timestamp::now()
+        .to_zoned(TimeZone::UTC)
+        .start_of_day()
+        .expect("a day starts")
+        .timestamp();
+    let file = |name: &str, minutes: i64| RecentFile {
+        name: SharedString::from(name.to_string()),
+        folder: "Home".into(),
+        opened: midnight + SignedDuration::from_mins(minutes),
+    };
+    let files = vec![file("a.md", 3), file("b.md", 2), file("c.md", 1)];
+    let (host, cx) = cx.add_window_view(move |_, _| Reopening {
+        files,
+        opened: Vec::new(),
+    });
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    tab_to(1, cx);
+    press("down", cx);
+    press("enter", cx);
+    press("enter", cx);
+    assert_eq!(
+        host.read_with(cx, |host, _| host.opened.clone()),
+        ["b.md", "b.md"]
+    );
+}
+
+#[test]
+#[should_panic(expected = "Home/a.md twice")]
+fn a_recent_file_is_listed_once() {
+    let file = RecentFile {
+        name: "a.md".into(),
+        folder: "Home".into(),
+        opened: then(),
+    };
+    let _ = RecentFiles::new("recent", [file.clone(), file]);
+}
+
+#[gpui::test]
+#[should_panic(expected = "Home/a.md twice")]
+fn a_found_file_is_listed_once(cx: &mut TestAppContext) {
+    let file = FoundFile {
+        name: "a.md".into(),
+        folder: "Home".into(),
+    };
+    let _ = seeking("a", vec![file.clone(), file], cx);
 }

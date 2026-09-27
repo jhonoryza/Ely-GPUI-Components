@@ -21,6 +21,13 @@ pub struct FoundFile {
     pub folder: SharedString,
 }
 
+impl FoundFile {
+    /// Where it lives: its folder and name.
+    fn place(&self) -> SharedString {
+        format!("{}/{}", self.folder, self.name).into()
+    }
+}
+
 /// A search over files: a field the host owns, and what it found, each file with its folder and a count above. The host searches as the text changes; Enter or a double press opens a file.
 #[derive(IntoElement)]
 pub struct FileSearch {
@@ -36,10 +43,18 @@ impl FileSearch {
         query: &Entity<TextInput>,
         found: impl IntoIterator<Item = FoundFile>,
     ) -> Self {
+        let found: Vec<FoundFile> = found.into_iter().collect();
+        for (ix, file) in found.iter().enumerate() {
+            let place = file.place();
+            assert!(
+                !found[..ix].iter().any(|other| other.place() == place),
+                "{place} twice"
+            );
+        }
         Self {
             id: id.into(),
             query: query.clone(),
-            found: found.into_iter().collect(),
+            found,
             on_open: None,
         }
     }
@@ -79,7 +94,7 @@ impl RenderOnce for FileSearch {
                         )
                         .leading(FileIcon::file(&file.name))
                         .description(file.folder.clone());
-                        list.row(SharedString::from(ix.to_string()), row)
+                        list.row(file.place(), row)
                     },
                 );
                 let (id, shown, on_open) = (self.id.clone(), found.clone(), self.on_open);
@@ -93,7 +108,10 @@ impl RenderOnce for FileSearch {
                     .gap_1()
                     .child(quiet(count))
                     .child(list.on_activate(move |key, window, cx| {
-                        let file = &shown[key.parse::<usize>().expect("a row's place")];
+                        let file = shown
+                            .iter()
+                            .find(|file| file.place() == *key)
+                            .expect("a listed file");
                         log::info!("file search {id:?}: open {}", file.name);
                         if let Some(on_open) = &on_open {
                             on_open(file, window, cx);

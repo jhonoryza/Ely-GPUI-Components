@@ -23,6 +23,13 @@ pub struct RecentFile {
     pub opened: Timestamp,
 }
 
+impl RecentFile {
+    /// Where it lives: its folder and name.
+    fn place(&self) -> SharedString {
+        format!("{}/{}", self.folder, self.name).into()
+    }
+}
+
 /// The header over a day's files: Today, Yesterday, or the weekday and date.
 pub(crate) fn day_label(day: Date, today: Date) -> String {
     if day == today {
@@ -45,9 +52,17 @@ pub struct RecentFiles {
 
 impl RecentFiles {
     pub fn new(id: impl Into<ElementId>, files: impl IntoIterator<Item = RecentFile>) -> Self {
+        let files: Vec<RecentFile> = files.into_iter().collect();
+        for (ix, file) in files.iter().enumerate() {
+            let place = file.place();
+            assert!(
+                !files[..ix].iter().any(|other| other.place() == place),
+                "{place} twice"
+            );
+        }
         Self {
             id: id.into(),
-            files: files.into_iter().collect(),
+            files,
             zone: None,
             on_open: None,
         }
@@ -96,7 +111,7 @@ impl RenderOnce for RecentFiles {
                             .leading(FileIcon::file(&file.name))
                             .description(file.folder.clone())
                             .trailing(time);
-                    list.row(SharedString::from(ix.to_string()), row)
+                    list.row(file.place(), row)
                 },
             );
             let (id, files, on_open) = (self.id.clone(), files.clone(), self.on_open.clone());
@@ -113,7 +128,10 @@ impl RenderOnce for RecentFiles {
                         .child(day_label(day, today)),
                 )
                 .child(list.on_activate(move |key, window, cx| {
-                    let file = &files[key.parse::<usize>().expect("a row's place")];
+                    let file = files
+                        .iter()
+                        .find(|file| file.place() == *key)
+                        .expect("a listed file");
                     log::info!("recent files {id:?}: open {}", file.name);
                     if let Some(on_open) = &on_open {
                         on_open(file, window, cx);
