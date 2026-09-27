@@ -57,14 +57,14 @@ impl Task {
 }
 
 /// Whole days from `from` to `to`.
-fn days(from: Date, to: Date) -> i32 {
+pub(super) fn days(from: Date, to: Date) -> i32 {
     to.since(from)
         .expect("dates within jiff's range")
         .get_days()
 }
 
 /// Days to mark along a span: each month's first day when the span is long, each Monday when it is short.
-fn marks(first: Date, count: i32) -> Vec<(i32, String)> {
+pub(super) fn marks(first: Date, count: i32) -> Vec<(i32, String)> {
     let long = count > 62;
     (0..count)
         .filter_map(|offset| {

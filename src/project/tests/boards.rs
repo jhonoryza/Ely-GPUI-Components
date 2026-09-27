@@ -186,3 +186,41 @@ fn the_panel_hands_on_the_task_after_each_edit(cx: &mut TestAppContext) {
         "a blank title is not taken"
     );
 }
+
+fn roadmap(_: Entity<Desk>) -> AnyElement {
+    crate::project::Roadmap::new("roadmap", date(2026, 9, 1), 2)
+        .lane(
+            "Design",
+            [
+                crate::project::Initiative::new(
+                    "early",
+                    "Early",
+                    date(2026, 7, 1),
+                    date(2026, 8, 30),
+                ),
+                crate::project::Initiative::new(
+                    "half",
+                    "Half",
+                    date(2026, 10, 1),
+                    date(2026, 10, 31),
+                ),
+            ],
+        )
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_roadmap_draws_only_what_falls_in_its_months(cx: &mut TestAppContext) {
+    let (_, cx) = desk(roadmap, cx);
+    assert!(
+        cx.debug_bounds("initiative early").is_none(),
+        "it ended before the span"
+    );
+    let map = cx.debug_bounds("roadmap").expect("the roadmap draws");
+    let half = cx.debug_bounds("initiative half").expect("October draws");
+    let share = (half.left() - map.left()) / map.size.width;
+    assert!(
+        (share - 30.0 / 61.0).abs() < 0.01,
+        "October starts 30 of 61 days in: {share}"
+    );
+}

@@ -1,4 +1,5 @@
 mod axes;
+mod burndown;
 mod calendar;
 mod cartesian;
 mod distribution;
@@ -28,6 +29,7 @@ mod targets;
 mod tests;
 mod tiles;
 
+pub use burndown::BurndownChart;
 pub use calendar::CalendarHeatmap;
 pub use cartesian::{AreaChart, BarChart, LineChart, ScatterChart};
 pub use distribution::{BoxPlot, Histogram, ViolinPlot, WaterfallChart};

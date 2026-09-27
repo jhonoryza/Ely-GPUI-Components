@@ -9,6 +9,7 @@ use gpui::{
 use jiff::{Timestamp, ToSpan, civil::Date, tz::TimeZone};
 
 mod boards;
+mod plans;
 mod tasks;
 
 use super::Page;
@@ -147,5 +148,9 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(boards::kanban(window, cx))
         .child(boards::panel(window, cx))
         .child(boards::labels(window, cx))
+        .child(plans::roadmap(cx))
+        .child(plans::burndown(cx))
+        .child(plans::milestones(cx))
+        .child(plans::workload(cx))
         .into_any_element()
 }

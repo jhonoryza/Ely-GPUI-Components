@@ -7,12 +7,15 @@ use super::{Theme, tokens::px_to_rems};
 pub struct ProjectSizes {
     /// A board's column, wide.
     pub column: Rems,
+    /// A roadmap's month at least, wide.
+    pub month: Rems,
 }
 
 impl Theme {
     pub fn project(&self) -> ProjectSizes {
         ProjectSizes {
             column: px_to_rems(272.0),
+            month: px_to_rems(72.0),
         }
     }
 }
