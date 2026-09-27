@@ -1,6 +1,6 @@
 use gpui::{
-    Context, Entity, IntoElement, ParentElement, Render, SharedString, Styled, TestAppContext,
-    VisualTestContext, Window, div, px,
+    Context, Entity, IntoElement, Modifiers, ParentElement, Render, SharedString, Styled,
+    TestAppContext, VisualTestContext, Window, div, px,
 };
 
 use super::{press, settle, setup};
@@ -254,4 +254,21 @@ fn a_download_comes_down() {
     let mut up = transfer("a", TransferState::Queued);
     up.upload = true;
     let _ = DownloadManager::new("downloads", [up]);
+}
+
+#[gpui::test]
+fn a_press_on_show_shows_and_opens_nothing(cx: &mut TestAppContext) {
+    setup(cx);
+    let (host, cx) = cx.add_window_view(|_, _| Downloading { asked: Vec::new() });
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    let actions = cx
+        .debug_bounds("transfer-actions done")
+        .expect("the finished row's actions draw");
+    cx.simulate_click(actions.center(), Modifiers::none());
+    settle(cx);
+    assert_eq!(
+        host.read_with(cx, |host, _| host.asked.clone()),
+        ["show done"]
+    );
 }

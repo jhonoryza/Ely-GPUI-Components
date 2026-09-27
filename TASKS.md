@@ -327,3 +327,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T27b | 2 | PASS | |
 | T27c | 1 | FAIL | recent and found files were keyed by their place, so the cursor left a file an open moved |
 | T27c | 2 | PASS | |
+| T27d | 1 | FAIL | a press on a finished download's Show button also opened the file through its row |

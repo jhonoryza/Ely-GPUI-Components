@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, InteractiveElement, IntoElement, ParentElement, SharedString,
-    StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    AnyElement, App, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement,
+    SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
 use super::FileIcon;
@@ -201,8 +201,10 @@ pub(super) fn row(id: ElementId, transfer: &Transfer, asks: &Asks, cx: &App) -> 
         )
         .child(
             div()
+                .debug_selector(move || format!("transfer-actions {key}"))
                 .flex_none()
                 .flex()
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .children(actions.into_iter().flatten()),
         )
         .into_any_element()
