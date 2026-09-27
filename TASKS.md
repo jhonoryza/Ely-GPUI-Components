@@ -128,7 +128,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T36a Account · Sign in — `tasks/ch31-43.md`
 - [x] T36b Account · Profile and access — `tasks/ch31-43.md`
 - [x] T36c Account · Billing and team — `tasks/ch31-43.md`
-- [ ] T37a Onboarding · Flows and highlights
+- [x] T37a Onboarding · Flows and highlights — `tasks/ch31-43.md`
 - [ ] T37b Onboarding · Help
 - [ ] T38 Interaction
 - [ ] T39 Theme
@@ -410,3 +410,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T36c | 1 | FAIL | a long quota name pushed its count past 280px; a month past 12 read as passed; the Amex shape, the address clearing, the clamped share and the paywall's benefits untested |
 | T36c | 2 | PASS | |
 | T37a | 1 | FAIL | the wizard's Next and Back dropped focus as the flow turned; Got it stranded focus on a closed tip; the words read and the bar's share untested apart from their selectors |
+| T37a | 2 | PASS | |
