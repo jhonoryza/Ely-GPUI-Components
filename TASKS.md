@@ -131,7 +131,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T37a Onboarding · Flows and highlights — `tasks/ch31-43.md`
 - [x] T37b Onboarding · Help — `tasks/ch31-43.md`
 - [x] T38a Interaction · Pointer — `tasks/ch31-43.md`
-- [ ] T38b Interaction · Keys, scroll and focus
+- [x] T38b Interaction · Keys, scroll and focus — `tasks/ch31-43.md`
 - [ ] T39 Theme
 - [ ] T40 i18n & a11y
 - [ ] T41 Maps
@@ -416,3 +416,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T37b | 2 | PASS | |
 | T38a | 1 | FAIL | the resize grip and edge handles hung half outside the box; the edges' sides, a free turn and a band with Shift untested |
 | T38a | 2 | PASS | |
+| T38b | 1 | PASS | |
