@@ -240,6 +240,11 @@ mod tests {
             ["a[y]", "b[x]", "z"]
         );
         assert_eq!(
+            keys(&moved(&items, "z", "a", DropAt::Inside)),
+            ["a[x,y,z]", "b[]"],
+            "a drop inside a folder lands last"
+        );
+        assert_eq!(
             keys(&moved(&items, "z", "x", DropAt::Before)),
             ["a[z,x,y]", "b[]"]
         );
