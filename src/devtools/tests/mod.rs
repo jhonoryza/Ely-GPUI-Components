@@ -4,14 +4,17 @@ use gpui::{
 };
 
 use super::{Connection, ConnectionForm, ConnectionManager, Engine, Field, TableStructureEditor};
-use crate::{forms, primitives::FocusNext, theme::Theme};
+use crate::{editor::CodeEditor, forms, primitives::FocusNext, theme::Theme};
+
+mod formats;
 
 type Part = fn(&Bench, &mut Window, &mut App, Entity<Bench>) -> AnyElement;
 
-/// A view that shows one tool, keeps the words it heard, and holds a choice among its part's cases.
+/// A view that shows one tool, keeps the words it heard, and holds what a test hands its part: an editor, and a choice among the part's cases.
 struct Bench {
     part: Part,
     said: Vec<String>,
+    editor: Option<Entity<CodeEditor>>,
     choice: usize,
 }
 
@@ -41,6 +44,7 @@ fn bench(part: Part, cx: &mut TestAppContext) -> (Entity<Bench>, &mut VisualTest
     let (host, cx) = cx.add_window_view(|_, _| Bench {
         part,
         said: Vec::new(),
+        editor: None,
         choice: 0,
     });
     settle(cx);
