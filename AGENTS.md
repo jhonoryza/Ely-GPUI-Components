@@ -113,6 +113,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui 0.2.2's `line_clamp` wraps once and lays the rest on the last line, cut hard; centered, it loses both ends. A name whose ends matter is a `typography::MiddleEllipsis` on one line (`files::FileGrid`).
 - Set an explicit line height on any box that clips text. gpui's default leading is taller than a tight box, and the clip eats descenders.
 - gpui's `img` takes its picture's pixel size for any `Auto` side, and its aspect ratio beats percent heights in flow. `Image` pins it absolute at full size, so an `Image` needs a sized box.
+- A folder's path over its entries is `lists::path_bar`, and its first order is `lists::listed`, folders first by name: DirectoryListing and FileExplorer share both, so every view shows one path and one order.
 - A file's icon comes from `primitives::file_icon`, one map from name to icon for every chapter; `files::FileIcon` draws it. What fits across a width comes from `layout::columns_for`, and `layout::fit` adds the inset that centers it.
 - Badges, tags and avatars live in `data_display`; forms and shell draw theirs from there, and `data_display` imports neither. Avatars take square pictures.
 - A picture drawn in code reaches gpui as a `RenderImage`. A host that replaces one frees the old through `App::drop_image`, or every frame stays in the sprite atlas (the gallery's model).

@@ -6,7 +6,7 @@ use gpui::{
     rems, transparent_black,
 };
 
-use super::FileIcon;
+use super::{FileIcon, OnEntry};
 use crate::{
     forms::OnValue,
     layout::{columns_for, seeded::use_seeded},
@@ -15,8 +15,6 @@ use crate::{
     theme::{ActiveTheme, IconSize, Radius, TextSize},
     typography::{LEADING, MiddleEllipsis},
 };
-
-type OnEntry = Rc<dyn Fn(&DirEntry, &mut Window, &mut App)>;
 
 /// The tile a key moves to from `at` in `count` tiles laid `columns` a row: across by one, up and down by a row, Home and End to the ends; down from over a short last row lands on its last tile.
 pub(crate) fn stepped(at: usize, count: usize, columns: usize, key: &str) -> Option<usize> {

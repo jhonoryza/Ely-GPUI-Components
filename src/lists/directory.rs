@@ -8,6 +8,8 @@ use jiff::Timestamp;
 
 use super::{ListItem, SelectableList};
 use crate::{
+    forms::OnValue,
+    layout::seeded::use_seeded,
     navigation::{Breadcrumb, Crumb},
     primitives::{Icon, IconName, file_icon},
     theme::{ActiveTheme, IconSize, TextSize},
@@ -65,6 +67,32 @@ enum Column {
     Modified,
 }
 
+/// Entries as a listing first shows them: folders first, then by name.
+pub(crate) fn listed(entries: Vec<DirEntry>) -> Vec<DirEntry> {
+    sorted(entries, Column::Name, true)
+}
+
+/// A directory's path from the root down as a breadcrumb; a press on a level climbs to it.
+pub(crate) fn path_bar(
+    id: impl Into<ElementId>,
+    path: &[SharedString],
+    on_climb: Option<OnClimb>,
+) -> Breadcrumb {
+    let crumbs = path.iter().enumerate().map(|(ix, name)| {
+        let crumb = Crumb::new(SharedString::from(ix.to_string()), name.clone());
+        if ix == 0 {
+            crumb.icon(IconName::HardDrive)
+        } else {
+            crumb
+        }
+    });
+    Breadcrumb::new(id, crumbs).on_select(move |level, _, window, cx| {
+        if let Some(on_climb) = &on_climb {
+            on_climb(level, window, cx);
+        }
+    })
+}
+
 /// Entries sorted by `column`, folders always first, ties by name.
 fn sorted(mut entries: Vec<DirEntry>, column: Column, ascending: bool) -> Vec<DirEntry> {
     let by_name = |a: &DirEntry, b: &DirEntry| a.name.to_lowercase().cmp(&b.name.to_lowercase());
@@ -84,7 +112,7 @@ fn sorted(mut entries: Vec<DirEntry>, column: Column, ascending: bool) -> Vec<Di
 }
 
 type OnEntry = Rc<dyn Fn(&DirEntry, &mut Window, &mut App)>;
-type OnClimb = Rc<dyn Fn(usize, &mut Window, &mut App)>;
+pub(crate) type OnClimb = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
 /// A directory's entries in columns: name, size, and when each changed. A header sorts by its column and a second press reverses it; folders stay first. Enter or a double press opens an entry; the path above climbs to an earlier level.
 #[derive(IntoElement)]
@@ -92,6 +120,8 @@ pub struct DirectoryListing {
     id: ElementId,
     path: Vec<SharedString>,
     entries: Vec<DirEntry>,
+    selected: Option<SharedString>,
+    on_select: Option<OnValue>,
     on_open: Option<OnEntry>,
     on_climb: Option<OnClimb>,
 }
@@ -109,9 +139,31 @@ impl DirectoryListing {
             id: id.into(),
             path,
             entries: entries.into_iter().collect(),
+            selected: None,
+            on_select: None,
             on_open: None,
             on_climb: None,
         }
+    }
+
+    /// The entry picked, by name.
+    pub fn selected(mut self, name: impl Into<SharedString>) -> Self {
+        let name = name.into();
+        assert!(
+            self.entries.iter().any(|entry| entry.name == name),
+            "no entry {name}"
+        );
+        self.selected = Some(name);
+        self
+    }
+
+    /// Gets the name of the entry picked.
+    pub fn on_select(
+        mut self,
+        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_select = Some(Rc::new(handler));
+        self
     }
 
     pub fn on_open(mut self, handler: impl Fn(&DirEntry, &mut Window, &mut App) + 'static) -> Self {
@@ -130,9 +182,7 @@ impl RenderOnce for DirectoryListing {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let order =
             window.use_keyed_state((self.id.clone(), "order"), cx, |_, _| (Column::Name, true));
-        let picked = window.use_keyed_state((self.id.clone(), "picked"), cx, |_, _| {
-            Vec::<SharedString>::new()
-        });
+        let picked = use_seeded((self.id.clone(), "picked"), self.selected, window, cx);
         let (column, ascending) = *order.read(cx);
         let entries = Rc::new(sorted(self.entries, column, ascending));
         let theme = cx.theme();
@@ -203,7 +253,8 @@ impl RenderOnce for DirectoryListing {
                     .child(header("Modified", Column::Modified)),
             );
         let list = entries.iter().enumerate().fold(
-            SelectableList::new((self.id.clone(), "entries")).selected(picked.read(cx).clone()),
+            SelectableList::new((self.id.clone(), "entries"))
+                .selected(picked.read(cx).value.clone()),
             |list, (ix, entry)| {
                 let size = entry
                     .size
@@ -242,35 +293,29 @@ impl RenderOnce for DirectoryListing {
             },
         );
         let (store, shown, on_open) = (picked.clone(), entries.clone(), self.on_open);
-        let crumbs = self.path.iter().enumerate().map(|(ix, name)| {
-            let crumb = Crumb::new(SharedString::from(ix.to_string()), name.clone());
-            if ix == 0 {
-                crumb.icon(IconName::HardDrive)
-            } else {
-                crumb
-            }
-        });
-        let on_climb = self.on_climb;
+        let on_select = self.on_select;
         div()
             .flex()
             .flex_col()
             .gap_2()
-            .child(
-                Breadcrumb::new((self.id.clone(), "path"), crumbs).on_select(
-                    move |level, _, window, cx| {
-                        if let Some(on_climb) = &on_climb {
-                            on_climb(level, window, cx);
-                        }
-                    },
-                ),
-            )
+            .child(path_bar(
+                (self.id.clone(), "path"),
+                &self.path,
+                self.on_climb,
+            ))
             .child(heading)
             .child(
-                list.on_change(move |keys, _, cx| {
+                list.on_change(move |keys, window, cx| {
+                    let Some(name) = keys.first() else {
+                        return;
+                    };
                     store.update(cx, |picked, cx| {
-                        *picked = keys.to_vec();
+                        picked.value = Some(name.clone());
                         cx.notify();
-                    })
+                    });
+                    if let Some(on_select) = &on_select {
+                        on_select(name, window, cx);
+                    }
                 })
                 .on_activate(move |name, window, cx| {
                     let entry = shown

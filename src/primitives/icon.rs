@@ -109,6 +109,7 @@ icons! {
     CloudUpload => "cloud-upload",
     Code => "code",
     Columns2 => "columns-2",
+    Columns3 => "columns-3",
     Command => "command",
     Compass => "compass",
     Contrast => "contrast",

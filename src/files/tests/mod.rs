@@ -7,7 +7,9 @@ use jiff::{Timestamp, ToSpan};
 use super::{FileGrid, item::detail};
 use crate::{lists::DirEntry, primitives::FocusNext, theme::Theme};
 
-fn setup(cx: &mut TestAppContext) {
+mod explorer;
+
+pub(super) fn setup(cx: &mut TestAppContext) {
     cx.update(|cx| {
         Theme::init(cx);
         Theme::update(cx, |theme| theme.reduced_motion = true);
@@ -15,7 +17,7 @@ fn setup(cx: &mut TestAppContext) {
     });
 }
 
-fn settle(cx: &mut VisualTestContext) {
+pub(super) fn settle(cx: &mut VisualTestContext) {
     for _ in 0..3 {
         cx.run_until_parked();
         cx.update(|window, _| window.refresh());
@@ -23,7 +25,7 @@ fn settle(cx: &mut VisualTestContext) {
     cx.run_until_parked();
 }
 
-fn press(key: &str, cx: &mut VisualTestContext) {
+pub(super) fn press(key: &str, cx: &mut VisualTestContext) {
     cx.simulate_keystrokes(key);
     settle(cx);
     cx.simulate_event(KeyUpEvent {
@@ -32,7 +34,7 @@ fn press(key: &str, cx: &mut VisualTestContext) {
     settle(cx);
 }
 
-fn then() -> Timestamp {
+pub(super) fn then() -> Timestamp {
     Timestamp::from_second(1_700_000_000).expect("a time")
 }
 

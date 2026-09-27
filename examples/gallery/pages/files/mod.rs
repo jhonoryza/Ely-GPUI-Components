@@ -6,6 +6,9 @@ use ely_gpui_component::{
 use gpui::{AnyElement, App, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
 use jiff::{Timestamp, ToSpan};
 
+mod actions;
+mod explorer;
+
 use super::Page;
 use crate::{
     probe::probe,
@@ -29,10 +32,29 @@ const SCRIPT: &[Step] = &[
     Step::Key("down"),
     Step::Wait(200),
     Step::Shot("grid-picked"),
+    Step::DownAt("files-explorer", 515.0, 14.0),
+    Step::UpAt("files-explorer", 515.0, 14.0),
+    Step::Wait(300),
+    Step::Shot("explorer-icons"),
+    Step::DownAt("files-explorer", 48.0, 120.0),
+    Step::UpAt("files-explorer", 48.0, 120.0),
+    Step::Key("enter"),
+    Step::Wait(300),
+    Step::Shot("explorer-into"),
+    Step::RightAt("files-context", 150.0, 50.0),
+    Step::Wait(300),
+    Step::Shot("context-menu"),
+    Step::Key("escape"),
+    Step::DownAt("files-rename", 80.0, 14.0),
+    Step::UpAt("files-rename", 80.0, 14.0),
+    Step::Type("Brief notes.md"),
+    Step::Key("enter"),
+    Step::Wait(300),
+    Step::Shot("renamed"),
 ];
 
 /// A project's entries, changed a few hours to a few weeks ago.
-fn entries() -> Vec<DirEntry> {
+pub fn entries() -> Vec<DirEntry> {
     let now = Timestamp::now();
     let ago = |hours: i64| now - hours.hours();
     vec![
@@ -170,5 +192,10 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(items(window, cx))
         .child(listing(cx))
         .child(grid(window, cx))
+        .child(explorer::explorer(window, cx))
+        .child(explorer::tree(cx))
+        .child(actions::context_menu(cx))
+        .child(actions::rename(window, cx))
+        .child(actions::drop_files(window, cx))
         .into_any_element()
 }
