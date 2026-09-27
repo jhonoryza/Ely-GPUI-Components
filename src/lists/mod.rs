@@ -13,6 +13,7 @@ mod tree;
 
 pub use directory::{DirEntry, DirectoryListing};
 pub(crate) use directory::{OnClimb, listed, path_bar};
+pub(crate) use files::Folder;
 pub use files::{FileTree, GitStatus};
 pub use grouped::GroupedList;
 pub use item::{List, ListItem};

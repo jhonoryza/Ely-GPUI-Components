@@ -8,6 +8,7 @@ use super::{FileGrid, item::detail};
 use crate::{lists::DirEntry, primitives::FocusNext, theme::Theme};
 
 mod explorer;
+mod find;
 
 pub(super) fn setup(cx: &mut TestAppContext) {
     cx.update(|cx| {

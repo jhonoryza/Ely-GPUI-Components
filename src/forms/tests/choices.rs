@@ -475,3 +475,24 @@ fn a_long_choice_keeps_its_list_inside_the_window(cx: &mut TestAppContext) {
         "{list:?}"
     );
 }
+
+/// A checkbox whose label runs past its narrow box.
+struct Worded;
+
+impl Render for Worded {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let label = "Projects/Atrium/Recordings/Walkthrough of the atrium at noon.mov";
+        div()
+            .w(px(200.0))
+            .child(Checkbox::new("worded", false).label(label))
+    }
+}
+
+#[gpui::test]
+fn a_long_checkbox_label_wraps_inside_its_box(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Worded);
+    cx.run_until_parked();
+    let label = cx.debug_bounds("checkbox-label").expect("the label draws");
+    assert!(label.right() <= px(200.0), "{label:?}");
+}

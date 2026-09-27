@@ -95,7 +95,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T26d Media · Audio and controls
 - [x] T26e Media · Capture and devices
 - [x] T27a Files · Items
-- [ ] T27b Files · Explorer
+- [x] T27b Files · Explorer
 - [ ] T27c Files · Find and look
 - [ ] T27d Files · Transfers
 - [ ] T28 Messaging
@@ -324,3 +324,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T27a | 1 | FAIL | a tile's long name leaned on gpui's line_clamp, which cut its second line at both ends and lost the extension |
 | T27a | 2 | PASS | |
 | T27b | 1 | FAIL | the listing's fixed columns left no room for names at 280px; a column keyed by its depth handed its cursor to the next folder there |
+| T27b | 2 | PASS | |

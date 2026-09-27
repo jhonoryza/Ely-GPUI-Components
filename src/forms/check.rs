@@ -171,7 +171,13 @@ impl RenderOnce for Checkbox {
                     })
             })
             .child(check_mark(self.state, focused, self.disabled, changes, cx))
-            .children(self.label)
+            .children(self.label.map(|label| {
+                div()
+                    .debug_selector(|| "checkbox-label".into())
+                    .flex_1()
+                    .min_w_0()
+                    .child(label)
+            }))
     }
 }
 

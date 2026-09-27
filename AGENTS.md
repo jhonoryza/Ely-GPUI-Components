@@ -113,6 +113,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui 0.2.2's `line_clamp` wraps once and lays the rest on the last line, cut hard; centered, it loses both ends. A name whose ends matter is a `typography::MiddleEllipsis` on one line (`files::FileGrid`).
 - Set an explicit line height on any box that clips text. gpui's default leading is taller than a tight box, and the clip eats descenders.
 - gpui's `img` takes its picture's pixel size for any `Auto` side, and its aspect ratio beats percent heights in flow. `Image` pins it absolute at full size, so an `Image` needs a sized box.
+- Paths with `/` between folders become a tree through `lists::Folder::of`, for `FileTree` and `files::ArchiveViewer` alike.
 - A folder's path over its entries is `lists::path_bar`, and its first order is `lists::listed`, folders first by name: DirectoryListing and FileExplorer share both, so every view shows one path and one order.
 - A file's icon comes from `primitives::file_icon`, one map from name to icon for every chapter; `files::FileIcon` draws it. What fits across a width comes from `layout::columns_for`, and `layout::fit` adds the inset that centers it.
 - Badges, tags and avatars live in `data_display`; forms and shell draw theirs from there, and `data_display` imports neither. Avatars take square pictures.
@@ -131,7 +132,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A chat holds at its newest message through gpui's `list` with `ListAlignment::Bottom`: it sticks while scrolled to the end, and `scroll_to` one past the last item sticks it again; that call sends no scroll event, so the owner clears its own away state (`chat::MessageList`).
 - Anything pressable is a Tab stop: a row, card or toggle takes `tab_index(0)` and `focus_ring`, with a 1px border that stays transparent where it shows none; gpui presses it on the release of Enter or Space.
 - A list of pressable rows goes through `lists::SelectableList`, whose cursor reaches them by key: Up and Down move, Enter or a double press activates (`media::Playlist`). A bare `ListItem` press is the pointer's only.
-- A row that holds text beside fixed parts lets the text give way: the text takes `flex_1().min_w_0()` and an `Ellipsis`; counts, icons, dates and chevrons take `flex_none`.
+- A row that holds text beside fixed parts lets the text give way: the text takes `flex_1().min_w_0()` and an `Ellipsis`; counts, icons, dates and chevrons take `flex_none`. A label that must stay whole wraps in that block instead, as `forms::Checkbox`'s does.
 - A mark over a text field reads the field at paint time, from a canvas laid over it (`collab::RemoteCursor`): by then `TextInput::bounds_for` holds this frame's layout, and a still page never renders again to catch up.
 - A callback field holds a named `type` alias; clippy's type_complexity rejects `Option<Rc<dyn Fn(..)>>`. A chapter shares one alias per shape.
 - A component that fills its container says `w_full` on its root. As a window's root, or in a flex row, it would shrink to its text's narrowest width.

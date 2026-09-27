@@ -59,9 +59,25 @@ impl GitStatus {
 
 /// A folder of the tree being built: its folders and its files, each by name.
 #[derive(Default)]
-struct Folder {
-    folders: BTreeMap<String, Folder>,
-    files: Vec<String>,
+pub(crate) struct Folder {
+    pub folders: BTreeMap<String, Folder>,
+    pub files: Vec<String>,
+}
+
+impl Folder {
+    /// Paths with `/` between folders, gathered into the folders that hold them.
+    pub(crate) fn of<'a>(paths: impl IntoIterator<Item = &'a str>) -> Self {
+        let mut root = Folder::default();
+        for path in paths {
+            let mut parts: Vec<&str> = path.split('/').collect();
+            let file = parts.pop().expect("a path has a name").to_string();
+            let folder = parts.iter().fold(&mut root, |folder, part| {
+                folder.folders.entry(part.to_string()).or_default()
+            });
+            folder.files.push(file);
+        }
+        root
+    }
 }
 
 /// Whether `name` matches `query`, ignoring case; an empty query matches all.
@@ -75,15 +91,7 @@ fn nodes(
     status: &[(SharedString, GitStatus)],
     query: &str,
 ) -> (Vec<TreeNode>, Vec<SharedString>) {
-    let mut root = Folder::default();
-    for path in paths {
-        let mut parts: Vec<&str> = path.split('/').collect();
-        let file = parts.pop().expect("a path has a name").to_string();
-        let folder = parts.iter().fold(&mut root, |folder, part| {
-            folder.folders.entry(part.to_string()).or_default()
-        });
-        folder.files.push(file);
-    }
+    let root = Folder::of(paths.iter().map(|path| path.as_ref()));
     let state = |path: &str| {
         status
             .iter()

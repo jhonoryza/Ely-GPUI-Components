@@ -8,6 +8,7 @@ use jiff::{Timestamp, ToSpan};
 
 mod actions;
 mod explorer;
+mod find;
 
 use super::Page;
 use crate::{
@@ -51,6 +52,17 @@ const SCRIPT: &[Step] = &[
     Step::Key("enter"),
     Step::Wait(300),
     Step::Shot("renamed"),
+    Step::DownAt("files-quick", 150.0, 40.0),
+    Step::UpAt("files-quick", 150.0, 40.0),
+    Step::Key("space"),
+    Step::Wait(300),
+    Step::Shot("quick-look"),
+    Step::Key("escape"),
+    Step::DownAt("files-search", 100.0, 16.0),
+    Step::UpAt("files-search", 100.0, 16.0),
+    Step::Type("a"),
+    Step::Wait(300),
+    Step::Shot("searched"),
 ];
 
 /// A project's entries, changed a few hours to a few weeks ago.
@@ -197,5 +209,12 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(actions::context_menu(cx))
         .child(actions::rename(window, cx))
         .child(actions::drop_files(window, cx))
+        .child(find::previews(window, cx))
+        .child(find::recent(cx))
+        .child(find::favorites(cx))
+        .child(find::search(window, cx))
+        .child(find::duplicates(window, cx))
+        .child(find::archive(cx))
+        .child(find::hex(window, cx))
         .into_any_element()
 }
