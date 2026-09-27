@@ -12,7 +12,7 @@ use crate::{
     theme::ControlSize,
 };
 
-type Content = Box<dyn FnOnce(&mut Window, &mut App) -> AnyElement>;
+type Content = Box<dyn FnOnce(Run, &mut Window, &mut App) -> AnyElement>;
 type Own = Box<dyn FnOnce(Run) -> AnyElement>;
 
 /// A popover's own button: its label and look.
@@ -73,20 +73,22 @@ impl Popover {
                 variant: ButtonVariant::Secondary,
                 size: ControlSize::default(),
             }),
-            content: Box::new(move |window, cx| content(window, cx).into_any_element()),
+            content: Box::new(move |_, window, cx| content(window, cx).into_any_element()),
         }
     }
 
-    /// A panel that opens from an element of the owner's: `opener` builds it with the run that opens and closes the panel.
+    /// A panel that opens from an element of the owner's: `opener` builds it with the run that opens and closes the panel, and `content` gets the run that closes it and hands focus back, for a press that ends the panel's work.
     pub fn with_opener<T: IntoElement, E: IntoElement>(
         id: impl Into<ElementId>,
         opener: impl FnOnce(Run) -> T + 'static,
-        content: impl FnOnce(&mut Window, &mut App) -> E + 'static,
+        content: impl FnOnce(Run, &mut Window, &mut App) -> E + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             opener: Opener::Own(Box::new(move |toggle| opener(toggle).into_any_element())),
-            content: Box::new(move |window, cx| content(window, cx).into_any_element()),
+            content: Box::new(move |close, window, cx| {
+                content(close, window, cx).into_any_element()
+            }),
         }
     }
 
@@ -179,9 +181,14 @@ impl RenderOnce for Popover {
             close(&state, window, cx);
             return host;
         }
-        let (escape, out, tall) = (state.clone(), state.clone(), state.clone());
+        let (escape, out, tall, done) =
+            (state.clone(), state.clone(), state.clone(), state.clone());
         let (anchor, height) = (state.read(cx).host, state.read(cx).height);
-        let body = (self.content)(window, cx);
+        let body = (self.content)(
+            Rc::new(move |window, cx| close(&done, window, cx)),
+            window,
+            cx,
+        );
         let panel = div()
             .id((self.id.clone(), "panel"))
             .relative()

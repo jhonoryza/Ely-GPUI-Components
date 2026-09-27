@@ -106,6 +106,8 @@ impl RenderOnce for OnboardingWizard {
             .unwrap_or_else(|| panic!("onboarding wizard {id:?} has no on_finish"));
         let theme = cx.theme();
         let (current, count) = (self.current, self.steps.len());
+        let reached = current + 1;
+        let place = format!("Step {reached} of {count}");
         let skip = self.on_skip.map(|run| {
             Button::new((id.clone(), "skip"), "Skip for now")
                 .variant(ButtonVariant::Ghost)
@@ -123,10 +125,13 @@ impl RenderOnce for OnboardingWizard {
             .gap_2()
             .child(
                 div()
-                    .debug_selector(move || format!("onboarding-step-{}-of-{count}", current + 1))
+                    .debug_selector({
+                        let place = place.clone();
+                        move || format!("onboarding-{place}")
+                    })
                     .text_size(theme.text_size(TextSize::Sm))
                     .text_color(theme.colors.fg_muted)
-                    .child(format!("Step {} of {count}", current + 1)),
+                    .child(place),
             )
             .children(skip.map(|skip| div().flex_none().child(skip)));
         let step = &self.steps[current];
@@ -172,11 +177,8 @@ impl RenderOnce for OnboardingWizard {
             .gap_6()
             .child(
                 div().flex().flex_col().gap_2().child(head).child(
-                    ProgressBar::new(
-                        (id.clone(), "progress"),
-                        (current + 1) as f32 / count as f32,
-                    )
-                    .segments(count),
+                    ProgressBar::new((id.clone(), "progress"), reached as f32 / count as f32)
+                        .segments(count),
                 ),
             )
             .child(wizard)

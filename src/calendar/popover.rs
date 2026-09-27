@@ -14,7 +14,7 @@ use super::{
 use crate::{
     buttons::{Button, ButtonVariant},
     data_display::color_mark,
-    forms::OnValue,
+    forms::{OnValue, Run},
     overlays::Popover,
     primitives::{Icon, IconName},
     theme::{ActiveTheme, ControlSize, IconSize, TextSize},
@@ -107,17 +107,18 @@ impl RenderOnce for EventPopover {
             .unwrap_or_else(|| format::system_zone("event popover"));
         let (event, chip_zone) = (self.event.clone(), zone.clone());
         let (id, chip_id) = (self.id.clone(), (self.id.clone(), "chip"));
-        let details = move |_: &mut Window, cx: &mut App| {
+        let details = move |close: Run, _: &mut Window, cx: &mut App| {
             let theme = cx.theme();
             let key = self.event.key.clone();
             let action = |label: &'static str, variant, handler: Option<OnValue>| {
                 handler.map(|handler| {
-                    let key = key.clone();
+                    let (key, close) = (key.clone(), close.clone());
                     Button::new((self.id.clone(), label), label)
                         .variant(variant)
                         .size(ControlSize::Sm)
                         .on_click(move |_, window, cx| {
                             log::info!("event popover: {label} {key}");
+                            close(window, cx);
                             handler(&key, window, cx)
                         })
                 })

@@ -430,5 +430,5 @@ fn a_tall_dialog_body_keeps_its_height_and_scrolls(cx: &mut TestAppContext) {
 #[test]
 #[should_panic(expected = "an icon is for its own button")]
 fn a_popover_opened_by_its_owner_takes_no_icon() {
-    let _ = Popover::with_opener("own", |_| div(), |_, _| div()).icon(IconName::Clock);
+    let _ = Popover::with_opener("own", |_| div(), |_, _, _| div()).icon(IconName::Clock);
 }

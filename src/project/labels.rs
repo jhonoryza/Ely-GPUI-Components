@@ -8,7 +8,7 @@ use gpui::{
 use crate::{
     buttons::{ButtonVariant, IconButton},
     data_display::color_mark,
-    forms::{ColorPalette, Enter, FormError, InlineEdit, Input, OnValue, TextInput},
+    forms::{ColorPalette, Enter, FormError, InlineEdit, Input, OnValue, Run, TextInput},
     mail::Label,
     overlays::Popover,
     primitives::{Icon, IconName},
@@ -149,7 +149,7 @@ impl RenderOnce for LabelManager {
             let swatch_id = (id.clone(), format!("hue-{key}"));
             let palette = {
                 let (id, key, on_recolor) = (id.clone(), key.clone(), self.on_recolor.clone());
-                move |_: &mut Window, _: &mut App| {
+                move |_: Run, _: &mut Window, _: &mut App| {
                     let colors = HUE_NAMES
                         .iter()
                         .zip(chart)

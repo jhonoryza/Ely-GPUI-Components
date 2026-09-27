@@ -10,7 +10,7 @@ use crate::{
     buttons::{Button, ButtonVariant},
     forms::{Choice, Run},
     motion,
-    primitives::{FocusRing, Icon, IconName},
+    primitives::{FocusRing, Icon, IconName, tab_stop},
     theme::{ActiveTheme, ControlSize, IconSize, TextSize},
 };
 
@@ -208,7 +208,7 @@ impl RenderOnce for Steps {
     }
 }
 
-/// Steps, the current step's content, then Back and Next. Next becomes Finish on the last step.
+/// Steps, the current step's content, then Back and Next. Next becomes Finish on the last step, keeping its focus; focus moves to it when Back reaches the first step or a finished step is picked.
 #[derive(IntoElement)]
 pub struct Wizard {
     id: ElementId,
@@ -293,7 +293,9 @@ impl RenderOnce for Wizard {
                 on_step(to, window, cx);
             })
         };
+        let advance = tab_stop((id.clone(), "advance").into(), true, window, cx);
         let (back, next, jump) = (step.clone(), step.clone(), step);
+        let (to_advance, jumped) = (advance.clone(), advance.clone());
         let finish = {
             let id = id.clone();
             move |window: &mut Window, cx: &mut App| {
@@ -315,17 +317,17 @@ impl RenderOnce for Wizard {
                 },
             )
         });
-        let advance = if current == last {
-            Button::new((id.clone(), "finish"), "Finish")
-                .primary()
-                .disabled(!self.ready)
-                .on_click(move |_, window, cx| finish(window, cx))
-        } else {
-            Button::new((id.clone(), "next"), "Next")
-                .primary()
-                .disabled(!self.ready)
-                .on_click(move |_, window, cx| next(current + 1, window, cx))
-        };
+        let forward = Button::new(
+            (id.clone(), "advance"),
+            if current == last { "Finish" } else { "Next" },
+        )
+        .primary()
+        .disabled(!self.ready)
+        .focus_handle(&advance)
+        .on_click(move |_, window, cx| match current == last {
+            true => finish(window, cx),
+            false => next(current + 1, window, cx),
+        });
         div()
             .id(self.id.clone())
             .flex()
@@ -334,8 +336,12 @@ impl RenderOnce for Wizard {
             .w_full()
             .when(!self.headless, |wizard| {
                 wizard.child(
-                    Steps::new((id.clone(), "steps"), self.steps, current)
-                        .on_select(move |to, window, cx| jump(to, window, cx)),
+                    Steps::new((id.clone(), "steps"), self.steps, current).on_select(
+                        move |to, window, cx| {
+                            window.focus(&jumped);
+                            jump(to, window, cx)
+                        },
+                    ),
                 )
             })
             .children(content)
@@ -348,9 +354,14 @@ impl RenderOnce for Wizard {
                         Button::new((id.clone(), "back"), "Back")
                             .variant(ButtonVariant::Ghost)
                             .disabled(current == 0)
-                            .on_click(move |_, window, cx| back(current - 1, window, cx)),
+                            .on_click(move |_, window, cx| {
+                                if current == 1 {
+                                    window.focus(&to_advance);
+                                }
+                                back(current - 1, window, cx)
+                            }),
                     )
-                    .child(advance),
+                    .child(forward),
             )
     }
 }

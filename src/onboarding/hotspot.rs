@@ -73,7 +73,7 @@ impl Hotspot {
         }
     }
 
-    /// Runs on Got it; the owner stops showing the hotspot.
+    /// Runs on Got it, once the tip has closed and handed focus back; the owner stops showing the hotspot.
     pub fn on_dismiss(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_dismiss = Some(Rc::new(handler));
         self
@@ -94,7 +94,7 @@ impl RenderOnce for Hotspot {
                 id: dot.into(),
                 toggle,
             },
-            move |_, cx| {
+            move |close: Run, _: &mut Window, cx: &mut App| {
                 let theme = cx.theme();
                 let prose =
                     |text: SharedString| div().flex().child(div().flex_1().min_w_0().child(text));
@@ -114,6 +114,7 @@ impl RenderOnce for Hotspot {
                                 .size(ControlSize::Sm)
                                 .on_click(move |_, window, cx| {
                                     log::info!("hotspot: dismissed");
+                                    close(window, cx);
                                     dismiss(window, cx)
                                 }),
                         ),

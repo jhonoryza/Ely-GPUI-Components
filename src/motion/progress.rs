@@ -151,7 +151,11 @@ impl RenderOnce for ProgressBar {
                     .when_some(buffer, |lane, buffer| {
                         lane.child(bar(share(buffer)).bg(faint))
                     })
-                    .child(bar(share(at)).bg(fill))
+                    .child(
+                        bar(share(at))
+                            .bg(fill)
+                            .debug_selector(move || format!("progress-fill-{ix}")),
+                    )
             })
         };
         div()

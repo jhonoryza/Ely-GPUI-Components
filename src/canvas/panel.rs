@@ -87,6 +87,6 @@ pub(crate) fn color_well(
                 .tooltip("Change the color")
                 .on_click(move |window, cx| toggle(window, cx))
         },
-        move |_, _| ColorPicker::new((id, "picker"), color).on_change(on_pick),
+        move |_, _, _| ColorPicker::new((id, "picker"), color).on_change(on_pick),
     )
 }

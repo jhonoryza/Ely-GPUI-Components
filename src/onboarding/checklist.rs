@@ -82,6 +82,7 @@ impl RenderOnce for SetupChecklist {
             self.tasks.iter().filter(|task| task.done).count(),
             self.tasks.len(),
         );
+        let tally = format!("{done} of {all} done");
         let turns: Vec<usize> = self
             .tasks
             .iter()
@@ -203,11 +204,14 @@ impl RenderOnce for SetupChecklist {
                     )
                     .child(
                         tabular(div())
-                            .debug_selector(move || format!("setup-{done}-of-{all}"))
+                            .debug_selector({
+                                let tally = tally.clone();
+                                move || format!("setup-{tally}")
+                            })
                             .flex_none()
                             .text_size(theme.text_size(TextSize::Sm))
                             .text_color(theme.colors.fg_muted)
-                            .child(format!("{done} of {all} done")),
+                            .child(tally),
                     ),
             )
             .child(

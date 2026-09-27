@@ -90,6 +90,7 @@ fn popover(_: &Planning, owner: Entity<Planning>) -> gpui::AnyElement {
 fn a_chip_opens_its_details_and_edit_names_it(cx: &mut TestAppContext) {
     let (host, cx) = planning(popover, cx);
     tab_to(1, cx);
+    let chip = cx.update(|window, cx| window.focused(cx));
     press("space", cx);
     assert!(
         cx.debug_bounds("event-popover review").is_some(),
@@ -104,5 +105,10 @@ fn a_chip_opens_its_details_and_edit_names_it(cx: &mut TestAppContext) {
         heard(&host, cx),
         ["edit review"],
         "Tab reaches Delete, then Edit"
+    );
+    let focused = cx.update(|window, cx| window.focused(cx));
+    assert_eq!(
+        focused, chip,
+        "Edit closes the details and hands focus back to the chip"
     );
 }

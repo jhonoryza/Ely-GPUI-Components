@@ -155,6 +155,24 @@ fn the_wizard_walks_forward_back_and_finishes(cx: &mut TestAppContext) {
     assert!(view.read_with(cx, |view, _| view.done));
 }
 
+/// On the last step the first stop is the first finished step; picking it hands focus to Next, so Enter walks on from there.
+#[gpui::test]
+fn a_picked_step_hands_focus_to_next(cx: &mut TestAppContext) {
+    setup(cx);
+    let (view, cx) = cx.add_window_view(|_, _| Flow {
+        step: 2,
+        done: false,
+    });
+    cx.update(|window, _| {
+        window.blur();
+        window.focus_next();
+    });
+    press("enter", cx);
+    assert_eq!(view.read_with(cx, |view, _| view.step), 0);
+    press("enter", cx);
+    assert_eq!(view.read_with(cx, |view, _| view.step), 1);
+}
+
 struct Docs {
     chosen: SharedString,
     clicked: Option<SharedString>,
