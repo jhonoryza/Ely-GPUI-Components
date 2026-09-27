@@ -397,3 +397,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T33d | 2 | PASS | |
 | T34 | 1 | FAIL | a focused tile's Left and Right, and the guard that leaves arrows to a focused control inside a card, untested |
 | T34 | 2 | PASS | |
+| T35 | 1 | FAIL | a row's control kept its full width past a 280px box; a notice's name shrank to nothing; privacy, notices and startup dropped edits with no handler; Apply's and the reset's rest and a box turned off untested |

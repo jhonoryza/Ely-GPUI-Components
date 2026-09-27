@@ -430,3 +430,51 @@ fn export_asks_the_owner(cx: &mut TestAppContext) {
     tap("space", cx);
     assert_eq!(said(&host, cx), ["export"]);
 }
+
+fn bad_port(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
+    let proxy = Proxy::Manual {
+        host: "proxy.corp".into(),
+        port: 0,
+        bypass: Vec::new(),
+    };
+    ProxySettings::new("proxy", proxy)
+        .on_apply(move |proxy, _, cx| say(&owner, format!("{proxy:?}"), cx))
+        .into_any_element()
+}
+
+/// With port 0 Apply rests, so a step back from nothing lands on the field before it.
+#[gpui::test]
+fn apply_rests_while_the_port_is_bad(cx: &mut TestAppContext) {
+    let (host, cx) = desk(bad_port, cx);
+    cx.update(|window, _| {
+        window.blur();
+        window.focus_prev();
+    });
+    settle(cx);
+    tap("space", cx);
+    assert!(said(&host, cx).is_empty());
+}
+
+fn default_size(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
+    FontSizeControl::new("size", 14.0, 14.0, (12.0, 24.0))
+        .on_change(move |size, _, cx| say(&owner, format!("size {size}"), cx))
+        .into_any_element()
+}
+
+/// At the default size the way back rests, so the second stop wraps to the slider.
+#[gpui::test]
+fn the_way_back_rests_at_the_default_size(cx: &mut TestAppContext) {
+    let (host, cx) = desk(default_size, cx);
+    tab(2, cx);
+    tap("space", cx);
+    assert!(said(&host, cx).is_empty());
+}
+
+/// Stops: Do not disturb, then App, which is on.
+#[gpui::test]
+fn a_box_pressed_off_lets_its_pair_go(cx: &mut TestAppContext) {
+    let (host, cx) = desk(notices, cx);
+    tab(2, cx);
+    tap("space", cx);
+    assert_eq!(said(&host, cx), ["[] false"]);
+}

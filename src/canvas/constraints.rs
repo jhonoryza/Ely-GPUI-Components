@@ -135,7 +135,10 @@ fn hairline(x: f32, y: f32, len: f32, across: bool, color: Hsla) -> gpui::Div {
 
 impl RenderOnce for ConstraintsEditor {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let (id, now, on_change) = (self.id, self.constraints, &self.on_change);
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("constraints editor {:?} has no on_change", self.id));
+        let (id, now, on_change) = (self.id, self.constraints, &on_change);
         let theme = cx.theme();
         let (lit, rest) = (theme.colors.accent, theme.colors.border);
         let pin = |on: bool| if on { lit } else { rest };

@@ -17,7 +17,7 @@ pub(crate) type OnEdit<V> = Rc<dyn Fn(V, &mut Window, &mut App)>;
 pub(crate) fn editing<V, T>(
     what: &'static str,
     value: &V,
-    on_change: &Option<OnEdit<V>>,
+    on_change: &OnEdit<V>,
     edit: impl Fn(&mut V, T) + 'static,
 ) -> impl Fn(T, &mut Window, &mut App) + 'static
 where
@@ -29,9 +29,7 @@ where
         let mut next = value.clone();
         edit(&mut next, input);
         log::info!("{what}: {next:?}");
-        if let Some(on_change) = &on_change {
-            on_change(next, window, cx);
-        }
+        on_change(next, window, cx);
     }
 }
 

@@ -123,7 +123,10 @@ impl TableStructureEditor {
 
 impl RenderOnce for TableStructureEditor {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let (id, fields, on_change) = (self.id, self.fields, &self.on_change);
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("table structure editor {:?} has no on_change", self.id));
+        let (id, fields, on_change) = (self.id, self.fields, &on_change);
         let room = window.use_keyed_state((id.clone(), "room"), cx, |_, _| Room::default());
         let rem = window.rem_size();
         let theme = cx.theme();
@@ -336,6 +339,8 @@ impl IndexManager {
 
 impl RenderOnce for IndexManager {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let on_create = self.on_create.expect("an index manager needs on_create");
+        let on_drop = self.on_drop.expect("an index manager needs on_drop");
         let id = self.id;
         let draft = window.use_keyed_state((id.clone(), "draft"), cx, |window, cx| Draft {
             name: cx.new(|cx| TextInput::new(window, cx).placeholder("Index name")),
@@ -345,7 +350,7 @@ impl RenderOnce for IndexManager {
         });
         let theme = cx.theme();
         let rows = self.indexes.iter().map(|index| {
-            let (name, on_drop) = (index.name.clone(), self.on_drop.clone());
+            let (name, on_drop) = (index.name.clone(), on_drop.clone());
             div()
                 .flex()
                 .items_center()
@@ -391,9 +396,7 @@ impl RenderOnce for IndexManager {
                             .tooltip("Drop the index")
                             .on_click(move |_, window, cx| {
                                 log::info!("index manager: drop {name}");
-                                if let Some(on_drop) = &on_drop {
-                                    on_drop(&name, window, cx);
-                                }
+                                on_drop(&name, window, cx);
                             }),
                         ),
                 )
@@ -407,7 +410,6 @@ impl RenderOnce for IndexManager {
         );
         let ready = !name.read(cx).text().trim().is_empty() && !picked.is_empty();
         let [chose, flipped, pick_method, made] = [(); 4].map(|_| draft.clone());
-        let on_create = self.on_create;
         div()
             .flex()
             .flex_col()
@@ -487,9 +489,7 @@ impl RenderOnce for IndexManager {
                                     index
                                 });
                                 log::info!("index manager: create {}", index.name);
-                                if let Some(on_create) = &on_create {
-                                    on_create(index, window, cx);
-                                }
+                                on_create(index, window, cx);
                             }),
                     ),
             )

@@ -204,13 +204,16 @@ fn another_engine_brings_its_port(cx: &mut TestAppContext) {
 fn narrow(_: &Bench, _: &mut Window, _: &mut App, _: Entity<Bench>) -> AnyElement {
     div()
         .w(px(280.0))
-        .child(TableStructureEditor::new(
-            "structure",
-            [
-                Field::new("user_id", "timestamptz"),
-                Field::new("total", "numeric"),
-            ],
-        ))
+        .child(
+            TableStructureEditor::new(
+                "structure",
+                [
+                    Field::new("user_id", "timestamptz"),
+                    Field::new("total", "numeric"),
+                ],
+            )
+            .on_change(|_, _, _| {}),
+        )
         .into_any_element()
 }
 

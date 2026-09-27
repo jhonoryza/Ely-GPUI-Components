@@ -236,10 +236,14 @@ impl RenderOnce for FontSizeControl {
                     ),
             )
             .child(
-                div()
-                    .text_size(Pixels::from(self.size))
-                    .text_color(theme.colors.fg)
-                    .child("The quick brown fox jumps over the lazy dog."),
+                div().flex().child(
+                    div()
+                        .flex_1()
+                        .min_w_0()
+                        .text_size(Pixels::from(self.size))
+                        .text_color(theme.colors.fg)
+                        .child("The quick brown fox jumps over the lazy dog."),
+                ),
             )
     }
 }

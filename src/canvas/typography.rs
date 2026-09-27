@@ -73,7 +73,10 @@ impl TypographyPanel {
 
 impl RenderOnce for TypographyPanel {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let (id, style, on_change) = (self.id, self.style, &self.on_change);
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("typography panel {:?} has no on_change", self.id));
+        let (id, style, on_change) = (self.id, self.style, &on_change);
         let theme = cx.theme();
         let family = editing(
             "typography panel",

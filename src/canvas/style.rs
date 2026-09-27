@@ -56,13 +56,14 @@ impl ColorPanel {
 
 impl RenderOnce for ColorPanel {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let (picked, chosen) = (self.on_change.clone(), self.on_change);
-        let report = |on_change: Option<OnEdit<Hsla>>| {
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("color panel {:?} has no on_change", self.id));
+        let (picked, chosen) = (on_change.clone(), on_change);
+        let report = |on_change: OnEdit<Hsla>| {
             move |color: Hsla, window: &mut Window, cx: &mut App| {
                 log::info!("color panel: {color:?}");
-                if let Some(on_change) = &on_change {
-                    on_change(color, window, cx);
-                }
+                on_change(color, window, cx);
             }
         };
         div()
@@ -120,6 +121,9 @@ impl ShadowEditor {
 
 impl RenderOnce for ShadowEditor {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("shadow editor {:?} has no on_change", self.id));
         let lift = cx
             .theme()
             .elevation(Elevation::Floating)
@@ -132,7 +136,7 @@ impl RenderOnce for ShadowEditor {
                 color: shadow.color,
             })
             .expect("a floating elevation casts a shadow");
-        let (id, shadows, on_change) = (self.id, self.shadows, &self.on_change);
+        let (id, shadows, on_change) = (self.id, self.shadows, &on_change);
         let add = editing("shadow editor", &shadows, on_change, move |all, _: ()| {
             all.push(lift)
         });
@@ -265,7 +269,10 @@ const CORNERS: [&str; 4] = ["TL", "TR", "BR", "BL"];
 
 impl RenderOnce for BorderEditor {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let (id, border, on_change) = (self.id, self.border, &self.on_change);
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("border editor {:?} has no on_change", self.id));
+        let (id, border, on_change) = (self.id, self.border, &on_change);
         let parted = window.use_keyed_state((id.clone(), "split"), cx, |_, _| false);
         let uneven = border.radii.iter().any(|radius| *radius != border.radii[0]);
         let split = *parted.read(cx) || uneven;

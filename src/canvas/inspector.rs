@@ -45,6 +45,9 @@ impl InspectorPanel {
 
 impl RenderOnce for InspectorPanel {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("inspector panel {:?} has no on_change", self.id));
         let id = self.id;
         let [shape] = self.selection.as_slice() else {
             let title: SharedString = match self.selection.len() {
@@ -55,7 +58,7 @@ impl RenderOnce for InspectorPanel {
                 .body("Select one layer to see its properties.")
                 .into_any_element();
         };
-        let on_change = &self.on_change;
+        let on_change = &on_change;
         let at = |edit: fn(&mut Shape, f64)| editing("inspector", shape, on_change, edit);
         let scrub = |name: &'static str, value: f32, least: f64| {
             ScrubInput::new((id.clone(), name), name, value as f64)

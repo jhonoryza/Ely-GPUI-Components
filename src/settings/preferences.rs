@@ -46,7 +46,10 @@ impl PrivacySettings {
 
 impl RenderOnce for PrivacySettings {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        let (id, privacy, on_change) = (self.id, self.privacy, &self.on_change);
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("privacy settings {:?} has no on_change", self.id));
+        let (id, privacy, on_change) = (self.id, self.privacy, &on_change);
         let row = |key: &'static str,
                    title: &'static str,
                    text: &'static str,
@@ -100,7 +103,7 @@ pub struct Notices {
     pub quiet: bool,
 }
 
-/// A grid of notices: a row for each kind, a box for each channel it may arrive by, and a switch that holds every notice back.
+/// Notices by kind: a row for each, a named box for each channel it may arrive by that folds under the name when narrow, and a switch that holds every notice back.
 #[derive(IntoElement)]
 pub struct NotificationSettings {
     id: ElementId,
@@ -125,55 +128,54 @@ impl NotificationSettings {
 
 impl RenderOnce for NotificationSettings {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let (id, notices, on_change) = (self.id, self.notices, &self.on_change);
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("notification settings {:?} has no on_change", self.id));
+        let (id, notices, on_change) = (self.id, self.notices, &on_change);
         let theme = cx.theme();
-        let cell = theme.label_width() * 0.5;
-        let head = div()
-            .flex()
-            .items_center()
-            .gap_2()
-            .text_size(theme.text_size(TextSize::Xs))
-            .text_color(theme.colors.fg_subtle)
-            .child(div().flex_1().min_w_0())
-            .children(notices.channels.iter().map(|channel| {
-                div()
-                    .flex_none()
-                    .w(cell)
-                    .child(Ellipsis::new(channel.clone()))
-            }));
         let rows = notices.kinds.iter().map(|(kind, name)| {
+            let boxes = notices.channels.iter().map(|channel| {
+                let pair = (kind.clone(), channel.clone());
+                let on = notices.on.contains(&pair);
+                let set = editing(
+                    "notifications",
+                    &notices,
+                    on_change,
+                    move |notices: &mut Notices, on: bool| {
+                        notices.on.retain(|each| *each != pair);
+                        if on {
+                            notices.on.push(pair.clone());
+                        }
+                    },
+                );
+                Checkbox::new((id.clone(), format!("{kind}-{channel}")), on)
+                    .label(channel.clone())
+                    .on_change(set)
+            });
             div()
                 .flex()
+                .flex_wrap()
                 .items_center()
-                .gap_2()
+                .gap_x_4()
+                .gap_y_1()
                 .py_2()
                 .border_b_1()
                 .border_color(theme.colors.border)
                 .child(
                     div()
                         .flex_1()
-                        .min_w_0()
+                        .min_w(theme.label_width())
                         .text_size(theme.text_size(TextSize::Sm))
                         .child(Ellipsis::new(name.clone())),
                 )
-                .children(notices.channels.iter().map(|channel| {
-                    let pair = (kind.clone(), channel.clone());
-                    let on = notices.on.contains(&pair);
-                    let set = editing(
-                        "notifications",
-                        &notices,
-                        on_change,
-                        move |notices: &mut Notices, on: bool| {
-                            notices.on.retain(|each| *each != pair);
-                            if on {
-                                notices.on.push(pair.clone());
-                            }
-                        },
-                    );
-                    div().flex_none().w(cell).child(
-                        Checkbox::new((id.clone(), format!("{kind}-{channel}")), on).on_change(set),
-                    )
-                }))
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .flex_none()
+                        .gap_x_3()
+                        .children(boxes),
+                )
         });
         let quiet = editing(
             "notifications",
@@ -188,7 +190,7 @@ impl RenderOnce for NotificationSettings {
                     .description("Hold every notice back until it is off.")
                     .control(Switch::new((id.clone(), "quiet"), notices.quiet).on_change(quiet)),
             )
-            .row(div().pt_3().child(head).children(rows))
+            .row(div().pt_3().children(rows))
     }
 }
 
@@ -232,7 +234,10 @@ impl StartupSettings {
 
 impl RenderOnce for StartupSettings {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let (id, startup, on_change) = (self.id, self.startup, &self.on_change);
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("startup settings {:?} has no on_change", self.id));
+        let (id, startup, on_change) = (self.id, self.startup, &on_change);
         let switch = |key: &'static str, on: bool, set: fn(&mut Startup, bool)| {
             Switch::new((id.clone(), key), on)
                 .on_change(editing("startup", &startup, on_change, set))

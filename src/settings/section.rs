@@ -217,6 +217,9 @@ impl RenderOnce for SettingsRow {
                             .child(text)
                     })),
             )
-            .children(self.control.map(|control| div().flex_none().child(control)))
+            .children(
+                self.control
+                    .map(|control| div().flex_none().min_w_0().max_w_full().child(control)),
+            )
     }
 }

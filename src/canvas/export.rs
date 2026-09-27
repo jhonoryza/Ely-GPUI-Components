@@ -138,7 +138,13 @@ impl ExportPanel {
 
 impl RenderOnce for ExportPanel {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let (id, settings, on_change) = (self.id, self.settings, &self.on_change);
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("export panel {:?} has no on_change", self.id));
+        let on_export = self
+            .on_export
+            .unwrap_or_else(|| panic!("export panel {:?} has no on_export", self.id));
+        let (id, settings, on_change) = (self.id, self.settings, &on_change);
         let files = export_files(&self.name, &settings);
         let next = added(&settings);
         let add = editing("export panel", &settings, on_change, move |all, _: ()| {
@@ -204,7 +210,7 @@ impl RenderOnce for ExportPanel {
                 )
         });
         let theme = cx.theme();
-        let (exported, on_export) = (files.clone(), self.on_export);
+        let (exported, on_export) = (files.clone(), on_export);
         div()
             .flex()
             .flex_col()
@@ -233,9 +239,7 @@ impl RenderOnce for ExportPanel {
                     .disabled(exported.is_empty())
                     .on_click(move |_, window, cx| {
                         log::info!("export panel: {exported:?}");
-                        if let Some(on_export) = &on_export {
-                            on_export(exported.clone(), window, cx);
-                        }
+                        on_export(exported.clone(), window, cx);
                     }),
             )
     }

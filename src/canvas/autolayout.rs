@@ -127,7 +127,10 @@ impl AutoLayoutControls {
 
 impl RenderOnce for AutoLayoutControls {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let (id, layout, on_change) = (self.id, self.layout, &self.on_change);
+        let on_change = self
+            .on_change
+            .unwrap_or_else(|| panic!("auto layout controls {:?} has no on_change", self.id));
+        let (id, layout, on_change) = (self.id, self.layout, &on_change);
         let place = Rc::new(editing(
             "auto layout",
             &layout,

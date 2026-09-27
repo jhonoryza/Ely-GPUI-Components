@@ -129,7 +129,10 @@ impl RenderOnce for ProxySettings {
             "manual" => manual(&text(&host), &text(&port), &text(&bypass)),
             other => panic!("proxy settings: no way named {other}"),
         };
-        let (switched, on_apply) = (fields.clone(), self.on_apply);
+        let on_apply = self
+            .on_apply
+            .unwrap_or_else(|| panic!("proxy settings {id:?} has no on_apply"));
+        let switched = fields.clone();
         div()
             .flex()
             .flex_col()
@@ -181,10 +184,9 @@ impl RenderOnce for ProxySettings {
                         .variant(ButtonVariant::Primary)
                         .disabled(read.is_none())
                         .on_click(move |_, window, cx| {
-                            if let (Some(proxy), Some(on_apply)) = (read.clone(), &on_apply) {
-                                log::info!("proxy settings: apply {proxy:?}");
-                                on_apply(proxy, window, cx);
-                            }
+                            let proxy = read.clone().expect("Apply rests until the proxy reads");
+                            log::info!("proxy settings: apply {proxy:?}");
+                            on_apply(proxy, window, cx);
                         }),
                 ),
             )
