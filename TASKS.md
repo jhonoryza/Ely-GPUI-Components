@@ -119,7 +119,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T32b Canvas · Tools — `tasks/ch31-43.md`
 - [x] T32c Canvas · Panels — `tasks/ch31-43.md`
 - [x] T32d Canvas · Graphs and boards — `tasks/ch31-43.md`
-- [ ] T33a DB & Dev Tools · Databases
+- [x] T33a DB & Dev Tools · Databases — `tasks/ch31-43.md`
 - [ ] T33b DB & Dev Tools · Data formats
 - [ ] T33c DB & Dev Tools · APIs
 - [ ] T33d DB & Dev Tools · Tools and machines
@@ -386,3 +386,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T32d | 3 | PASS | |
 | T33a | 1 | FAIL | the plan, the Redis browser and the structure editor drew past a 280px box; the form's rules and a row button's press went untested |
 | T33a | 2 | FAIL | the structure editor's cells kept the narrow box's first measure, and its Tab stops past the sideways fold stayed out of view |
+| T33a | 3 | PASS | |
