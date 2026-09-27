@@ -358,3 +358,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T30b | 1 | FAIL | the week and day views froze the line at now and today: the moment read once went down as given and turned the ticker off |
 | T30b | 2 | PASS | |
 | T30c | 1 | PASS | |
+| T30d | 1 | FAIL | a chosen day outlived the owner's days, and the next render panicked |

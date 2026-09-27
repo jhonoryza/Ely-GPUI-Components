@@ -161,3 +161,34 @@ fn a_slot_pick_hands_on_its_start(cx: &mut TestAppContext) {
         "09:00 to 10:00 is taken"
     );
 }
+
+fn paged(host: &Planning, owner: Entity<Planning>) -> gpui::AnyElement {
+    let first = host.month;
+    let dawn = date(2026, 8, 31).at(0, 0, 0, 0).to_zoned(TimeZone::UTC);
+    AvailabilityPicker::new("paged", [first, first.tomorrow().expect("a day ahead")])
+        .zone(TimeZone::UTC)
+        .hours(9, 10)
+        .now(dawn.expect("a UTC time").timestamp())
+        .on_pick(move |start, _, cx| note(&owner, format!("pick {start}"), cx))
+        .into_any_element()
+}
+
+#[gpui::test]
+fn new_days_from_the_owner_start_the_choice_over(cx: &mut TestAppContext) {
+    let (host, cx) = planning(paged, cx);
+    tab_to(2, cx);
+    press("space", cx);
+    host.update(cx, |host, cx| {
+        host.month = date(2026, 10, 5);
+        cx.notify();
+    });
+    settle(cx);
+    tab_to(3, cx);
+    press("space", cx);
+    let nine = date(2026, 10, 5).at(9, 0, 0, 0).to_zoned(TimeZone::UTC);
+    assert_eq!(
+        heard(&host, cx),
+        [format!("pick {}", nine.expect("a UTC time").timestamp())],
+        "the chosen day of the old run is gone; the first open day shows"
+    );
+}

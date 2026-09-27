@@ -8,6 +8,7 @@ use jiff::{Timestamp, civil::Date, tz::TimeZone};
 use super::hours::moment;
 use crate::{
     forms::{Choice, ChoiceChips},
+    layout::seeded::use_seeded,
     theme::{ActiveTheme, TextSize},
     typography::format,
 };
@@ -41,7 +42,7 @@ pub(crate) fn open_slots(
     starts
 }
 
-/// Open times to meet over some days: each day with its count of open slots, then the slots of the one chosen. Busy stretches, the working hours and the past close the rest. A pick hands on the slot's start.
+/// Open times to meet over some days: each day with its count of open slots, then the slots of the one chosen. Busy stretches, the working hours and the past close the rest. A pick hands on the slot's start; new days from the owner start the choice over.
 #[derive(IntoElement)]
 pub struct AvailabilityPicker {
     id: ElementId,
@@ -149,8 +150,9 @@ impl RenderOnce for AvailabilityPicker {
             .iter()
             .find(|(_, slots)| !slots.is_empty())
             .map(|(day, _)| *day);
-        let chosen = window.use_keyed_state((self.id.clone(), "day"), cx, |_, _| None::<Date>);
-        let shown = chosen.read(cx).or(picked_day).or(first_open);
+        let seed = (self.days.clone(), picked_day.or(first_open));
+        let chosen = use_seeded((self.id.clone(), "day"), seed, window, cx);
+        let shown = chosen.read(cx).value.1;
         let theme = cx.theme();
         let quiet = |text: &'static str| {
             div()
@@ -184,7 +186,7 @@ impl RenderOnce for AvailabilityPicker {
                 .expect("a day's value is its date");
             log::info!("availability picker: {day}");
             chosen.update(cx, |chosen, cx| {
-                *chosen = Some(day);
+                chosen.value.1 = Some(day);
                 cx.notify();
             })
         });
