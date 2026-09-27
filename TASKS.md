@@ -115,7 +115,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T31b Project · Issues and boards
 - [x] T31c Project · Plans
 - [x] T31d Project · Time and databases
-- [ ] T32a Canvas · Plane — `tasks/ch31-43.md`
+- [x] T32a Canvas · Plane — `tasks/ch31-43.md`
 - [ ] T32b Canvas · Tools
 - [ ] T32c Canvas · Panels
 - [ ] T32d Canvas · Graphs and boards
@@ -374,3 +374,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T31d | 1 | FAIL | a focused segment past the strip's fold stayed hidden; the tracker lost focus as Start and Stop swapped; Stop and Skip went untested; percent did not refuse content |
 | T31d | 2 | PASS | |
 | T32a | 1 | FAIL | the plain wheel panned against every scroll box; the handlers panned from the render's viewport, so events within a frame overwrote each other; the fit's cap at one went untested |
+| T32a | 2 | PASS | |

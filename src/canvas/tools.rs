@@ -1,0 +1,408 @@
+use std::rc::Rc;
+
+use gpui::{
+    App, AppContext as _, Bounds, ElementId, EmptyView, Entity, EntityId, InteractiveElement,
+    IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce, SharedString,
+    StatefulInteractiveElement, Styled, Window, canvas, div, prelude::*,
+};
+
+use super::{
+    edit::{Tool, drawn, hit, resized, snapped},
+    gesture::{
+        Brush, Gesture, Hand, Handlers, LEAST, OnDraw, OnKeys, OnMove, OnResize, PEN, REACH, Scene,
+        commit, path, spanned, stroke_shape, taken,
+    },
+    marks::{SelectionBox, SnapIndicator, TransformHandles, handle_boxes},
+    plane::{in_view, paint_shape},
+    shape::{Shape, ShapeKind},
+    view::{Frame, Viewport},
+};
+use crate::theme::ActiveTheme;
+
+/// A drag on a tool layer, and whose layer it is.
+struct Tracing {
+    owner: EntityId,
+}
+
+/// A layer over an InfiniteCanvas where its tools work. Select presses a shape, Shift adds to the selection, a drag moves it and snaps its edges to others, a handle resizes it, and a drag on empty space draws a SelectionBox. The shape tools draw by a drag, Shift keeping them square; the pen adds a point per press and a double press ends the path; text drops a line where pressed; the brush strokes a path. A drag may end anywhere, in the layer or out of it. Everything asks the owner; the hand leaves the canvas to pan.
+#[derive(IntoElement)]
+pub struct ToolLayer {
+    id: ElementId,
+    tool: Tool,
+    viewport: Viewport,
+    shapes: Vec<Shape>,
+    selected: Vec<SharedString>,
+    brush: Brush,
+    on_select: Option<OnKeys>,
+    on_draw: Option<OnDraw>,
+    on_move: Option<OnMove>,
+    on_resize: Option<OnResize>,
+}
+
+impl ToolLayer {
+    pub fn new(
+        id: impl Into<ElementId>,
+        tool: Tool,
+        viewport: Viewport,
+        shapes: impl IntoIterator<Item = Shape>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            tool,
+            viewport,
+            shapes: shapes.into_iter().collect(),
+            selected: Vec::new(),
+            brush: Brush { size: 4.0, hue: 0 },
+            on_select: None,
+            on_draw: None,
+            on_move: None,
+            on_resize: None,
+        }
+    }
+
+    pub fn selected(mut self, keys: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
+        self.selected = keys.into_iter().map(Into::into).collect();
+        self
+    }
+
+    pub fn brush(mut self, brush: Brush) -> Self {
+        self.brush = brush;
+        self
+    }
+
+    /// Gets the keys selected after each press or marquee.
+    pub fn on_select(
+        mut self,
+        handler: impl Fn(&[SharedString], &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_select = Some(Rc::new(handler));
+        self
+    }
+
+    /// Gets a new shape's kind and frame, for the owner to key and keep.
+    pub fn on_draw(
+        mut self,
+        handler: impl Fn(ShapeKind, Frame, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_draw = Some(Rc::new(handler));
+        self
+    }
+
+    /// Gets the selection's keys and how far it moved, snaps included.
+    pub fn on_move(
+        mut self,
+        handler: impl Fn(&[SharedString], (f32, f32), &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_move = Some(Rc::new(handler));
+        self
+    }
+
+    /// Gets a resized shape's key and new frame.
+    pub fn on_resize(
+        mut self,
+        handler: impl Fn(&SharedString, Frame, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_resize = Some(Rc::new(handler));
+        self
+    }
+}
+
+impl RenderOnce for ToolLayer {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let hand: Entity<Hand> =
+            window.use_keyed_state((self.id.clone(), "hand"), cx, |_, _| Hand::default());
+        if self.tool == Tool::Hand {
+            return div().into_any_element();
+        }
+        let (view, tool) = (self.viewport, self.tool);
+        let shapes = Rc::new(self.shapes);
+        let selected = Rc::new(self.selected);
+        let others: Vec<Frame> = shapes
+            .iter()
+            .filter(|shape| !selected.contains(&shape.key))
+            .map(|shape| shape.frame)
+            .collect();
+        let whole = spanned(&shapes, &selected);
+        let state = hand.read(cx);
+        let gesture = state.gesture.clone();
+        let square = state.square;
+        let pen = state.pen.clone();
+        let theme = cx.theme();
+        let (palette, stroke) = (
+            theme.colors.clone(),
+            theme.canvas().stroke.to_pixels(window.rem_size()),
+        );
+        let side = f32::from(theme.canvas().handle.to_pixels(window.rem_size()));
+        let (nudge, guides) = match &gesture {
+            Gesture::Moving { from, to } => {
+                let moved = whole.map(|frame| {
+                    Frame::new(
+                        frame.x + to.0 - from.0,
+                        frame.y + to.1 - from.1,
+                        frame.w,
+                        frame.h,
+                    )
+                });
+                moved.map_or(((0.0, 0.0), Vec::new()), |moved| {
+                    snapped(&moved, &others, REACH / view.zoom)
+                })
+            }
+            _ => ((0.0, 0.0), Vec::new()),
+        };
+        let preview: Vec<Shape> = match &gesture {
+            Gesture::Drawing { kind, from, to } => {
+                let (kind, frame) = drawn(kind.clone(), *from, *to, square);
+                vec![Shape::new("+draft", "Draft", kind, frame)]
+            }
+            Gesture::Moving { from, to } => shapes
+                .iter()
+                .filter(|shape| selected.contains(&shape.key))
+                .map(|shape| {
+                    let mut moved = shape.clone();
+                    moved.frame.x += to.0 - from.0 + nudge.0;
+                    moved.frame.y += to.1 - from.1 + nudge.1;
+                    moved
+                })
+                .collect(),
+            Gesture::Resizing {
+                key,
+                handle,
+                from,
+                to,
+            } => shapes
+                .iter()
+                .filter(|shape| shape.key == *key)
+                .map(|shape| {
+                    let mut sized = shape.clone();
+                    sized.frame = resized(
+                        shape.frame,
+                        *handle,
+                        (to.0 - from.0, to.1 - from.1),
+                        LEAST,
+                        square,
+                    );
+                    sized
+                })
+                .collect(),
+            Gesture::Stroke { points } if points.len() > 1 => {
+                vec![stroke_shape(points, self.brush.size, self.brush.hue)]
+            }
+            _ if pen.len() > 1 => vec![stroke_shape(&pen, PEN, self.brush.hue)],
+            _ => Vec::new(),
+        };
+        let marquee = match &gesture {
+            Gesture::Marquee { from, to } => Some(SelectionBox::new(in_view(
+                &view,
+                &Frame::spanning(*from, *to),
+            ))),
+            _ => None,
+        };
+        let handles = (tool == Tool::Select && matches!(gesture, Gesture::Idle))
+            .then_some(whole)
+            .flatten()
+            .map(|frame| TransformHandles::new(in_view(&view, &frame)));
+        let snap = (!guides.is_empty()).then(|| SnapIndicator::new(guides.clone(), view));
+        let point_of = move |at: Point<Pixels>, bounds: Bounds<Pixels>| {
+            let local = at - bounds.origin;
+            view.to_canvas((f32::from(local.x), f32::from(local.y)))
+        };
+        let owner = hand.entity_id();
+        let (pressed, moved, dropped, released) =
+            (hand.clone(), hand.clone(), hand.clone(), hand.clone());
+        let (press_shapes, press_selected) = (shapes.clone(), selected.clone());
+        let (select_on_press, draw_on_press, select_on_up) = (
+            self.on_select.clone(),
+            self.on_draw.clone(),
+            self.on_select.clone(),
+        );
+        let handlers = Handlers {
+            on_select: self.on_select,
+            on_draw: self.on_draw,
+            on_move: self.on_move,
+            on_resize: self.on_resize,
+        };
+        let scene = Rc::new(Scene {
+            shapes,
+            selected,
+            others,
+            view,
+        });
+        let handlers = Rc::new(handlers);
+        let brush = self.brush;
+        let (out_hand, out_scene, out_handlers) = (hand.clone(), scene.clone(), handlers.clone());
+        let measured = hand.clone();
+        div()
+            .id(self.id)
+            .absolute()
+            .inset_0()
+            .when(tool != Tool::Select, |layer| layer.cursor_crosshair())
+            .on_mouse_down(MouseButton::Left, move |event, window, cx| {
+                cx.stop_propagation();
+                let bounds = pressed.read(cx).bounds;
+                let at = point_of(event.position, bounds);
+                let local = event.position - bounds.origin;
+                let view_at = (f32::from(local.x), f32::from(local.y));
+                let gesture = match tool {
+                    Tool::Select => {
+                        let held = (press_selected.len() == 1)
+                            .then(|| spanned(&press_shapes, &press_selected))
+                            .flatten()
+                            .and_then(|frame| {
+                                handle_boxes(&in_view(&view, &frame), side)
+                                    .into_iter()
+                                    .find(|(_, square)| square.contains(view_at))
+                            });
+                        match (held, hit(&press_shapes, at, REACH / view.zoom)) {
+                            (Some((handle, _)), _) => Gesture::Resizing {
+                                key: press_selected[0].clone(),
+                                handle,
+                                from: at,
+                                to: at,
+                            },
+                            (None, Some(ix)) => {
+                                let key = press_shapes[ix].key.clone();
+                                let next: Vec<SharedString> =
+                                    match (event.modifiers.shift, press_selected.contains(&key)) {
+                                        (true, true) => press_selected
+                                            .iter()
+                                            .filter(|each| **each != key)
+                                            .cloned()
+                                            .collect(),
+                                        (true, false) => {
+                                            press_selected.iter().cloned().chain([key]).collect()
+                                        }
+                                        (false, true) => press_selected.to_vec(),
+                                        (false, false) => vec![key],
+                                    };
+                                if next != *press_selected {
+                                    log::info!("tool layer: select {next:?}");
+                                    if let Some(on_select) = &select_on_press {
+                                        on_select(&next, window, cx);
+                                    }
+                                }
+                                Gesture::Moving { from: at, to: at }
+                            }
+                            (None, None) => Gesture::Marquee { from: at, to: at },
+                        }
+                    }
+                    Tool::Pen => {
+                        let ends = event.click_count >= 2;
+                        let points = pressed.update(cx, |hand, _| {
+                            if !ends {
+                                hand.pen.push(at);
+                            }
+                            match ends {
+                                true => std::mem::take(&mut hand.pen),
+                                false => Vec::new(),
+                            }
+                        });
+                        if ends && points.len() > 1 {
+                            let (kind, frame) = path(&points, PEN);
+                            log::info!("tool layer: a path of {} points", points.len());
+                            if let Some(on_draw) = &draw_on_press {
+                                on_draw(kind, frame, window, cx);
+                            }
+                        }
+                        Gesture::Idle
+                    }
+                    Tool::Text => {
+                        log::info!("tool layer: text at {at:?}");
+                        if let Some(on_draw) = &draw_on_press {
+                            on_draw(
+                                ShapeKind::Text("Text".into()),
+                                Frame::new(at.0, at.1, 160.0, 32.0),
+                                window,
+                                cx,
+                            );
+                        }
+                        Gesture::Idle
+                    }
+                    Tool::Brush => Gesture::Stroke { points: vec![at] },
+                    drawer => Gesture::Drawing {
+                        kind: drawer.draws().expect("the rest draw shapes"),
+                        from: at,
+                        to: at,
+                    },
+                };
+                pressed.update(cx, |hand, cx| {
+                    hand.gesture = gesture;
+                    hand.square = event.modifiers.shift;
+                    cx.notify();
+                });
+            })
+            .on_drag(Tracing { owner }, |_, _, _, cx| cx.new(|_| EmptyView))
+            .on_drag_move::<Tracing>(move |event, _, cx| {
+                if event.drag(cx).owner != owner {
+                    return;
+                }
+                let bounds = moved.read(cx).bounds;
+                let at = point_of(event.event.position, bounds);
+                moved.update(cx, |hand, cx| {
+                    hand.square = event.event.modifiers.shift;
+                    match &mut hand.gesture {
+                        Gesture::Marquee { to, .. }
+                        | Gesture::Moving { to, .. }
+                        | Gesture::Resizing { to, .. }
+                        | Gesture::Drawing { to, .. } => *to = at,
+                        Gesture::Stroke { points } => points.push(at),
+                        Gesture::Idle => {}
+                    }
+                    cx.notify();
+                });
+            })
+            .on_drop(move |_: &Tracing, window, cx| {
+                let (gesture, square) = taken(&dropped, cx);
+                commit(gesture, square, &scene, &handlers, brush, window, cx);
+            })
+            .on_mouse_up_out(MouseButton::Left, move |_, window, cx| {
+                let (gesture, square) = taken(&out_hand, cx);
+                commit(
+                    gesture,
+                    square,
+                    &out_scene,
+                    &out_handlers,
+                    brush,
+                    window,
+                    cx,
+                );
+            })
+            .on_mouse_up(MouseButton::Left, move |_, window, cx| {
+                if cx.has_active_drag() {
+                    return;
+                }
+                let gesture = released.update(cx, |hand, cx| {
+                    cx.notify();
+                    std::mem::take(&mut hand.gesture)
+                });
+                if matches!(gesture, Gesture::Marquee { .. }) {
+                    log::info!("tool layer: nothing selected");
+                    if let Some(on_select) = &select_on_up {
+                        on_select(&[], window, cx);
+                    }
+                }
+            })
+            .child(
+                canvas(
+                    move |bounds, window, cx| {
+                        if measured.read(cx).bounds != bounds {
+                            measured.update(cx, |hand, _| hand.bounds = bounds);
+                            window.request_animation_frame();
+                        }
+                    },
+                    move |bounds, _, window, _| {
+                        for shape in &preview {
+                            paint_shape(shape, &view, bounds.origin, &palette, stroke, window);
+                        }
+                    },
+                )
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full(),
+            )
+            .children(marquee)
+            .children(handles)
+            .children(snap)
+            .into_any_element()
+    }
+}

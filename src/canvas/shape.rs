@@ -9,15 +9,48 @@ pub enum ShapeKind {
     Ellipse,
     /// A regular polygon of so many sides, three or more.
     Polygon(u8),
-    /// From the frame's top left to its bottom right.
-    Line,
-    /// A line with a head at its end.
-    Arrow,
+    /// From the opposite corner of the frame to this one.
+    Line(Corner),
+    /// A line with a head at the corner it ends at.
+    Arrow(Corner),
     Text(SharedString),
-    /// Points in canvas units from the frame's top left.
-    Path(Vec<(f32, f32)>),
+    /// Points in canvas units from the frame's top left, a line so wide.
+    Path {
+        points: Vec<(f32, f32)>,
+        width: f32,
+    },
     /// A square of paper with words on it.
     Note(SharedString),
+}
+
+/// A frame's corner, where a line or an arrow ends.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Corner {
+    TopLeft,
+    TopRight,
+    BottomRight,
+    BottomLeft,
+}
+
+impl Corner {
+    /// Its point on `frame`.
+    pub(crate) fn of(self, frame: &Frame) -> (f32, f32) {
+        match self {
+            Corner::TopLeft => (frame.x, frame.y),
+            Corner::TopRight => (frame.right(), frame.y),
+            Corner::BottomRight => (frame.right(), frame.bottom()),
+            Corner::BottomLeft => (frame.x, frame.bottom()),
+        }
+    }
+
+    pub(crate) fn opposite(self) -> Corner {
+        match self {
+            Corner::TopLeft => Corner::BottomRight,
+            Corner::TopRight => Corner::BottomLeft,
+            Corner::BottomRight => Corner::TopLeft,
+            Corner::BottomLeft => Corner::TopRight,
+        }
+    }
 }
 
 /// Something on a canvas: its key, its name, what it is, its frame, its hue among the chart colors, and whether it hides or is locked.

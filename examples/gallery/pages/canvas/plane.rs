@@ -1,6 +1,7 @@
 use ely_gpui_component::{
     canvas::{
-        Artboard, Frame, Guide, InfiniteCanvas, MiniMap, Shape, ShapeKind, Viewport, ZoomControls,
+        Artboard, Corner, Frame, Guide, InfiniteCanvas, MiniMap, Shape, ShapeKind, Viewport,
+        ZoomControls,
     },
     theme::{ActiveTheme, Radius},
 };
@@ -57,27 +58,30 @@ fn shapes() -> Vec<Shape> {
         Shape::new(
             "rule",
             "Rule",
-            ShapeKind::Line,
+            ShapeKind::Line(Corner::BottomRight),
             Frame::new(24.0, 380.0, 342.0, 0.0),
         )
         .hue(4),
         Shape::new(
             "flow",
             "Flow",
-            ShapeKind::Arrow,
+            ShapeKind::Arrow(Corner::BottomRight),
             Frame::new(390.0, 120.0, 80.0, 0.0),
         )
         .hue(3),
         Shape::new(
             "sketch",
             "Sketch",
-            ShapeKind::Path(vec![
-                (0.0, 40.0),
-                (40.0, 0.0),
-                (80.0, 30.0),
-                (120.0, 10.0),
-                (160.0, 50.0),
-            ]),
+            ShapeKind::Path {
+                points: vec![
+                    (0.0, 40.0),
+                    (40.0, 0.0),
+                    (80.0, 30.0),
+                    (120.0, 10.0),
+                    (160.0, 50.0),
+                ],
+                width: 2.0,
+            },
             Frame::new(494.0, 60.0, 160.0, 50.0),
         )
         .hue(1),

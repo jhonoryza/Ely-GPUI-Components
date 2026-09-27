@@ -116,10 +116,10 @@ pub(crate) fn paint_shape(
             finish(solid(&corners, origin), wash, window);
             finish(outline(&corners, origin, stroke, true), ink, window);
         }
-        ShapeKind::Line | ShapeKind::Arrow => {
-            let (from, to) = ((frame.x, frame.y), (frame.right(), frame.bottom()));
+        ShapeKind::Line(end) | ShapeKind::Arrow(end) => {
+            let (from, to) = (end.opposite().of(&frame), end.of(&frame));
             finish(outline(&[from, to], origin, stroke, false), ink, window);
-            if shape.kind == ShapeKind::Arrow {
+            if matches!(shape.kind, ShapeKind::Arrow(_)) {
                 let (dx, dy) = (to.0 - from.0, to.1 - from.1);
                 let length = (dx * dx + dy * dy).sqrt().max(1.0);
                 let (ux, uy) = (dx / length, dy / length);
@@ -130,12 +130,13 @@ pub(crate) fn paint_shape(
                 finish(solid(&[to, left, right], origin), ink, window);
             }
         }
-        ShapeKind::Path(points) => {
+        ShapeKind::Path { points, width } => {
             let points: Vec<(f32, f32)> = points
                 .iter()
                 .map(|(x, y)| view.to_view((shape.frame.x + x, shape.frame.y + y)))
                 .collect();
-            finish(outline(&points, origin, stroke, false), ink, window);
+            let wide = Pixels::from(width * view.zoom).max(stroke);
+            finish(outline(&points, origin, wide, false), ink, window);
         }
         ShapeKind::Text(_) | ShapeKind::Note(_) => {}
     }

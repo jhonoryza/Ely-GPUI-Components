@@ -7,10 +7,13 @@ use gpui::{
 use super::{Frame, InfiniteCanvas, MiniMap, Viewport, ZoomControls};
 use crate::{primitives::FocusNext, theme::Theme};
 
-/// A view that shows one canvas part and keeps the viewports it heard.
+mod tools;
+
+/// A view that shows one canvas part and keeps the viewports and words it heard.
 struct Stage {
     part: fn(Entity<Stage>) -> AnyElement,
     heard: Vec<Viewport>,
+    said: Vec<String>,
 }
 
 impl Render for Stage {
@@ -42,6 +45,7 @@ fn stage(
     let (host, cx) = cx.add_window_view(|_, _| Stage {
         part,
         heard: Vec::new(),
+        said: Vec::new(),
     });
     settle(cx);
     (host, cx)
@@ -52,6 +56,17 @@ fn hear(owner: &Entity<Stage>, view: Viewport, cx: &mut gpui::App) {
         stage.heard.push(view);
         cx.notify();
     });
+}
+
+fn say(owner: &Entity<Stage>, words: String, cx: &mut gpui::App) {
+    owner.update(cx, |stage, cx| {
+        stage.said.push(words);
+        cx.notify();
+    });
+}
+
+fn said(host: &Entity<Stage>, cx: &mut VisualTestContext) -> Vec<String> {
+    host.read_with(cx, |stage, _| stage.said.clone())
 }
 
 fn heard(host: &Entity<Stage>, cx: &mut VisualTestContext) -> Vec<Viewport> {

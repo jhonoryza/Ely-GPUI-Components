@@ -1,6 +1,7 @@
 use gpui::{AnyElement, App, Window, div, prelude::*};
 
 mod plane;
+mod tools;
 
 use super::Page;
 use crate::script::Step;
@@ -20,8 +21,26 @@ const SCRIPT: &[Step] = &[
     Step::UpAt("canvas-plane", 300.0, 240.0),
     Step::Wait(200),
     Step::Shot("panned"),
+    Step::DownAt("canvas-tools", 150.0, 110.0),
+    Step::DragTo("canvas-tools", 170.0, 112.0),
+    Step::DragTo("canvas-tools", 187.0, 112.0),
+    Step::Wait(200),
+    Step::Shot("snapping"),
+    Step::UpAt("canvas-tools", 187.0, 112.0),
+    Step::Wait(200),
+    Step::DownAt("canvas-palette", 83.0, 16.0),
+    Step::UpAt("canvas-palette", 83.0, 16.0),
+    Step::Wait(150),
+    Step::DownAt("canvas-tools", 60.0, 230.0),
+    Step::DragTo("canvas-tools", 200.0, 300.0),
+    Step::UpAt("canvas-tools", 200.0, 300.0),
+    Step::Wait(250),
+    Step::Shot("drawn"),
 ];
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
-    div().child(plane::plane(window, cx)).into_any_element()
+    div()
+        .child(plane::plane(window, cx))
+        .child(tools::tools(window, cx))
+        .into_any_element()
 }
