@@ -1,17 +1,17 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Context, ElementId, Entity, ImageSource, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Subscription,
-    Window, div, prelude::*, rems,
+    App, Axis, Context, ElementId, Entity, FocusHandle, ImageSource, InteractiveElement,
+    IntoElement, MouseButton, ParentElement, RenderOnce, ScrollHandle, SharedString,
+    StatefulInteractiveElement, Styled, Subscription, Window, canvas, div, prelude::*, rems,
 };
 
 use crate::{
     buttons::{Button, ButtonVariant},
     forms::{Input, InputEvent, OnValue, TextInput},
-    layout::{Masonry, on_axis},
+    layout::{Masonry, bring_into_view, on_axis},
     motion::Skeleton,
-    primitives::{FocusRing, Icon, IconName, Image, Tooltip, checked_ratio, framed},
+    primitives::{FocusRing, Icon, IconName, Image, Tooltip, checked_ratio, framed, tab_stop},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
 };
 
@@ -147,6 +147,26 @@ impl RenderOnce for GifPicker {
         search.update(cx, |search, _| search.on_query = self.on_query.clone());
         let input = search.read(cx).input.clone();
         let empty = input.read(cx).text().trim().is_empty();
+        let scroll = window
+            .use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| ScrollHandle::new())
+            .read(cx)
+            .clone();
+        let revealed =
+            window.use_keyed_state(
+                (self.id.clone(), "revealed"),
+                cx,
+                |_, _| None::<SharedString>,
+            );
+        let focuses: Vec<FocusHandle> = match &self.gifs {
+            Gifs::Loading => Vec::new(),
+            Gifs::Found(found) => found
+                .iter()
+                .map(|gif| {
+                    let id = (self.id.clone(), format!("gif-focus-{}", gif.key)).into();
+                    tab_stop(id, true, window, cx)
+                })
+                .collect(),
+        };
         let theme = cx.theme();
         let colors = &theme.colors;
         let round = theme.radius(Radius::Md);
@@ -186,15 +206,46 @@ impl RenderOnce for GifPicker {
                 .collect(),
             Gifs::Found(found) => found
                 .into_iter()
-                .map(|gif| {
+                .zip(focuses)
+                .map(|(gif, focus)| {
                     let (key, on_pick, owner) =
                         (gif.key.clone(), self.on_pick.clone(), self.id.clone());
-                    div()
+                    let (shown, revealed, scroll) =
+                        (gif.key.clone(), revealed.clone(), scroll.clone());
+                    let reveal = canvas(
+                        {
+                            let focus = focus.clone();
+                            move |bounds, window, cx| {
+                                let focused = focus.is_focused(window);
+                                let held = revealed.read(cx).as_ref() == Some(&shown);
+                                if focused && !held {
+                                    revealed
+                                        .update(cx, |revealed, _| *revealed = Some(shown.clone()));
+                                    if bring_into_view(&scroll, bounds, Axis::Vertical) {
+                                        log::info!("gif picker: {shown} scrolled into view");
+                                        window.request_animation_frame();
+                                    }
+                                } else if !focused && held {
+                                    revealed.update(cx, |revealed, _| *revealed = None);
+                                }
+                            }
+                        },
+                        |_, _, _, _| {},
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full();
+                    let tile = div()
                         .id((self.id.clone(), format!("gif-{}", gif.key)))
+                        .debug_selector({
+                            let key = gif.key.clone();
+                            move || format!("gif {key}")
+                        })
                         .rounded(round)
                         .border_1()
                         .border_color(gpui::transparent_black())
-                        .tab_index(0)
+                        .track_focus(&focus)
                         .focus_ring(cx)
                         .cursor_pointer()
                         .tooltip(Tooltip::text(gif.title.clone()))
@@ -214,7 +265,11 @@ impl RenderOnce for GifPicker {
                                 .size_full()
                                 .rounded(round),
                             ),
-                        )
+                        );
+                    div()
+                        .relative()
+                        .child(tile)
+                        .child(reveal)
                         .into_any_element()
                 })
                 .collect(),
@@ -256,6 +311,8 @@ impl RenderOnce for GifPicker {
                 on_axis(
                     div()
                         .id((self.id.clone(), "results"))
+                        .debug_selector(|| "gif-results".into())
+                        .track_scroll(&scroll)
                         .max_h(theme.list_max_height())
                         .overflow_y_scroll(),
                 )

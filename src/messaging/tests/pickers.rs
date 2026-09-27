@@ -181,6 +181,23 @@ fn a_gif_is_a_tab_stop_that_space_picks(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+fn a_gif_past_the_fold_comes_into_view_when_focused(cx: &mut TestAppContext) {
+    let keys = [
+        "g0", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "g8", "g9", "g10", "g11",
+    ];
+    let (_, cx) = gifing(Gifs::Found(keys.iter().map(|key| gif(key)).collect()), cx);
+    tab_to(15, cx);
+    let (tile, results) = (
+        cx.debug_bounds("gif g11").expect("the last GIF draws"),
+        cx.debug_bounds("gif-results").expect("the results draw"),
+    );
+    assert!(
+        tile.top() >= results.top() && tile.bottom() <= results.bottom(),
+        "{tile:?} inside {results:?}"
+    );
+}
+
+#[gpui::test]
 fn nothing_found_says_so(cx: &mut TestAppContext) {
     let (_, cx) = gifing(Gifs::Found(Vec::new()), cx);
     assert!(cx.debug_bounds("gifs-none").is_some());

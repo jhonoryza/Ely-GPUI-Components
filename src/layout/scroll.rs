@@ -16,18 +16,25 @@ use crate::{motion, theme::ActiveTheme};
 
 const IDLE: Duration = Duration::from_millis(900);
 
-/// Sets `scroll`'s sideways offset whole so `item`, as painted, sits inside the box, its start first when it is wider; true when it moved.
-pub(crate) fn bring_into_view(scroll: &ScrollHandle, item: Bounds<Pixels>) -> bool {
+/// Sets `scroll`'s offset along `axis` whole so `item`, as painted, sits inside the box, its start first when it is longer; true when it moved.
+pub(crate) fn bring_into_view(scroll: &ScrollHandle, item: Bounds<Pixels>, axis: Axis) -> bool {
     let (frame, offset) = (scroll.bounds(), scroll.offset());
-    let shift = if item.left() < frame.left() {
-        frame.left() - item.left()
-    } else if item.right() > frame.right() {
-        (frame.right() - item.right()).max(frame.left() - item.left())
+    let ((start, end), (first, last)) = match axis {
+        Axis::Horizontal => ((item.left(), item.right()), (frame.left(), frame.right())),
+        Axis::Vertical => ((item.top(), item.bottom()), (frame.top(), frame.bottom())),
+    };
+    let shift = if start < first {
+        first - start
+    } else if end > last {
+        (last - end).max(first - start)
     } else {
         Pixels::ZERO
     };
     if shift != Pixels::ZERO {
-        scroll.set_offset(point(offset.x + shift, offset.y));
+        scroll.set_offset(match axis {
+            Axis::Horizontal => point(offset.x + shift, offset.y),
+            Axis::Vertical => point(offset.x, offset.y + shift),
+        });
     }
     shift != Pixels::ZERO
 }

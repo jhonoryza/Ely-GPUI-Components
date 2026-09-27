@@ -1,5 +1,5 @@
 use gpui::{
-    App, Bounds, Div, DragMoveEvent, ElementId, Entity, EntityId, FocusHandle, FontWeight,
+    App, Axis, Bounds, Div, DragMoveEvent, ElementId, Entity, EntityId, FocusHandle, FontWeight,
     InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Rems, SharedString,
     Stateful, StatefulInteractiveElement, Styled, Window, canvas, div, prelude::*,
     transparent_black,
@@ -97,7 +97,7 @@ fn reveal(
     }
     let scroll = view.read(cx).sideways.clone();
     view.update(cx, |view, _| view.revealed = Some(key.clone()));
-    if bring_into_view(&scroll, head) {
+    if bring_into_view(&scroll, head, Axis::Horizontal) {
         log::info!("data table: header {key} scrolled into view");
         window.request_animation_frame();
     }

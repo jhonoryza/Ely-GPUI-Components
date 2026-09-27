@@ -1,7 +1,7 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    App, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
+    App, Axis, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
     ScrollHandle, SharedString, StatefulInteractiveElement, Styled, Window, canvas, div,
     prelude::*, relative, transparent_black,
 };
@@ -233,7 +233,7 @@ impl RenderOnce for VideoGenerationTimeline {
                                         revealed.update(cx, |revealed, _| {
                                             *revealed = Some(key.clone())
                                         });
-                                        if bring_into_view(&scroll, bounds) {
+                                        if bring_into_view(&scroll, bounds, Axis::Horizontal) {
                                             log::info!(
                                                 "video timeline: shot {key} scrolled into view"
                                             );
