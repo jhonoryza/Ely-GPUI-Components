@@ -18,6 +18,7 @@ mod finance;
 mod forms;
 mod generative;
 mod git;
+mod i18n;
 mod interaction;
 mod layout;
 mod lists;
@@ -92,8 +93,10 @@ pub const ALL: &[Page] = &[
     onboarding::PAGE,
     interaction::PAGE,
     theme::PAGE,
+    i18n::PAGE,
 ];
 
+pub use i18n::install as install_i18n;
 pub use interaction::bind_keys;
 pub use shell::{open_about, open_managed};
 
