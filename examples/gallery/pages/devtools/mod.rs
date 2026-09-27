@@ -1,5 +1,6 @@
 use gpui::{AnyElement, App, Window, div, prelude::*};
 
+mod apis;
 mod data;
 mod db;
 mod formats;
@@ -26,5 +27,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(db::structure(window, cx))
         .child(data::redis(window, cx))
         .child(formats::documents(window, cx))
+        .child(apis::requests(window, cx))
+        .child(apis::socket(window, cx))
+        .child(apis::graphql(window, cx))
         .into_any_element()
 }

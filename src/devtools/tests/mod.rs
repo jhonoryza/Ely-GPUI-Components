@@ -6,6 +6,7 @@ use gpui::{
 use super::{Connection, ConnectionForm, ConnectionManager, Engine, Field, TableStructureEditor};
 use crate::{editor::CodeEditor, forms, primitives::FocusNext, theme::Theme};
 
+mod api;
 mod formats;
 
 type Part = fn(&Bench, &mut Window, &mut App, Entity<Bench>) -> AnyElement;
