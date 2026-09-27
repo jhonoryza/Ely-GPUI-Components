@@ -122,7 +122,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T33a DB & Dev Tools · Databases — `tasks/ch31-43.md`
 - [x] T33b DB & Dev Tools · Data formats — `tasks/ch31-43.md`
 - [x] T33c DB & Dev Tools · APIs — `tasks/ch31-43.md`
-- [ ] T33d DB & Dev Tools · Tools and machines
+- [x] T33d DB & Dev Tools · Tools and machines — `tasks/ch31-43.md`
 - [ ] T34 Dashboard
 - [ ] T35 Settings
 - [ ] T36 Account
@@ -394,3 +394,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T33c | 2 | FAIL | where an Inside drop lands in a folder that holds something went untested |
 | T33c | 3 | PASS | |
 | T33d | 1 | FAIL | text fields never painted a highlight's wash; a tile's value ran past 280px; a stray + read as a hex digit; the WCAG thresholds, an exit's badge, a stopped row's load and the meter's clamp untested |
+| T33d | 2 | PASS | |
