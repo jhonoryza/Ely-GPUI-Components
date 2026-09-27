@@ -9,6 +9,7 @@ mod media;
 mod messaging;
 mod onboarding;
 mod palette;
+mod platform;
 mod project;
 mod syntax;
 mod tokens;
@@ -32,6 +33,7 @@ pub use media::MediaSizes;
 pub use messaging::MessagingSizes;
 pub use onboarding::OnboardingSizes;
 pub use palette::{HUE_NAMES, Mix, Palette, Syntax};
+pub use platform::Platform;
 pub use project::ProjectSizes;
 pub use syntax::{SyntaxTheme, syntax_themes};
 pub use tokens::{
@@ -69,6 +71,7 @@ pub struct Theme {
     pub font_family: SharedString,
     pub mono_family: SharedString,
     pub reduced_motion: bool,
+    pub platform: Platform,
 }
 
 impl Global for Theme {}
@@ -97,6 +100,7 @@ impl Theme {
             font_family: "Inter".into(),
             mono_family: "JetBrains Mono".into(),
             reduced_motion: false,
+            platform: Platform::current(),
         });
     }
 

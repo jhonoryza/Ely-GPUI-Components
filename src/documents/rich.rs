@@ -98,6 +98,7 @@ impl RenderOnce for RichTextEditor {
         };
         let (open_link, close_link) = (set_linking(true), set_linking(false));
         let float_id: ElementId = (self.id.clone(), "float").into();
+        let platform = cx.theme().platform;
         let floating = FloatingToolbar::new(float_id.clone(), &self.field).children(
             INLINE.iter().map(|tool_of| {
                 let on = pressed.contains(&tool_of.0);
@@ -107,6 +108,7 @@ impl RenderOnce for RichTextEditor {
                     *tool_of,
                     on,
                     Some(open_link.clone()),
+                    platform,
                 )
             }),
         );

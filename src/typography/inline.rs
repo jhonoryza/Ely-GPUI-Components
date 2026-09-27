@@ -7,8 +7,8 @@ use gpui::{
 use regex::RegexBuilder;
 use smallvec::SmallVec;
 
-use super::keys::{Platform, keystroke_labels};
-use crate::theme::{ActiveTheme, Radius, TextSize};
+use super::keys::{keystroke, keystroke_labels};
+use crate::theme::{ActiveTheme, Platform, Radius, TextSize};
 
 /// Monospace fragment on a quiet fill.
 #[derive(IntoElement)]
@@ -56,28 +56,25 @@ fn cap(label: String, cx: &App) -> impl IntoElement + use<> {
         .child(label)
 }
 
-fn parse(source: &str) -> Keystroke {
-    Keystroke::parse(source).unwrap_or_else(|error| panic!("bad keystroke {source:?}: {error}"))
-}
-
-/// One key, labeled for this platform. Takes gpui key syntax.
+/// One key, labeled for the theme's platform. Takes gpui key syntax.
 #[derive(IntoElement)]
 pub struct Kbd {
-    stroke: Keystroke,
+    source: SharedString,
 }
 
 impl Kbd {
-    /// `"secondary-s"` reads ⌘S on macOS and Ctrl S elsewhere.
+    /// `"secondary-s"` reads ⌘S for the Mac and Ctrl S for the others.
     pub fn new(source: &str) -> Self {
         Self {
-            stroke: parse(source),
+            source: SharedString::from(source.to_string()),
         }
     }
 }
 
 impl RenderOnce for Kbd {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let labels = keystroke_labels(&self.stroke, Platform::current());
+        let platform = cx.theme().platform;
+        let labels = keystroke_labels(&keystroke(&self.source, platform), platform);
         div()
             .flex()
             .gap_0p5()
@@ -88,27 +85,32 @@ impl RenderOnce for Kbd {
 /// A chord sequence such as `"cmd-k cmd-s"`.
 #[derive(IntoElement)]
 pub struct KbdCombo {
-    strokes: SmallVec<[Keystroke; 2]>,
+    source: SharedString,
 }
 
 impl KbdCombo {
     pub fn new(source: &str) -> Self {
         Self {
-            strokes: source.split_whitespace().map(parse).collect(),
+            source: SharedString::from(source.to_string()),
         }
     }
 }
 
 impl RenderOnce for KbdCombo {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let platform = Platform::current();
+        let platform = cx.theme().platform;
+        let strokes: Vec<Keystroke> = self
+            .source
+            .split_whitespace()
+            .map(|source| keystroke(source, platform))
+            .collect();
         let subtle = cx.theme().colors.fg_subtle;
         let spelled = platform != Platform::Mac;
         div()
             .flex()
             .items_center()
             .gap_2()
-            .children(self.strokes.iter().map(|stroke| {
+            .children(strokes.iter().map(|stroke| {
                 let labels = keystroke_labels(stroke, platform);
                 let last = labels.len() - 1;
                 div().flex().items_center().gap_0p5().children(

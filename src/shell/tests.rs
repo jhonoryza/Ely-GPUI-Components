@@ -88,3 +88,45 @@ fn the_switcher_switches_on_release_so_its_opener_stays_shut(cx: &mut TestAppCon
     assert!(!desk.read_with(cx, |desk, _| desk.open));
     assert_eq!(desk.read_with(cx, |desk, _| desk.enters_above), above);
 }
+
+struct Platformed;
+
+impl Render for Platformed {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .flex()
+            .child(
+                div()
+                    .debug_selector(|| "controls".into())
+                    .child(super::WindowControls::new("controls")),
+            )
+            .child(
+                div()
+                    .debug_selector(|| "caps".into())
+                    .child(crate::typography::Kbd::new("secondary-s")),
+            )
+    }
+}
+
+/// Window buttons and key caps follow the theme's platform: Windows draws three wide caption buttons and spells Ctrl.
+#[gpui::test]
+fn the_themes_platform_draws_the_buttons_and_the_caps(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    cx.update(|cx| Theme::update(cx, |theme| theme.platform = crate::theme::Platform::Mac));
+    let (_, cx) = cx.add_window_view(|_, _| Platformed);
+    settle(cx);
+    let width = |name: &'static str, cx: &mut VisualTestContext| {
+        cx.debug_bounds(name).expect("a measured part").size.width
+    };
+    let (lights, command) = (width("controls", cx), width("caps", cx));
+    cx.update(|_, cx| Theme::update(cx, |theme| theme.platform = crate::theme::Platform::Windows));
+    settle(cx);
+    assert!(
+        width("controls", cx) > lights * 2.0,
+        "caption buttons wider than lights"
+    );
+    assert!(
+        width("caps", cx) > command,
+        "Ctrl wider than the command mark"
+    );
+}

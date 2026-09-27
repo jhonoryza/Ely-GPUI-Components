@@ -8,7 +8,7 @@ use gpui::{
 use super::FileIcon;
 use crate::{
     lists::{Folder, Tree, TreeNode},
-    primitives::{IconName, file_icon},
+    primitives::{IconName, IconTheme, icon_theme},
     theme::{ActiveTheme, IconSize, TextSize},
     typography::{MiddleEllipsis, format},
 };
@@ -32,14 +32,19 @@ pub(crate) fn saving(size: u64, packed: u64) -> u64 {
 }
 
 /// Nodes for `folder` under `prefix`, folders first, then files, each by name; and the bytes it holds.
-fn nodes(folder: &Folder, prefix: &str, entries: &[ArchiveEntry]) -> (Vec<TreeNode>, u64) {
+fn nodes(
+    folder: &Folder,
+    prefix: &str,
+    entries: &[ArchiveEntry],
+    icons: &IconTheme,
+) -> (Vec<TreeNode>, u64) {
     let mut out = Vec::new();
     let mut held = 0;
     let mut folders: Vec<_> = folder.folders.iter().collect();
     folders.sort_by_key(|(name, _)| name.to_lowercase());
     for (name, inner) in folders {
         let path = format!("{prefix}{name}");
-        let (children, bytes) = nodes(inner, &format!("{path}/"), entries);
+        let (children, bytes) = nodes(inner, &format!("{path}/"), entries, icons);
         held += bytes;
         let node = TreeNode::new(path, name.clone())
             .icon(IconName::Folder)
@@ -63,7 +68,7 @@ fn nodes(folder: &Folder, prefix: &str, entries: &[ArchiveEntry]) -> (Vec<TreeNo
         );
         out.push(
             TreeNode::new(path, name.clone())
-                .icon(file_icon(name))
+                .icon(icons.file(name))
                 .note(note),
         );
     }
@@ -115,7 +120,7 @@ impl RenderOnce for ArchiveViewer {
         let theme = cx.theme();
         let colors = &theme.colors;
         let folders = Folder::of(self.entries.iter().map(|entry| entry.path.as_ref()));
-        let (nodes, size) = nodes(&folders, "", &self.entries);
+        let (nodes, size) = nodes(&folders, "", &self.entries, icon_theme(cx));
         let packed: u64 = self.entries.iter().map(|entry| entry.packed).sum();
         let top: Vec<SharedString> = folders
             .folders

@@ -11,8 +11,10 @@ use gpui::{
 
 mod editing;
 mod importing;
+mod platform;
 
 use super::Page;
+use crate::script::Step;
 use crate::ui::{section, specimen, specimens};
 
 pub const PAGE: Page = Page {
@@ -21,7 +23,12 @@ pub const PAGE: Page = Page {
     title: "Theme",
     summary: "Tokens every component reads. Light and dark share one grammar.",
     render,
-    script: &[],
+    script: &[
+        Step::Click("frosted-open"),
+        Step::Wait(700),
+        Step::ShotWindow("frosted", "frosted-window"),
+        Step::CloseWindow("frosted"),
+    ],
 };
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
@@ -149,6 +156,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         )
         .child(editing::editor(window, cx))
         .child(importing::importing(window, cx))
+        .child(platform::platform(window, cx))
         .into_any_element()
 }
 

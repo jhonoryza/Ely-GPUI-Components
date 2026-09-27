@@ -211,7 +211,7 @@ impl RenderOnce for ProjectKnowledgePanel {
                                     .py_1()
                                     .text_size(theme.text_size(TextSize::Sm))
                                     .child(
-                                        Icon::new(file_icon(&name))
+                                        Icon::new(file_icon(&name, cx))
                                             .size(IconSize::Sm)
                                             .color(colors.fg_muted),
                                     )

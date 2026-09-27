@@ -150,7 +150,7 @@ impl RenderOnce for FileChangeCard {
                     })
                     .child(Disclosure::new((self.id.clone(), "chevron"), open).size(IconSize::Sm))
                     .child(
-                        Icon::new(file_icon(&self.change.path))
+                        Icon::new(file_icon(&self.change.path, cx))
                             .size(IconSize::Sm)
                             .color(colors.fg_muted),
                     )

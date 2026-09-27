@@ -1,4 +1,4 @@
-use gpui::{App, IntoElement, RenderOnce, Window};
+use gpui::{App, IntoElement, RenderOnce, SharedString, Window};
 
 use crate::{
     lists::DirEntry,
@@ -6,28 +6,34 @@ use crate::{
     theme::{ActiveTheme, IconSize},
 };
 
-/// A file's icon by its name's extension, or a folder's, open or shut.
+/// A file's name, its icon found under the icon theme at render, or an icon itself.
+enum Shown {
+    File(SharedString),
+    Icon(IconName),
+}
+
+/// A file's icon by its name under the owner's icon theme, or a folder's, open or shut.
 #[derive(IntoElement)]
 pub struct FileIcon {
-    icon: IconName,
+    shown: Shown,
     size: IconSize,
 }
 
 impl FileIcon {
     pub fn file(name: impl AsRef<str>) -> Self {
         Self {
-            icon: file_icon(name.as_ref()),
+            shown: Shown::File(name.as_ref().to_string().into()),
             size: IconSize::Md,
         }
     }
 
     pub fn folder(open: bool) -> Self {
         Self {
-            icon: if open {
+            shown: Shown::Icon(if open {
                 IconName::FolderOpen
             } else {
                 IconName::Folder
-            },
+            }),
             size: IconSize::Md,
         }
     }
@@ -48,7 +54,11 @@ impl FileIcon {
 
 impl RenderOnce for FileIcon {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        Icon::new(self.icon)
+        let icon = match self.shown {
+            Shown::File(name) => file_icon(&name, cx),
+            Shown::Icon(icon) => icon,
+        };
+        Icon::new(icon)
             .size(self.size)
             .color(cx.theme().colors.fg_muted)
     }

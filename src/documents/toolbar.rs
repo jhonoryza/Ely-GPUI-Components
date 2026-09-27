@@ -1,4 +1,4 @@
-use gpui::{App, ElementId, Entity, IntoElement, Keystroke, ParentElement, RenderOnce, Window};
+use gpui::{App, ElementId, Entity, IntoElement, ParentElement, RenderOnce, Window};
 
 use super::format::{Format, active, format};
 use crate::{
@@ -6,7 +6,7 @@ use crate::{
     forms::{Run, TextInput},
     primitives::IconName,
     shell::{Toolbar, ToolbarGroup, ToolbarSeparator},
-    theme::ControlSize,
+    theme::{ActiveTheme, ControlSize, Platform},
 };
 
 /// A tool: the format it applies, its icon, its name and its key.
@@ -56,12 +56,10 @@ pub(crate) fn tool(
     (format_of, icon, name, key): Tool,
     on: bool,
     on_link: Option<Run>,
+    platform: Platform,
 ) -> ToggleButton {
     let tip = match key {
-        Some(key) => {
-            let stroke = Keystroke::parse(key).expect("a tool's key parses");
-            format!("{name}  {}", shortcut_text(&stroke))
-        }
+        Some(key) => format!("{name}  {}", shortcut_text(key, platform)),
         None => name.to_string(),
     };
     let field = field.clone();
@@ -105,10 +103,18 @@ impl RenderOnce for FixedFormatToolbar {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let input = self.field.read(cx);
         let pressed = active(input.text(), input.selection());
+        let platform = cx.theme().platform;
         let group = |tools: &[Tool]| {
             ToolbarGroup::new().children(tools.iter().map(|tool_of| {
                 let on = pressed.contains(&tool_of.0);
-                tool(&self.id, &self.field, *tool_of, on, self.on_link.clone())
+                tool(
+                    &self.id,
+                    &self.field,
+                    *tool_of,
+                    on,
+                    self.on_link.clone(),
+                    platform,
+                )
             }))
         };
         Toolbar::new()

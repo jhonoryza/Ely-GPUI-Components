@@ -1,11 +1,11 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, Entity, FontWeight, InteractiveElement, IntoElement, Keystroke, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    App, ElementId, Entity, FontWeight, InteractiveElement, IntoElement, ParentElement, RenderOnce,
+    SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
-use super::button::shortcut_text;
+use super::button::{keystroke_of, shortcut_text};
 use crate::{
     primitives::{FocusRing, Icon, IconName},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
@@ -19,7 +19,7 @@ pub struct QuickAction {
     icon: IconName,
     label: SharedString,
     note: Option<SharedString>,
-    shortcut: Option<Keystroke>,
+    shortcut: Option<SharedString>,
     run: Run,
 }
 
@@ -45,9 +45,8 @@ impl QuickAction {
 
     /// Panics on a bad keystroke.
     pub fn shortcut(mut self, keystroke: &str) -> Self {
-        let parsed = Keystroke::parse(keystroke)
-            .unwrap_or_else(|error| panic!("quick action shortcut {keystroke:?}: {error}"));
-        self.shortcut = Some(parsed);
+        keystroke_of(keystroke);
+        self.shortcut = Some(SharedString::from(keystroke.to_string()));
         self
     }
 }
@@ -171,7 +170,7 @@ impl RenderOnce for QuickActions {
                             div()
                                 .text_size(theme.text_size(TextSize::Xs))
                                 .text_color(colors.fg_subtle)
-                                .child(shortcut_text(stroke)),
+                                .child(shortcut_text(stroke, theme.platform)),
                         )
                     })
             })

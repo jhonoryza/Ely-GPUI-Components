@@ -26,7 +26,7 @@ fn every_color_answers_to_its_name() {
     for (ix, name) in Palette::NAMES.iter().enumerate() {
         *palette.token_mut(name) = hsla(ix as f32 / 64.0, 0.5, 0.5, 1.0);
     }
-    assert_eq!(Palette::NAMES.len(), 35, "every color of the palette");
+    assert_eq!(Palette::NAMES.len(), 36, "every color of the palette");
     let at = |name: &str| {
         Palette::NAMES
             .iter()
@@ -49,4 +49,19 @@ fn every_color_answers_to_its_name() {
 #[should_panic(expected = "no palette color glow")]
 fn an_unknown_color_fails() {
     Palette::light(false).token_mut("glow");
+}
+
+#[test]
+fn glass_lets_the_blur_through_until_high_contrast() {
+    for (plain, strong) in [
+        (Palette::light(false), Palette::light(true)),
+        (Palette::dark(false), Palette::dark(true)),
+    ] {
+        assert!(
+            plain.glass.a > 0.0 && plain.glass.a < 1.0,
+            "{:?}",
+            plain.glass
+        );
+        assert_eq!(strong.glass, strong.bg);
+    }
 }

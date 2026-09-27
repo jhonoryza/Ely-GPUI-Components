@@ -116,6 +116,7 @@ mixable!(
         backdrop,
         media_backdrop,
         shimmer,
+        glass,
         shadow,
         tooltip_bg,
         tooltip_fg,
@@ -182,6 +183,7 @@ impl Palette {
             backdrop: rgba(0x18161352).into(),
             media_backdrop: rgba(0x0e0d0bf8).into(),
             shimmer: rgba(0xffffffb3).into(),
+            glass: rgba(0xfcfaf7b8).into(),
             shadow: c(0x181613),
             tooltip_bg: c(0x181613),
             tooltip_fg: c(0xfcfaf7),
@@ -215,6 +217,7 @@ impl Palette {
             palette.fg_subtle = c(0x575552);
             palette.border = c(0xa6a4a2);
             palette.border_strong = c(0x82807d);
+            palette.glass = palette.bg;
         }
         palette
     }
@@ -251,6 +254,7 @@ impl Palette {
             backdrop: rgba(0x00000080).into(),
             media_backdrop: rgba(0x000000f8).into(),
             shimmer: rgba(0xffffff10).into(),
+            glass: rgba(0x131110b8).into(),
             shadow: c(0x000000),
             tooltip_bg: c(0x373533),
             tooltip_fg: c(0xf3f1f0),
@@ -284,6 +288,7 @@ impl Palette {
             palette.fg_subtle = c(0xafadab);
             palette.border = c(0x6a6966);
             palette.border_strong = c(0x858380);
+            palette.glass = palette.bg;
         }
         palette
     }

@@ -296,7 +296,7 @@ impl RenderOnce for DirectoryListing {
                             Icon::new(if entry.is_folder() {
                                 IconName::Folder
                             } else {
-                                file_icon(&entry.name)
+                                file_icon(&entry.name, cx)
                             })
                             .size(IconSize::Md)
                             .color(colors.fg_muted),

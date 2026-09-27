@@ -127,7 +127,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A file on its way is a `files::Transfer` drawn by one row in `files::transfer`: TransferQueue and DownloadManager share it, and its actions follow its state.
 - Paths with `/` between folders become a tree through `lists::Folder::of`, for `FileTree` and `files::ArchiveViewer` alike.
 - A folder's path over its entries is `lists::path_bar`, and its first order is `lists::listed`, folders first by name: DirectoryListing and FileExplorer share both, so every view shows one path and one order.
-- A file's icon comes from `primitives::file_icon`, one map from name to icon for every chapter; `files::FileIcon` draws it. What fits across a width comes from `layout::columns_for`, and `layout::fit` adds the inset that centers it.
+- A file's icon comes from `primitives::file_icon`, one map from name to icon for every chapter, under the owner's `primitives::IconTheme`, whose rules by name and extension come first; `files::FileIcon` draws it. What fits across a width comes from `layout::columns_for`, and `layout::fit` adds the inset that centers it.
 - Badges, tags and avatars live in `data_display`; forms and shell draw theirs from there, and `data_display` imports neither. A hue worn in a row, a label's or an event's, is `data_display::color_mark`, and `Palette::hue` gives the chart color by index. Avatars take square pictures. A tag is never wider than its container; a long label ends in an ellipsis beside its remove mark.
 - A picture drawn in code reaches gpui as a `RenderImage`. A host that replaces one frees the old through `App::drop_image`, or every frame stays in the sprite atlas (the gallery's model).
 - `img()` keeps loading state, and moves an animated picture's frames, only with an id. Content masks are rectangles, so rounded corners survive only when the image fills its box without cropping.
@@ -185,6 +185,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A choice that names a person leads with their initials through `forms::Choice::avatar`, in the list and in a Select's trigger alike (`project::AssigneePicker`).
 - `typography::Ellipsis` shapes its line with the text style's own run, so a strike or an underline set on its box shows (`lists::ListItem::struck`, a closed task's title).
 - Focus that must follow an item to another parent is taken by the owner and keyed by the item: a handle gpui makes for an element dies with its path (`project::KanbanBoard`, whose cards keep focus across columns).
+- The theme's `platform`, the system's to start, decides the window buttons Ely draws, the title bar's layout and key caps, `secondary` included (`typography::keys::keystroke`). A title bar whose buttons the OS draws follows the OS.
+- A pane the window's blur shows through is `shell::Vibrancy`, filled with the palette's `glass`, in a window opened `WindowBackgroundAppearance::Blurred`: vibrancy on macOS, acrylic on Windows. gpui 0.2.2 has no Mica.
 - The chart's hues go by `theme::HUE_NAMES`, for an event's color and a label's alike.
 - Text whose every character counts, encoded data and keys, goes through `typography::literal`: JetBrains Mono draws `==` and `->` as ligatures (`devtools::Encoder`).
 

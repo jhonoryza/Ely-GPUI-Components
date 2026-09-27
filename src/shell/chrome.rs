@@ -9,29 +9,8 @@ use smallvec::SmallVec;
 
 use crate::{
     primitives::{Icon, IconName},
-    theme::{ActiveTheme, ControlSize, IconSize, TextSize},
+    theme::{ActiveTheme, ControlSize, IconSize, Platform, TextSize},
 };
-
-/// Which system's window buttons to draw.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ControlsStyle {
-    Mac,
-    Windows,
-    Linux,
-}
-
-impl ControlsStyle {
-    /// The style of the system this build targets.
-    pub fn current() -> Self {
-        if cfg!(target_os = "macos") {
-            Self::Mac
-        } else if cfg!(target_os = "windows") {
-            Self::Windows
-        } else {
-            Self::Linux
-        }
-    }
-}
 
 /// Drags the window, and zooms it on double-click.
 pub fn drag_region(id: impl Into<ElementId>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
@@ -91,7 +70,7 @@ fn run(control: Control, on_close: Option<&OnClose>, window: &mut Window, cx: &m
 #[derive(IntoElement)]
 pub struct WindowControls {
     id: ElementId,
-    style: ControlsStyle,
+    platform: Option<Platform>,
     on_close: Option<OnClose>,
 }
 
@@ -99,13 +78,14 @@ impl WindowControls {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
-            style: ControlsStyle::current(),
+            platform: None,
             on_close: None,
         }
     }
 
-    pub fn style(mut self, style: ControlsStyle) -> Self {
-        self.style = style;
+    /// Draws this platform's buttons instead of the theme's.
+    pub fn platform(mut self, platform: Platform) -> Self {
+        self.platform = Some(platform);
         self
     }
 
@@ -118,10 +98,10 @@ impl WindowControls {
 
 impl RenderOnce for WindowControls {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        match self.style {
-            ControlsStyle::Mac => traffic_lights(self.id, self.on_close, window, cx),
-            ControlsStyle::Windows => caption_buttons(self.id, self.on_close, window, cx),
-            ControlsStyle::Linux => round_buttons(self.id, self.on_close, window, cx),
+        match self.platform.unwrap_or(cx.theme().platform) {
+            Platform::Mac => traffic_lights(self.id, self.on_close, window, cx),
+            Platform::Windows => caption_buttons(self.id, self.on_close, window, cx),
+            Platform::Linux => round_buttons(self.id, self.on_close, window, cx),
         }
     }
 }
@@ -304,7 +284,7 @@ fn route_close(id: &ElementId, handler: Option<OnClose>, window: &mut Window, cx
 pub struct TitleBar {
     id: ElementId,
     title: Option<SharedString>,
-    style: Option<ControlsStyle>,
+    platform: Option<Platform>,
     on_close: Option<OnClose>,
     leading: SmallVec<[AnyElement; 2]>,
     actions: SmallVec<[AnyElement; 2]>,
@@ -316,7 +296,7 @@ impl TitleBar {
         Self {
             id: id.into(),
             title: None,
-            style: None,
+            platform: None,
             on_close: None,
             leading: SmallVec::new(),
             actions: SmallVec::new(),
@@ -328,13 +308,13 @@ impl TitleBar {
         self
     }
 
-    /// Draws this style's controls instead of the system's.
-    pub fn style(mut self, style: ControlsStyle) -> Self {
-        self.style = Some(style);
+    /// Draws this platform's controls instead of the system's.
+    pub fn platform(mut self, platform: Platform) -> Self {
+        self.platform = Some(platform);
         self
     }
 
-    /// Runs instead of closing; without a forced style, system closes run it too.
+    /// Runs instead of closing; without a forced platform, system closes run it too.
     pub fn on_close(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_close = Some(Rc::new(handler));
         self
@@ -355,19 +335,22 @@ impl ParentElement for TitleBar {
 
 impl RenderOnce for TitleBar {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        if self.style.is_none() {
+        if self.platform.is_none() {
             route_close(&self.id, self.on_close.clone(), window, cx);
         }
         let bar = drag_region(self.id, window, cx);
         let theme = cx.theme();
-        let system = self.style.is_none() && cfg!(target_os = "macos");
-        let style = self.style.unwrap_or_else(ControlsStyle::current);
+        let system = self.platform.is_none() && cfg!(target_os = "macos");
+        let style = match system {
+            true => Platform::Mac,
+            false => self.platform.unwrap_or(theme.platform),
+        };
         let mut trailing = (!system).then_some(WindowControls {
             id: "window-controls".into(),
-            style,
+            platform: Some(style),
             on_close: self.on_close,
         });
-        let leading = if style == ControlsStyle::Mac {
+        let leading = if style == Platform::Mac {
             trailing.take()
         } else {
             None
@@ -379,7 +362,7 @@ impl RenderOnce for TitleBar {
                 .text_color(theme.colors.fg_muted)
                 .child(title)
         });
-        let centered = style != ControlsStyle::Windows;
+        let centered = style != Platform::Windows;
         let inset = theme.traffic_light_inset();
         let fullscreen = window.is_fullscreen();
         let bar = bar
@@ -396,9 +379,9 @@ impl RenderOnce for TitleBar {
         let bar = match (system, style) {
             (true, _) if fullscreen => bar.pl_3().pr_2(),
             (true, _) => bar.pl(inset).pr_2(),
-            (false, ControlsStyle::Mac) => bar.pl_3().pr_2().children(leading),
-            (false, ControlsStyle::Windows) => bar.pl_3(),
-            (false, ControlsStyle::Linux) => bar.pl_3().pr_2(),
+            (false, Platform::Mac) => bar.pl_3().pr_2().children(leading),
+            (false, Platform::Windows) => bar.pl_3(),
+            (false, Platform::Linux) => bar.pl_3().pr_2(),
         };
         let bar = bar.children(self.leading);
         let bar = match (centered, title) {

@@ -1,9 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, Keystroke,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div,
-    prelude::*,
+    AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement,
+    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
 use super::OnIndex;
@@ -68,14 +67,14 @@ impl RenderOnce for DebugToolbar {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let paused = self.state == DebugState::Paused;
+        let platform = theme.platform;
         let button =
             |command: DebugCommand, icon: IconName, words: &str, key: &str, enabled: bool| {
                 let run = self.on_command.clone();
-                let key = Keystroke::parse(key).expect("a debug key parses");
                 IconButton::new((self.id.clone(), format!("{command:?}")), icon)
                     .variant(ButtonVariant::Ghost)
                     .size(ControlSize::Sm)
-                    .tooltip(format!("{words}  {}", shortcut_text(&key)))
+                    .tooltip(format!("{words}  {}", shortcut_text(key, platform)))
                     .disabled(!enabled)
                     .when_some(run, |button, run| {
                         button.on_click(move |_, window, cx| {

@@ -80,7 +80,7 @@ impl RenderOnce for AttachmentChip {
                 .rounded(theme.radius(Radius::Sm))
                 .bg(colors.hover)
                 .child(
-                    Icon::new(file_icon(&item.name))
+                    Icon::new(file_icon(&item.name, cx))
                         .size(IconSize::Md)
                         .color(colors.fg_muted),
                 ),

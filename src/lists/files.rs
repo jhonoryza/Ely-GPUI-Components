@@ -9,7 +9,7 @@ use super::{Tree, TreeNode};
 use crate::{
     data_display::Tone,
     forms::{SearchInput, TextInput},
-    primitives::{IconName, file_icon},
+    primitives::{IconName, IconTheme, icon_theme},
     theme::ControlSize,
 };
 
@@ -90,6 +90,7 @@ fn nodes(
     paths: &[SharedString],
     status: &[(SharedString, GitStatus)],
     query: &str,
+    icons: &IconTheme,
 ) -> (Vec<TreeNode>, Vec<SharedString>) {
     let root = Folder::of(paths.iter().map(|path| path.as_ref()));
     let state = |path: &str| {
@@ -104,6 +105,7 @@ fn nodes(
         query: &str,
         state: &dyn Fn(&str) -> Option<GitStatus>,
         open: &mut Vec<SharedString>,
+        icons: &IconTheme,
     ) -> (Vec<TreeNode>, bool) {
         let mut out = Vec::new();
         let mut changed = false;
@@ -111,7 +113,8 @@ fn nodes(
         folders.sort_by_key(|(name, _)| name.to_lowercase());
         for (name, inner) in folders {
             let path = format!("{prefix}{name}");
-            let (children, inner_changed) = walk(inner, &format!("{path}/"), query, state, open);
+            let (children, inner_changed) =
+                walk(inner, &format!("{path}/"), query, state, open, icons);
             if children.is_empty() && !matches(name, query) {
                 continue;
             }
@@ -136,7 +139,7 @@ fn nodes(
         files.sort_by_key(|name| name.to_lowercase());
         for name in files {
             let path = format!("{prefix}{name}");
-            let node = TreeNode::new(path.clone(), name.clone()).icon(file_icon(name));
+            let node = TreeNode::new(path.clone(), name.clone()).icon(icons.file(name));
             out.push(match state(&path) {
                 Some(state) => {
                     changed = true;
@@ -148,7 +151,7 @@ fn nodes(
         (out, changed)
     }
     let mut open = Vec::new();
-    let (nodes, _) = walk(&root, "", query, &state, &mut open);
+    let (nodes, _) = walk(&root, "", query, &state, &mut open, icons);
     (nodes, open)
 }
 
@@ -208,7 +211,7 @@ impl RenderOnce for FileTree {
             Vec::<SharedString>::new()
         });
         let query = filter.read(cx).text().trim().to_string();
-        let (nodes, open) = nodes(&self.paths, &self.status, &query);
+        let (nodes, open) = nodes(&self.paths, &self.status, &query, icon_theme(cx));
         let top: Vec<SharedString> = nodes
             .iter()
             .filter(|node| node.opens())
@@ -245,7 +248,7 @@ impl RenderOnce for FileTree {
 mod tests {
     use gpui::SharedString;
 
-    use super::{GitStatus, nodes};
+    use super::{GitStatus, IconTheme, nodes};
     use crate::lists::tree::{Shown, rows};
 
     fn paths() -> Vec<SharedString> {
@@ -267,7 +270,7 @@ mod tests {
             ("src/ui/Button.rs".into(), GitStatus::Modified),
             ("README.md".into(), GitStatus::Added),
         ];
-        let (nodes, open) = nodes(&paths(), &status, query);
+        let (nodes, open) = nodes(&paths(), &status, query, &IconTheme::default());
         let every = ["assets", "src", "src/ui"]
             .map(SharedString::from)
             .into_iter()

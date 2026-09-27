@@ -1,22 +1,20 @@
 use gpui::Keystroke;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Platform {
-    Mac,
-    Windows,
-    Linux,
-}
+use crate::theme::Platform;
 
-impl Platform {
-    pub fn current() -> Self {
-        if cfg!(target_os = "macos") {
-            Platform::Mac
-        } else if cfg!(target_os = "windows") {
-            Platform::Windows
-        } else {
-            Platform::Linux
-        }
-    }
+/// One keystroke in gpui key syntax, `secondary` read for `platform`: Command on the Mac, Control elsewhere.
+pub fn keystroke(source: &str, platform: Platform) -> Keystroke {
+    let secondary = if platform == Platform::Mac {
+        "cmd"
+    } else {
+        "ctrl"
+    };
+    let spelled: Vec<&str> = source
+        .split('-')
+        .map(|part| if part == "secondary" { secondary } else { part })
+        .collect();
+    Keystroke::parse(&spelled.join("-"))
+        .unwrap_or_else(|error| panic!("bad keystroke {source:?}: {error}"))
 }
 
 /// Caps for one keystroke, modifiers first, in platform order.
@@ -92,6 +90,17 @@ mod tests {
         assert_eq!(labels, ["Ctrl", "Shift", "P"]);
         let labels = keystroke_labels(&parse("cmd-escape"), Platform::Linux);
         assert_eq!(labels, ["Super", "Esc"]);
+    }
+
+    #[test]
+    fn secondary_reads_for_the_platform() {
+        let mac = keystroke_labels(&keystroke("secondary-s", Platform::Mac), Platform::Mac);
+        assert_eq!(mac, ["⌘", "S"]);
+        let windows = Platform::Windows;
+        assert_eq!(
+            keystroke_labels(&keystroke("secondary-s", windows), windows),
+            ["Ctrl", "S"]
+        );
     }
 
     #[test]

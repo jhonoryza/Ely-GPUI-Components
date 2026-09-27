@@ -255,7 +255,7 @@ impl RenderOnce for FileMessage {
                     .rounded(theme.radius(Radius::Sm))
                     .bg(colors.hover)
                     .child(
-                        Icon::new(file_icon(&self.name))
+                        Icon::new(file_icon(&self.name, cx))
                             .size(IconSize::Md)
                             .color(colors.fg_muted),
                     ),

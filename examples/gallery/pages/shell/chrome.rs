@@ -1,8 +1,8 @@
 use ely_gpui_component::{
     buttons::IconButton,
     primitives::IconName,
-    shell::{ControlsStyle, TitleBar, WindowControls, drag_region},
-    theme::{ActiveTheme, ControlSize, Elevation, Radius, TextSize},
+    shell::{TitleBar, WindowControls, drag_region},
+    theme::{ActiveTheme, ControlSize, Elevation, Platform, Radius, TextSize},
     typography::Caption,
 };
 use gpui::{App, Div, IntoElement, ParentElement, Styled, Window, div, px};
@@ -25,9 +25,9 @@ pub fn window_frame(width: f32, height: f32, cx: &App) -> Div {
         .shadow(theme.elevation(Elevation::Raised))
 }
 
-fn demo_bar(id: &'static str, style: ControlsStyle) -> TitleBar {
+fn demo_bar(id: &'static str, style: Platform) -> TitleBar {
     TitleBar::new(id)
-        .style(style)
+        .platform(style)
         .title("Ely — Projects")
         .on_close(|_, _| log::info!("gallery: demo close refused"))
         .child(IconButton::new((id, 1usize), IconName::PanelLeft).size(ControlSize::Sm))
@@ -36,9 +36,9 @@ fn demo_bar(id: &'static str, style: ControlsStyle) -> TitleBar {
 
 pub fn title_bar(cx: &App) -> impl IntoElement + use<> {
     let styles = [
-        ("tb-mac", ControlsStyle::Mac, "macOS"),
-        ("tb-windows", ControlsStyle::Windows, "Windows"),
-        ("tb-linux", ControlsStyle::Linux, "Linux"),
+        ("tb-mac", Platform::Mac, "macOS"),
+        ("tb-windows", Platform::Windows, "Windows"),
+        ("tb-linux", Platform::Linux, "Linux"),
     ];
     section(
         "TitleBar",
@@ -88,7 +88,7 @@ pub fn window_controls(cx: &App) -> impl IntoElement + use<> {
                 "Mac",
                 plate().child(
                     WindowControls::new("wc-mac")
-                        .style(ControlsStyle::Mac)
+                        .platform(Platform::Mac)
                         .on_close(|_, _| log::info!("gallery: demo close refused")),
                 ),
                 cx,
@@ -97,7 +97,7 @@ pub fn window_controls(cx: &App) -> impl IntoElement + use<> {
                 "Windows",
                 plate().px_0().child(
                     WindowControls::new("wc-windows")
-                        .style(ControlsStyle::Windows)
+                        .platform(Platform::Windows)
                         .on_close(|_, _| log::info!("gallery: demo close refused")),
                 ),
                 cx,
@@ -106,7 +106,7 @@ pub fn window_controls(cx: &App) -> impl IntoElement + use<> {
                 "Linux",
                 plate().child(
                     WindowControls::new("wc-linux")
-                        .style(ControlsStyle::Linux)
+                        .platform(Platform::Linux)
                         .on_close(|_, _| log::info!("gallery: demo close refused")),
                 ),
                 cx,

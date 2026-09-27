@@ -1,13 +1,13 @@
 use gpui::{
-    App, ClickEvent, ElementId, FocusHandle, FontWeight, Hsla, IntoElement, Keystroke, MouseButton,
+    App, ClickEvent, ElementId, FocusHandle, FontWeight, Hsla, IntoElement, MouseButton,
     RenderOnce, SharedString, Window, div, prelude::*, transparent_black,
 };
 
 use crate::{
     motion::Spinner,
     primitives::{FocusRing, Icon, IconName},
-    theme::{ActiveTheme, ControlSize, IconSize, Mix, Palette, Radius, TextSize},
-    typography::keys::{Platform, keystroke_labels},
+    theme::{ActiveTheme, ControlSize, IconSize, Mix, Palette, Platform, Radius, TextSize},
+    typography::keys::{keystroke, keystroke_labels},
 };
 
 pub(crate) type ClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -112,11 +112,15 @@ pub(crate) enum Slot {
     Last,
 }
 
-/// A keystroke as the platform spells it: `⌘S`, or `Ctrl+S`.
-pub(crate) fn shortcut_text(stroke: &Keystroke) -> String {
-    let platform = Platform::current();
+/// Fails on a keystroke gpui cannot read, when a builder takes it.
+pub(crate) fn keystroke_of(source: &str) {
+    keystroke(source, Platform::current());
+}
+
+/// A keystroke in gpui key syntax as `platform` spells it: `⌘S`, or `Ctrl+S`.
+pub(crate) fn shortcut_text(source: &str, platform: Platform) -> String {
     let glue = if platform == Platform::Mac { "" } else { "+" };
-    keystroke_labels(stroke, platform).join(glue)
+    keystroke_labels(&keystroke(source, platform), platform).join(glue)
 }
 
 #[derive(IntoElement)]
@@ -125,7 +129,7 @@ pub struct Button {
     label: SharedString,
     icon: Option<IconName>,
     trailing_icon: Option<IconName>,
-    shortcut: Option<Keystroke>,
+    shortcut: Option<SharedString>,
     variant: ButtonVariant,
     size: ControlSize,
     disabled: bool,
@@ -181,9 +185,8 @@ impl Button {
 
     /// Shows the keystroke that also runs it, e.g. `"cmd-s"`. Panics on a bad keystroke.
     pub fn shortcut(mut self, keystroke: &str) -> Self {
-        let parsed = Keystroke::parse(keystroke)
-            .unwrap_or_else(|error| panic!("button shortcut {keystroke:?}: {error}"));
-        self.shortcut = Some(parsed);
+        keystroke_of(keystroke);
+        self.shortcut = Some(SharedString::from(keystroke.to_string()));
         self
     }
 
@@ -226,7 +229,8 @@ impl RenderOnce for Button {
         let link = self.variant == ButtonVariant::Link;
         let icon = |name| Icon::new(name).size(icon_size).color(tone.fg);
         let radius = theme.radius(Radius::Md);
-        let hint = self.shortcut.as_ref().map(shortcut_text);
+        let platform = cx.theme().platform;
+        let hint = self.shortcut.map(|source| shortcut_text(&source, platform));
         let spinner = (self.id.clone(), "spinner");
         let parts = div()
             .flex()
