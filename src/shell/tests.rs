@@ -130,3 +130,63 @@ fn the_themes_platform_draws_the_buttons_and_the_caps(cx: &mut TestAppContext) {
         "Ctrl wider than the command mark"
     );
 }
+
+struct LongTitle;
+
+impl Render for LongTitle {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div().w(px(280.0)).flex().flex_col().child(
+            super::TitleBar::new("bar")
+                .title("Ely — Projects at a narrow width, and more besides")
+                .platform(crate::theme::Platform::Windows),
+        )
+    }
+}
+
+/// At 280px a Windows bar's long title gives way, and its close button ends inside the bar.
+#[gpui::test]
+fn a_long_title_leaves_the_caption_buttons_in_the_bar(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| LongTitle);
+    settle(cx);
+    let close = cx.debug_bounds("caption-Close").expect("a close button");
+    assert!(close.right() <= px(280.0), "{close:?} inside the bar");
+}
+
+struct Wrapped;
+
+impl Render for Wrapped {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let windows = crate::theme::Platform::Windows;
+        div()
+            .w(px(280.0))
+            .flex()
+            .flex_col()
+            .child(
+                div()
+                    .debug_selector(|| "row".into())
+                    .flex()
+                    .flex_wrap()
+                    .items_center()
+                    .gap_3()
+                    .child(super::WindowControls::new("controls").platform(windows))
+                    .child(div().debug_selector(|| "combo".into()).child(
+                        crate::typography::KbdCombo::new("secondary-shift-k secondary-shift-s"),
+                    )),
+            )
+            .child(div().h(px(20.0)))
+    }
+}
+
+/// Caption buttons keep their own height beside caps that wrap below them, so the caps end inside the row.
+#[gpui::test]
+fn caption_buttons_keep_their_height_in_a_wrapping_row(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    cx.update(|cx| Theme::update(cx, |theme| theme.platform = crate::theme::Platform::Windows));
+    let (_, cx) = cx.add_window_view(|_, _| Wrapped);
+    settle(cx);
+    let row = cx.debug_bounds("row").expect("the row");
+    let combo = cx.debug_bounds("combo").expect("the caps");
+    assert!(combo.top() > row.top(), "the caps wrap below the buttons");
+    assert!(combo.bottom() <= row.bottom(), "{combo:?} inside {row:?}");
+}

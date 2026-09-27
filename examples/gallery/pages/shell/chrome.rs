@@ -59,7 +59,7 @@ pub fn title_bar(cx: &App) -> impl IntoElement + use<> {
             })),
     )
     .child(code(
-        "TitleBar::new(id) with no style leaves room for the real macOS lights.",
+        "TitleBar::new(id) with no platform leaves room for the real macOS lights.",
         cx,
     ))
 }

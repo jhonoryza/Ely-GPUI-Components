@@ -10,6 +10,7 @@ use smallvec::SmallVec;
 use crate::{
     primitives::{Icon, IconName},
     theme::{ActiveTheme, ControlSize, IconSize, Platform, TextSize},
+    typography::Ellipsis,
 };
 
 /// Drags the window, and zooms it on double-click.
@@ -174,7 +175,7 @@ fn caption_buttons(
     div()
         .id(id)
         .flex()
-        .h_full()
+        .flex_none()
         .children(buttons.map(|(control, icon, area)| {
             let on_close = on_close.clone();
             let group = SharedString::from(format!("caption-{control:?}"));
@@ -189,7 +190,8 @@ fn caption_buttons(
                 .items_center()
                 .justify_center()
                 .w(theme.caption_button_width())
-                .h_full()
+                .h(theme.caption_button_height())
+                .debug_selector(move || format!("caption-{control:?}"))
                 .window_control_area(area)
                 .hover(|style| style.bg(hover))
                 .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
@@ -357,10 +359,11 @@ impl RenderOnce for TitleBar {
         };
         let title = self.title.map(|title| {
             div()
+                .min_w_0()
                 .text_size(theme.text_size(TextSize::Sm))
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(theme.colors.fg_muted)
-                .child(title)
+                .child(Ellipsis::new(title))
         });
         let centered = style != Platform::Windows;
         let inset = theme.traffic_light_inset();
@@ -385,12 +388,15 @@ impl RenderOnce for TitleBar {
         };
         let bar = bar.children(self.leading);
         let bar = match (centered, title) {
-            (false, Some(title)) => bar.child(title),
+            (false, Some(title)) => bar.child(title.flex_1()),
             (_, title) => bar.when_some(title, |bar, title| {
                 bar.child(
                     div()
                         .absolute()
-                        .inset_0()
+                        .top_0()
+                        .bottom_0()
+                        .left(inset)
+                        .right(inset)
                         .flex()
                         .items_center()
                         .justify_center()
@@ -398,8 +404,8 @@ impl RenderOnce for TitleBar {
                 )
             }),
         };
-        bar.child(div().flex_1())
+        bar.when(centered, |bar| bar.child(div().flex_1()))
             .children(self.actions)
-            .children(trailing)
+            .children(trailing.map(|controls| div().flex_none().child(controls)))
     }
 }
