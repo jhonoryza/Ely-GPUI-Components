@@ -41,6 +41,11 @@ impl Load {
     pub fn over(&self) -> bool {
         self.assigned > self.capacity
     }
+
+    /// The share of the track the bar fills, whole at capacity and past it.
+    pub(crate) fn filled(&self) -> f32 {
+        (self.assigned / self.capacity).min(1.0)
+    }
 }
 
 /// Who carries how much: each person with a bar of their work against what they can take, red past it, and the two counts.
@@ -84,7 +89,7 @@ impl RenderOnce for WorkloadView {
             } else {
                 colors.hue(0, "workload")
             };
-            let share = (load.assigned / load.capacity).min(1.0);
+            let share = load.filled();
             let count = format!("{:.0} / {:.0} {}", load.assigned, load.capacity, self.unit);
             let key = load.person.key.clone();
             div()
@@ -148,5 +153,19 @@ impl RenderOnce for WorkloadView {
             .flex_col()
             .gap_3()
             .children(rows.collect::<Vec<_>>())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Load;
+    use crate::project::Person;
+
+    #[test]
+    fn a_bar_fills_its_share_and_stops_at_capacity() {
+        let ana = Person::new("ana", "Ana Lima");
+        assert_eq!(Load::new(ana.clone(), 190.0, 168.0).filled(), 1.0);
+        assert_eq!(Load::new(ana.clone(), 7.0, 10.0).filled(), 0.7);
+        assert!(Load::new(ana, 11.0, 10.0).over());
     }
 }

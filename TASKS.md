@@ -366,3 +366,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T31a | 1 | PASS | |
 | T31b | 1 | FAIL | a focused card past the board's fold stayed out of view; left and right steps that keep a card's place went untested |
 | T31b | 2 | PASS | |
+| T31c | 1 | FAIL | a roadmap bar's end and the workload bar's cap went untested |

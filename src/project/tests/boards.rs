@@ -223,4 +223,9 @@ fn a_roadmap_draws_only_what_falls_in_its_months(cx: &mut TestAppContext) {
         (share - 30.0 / 61.0).abs() < 0.01,
         "October starts 30 of 61 days in: {share}"
     );
+    let end = (half.right() - map.left()) / map.size.width;
+    assert!(
+        (end - 1.0).abs() < 0.01,
+        "October runs through its last day: {end}"
+    );
 }
