@@ -88,6 +88,18 @@ pub(crate) fn option_row(
     checked: Option<bool>,
     cx: &App,
 ) -> Stateful<Div> {
+    marked_row(id, choice, None, highlighted, checked, cx)
+}
+
+/// An option row with `mark`, such as a label's color, before the label.
+pub(crate) fn marked_row(
+    id: impl Into<ElementId>,
+    choice: &Choice,
+    mark: Option<AnyElement>,
+    highlighted: bool,
+    checked: Option<bool>,
+    cx: &App,
+) -> Stateful<Div> {
     let theme = cx.theme();
     let colors = &theme.colors;
     let fg = if choice.disabled {
@@ -128,6 +140,7 @@ pub(crate) fn option_row(
         .when_some(choice.icon, |row, icon| {
             row.child(Icon::new(icon).size(IconSize::Sm).color(colors.fg_muted))
         })
+        .children(mark)
         .child(
             div()
                 .flex_1()

@@ -1,49 +1,27 @@
 use std::rc::Rc;
 
 use gpui::{App, ElementId, IntoElement, ParentElement, RenderOnce, Window, div, prelude::*};
-use jiff::{Timestamp, ToSpan, civil::DateTime, tz::TimeZone};
+use jiff::{Timestamp, tz::TimeZone};
 
+use super::times::{
+    Ask, OnTime, at_hour, distinct, named, next_monday, pick_item, picking, time_dialog,
+};
 use crate::{
     buttons::{Button, ButtonVariant},
-    forms::{DateTimePicker, Run},
+    forms::Run,
     menus::{Menu, MenuItem, SplitButton},
-    overlays::Dialog,
-    primitives::IconName,
     typography::format,
 };
 
-pub(super) type OnTime = Rc<dyn Fn(Timestamp, &mut Window, &mut App)>;
-
-/// Times to send later from `now` in `zone`: tomorrow at 8:00 and at 13:00, and the next Monday at 8:00, each named with its day and hour.
-fn presets(now: Timestamp, zone: &TimeZone) -> [(String, Timestamp); 3] {
+/// Times to send later from `now` in `zone`: tomorrow at 8:00 and at 13:00, and the next Monday at 8:00 unless tomorrow is one, each named with its day and hour.
+fn presets(now: Timestamp, zone: &TimeZone) -> Vec<(String, Timestamp)> {
     let today = now.to_zoned(zone.clone()).date();
     let tomorrow = today.tomorrow().expect("a day follows today");
-    let ahead = 7 - i64::from(today.weekday().to_monday_zero_offset());
-    let monday = today
-        .checked_add(ahead.days())
-        .expect("a Monday lies ahead");
-    let at = |day: jiff::civil::Date, hour: i8| {
-        day.at(hour, 0, 0, 0)
-            .to_zoned(zone.clone())
-            .expect("the zone holds the hour")
-            .timestamp()
-    };
-    let named = |name: &str, when: Timestamp| {
-        let hour = format::datetime(when, zone, "%a %H:%M").expect("a fixed pattern formats");
-        (format!("{name} · {hour}"), when)
-    };
-    [
-        named("Tomorrow morning", at(tomorrow, 8)),
-        named("Tomorrow afternoon", at(tomorrow, 13)),
-        named("Monday morning", at(monday, 8)),
-    ]
-}
-
-/// Whether the dialog for a time of one's own shows, and the time picked in it.
-#[derive(Default)]
-struct Picking {
-    open: bool,
-    chosen: Option<DateTime>,
+    distinct([
+        named("Tomorrow morning", at_hour(tomorrow, 8, zone), zone),
+        named("Tomorrow afternoon", at_hour(tomorrow, 13, zone), zone),
+        named("Monday morning", at_hour(next_monday(today), 8, zone), zone),
+    ])
 }
 
 /// Send, and beside it the times to send later: tomorrow morning, tomorrow afternoon and Monday morning in the zone given, or a time picked in a dialog. Each only with its handler; disabled, only Send shows, dimmed.
@@ -99,8 +77,7 @@ impl RenderOnce for ScheduleSend {
         let zone = self
             .zone
             .unwrap_or_else(|| format::system_zone("schedule send"));
-        let picking =
-            window.use_keyed_state((self.id.clone(), "picking"), cx, |_, _| Picking::default());
+        let picking = picking(&self.id, window, cx);
         let menu = self
             .on_schedule
             .clone()
@@ -116,18 +93,9 @@ impl RenderOnce for ScheduleSend {
                         }))
                     },
                 );
-                let opening = picking.clone();
-                presets.separator().item(
-                    MenuItem::new("Pick a time…")
-                        .icon(IconName::Calendar)
-                        .on_click(move |_, cx| {
-                            log::info!("schedule send: pick a time");
-                            opening.update(cx, |picking, cx| {
-                                picking.open = true;
-                                cx.notify();
-                            })
-                        }),
-                )
+                presets
+                    .separator()
+                    .item(pick_item("schedule send", &picking))
             });
         let send = self.on_send.clone();
         let button = match menu {
@@ -151,56 +119,18 @@ impl RenderOnce for ScheduleSend {
                 })
                 .into_any_element(),
         };
-        let now = picking.read(cx);
-        let dialog = (now.open).then(|| {
-            let chosen = now.chosen;
-            let (closing, choosing, id) = (picking.clone(), picking.clone(), self.id.clone());
-            let schedule = self.on_schedule.clone();
-            Dialog::new(
-                (self.id.clone(), "dialog"),
-                "Schedule send",
-                move |_, cx| {
-                    closing.update(cx, |picking, cx| {
-                        *picking = Picking::default();
-                        cx.notify();
-                    })
-                },
-            )
-            .detail("Pick the day and the hour it goes.")
-            .child(
-                DateTimePicker::new((id.clone(), "when"), chosen).on_change(move |at, _, cx| {
-                    choosing.update(cx, |picking, cx| {
-                        picking.chosen = Some(at);
-                        cx.notify();
-                    })
-                }),
-            )
-            .action(move |close| {
-                Button::new((id.clone(), "cancel"), "Cancel")
-                    .variant(ButtonVariant::Ghost)
-                    .on_click(move |_, window, cx| close(window, cx))
-            })
-            .action({
-                let (id, zone) = (self.id.clone(), zone.clone());
-                move |close| {
-                    Button::new((id, "schedule"), "Schedule")
-                        .variant(ButtonVariant::Primary)
-                        .disabled(chosen.is_none())
-                        .on_click(move |_, window, cx| {
-                            let at = chosen
-                                .expect("Schedule waits for a time")
-                                .to_zoned(zone.clone())
-                                .expect("the zone holds the time")
-                                .timestamp();
-                            log::info!("schedule send: at {at}");
-                            close(window, cx);
-                            if let Some(schedule) = &schedule {
-                                schedule(at, window, cx);
-                            }
-                        })
-                }
-            })
-        });
+        let dialog = time_dialog(
+            &self.id,
+            &picking,
+            Ask {
+                title: "Schedule send",
+                detail: "Pick the day and the hour it goes.",
+                action: "Schedule",
+            },
+            &zone,
+            self.on_schedule.clone(),
+            cx,
+        );
         div().flex_none().child(button).children(dialog)
     }
 }
@@ -212,37 +142,44 @@ mod tests {
     use super::*;
 
     fn at(day: i8, hour: i8) -> Timestamp {
-        date(2026, 9, day)
-            .at(hour, 0, 0, 0)
-            .to_zoned(TimeZone::UTC)
-            .expect("a UTC time")
-            .timestamp()
+        at_hour(date(2026, 9, day), hour, &TimeZone::UTC)
     }
 
     #[test]
     fn presets_fall_tomorrow_and_on_the_next_monday() {
-        let [(morning, a), (afternoon, b), (monday, c)] = presets(at(26, 12), &TimeZone::UTC);
+        let [(morning, a), (afternoon, b), (monday, c)] = &presets(at(26, 12), &TimeZone::UTC)[..]
+        else {
+            panic!("three times from a Saturday");
+        };
         assert_eq!(
-            (morning.as_str(), a),
+            (morning.as_str(), *a),
             ("Tomorrow morning · Sun 08:00", at(27, 8))
         );
         assert_eq!(
-            (afternoon.as_str(), b),
+            (afternoon.as_str(), *b),
             ("Tomorrow afternoon · Sun 13:00", at(27, 13))
         );
         assert_eq!(
-            (monday.as_str(), c),
+            (monday.as_str(), *c),
             ("Monday morning · Mon 08:00", at(28, 8))
         );
-        let [_, _, (_, next)] = presets(at(28, 9), &TimeZone::UTC);
+        let next = presets(at(28, 9), &TimeZone::UTC).pop().map(|(_, at)| at);
         assert_eq!(
             next,
-            date(2026, 10, 5)
-                .at(8, 0, 0, 0)
-                .to_zoned(TimeZone::UTC)
-                .expect("a UTC time")
-                .timestamp(),
+            Some(at_hour(date(2026, 10, 5), 8, &TimeZone::UTC)),
             "on a Monday, the next one"
+        );
+        let sunday: Vec<String> = presets(at(27, 12), &TimeZone::UTC)
+            .into_iter()
+            .map(|(name, _)| name)
+            .collect();
+        assert_eq!(
+            sunday,
+            [
+                "Tomorrow morning · Mon 08:00",
+                "Tomorrow afternoon · Mon 13:00"
+            ],
+            "on a Sunday, tomorrow morning is Monday morning"
         );
     }
 }

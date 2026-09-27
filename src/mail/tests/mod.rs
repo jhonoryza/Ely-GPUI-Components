@@ -11,6 +11,7 @@ use crate::{
 };
 
 mod read;
+mod sort;
 mod write;
 
 fn setup(cx: &mut TestAppContext) {

@@ -162,6 +162,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - The focus color belongs to the focus ring. A chosen or shown item takes accent, as `forms::picks` and `lists::ListItem` do.
 - A box that shows a host's picture takes the picture's shape from the host (`ratio`), so nothing is cropped and a point given as a share lands on the picture. A focusable one keeps its focus border on an outer box, so the picture keeps that shape exactly (`media::ImageCropper`).
 - A default only the component can work out, such as a crop fitted to a picture it decodes, reaches the owner once through `window.defer` after render (`media::ImageUpload`).
+- A menu of times goes through `mail::times`: each row names its day and hour, a moment comes once (tomorrow is next Monday on a Sunday), and "Pick a time…" opens one dialog that waits for a time ahead of now (`ScheduleSend`, `SnoozePicker`).
+- A list whose cursor a field drives marks the cursor only while the field has focus; at rest its first row would look hovered (`mail::LabelPicker`). Its rows are option rows, and `forms::marked_row` leads one with a mark such as a label's hue.
 
 ## Decisions
 

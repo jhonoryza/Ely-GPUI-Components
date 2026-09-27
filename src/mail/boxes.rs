@@ -5,6 +5,7 @@ use gpui::{
     Styled, Window, div,
 };
 
+use super::labels::hue_dot;
 use crate::{
     data_display::CountBadge,
     forms::OnValue,
@@ -66,19 +67,7 @@ impl Mailbox {
                 .size(IconSize::Sm)
                 .color(colors.fg_muted)
                 .into_any_element(),
-            Mark::Hue(hue) => {
-                let tint = *colors
-                    .chart
-                    .get(hue)
-                    .unwrap_or_else(|| panic!("label {}: no chart hue {hue}", self.name));
-                div()
-                    .size(theme.icon_size(IconSize::Sm))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .child(div().size(theme.status_dot()).rounded_full().bg(tint))
-                    .into_any_element()
-            }
+            Mark::Hue(hue) => hue_dot(&self.name, hue, cx).into_any_element(),
         };
         let row = ListItem::new((id.clone(), format!("box-{}", self.key)), self.name.clone())
             .leading(mark)

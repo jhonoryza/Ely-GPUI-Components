@@ -3,12 +3,14 @@ use ely_gpui_component::{
     feedback::EmptyState,
     mail::{Mail, MailList, Mailbox, MailboxList},
     primitives::IconName,
-    theme::{ActiveTheme, Radius},
+    theme::{ActiveTheme, Radius, TextSize},
+    typography::format,
 };
 use gpui::{AnyElement, App, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
-use jiff::{SignedDuration, Timestamp};
+use jiff::{SignedDuration, Timestamp, tz::TimeZone};
 
 mod read;
+mod sort;
 mod write;
 
 use super::Page;
@@ -52,7 +54,39 @@ const SCRIPT: &[Step] = &[
     Step::Key("enter"),
     Step::Wait(200),
     Step::Shot("recipient-added"),
+    Step::DownAt("mail-labels", 150.0, 25.0),
+    Step::UpAt("mail-labels", 150.0, 25.0),
+    Step::Type("Suppliers"),
+    Step::Wait(200),
+    Step::Shot("label-new"),
+    Step::Key("enter"),
+    Step::Wait(200),
+    Step::Shot("label-made"),
+    Step::DownAt("mail-snooze", 50.0, 16.0),
+    Step::UpAt("mail-snooze", 50.0, 16.0),
+    Step::Wait(300),
+    Step::Shot("snooze-open"),
+    Step::Key("up"),
+    Step::Key("enter"),
+    Step::Wait(300),
+    Step::Shot("snooze-dialog"),
+    Step::Key("escape"),
 ];
+
+/// What a demo says it did, under it.
+fn quiet(text: SharedString, cx: &App) -> impl IntoElement + use<> {
+    let theme = cx.theme();
+    div()
+        .text_size(theme.text_size(TextSize::Sm))
+        .text_color(theme.colors.fg_muted)
+        .child(text)
+}
+
+/// A moment as the demos say it: its weekday and hour here.
+fn day_and_hour(at: Timestamp) -> String {
+    let zone = TimeZone::try_system().expect("the gallery reads the system time zone");
+    format::datetime(at, &zone, "%a %H:%M").expect("a fixed pattern formats")
+}
 
 fn boxes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let open = keep("mail-open-box", || SharedString::from("inbox"), window, cx);
@@ -223,6 +257,8 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(read::thread(cx))
         .child(write::composer(window, cx))
         .child(write::signature(window, cx))
+        .child(sort::labels(window, cx))
+        .child(sort::snooze(window, cx))
         .child(write::schedule(window, cx))
         .into_any_element()
 }

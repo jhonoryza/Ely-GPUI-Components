@@ -1,10 +1,11 @@
 use ely_gpui_component::{
     chat::Attachment,
     mail::{Contact, MailComposer, ScheduleSend, SignatureEditor},
-    theme::{ActiveTheme, Radius, TextSize},
+    theme::{ActiveTheme, Radius},
 };
 use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
 
+use super::{day_and_hour, quiet};
 use crate::{
     probe::probe,
     ui::{change, keep, section, set},
@@ -37,14 +38,6 @@ struct Writing {
     round: usize,
     files: Vec<Attachment>,
     said: Option<SharedString>,
-}
-
-fn quiet(text: SharedString, cx: &App) -> impl IntoElement + use<> {
-    let theme = cx.theme();
-    div()
-        .text_size(theme.text_size(TextSize::Sm))
-        .text_color(theme.colors.fg_muted)
-        .child(text)
 }
 
 pub fn composer(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
@@ -83,7 +76,7 @@ pub fn composer(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     change(&sent, cx, |writing| writing.said = Some(said.into()))
                 })
                 .on_schedule(move |draft, at, _, cx| {
-                    let said = format!("{} will go at {at}.", draft.subject);
+                    let said = format!("{} goes {}.", draft.subject, day_and_hour(at));
                     change(&later, cx, |writing| writing.said = Some(said.into()))
                 })
                 .on_discard(move |_, cx| {
@@ -164,7 +157,9 @@ pub fn schedule(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .child(
                 ScheduleSend::new("mail-schedule")
                     .on_send(move |_, cx| set(&sent, Some("Sent now.".into()), cx))
-                    .on_schedule(move |at, _, cx| set(&later, Some(format!("Goes at {at}.").into()), cx)),
+                    .on_schedule(move |at, _, cx| {
+                        set(&later, Some(format!("Goes {}.", day_and_hour(at)).into()), cx)
+                    }),
             )
             .children(shown.map(|shown| quiet(shown, cx))),
     ))
