@@ -1,14 +1,14 @@
 use std::{collections::HashMap, rc::Rc};
 
 use gpui::{
-    AnyElement, App, Axis, Bounds, ElementId, EmptyView, Entity, EntityId, FocusHandle,
-    InteractiveElement, IntoElement, ParentElement, Pixels, Point, RenderOnce, ScrollHandle,
-    SharedString, StatefulInteractiveElement, Styled, Window, anchored, canvas, div, prelude::*,
+    AnyElement, App, Axis, Bounds, ElementId, EmptyView, EntityId, FocusHandle, InteractiveElement,
+    IntoElement, ParentElement, Pixels, Point, RenderOnce, ScrollHandle, SharedString,
+    StatefulInteractiveElement, Styled, Window, anchored, canvas, div, prelude::*,
 };
 
 use super::moves::{landing, stepped};
 use crate::{
-    layout::{bring_into_view, on_axis},
+    layout::{on_axis, reveal_when_focused},
     motion::Flip,
     primitives::{FocusRing, raise, tab_stop},
     theme::{ActiveTheme, Elevation, Radius, TextSize},
@@ -106,39 +106,6 @@ fn measure(
     .size_full()
 }
 
-/// The card shown after focus, by key and column.
-type Revealed = Option<(SharedString, SharedString)>;
-
-/// Scrolls the board so a card that takes focus shows, once per focus and again in a new column.
-fn reveal(
-    scroll: &ScrollHandle,
-    revealed: &Entity<Revealed>,
-    focus: &FocusHandle,
-    place: (SharedString, SharedString),
-) -> impl IntoElement {
-    let (scroll, revealed, focus) = (scroll.clone(), revealed.clone(), focus.clone());
-    canvas(
-        move |bounds, window, cx| {
-            let focused = focus.is_focused(window);
-            let held = revealed.read(cx).clone();
-            if focused && held.as_ref() != Some(&place) {
-                revealed.update(cx, |revealed, _| *revealed = Some(place.clone()));
-                if bring_into_view(&scroll, bounds, Axis::Horizontal) {
-                    log::info!("board: {} scrolled into view", place.0);
-                    window.request_animation_frame();
-                }
-            } else if !focused && held.is_some_and(|(key, _)| key == place.0) {
-                revealed.update(cx, |revealed, _| *revealed = None);
-            }
-        },
-        |_, _, _, _| {},
-    )
-    .absolute()
-    .top_0()
-    .left_0()
-    .size_full()
-}
-
 /// Columns of cards: a card drags to a place in any column, the others gliding aside, and Option with an arrow moves the focused one. Each move asks the owner through `on_move(card, column, index)`, the index counted without the card.
 #[derive(IntoElement)]
 pub struct KanbanBoard {
@@ -203,7 +170,6 @@ impl RenderOnce for KanbanBoard {
             .use_keyed_state((id.clone(), "scroll"), cx, |_, _| ScrollHandle::new())
             .read(cx)
             .clone();
-        let revealed = window.use_keyed_state((id.clone(), "revealed"), cx, |_, _| None);
         let owner = hold.entity_id();
         let stale = hold
             .read(cx)
@@ -244,6 +210,15 @@ impl RenderOnce for KanbanBoard {
                 .map(|column| column.cards.len())
                 .collect(),
         );
+        let mut reveals: HashMap<SharedString, AnyElement> = places
+            .iter()
+            .map(|(key, (column, _))| {
+                let place = (id.clone(), format!("reveal-{key}-{}", keys[*column]));
+                let reveal =
+                    reveal_when_focused(place, &scroll, &focus[key], Axis::Horizontal, window, cx);
+                (key.clone(), reveal.into_any_element())
+            })
+            .collect();
         let theme = cx.theme();
         let colors = &theme.colors;
         let width = theme.project().column;
@@ -345,12 +320,12 @@ impl RenderOnce for KanbanBoard {
                             measures.cards.insert(key.clone(), bounds) != Some(bounds)
                         }
                     }));
-                let place = (key.clone(), column.key.clone());
+                let reveal = reveals.remove(&key).expect("each card has a reveal");
                 let row = div()
                     .relative()
                     .pb_2()
                     .child(face)
-                    .child(reveal(&scroll, &revealed, &handle, place))
+                    .child(reveal)
                     .child(measure(&row_measures, {
                         let key = key.clone();
                         move |measures, bounds| {

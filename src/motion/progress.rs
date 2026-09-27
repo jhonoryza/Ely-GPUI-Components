@@ -197,6 +197,11 @@ impl ProgressRing {
 
     /// Shows the value as a percent inside the ring.
     pub fn percent(mut self) -> Self {
+        assert!(
+            self.inside.is_none(),
+            "progress ring {:?}: a percent or content inside, not both",
+            self.id
+        );
         self.percent = true;
         self
     }
@@ -276,5 +281,18 @@ impl RenderOnce for ProgressRing {
             .size(self.size.unwrap_or(theme.progress_ring()))
             .child(glide)
             .children(self.inside)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use gpui::div;
+
+    use super::ProgressRing;
+
+    #[test]
+    #[should_panic(expected = "a percent or content inside, not both")]
+    fn a_ring_holds_a_percent_or_content_not_both() {
+        let _ = ProgressRing::new("ring", 0.5).inside(div()).percent();
     }
 }

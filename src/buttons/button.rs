@@ -1,6 +1,6 @@
 use gpui::{
-    App, ClickEvent, ElementId, FontWeight, Hsla, IntoElement, Keystroke, MouseButton, RenderOnce,
-    SharedString, Window, div, prelude::*, transparent_black,
+    App, ClickEvent, ElementId, FocusHandle, FontWeight, Hsla, IntoElement, Keystroke, MouseButton,
+    RenderOnce, SharedString, Window, div, prelude::*, transparent_black,
 };
 
 use crate::{
@@ -131,6 +131,7 @@ pub struct Button {
     disabled: bool,
     loading: bool,
     full_width: bool,
+    focus: Option<FocusHandle>,
     pub(crate) slot: Option<Slot>,
     on_click: Option<ClickHandler>,
 }
@@ -148,6 +149,7 @@ impl Button {
             disabled: false,
             loading: false,
             full_width: false,
+            focus: None,
             slot: None,
             on_click: None,
         }
@@ -182,6 +184,12 @@ impl Button {
         let parsed = Keystroke::parse(keystroke)
             .unwrap_or_else(|error| panic!("button shortcut {keystroke:?}: {error}"));
         self.shortcut = Some(parsed);
+        self
+    }
+
+    /// Takes focus through the owner's handle, one that outlives a mode where the button changes; a Tab stop when built with `tab_stop`.
+    pub fn focus_handle(mut self, handle: &FocusHandle) -> Self {
+        self.focus = Some(handle.clone());
         self
     }
 
@@ -277,14 +285,16 @@ impl RenderOnce for Button {
                 if self.disabled {
                     return el.opacity(0.45).cursor_not_allowed();
                 }
+                let el = match &self.focus {
+                    Some(handle) => el.track_focus(handle),
+                    None => el.tab_index(0),
+                };
                 if self.loading {
                     return el
-                        .tab_index(0)
                         .focus_ring(cx)
                         .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default());
                 }
                 el.cursor_pointer()
-                    .tab_index(0)
                     .hover(|style| {
                         let style = style.bg(tone.hover);
                         if link { style.underline() } else { style }

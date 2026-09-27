@@ -2,6 +2,9 @@ use gpui::{
     AnyElement, Context, Entity, IntoElement, KeyBinding, KeyUpEvent, Keystroke, Modifiers,
     ParentElement, Render, Styled, TestAppContext, VisualTestContext, Window, div, px,
 };
+use std::time::Instant;
+
+use gpui::SharedString;
 use jiff::civil::date;
 
 use super::{AssigneePicker, IssueId, Person, Priority, Status, StatusSelect, Task, TaskList};
@@ -12,13 +15,14 @@ mod time;
 
 /// A view that shows one project part and keeps what it heard.
 struct Desk {
-    part: fn(Entity<Desk>) -> AnyElement,
+    part: fn(&Desk, Entity<Desk>) -> AnyElement,
     heard: Vec<String>,
+    clock: Option<(SharedString, Instant)>,
 }
 
 impl Render for Desk {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        div().w(px(640.0)).child((self.part)(cx.entity()))
+        div().w(px(640.0)).child((self.part)(self, cx.entity()))
     }
 }
 
@@ -31,7 +35,7 @@ fn settle(cx: &mut VisualTestContext) {
 }
 
 fn desk(
-    part: fn(Entity<Desk>) -> AnyElement,
+    part: fn(&Desk, Entity<Desk>) -> AnyElement,
     cx: &mut TestAppContext,
 ) -> (Entity<Desk>, &mut VisualTestContext) {
     cx.update(|cx| {
@@ -43,6 +47,7 @@ fn desk(
     let (host, cx) = cx.add_window_view(|_, _| Desk {
         part,
         heard: Vec::new(),
+        clock: None,
     });
     cx.update(|window, _| window.activate_window());
     settle(cx);
@@ -92,7 +97,7 @@ fn tasks() -> Vec<Task> {
     ]
 }
 
-fn list(owner: Entity<Desk>) -> AnyElement {
+fn list(_: &Desk, owner: Entity<Desk>) -> AnyElement {
     let (opened, ticked) = (owner.clone(), owner);
     TaskList::new("tasks", tasks())
         .today(date(2026, 9, 27))
@@ -128,7 +133,7 @@ fn enter_opens_the_task_under_the_cursor(cx: &mut TestAppContext) {
     assert_eq!(heard(&host, cx), ["open brief", "open specs"]);
 }
 
-fn status(owner: Entity<Desk>) -> AnyElement {
+fn status(_: &Desk, owner: Entity<Desk>) -> AnyElement {
     StatusSelect::new("status", Status::Todo)
         .on_change(move |status, _, cx| note(&owner, status.words().into(), cx))
         .into_any_element()
@@ -143,7 +148,7 @@ fn a_status_picked_by_key_hands_on_its_status(cx: &mut TestAppContext) {
     assert_eq!(heard(&host, cx), ["In progress"]);
 }
 
-fn assignee(owner: Entity<Desk>) -> AnyElement {
+fn assignee(_: &Desk, owner: Entity<Desk>) -> AnyElement {
     let people = [
         Person::new("ana", "Ana Lima"),
         Person::new("ben", "Ben Ito"),
@@ -169,7 +174,7 @@ fn the_picker_hands_on_a_person_or_no_one(cx: &mut TestAppContext) {
     assert_eq!(heard(&host, cx), ["Ben Ito", "no one"]);
 }
 
-fn checklist(owner: Entity<Desk>) -> AnyElement {
+fn checklist(_: &Desk, owner: Entity<Desk>) -> AnyElement {
     Checklist::new(
         "subtasks",
         "Subtasks",

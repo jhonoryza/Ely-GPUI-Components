@@ -1,21 +1,22 @@
 use std::rc::Rc;
 
 use gpui::{
-    Animation, AnimationExt, App, ElementId, FontWeight, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
-    Window, div, prelude::*,
+    Animation, AnimationExt, AnyElement, App, ElementId, FocusHandle, FontWeight,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, ScrollHandle,
+    SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
 use super::button::label_size;
 use crate::{
+    layout::{on_axis, reveal_when_focused},
     motion::{self, Axis, Marker, glide, measure_item, measure_origin, slide},
-    primitives::{FocusRing, Icon, IconName},
+    primitives::{FocusRing, Icon, IconName, tab_stop},
     theme::{ActiveTheme, ControlSize, Elevation, Radius},
 };
 
 type OnChange = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
-/// Mutually exclusive segments. A thumb slides to the chosen one.
+/// Mutually exclusive segments. A thumb slides to the chosen one; too narrow for them, the strip scrolls sideways and a focused segment comes into view.
 #[derive(IntoElement)]
 pub struct SegmentedControl {
     id: ElementId,
@@ -72,6 +73,29 @@ impl RenderOnce for SegmentedControl {
             .position(|value| *value == self.selected)
             .unwrap_or_else(|| panic!("segmented control has no segment {}", self.selected));
         let (state, marker) = slide(self.id.clone(), &values, &self.selected, window, cx);
+        let scroll = window
+            .use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| ScrollHandle::new())
+            .read(cx)
+            .clone();
+        let mut stops: Vec<(FocusHandle, AnyElement)> = (0..values.len())
+            .map(|ix| {
+                let focus = tab_stop(
+                    (self.id.clone(), format!("segment-{ix}")).into(),
+                    true,
+                    window,
+                    cx,
+                );
+                let reveal = reveal_when_focused(
+                    (self.id.clone(), format!("reveal-{ix}")),
+                    &scroll,
+                    &focus,
+                    gpui::Axis::Horizontal,
+                    window,
+                    cx,
+                );
+                (focus, reveal.into_any_element())
+            })
+            .collect();
         let theme = cx.theme();
         let colors = &theme.colors;
         let (text, icon_size) = label_size(self.size);
@@ -108,8 +132,10 @@ impl RenderOnce for SegmentedControl {
             .map(|(ix, (value, label, icon))| {
                 let on = ix == chosen;
                 let fg = if on { colors.fg } else { colors.fg_muted };
+                let (focus, reveal) = stops.remove(0);
+                let named = value.clone();
                 let (change, measure) = (self.on_change.clone(), state.clone());
-                div()
+                let segment = div()
                     .id(("segment", ix))
                     .relative()
                     .flex()
@@ -129,8 +155,9 @@ impl RenderOnce for SegmentedControl {
                         FontWeight::MEDIUM
                     })
                     .text_color(fg)
+                    .debug_selector(move || format!("segment {named}"))
                     .cursor_pointer()
-                    .tab_index(0)
+                    .track_focus(&focus)
                     .focus_ring(cx)
                     .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
                     .on_click(move |_, window, cx| {
@@ -146,12 +173,20 @@ impl RenderOnce for SegmentedControl {
                         segment.child(Icon::new(icon).size(icon_size).color(fg))
                     })
                     .when(!label.is_empty(), |segment| segment.child(label))
-                    .child(measure_item(measure, ix, Axis::Horizontal))
+                    .child(measure_item(measure, ix, Axis::Horizontal));
+                div()
+                    .relative()
+                    .flex()
+                    .flex_1()
+                    .child(segment)
+                    .child(reveal)
             });
-        div()
-            .id(self.id)
+        let control = div()
+            .id(self.id.clone())
             .relative()
             .flex()
+            .flex_grow()
+            .flex_shrink_0()
             .items_center()
             .p_0p5()
             .rounded(theme.radius(Radius::Lg))
@@ -160,6 +195,14 @@ impl RenderOnce for SegmentedControl {
             .border_color(colors.border)
             .child(measure_origin(state.clone(), Axis::Horizontal))
             .children(thumb)
-            .children(segments)
+            .children(segments);
+        on_axis(
+            div()
+                .id((self.id, "strip"))
+                .flex()
+                .overflow_x_scroll()
+                .track_scroll(&scroll),
+        )
+        .child(control)
     }
 }

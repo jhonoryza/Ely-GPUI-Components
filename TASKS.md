@@ -368,3 +368,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T31b | 2 | PASS | |
 | T31c | 1 | FAIL | a roadmap bar's end and the workload bar's cap went untested |
 | T31c | 2 | PASS | |
+| T31d | 1 | FAIL | a focused segment past the strip's fold stayed hidden; the tracker lost focus as Start and Stop swapped; Stop and Skip went untested; percent did not refuse content |

@@ -11,7 +11,7 @@ use gpui::{
 use crate::{
     buttons::{Button, ButtonVariant},
     forms::{Enter, Input, Run, TextInput},
-    primitives::IconName,
+    primitives::{IconName, tab_stop},
     theme::{ActiveTheme, TextSize},
     typography::{Ellipsis, format, tabular},
 };
@@ -50,7 +50,7 @@ pub(crate) fn spent(duration: Duration) -> String {
     }
 }
 
-/// A timer against a task: a field names it, Start or Enter starts it and Stop ends it, the running time counting up; under it, the entries made and their total. The owner keeps what runs and what was spent.
+/// A timer against a task: a field names it, Start or Enter's release starts it and Stop ends it, the running time counting up; under it, the entries made and their total. The owner keeps what runs and what was spent.
 #[derive(IntoElement)]
 pub struct TimeTracker {
     id: ElementId,
@@ -116,8 +116,10 @@ impl RenderOnce for TimeTracker {
             .running
             .as_ref()
             .map_or(Duration::ZERO, |(_, since)| now.duration_since(*since));
+        let action = tab_stop((id.clone(), "action").into(), true, window, cx);
         let start: Run = {
-            let (id, field, on_start) = (id.clone(), field.clone(), self.on_start);
+            let (id, field, on_start, action) =
+                (id.clone(), field.clone(), self.on_start, action.clone());
             Rc::new(move |window, cx| {
                 let task = SharedString::from(field.read(cx).text().trim().to_string());
                 if task.is_empty() {
@@ -127,54 +129,70 @@ impl RenderOnce for TimeTracker {
                 let now = cx.background_executor().now();
                 log::info!("time tracker {id:?}: start {task}");
                 field.update(cx, |input, cx| input.set_text(String::new(), cx));
+                window.focus(&action);
                 if let Some(on_start) = &on_start {
                     on_start(&task, now, window, cx);
                 }
             })
         };
-        let theme = cx.theme();
-        let colors = &theme.colors;
-        let (task, action) = match &self.running {
-            Some((task, _)) => {
-                let (id, on_stop) = (id.clone(), self.on_stop.clone());
-                (
-                    div()
-                        .flex_1()
-                        .min_w_0()
-                        .child(Ellipsis::new(task.clone()))
-                        .into_any_element(),
-                    Button::new((self.id.clone(), "stop"), "Stop")
-                        .icon(IconName::Square)
-                        .on_click(move |_, window, cx| {
-                            let now = cx.background_executor().now();
-                            log::info!("time tracker {id:?}: stop");
-                            if let Some(on_stop) = &on_stop {
-                                on_stop(now, window, cx);
-                            }
-                        })
-                        .into_any_element(),
-                )
-            }
+        let stop: Run = {
+            let (id, on_stop, typing) = (
+                id.clone(),
+                self.on_stop.clone(),
+                field.read(cx).focus().clone(),
+            );
+            Rc::new(move |window, cx| {
+                let now = cx.background_executor().now();
+                log::info!("time tracker {id:?}: stop");
+                window.focus(&typing);
+                if let Some(on_stop) = &on_stop {
+                    on_stop(now, window, cx);
+                }
+            })
+        };
+        let running = self.running.is_some();
+        let task = match &self.running {
+            Some((task, _)) => div()
+                .flex_1()
+                .min_w_0()
+                .child(Ellipsis::new(task.clone()))
+                .into_any_element(),
             None => {
-                let (typed, pressed) = (start.clone(), start);
-                (
-                    div()
-                        .flex_1()
-                        .min_w_0()
-                        .capture_action(move |_: &Enter, window, cx| {
-                            cx.stop_propagation();
+                let typed = start.clone();
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .capture_action(|_: &Enter, _, cx| cx.stop_propagation())
+                    .on_key_up(move |event, window, cx| {
+                        if event.keystroke.key == "enter" {
                             typed(window, cx)
-                        })
-                        .child(Input::new(&field))
-                        .into_any_element(),
-                    Button::new((self.id.clone(), "start"), "Start")
-                        .variant(ButtonVariant::Primary)
-                        .icon(IconName::Play)
-                        .on_click(move |_, window, cx| pressed(window, cx))
-                        .into_any_element(),
-                )
+                        }
+                    })
+                    .child(Input::new(&field))
+                    .into_any_element()
             }
         };
+        let action = Button::new(
+            (id.clone(), "action"),
+            if running { "Stop" } else { "Start" },
+        )
+        .focus_handle(&action)
+        .variant(if running {
+            ButtonVariant::default()
+        } else {
+            ButtonVariant::Primary
+        })
+        .icon(if running {
+            IconName::Square
+        } else {
+            IconName::Play
+        })
+        .on_click(move |_, window, cx| match running {
+            true => stop(window, cx),
+            false => start(window, cx),
+        });
+        let theme = cx.theme();
+        let colors = &theme.colors;
         let clock = tabular(div())
             .flex_none()
             .text_size(theme.text_size(TextSize::Lg))

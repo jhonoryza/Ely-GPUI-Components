@@ -20,7 +20,7 @@ fn card(key: &str) -> KanbanCard {
     KanbanCard::new(SharedString::from(key.to_string()), face)
 }
 
-fn board(owner: Entity<Desk>) -> AnyElement {
+fn board(_: &Desk, owner: Entity<Desk>) -> AnyElement {
     let (moved, opened) = (owner.clone(), owner);
     KanbanBoard::new("board")
         .column(
@@ -92,10 +92,10 @@ fn option_arrows_move_the_focused_card_and_enter_opens_it(cx: &mut TestAppContex
     );
 }
 
-fn narrow(owner: Entity<Desk>) -> AnyElement {
+fn narrow(desk: &Desk, owner: Entity<Desk>) -> AnyElement {
     gpui::div()
         .w(px(300.0))
-        .child(board(owner))
+        .child(board(desk, owner))
         .into_any_element()
 }
 
@@ -111,7 +111,7 @@ fn a_focused_card_past_the_fold_scrolls_into_view(cx: &mut TestAppContext) {
     );
 }
 
-fn labels(owner: Entity<Desk>) -> AnyElement {
+fn labels(_: &Desk, owner: Entity<Desk>) -> AnyElement {
     let (renamed, made) = (owner.clone(), owner);
     LabelManager::new(
         "labels",
@@ -149,7 +149,7 @@ fn a_label_keeps_a_name_of_its_own(cx: &mut TestAppContext) {
     assert_eq!(heard(&host, cx), ["rename bug Defect", "make bug report"]);
 }
 
-fn panel(owner: Entity<Desk>) -> AnyElement {
+fn panel(_: &Desk, owner: Entity<Desk>) -> AnyElement {
     let task = Task::new("brief", "Write the brief").status(Status::Todo);
     TaskDetailPanel::new("panel", task, [Person::new("ana", "Ana Lima")])
         .on_change(move |task, _, cx| {
@@ -187,7 +187,7 @@ fn the_panel_hands_on_the_task_after_each_edit(cx: &mut TestAppContext) {
     );
 }
 
-fn roadmap(_: Entity<Desk>) -> AnyElement {
+fn roadmap(_: &Desk, _: Entity<Desk>) -> AnyElement {
     crate::project::Roadmap::new("roadmap", date(2026, 9, 1), 2)
         .lane(
             "Design",

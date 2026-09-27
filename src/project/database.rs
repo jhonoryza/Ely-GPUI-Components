@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Window, div,
+    AnyElement, App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
+    Window, div,
 };
 use jiff::civil::Date;
 
@@ -18,7 +18,7 @@ use crate::{
     calendar::{CalendarMonthView, Event},
     data_display::Tone,
     forms::OnValue,
-    layout::{on_axis, seeded::use_seeded},
+    layout::seeded::use_seeded,
     primitives::IconName,
     tables::{Cell, Column, DataTable, Row},
     theme::{ActiveTheme, ControlSize, TextSize},
@@ -328,11 +328,7 @@ impl RenderOnce for DatabaseView {
                     .items_center()
                     .justify_between()
                     .gap_2()
-                    .child(
-                        on_axis(div().id((id.clone(), "switch")).overflow_x_scroll())
-                            .min_w_0()
-                            .child(switch),
-                    )
+                    .child(switch)
                     .child(
                         div()
                             .text_size(theme.text_size(TextSize::Sm))
