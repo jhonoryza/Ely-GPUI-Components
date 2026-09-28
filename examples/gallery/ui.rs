@@ -69,12 +69,19 @@ pub fn blocked(text: impl Into<SharedString>, cx: &App) -> impl IntoElement {
     let theme = cx.theme();
     div()
         .flex()
-        .items_center()
+        .items_start()
         .gap_2()
         .text_size(theme.text_size(TextSize::Sm))
         .text_color(theme.colors.warning)
-        .child(div().size_1p5().rounded_full().bg(theme.colors.warning))
-        .child(text.into())
+        .child(
+            div()
+                .flex_none()
+                .mt_1p5()
+                .size_1p5()
+                .rounded_full()
+                .bg(theme.colors.warning),
+        )
+        .child(div().flex_1().min_w_0().child(text.into()))
 }
 
 /// A demo's state, kept across frames under `key`.

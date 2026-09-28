@@ -85,6 +85,18 @@ fn nearest(colors: &[Hsla], matrix: Option<&[[f32; 3]; 3]>) -> f32 {
     near
 }
 
+fn hexes(colors: &[Hsla]) -> String {
+    colors
+        .iter()
+        .map(|&color| {
+            let rgb = Rgba::from(color);
+            let byte = |channel: f32| (channel * 255.0).round() as u8;
+            format!("{:02x}{:02x}{:02x}", byte(rgb.r), byte(rgb.g), byte(rgb.b))
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// Red and green, far apart for most eyes, run together for deuteranopia: the measure bites.
 #[test]
 fn red_and_green_run_together_for_deuteranopia() {
@@ -107,10 +119,16 @@ fn color_blind_safe_hues_stay_apart(cx: &mut TestAppContext) {
         expected.chart = safe.chart;
         assert_eq!(safe, expected, "{mode:?}: only the chart changes");
         assert_ne!(safe.chart, own.chart, "{mode:?}: the chart changes");
-        assert!(nearest(&safe.chart, None) >= 10.0, "{mode:?}");
+        let seen = format!(
+            "{mode:?}: {} against {}",
+            hexes(&safe.chart),
+            hexes(&own.chart)
+        );
+        let near = nearest(&safe.chart, None);
+        assert!(near >= 10.0, "{seen}: {near}");
         for (name, matrix) in &DICHROMACY {
             let near = nearest(&safe.chart, Some(matrix));
-            assert!(near >= 10.0, "{mode:?} for {name}: {near}");
+            assert!(near >= 10.0, "{seen} for {name}: {near}");
         }
         for hue in safe.chart {
             let ratio = contrast(hue, safe.bg);
