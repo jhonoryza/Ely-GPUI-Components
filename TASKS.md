@@ -148,7 +148,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T42f Misc · Web — `tasks/ch31-43.md`
 - [x] T42g Misc · Export and import — `tasks/ch31-43.md`
 - [x] T43a Tooling · Workbench — `tasks/ch31-43.md`
-- [ ] T43b Tooling · Inspection — `tasks/ch31-43.md`
+- [x] T43b Tooling · Inspection — `tasks/ch31-43.md`
 - [ ] T43c Tooling · Catalogs — `tasks/ch31-43.md`
 - [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark: a home page in motion (three.js, smooth scroll), and a components page with every component, categories on the left and the chosen one's detail on the right, after astryx.atmeta.com
@@ -466,3 +466,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T42g | 2 | PASS | |
 | T43a | 1 | FAIL | the knobs' starting values sat outside layout::seeded, so a new one was lost and a renamed knob failed; the redraw untested behind a refreshing helper; twin names and an out-of-range number taken |
 | T43a | 2 | PASS | |
+| T43b | 1 | FAIL | a stall past a second dropped out of the FPS meter; Tab stranded on the inspector's Pick, a second root out of the app's scope; the event logger missed every key a binding takes |
+| T43b | 2 | PASS | |
