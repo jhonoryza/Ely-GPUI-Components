@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use gpui::{
     AnyElement, App, Bounds, Hsla, IntoElement, PathBuilder, Pixels, Point, Styled, Window, canvas,
@@ -7,6 +7,7 @@ use gpui::{
 
 use super::{
     LatLon, MapViewport,
+    choropleth::ChoroplethLayer,
     geojson::{Feature, Geometry},
     heat::density,
 };
@@ -75,29 +76,39 @@ impl Paper {
         }
     }
 
-    /// An area's rings washed as one path, so holes stay open, and outlined.
-    fn area(&self, rings: &[Vec<LatLon>], ink: Hsla, window: &mut Window) {
+    /// A shape's rings washed as one path, so holes stay open, and edged as one more, on each world in view.
+    fn area<'a>(
+        &self,
+        rings: impl Iterator<Item = &'a Vec<LatLon>>,
+        wash: Hsla,
+        edge: Hsla,
+        window: &mut Window,
+    ) {
         let runs: Vec<Vec<(f32, f32)>> = rings
-            .iter()
             .map(|ring| self.view.run(ring, self.size, self.tile))
             .collect();
-        let Some(outer) = runs.first() else {
+        let every: Vec<(f32, f32)> = runs.iter().flatten().copied().collect();
+        if every.is_empty() {
             return;
-        };
-        for shift in self.copies(outer, 0.0) {
-            let mut path = PathBuilder::fill();
+        }
+        for shift in self.copies(&every, 0.0) {
+            let (mut wash_path, mut edge_path) =
+                (PathBuilder::fill(), PathBuilder::stroke(self.line));
             for run in &runs {
-                let mut points = run.iter().map(|(x, y)| at(self.origin, (x + shift, *y)));
-                if let Some(first) = points.next() {
-                    path.move_to(first);
-                    points.for_each(|next| path.line_to(next));
-                    path.close();
+                let points: Vec<_> = run
+                    .iter()
+                    .map(|(x, y)| at(self.origin, (x + shift, *y)))
+                    .collect();
+                if let Some((first, rest)) = points.split_first() {
+                    for path in [&mut wash_path, &mut edge_path] {
+                        path.move_to(*first);
+                        rest.iter().for_each(|next| path.line_to(*next));
+                        path.close();
+                    }
                 }
             }
-            finish(path, ink.alpha(0.25), window);
-            for run in &runs {
-                self.stroke(run, shift, self.line, ink, window);
-            }
+            finish(wash_path, wash, window);
+            finish(edge_path, edge, window);
         }
     }
 
@@ -108,7 +119,8 @@ impl Paper {
         }
     }
 
-    fn geometry(&self, geometry: &Geometry, ink: Hsla, window: &mut Window) {
+    /// A shape: areas washed in `wash` and edged in `ink`, points and lines in `ink`.
+    fn geometry(&self, geometry: &Geometry, wash: Hsla, ink: Hsla, window: &mut Window) {
         match geometry {
             Geometry::Point(place) => self.dot(*place, ink, window),
             Geometry::MultiPoint(places) => places
@@ -118,13 +130,13 @@ impl Paper {
             Geometry::MultiLineString(lines) => lines
                 .iter()
                 .for_each(|places| self.line(places, self.line, ink, window)),
-            Geometry::Polygon(rings) => self.area(rings, ink, window),
-            Geometry::MultiPolygon(polygons) => polygons
-                .iter()
-                .for_each(|rings| self.area(rings, ink, window)),
+            Geometry::Polygon(rings) => self.area(rings.iter(), wash, ink, window),
+            Geometry::MultiPolygon(polygons) => {
+                self.area(polygons.iter().flatten(), wash, ink, window)
+            }
             Geometry::Collection(parts) => parts
                 .iter()
-                .for_each(|part| self.geometry(part, ink, window)),
+                .for_each(|part| self.geometry(part, wash, ink, window)),
         }
     }
 }
@@ -135,6 +147,7 @@ pub enum MapLayer {
     Route(RouteLine),
     Features(GeoJsonLayer),
     Heat(GeoHeatmap),
+    Choropleth(ChoroplethLayer),
 }
 
 impl MapLayer {
@@ -148,8 +161,21 @@ impl MapLayer {
                 let ink = paper.ink(layer.hue, "features");
                 for feature in layer.features.iter() {
                     if let Some(geometry) = &feature.geometry {
-                        paper.geometry(geometry, ink, window);
+                        paper.geometry(geometry, ink.alpha(0.25), ink, window);
                     }
+                }
+            }
+            MapLayer::Choropleth(layer) => {
+                let ink = paper.colors.hue(layer.hue, "choropleth");
+                for feature in layer.features.iter() {
+                    let Some(geometry) = &feature.geometry else {
+                        continue;
+                    };
+                    let wash = match layer.share(feature) {
+                        Some(share) => ink.alpha(0.15 + 0.85 * share as f32),
+                        None => paper.colors.fg_disabled.alpha(0.2),
+                    };
+                    paper.geometry(geometry, wash, paper.colors.bg, window);
                 }
             }
             MapLayer::Heat(heat) => {
@@ -203,12 +229,12 @@ impl RouteLine {
 /// GeoJSON features in one hue: areas washed and outlined with their holes open, lines stroked, points dotted.
 #[derive(Clone)]
 pub struct GeoJsonLayer {
-    features: Rc<[Feature]>,
+    features: Arc<[Feature]>,
     hue: Option<usize>,
 }
 
 impl GeoJsonLayer {
-    pub fn new(features: impl Into<Rc<[Feature]>>) -> Self {
+    pub fn new(features: impl Into<Arc<[Feature]>>) -> Self {
         Self {
             features: features.into(),
             hue: None,
@@ -251,6 +277,12 @@ impl From<RouteLine> for MapLayer {
 impl From<GeoJsonLayer> for MapLayer {
     fn from(layer: GeoJsonLayer) -> Self {
         MapLayer::Features(layer)
+    }
+}
+
+impl From<ChoroplethLayer> for MapLayer {
+    fn from(layer: ChoroplethLayer) -> Self {
+        MapLayer::Choropleth(layer)
     }
 }
 

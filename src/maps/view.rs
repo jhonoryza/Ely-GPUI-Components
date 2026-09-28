@@ -46,7 +46,7 @@ pub struct MapView {
     pub(crate) viewport: MapViewport,
     tiles: Option<TileSource>,
     zooms: (u8, u8),
-    attribution: Option<SharedString>,
+    pub(crate) attribution: Option<SharedString>,
     layers: Vec<MapLayer>,
     markers: Vec<MapMarker>,
     gathered: bool,

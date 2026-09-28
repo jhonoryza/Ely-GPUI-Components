@@ -2,7 +2,8 @@ use gpui::{AnyElement, Entity, IntoElement, TestAppContext};
 
 use super::{SIZE, Stage, TILE, focus_map, hear, last, moves, press, said, say, stage};
 use crate::maps::{
-    GeoHeatmap, GeoJsonLayer, LatLon, MapMarker, MapView, MapViewport, RouteLine, read_geojson,
+    GeoHeatmap, GeoJsonLayer, LatLon, MapMarker, MapView, MapViewport, RouteLine, WorldMap,
+    read_geojson,
 };
 
 const CROWD: [(&str, f64, f64); 3] = [
@@ -202,4 +203,36 @@ fn a_clusters_press_shows_far_members_whole(cx: &mut TestAppContext) {
             "{lat}, {lon} at {x}, {y}"
         );
     }
+}
+
+fn world(_: &Stage, owner: Entity<Stage>) -> AnyElement {
+    let map = MapView::new("map", MapViewport::new(LatLon::new(20.0, 0.0), 0.6))
+        .on_viewport(move |view, _, cx| hear(&owner, view, cx));
+    WorldMap::new("world", map, [("US", 120.0), ("FR", 30.0), ("SG", 8.0)])
+        .hue(2)
+        .into_any_element()
+}
+
+/// The world's countries wash by their values, Singapore has no country at this scale, and the map still moves.
+#[gpui::test]
+fn a_world_map_washes_its_countries(cx: &mut TestAppContext) {
+    let (host, cx) = stage(world, cx);
+    focus_map(cx);
+    press("left", cx);
+    assert_eq!(moves(&host, cx), 1);
+}
+
+fn misnamed(_: &Stage, _: Entity<Stage>) -> AnyElement {
+    WorldMap::new(
+        "world",
+        MapView::new("map", MapViewport::new(LatLon::new(0.0, 0.0), 0.0)),
+        [("ZZ", 1.0)],
+    )
+    .into_any_element()
+}
+
+#[gpui::test]
+#[should_panic(expected = "ZZ is no ISO 3166 alpha-2 code")]
+fn a_world_map_refuses_a_code_that_is_no_country(cx: &mut TestAppContext) {
+    stage(misnamed, cx);
 }

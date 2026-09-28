@@ -12,6 +12,7 @@ use gpui::{
 };
 
 mod layers;
+mod world;
 
 use super::Page;
 use crate::probe::probe;
@@ -22,7 +23,7 @@ pub const PAGE: Page = Page {
     number: 41,
     slug: "maps",
     title: "Maps",
-    summary: "Tiles the host supplies, pins with a popup, a picker's crosshair, routes, GeoJSON, heat and clusters. The land is Natural Earth's.",
+    summary: "Tiles the host supplies, pins with a popup, a picker's crosshair, routes, GeoJSON, heat, clusters and choropleths. The land is Natural Earth's.",
     render,
     script: &[
         Step::Click("world-map"),
@@ -72,6 +73,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(layers::routes(cx))
         .child(layers::heat(cx))
         .child(layers::clusters(cx))
+        .child(world::world(cx))
         .into_any_element()
 }
 

@@ -214,7 +214,7 @@ pub fn stream(_: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         ),
     ];
     section(
-        "EventStream · LogStream → terminal::LogViewer · TraceWaterfall → debug::TimelineProfiler · SystemMonitor → devtools::ResourceMonitor · ProcessTable → terminal::ProcessList · NetworkGraph (throughput) → charts::RealtimeChart · MapView / GeoHeatmap → maps::MapView, maps::GeoHeatmap · WorldMap → maps (T41c)",
+        "EventStream · LogStream → terminal::LogViewer · TraceWaterfall → debug::TimelineProfiler · SystemMonitor → devtools::ResourceMonitor · ProcessTable → terminal::ProcessList · NetworkGraph (throughput) → charts::RealtimeChart · MapView / GeoHeatmap → maps::MapView, maps::GeoHeatmap · WorldMap → maps::WorldMap",
         "Events as they come, newest first, kept by kind, with Pause to hold the list while new ones count up. Logs, traces, a machine's readings, its processes and live throughput have their homes in the terminal, agent, dev tools and charts chapters; the maps live in the maps chapter.",
         cx,
     )

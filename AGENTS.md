@@ -14,7 +14,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Diffs: `similar` 3.2 (Apache-2.0) for line and word diffs and three-way merges; its `unicode` feature splits words at punctuation.
 - Markdown: `pulldown-cmark` 0.13 (MIT, default features off) for CommonMark with tables, tasks, strikethrough, footnotes and math.
 - Pictures: `image` 0.25 (MIT OR Apache-2.0), the crate gpui decodes with, default features off; it turns decoded frames and rims map tiles.
-- Maps: the gallery's tiles are Natural Earth's 110m countries (public domain), cut z0 to z3 by `scripts/tiles.py` with Pillow.
+- Maps: Natural Earth's 110m countries (public domain). `assets/maps/countries.geojson`, trimmed by `scripts/countries.py` to an ISO code, a name and positions to 0.01°, backs `maps::WorldMap`; the gallery's tiles are cut from the same file, z0 to z3, by `scripts/tiles.py` with Pillow.
 - Gallery: `examples/gallery`. Website: `frontend/` (Vite 8, pnpm), built after the components.
 
 ## Commands
@@ -24,7 +24,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - `cargo test --lib --features test-support`, `cargo clippy --all-targets --features test-support -- -D warnings`, `cargo fmt --check`. `scripts/check.sh` runs them with the house rules.
 - `rm -rf target/debug/incremental` and `cargo clean -p ely-gpui-component` after each task item keep the disk lean. Cargo keeps every old build of the crate and its tests under a new hash; by T25 they had filled the disk.
 - `scripts/icons.sh <lucide-name>...` adds icons. Then add a line to `IconName` in `src/primitives/icon.rs`.
-- `python3 scripts/tiles.py <ne_110m_admin_0_countries.geojson>` writes the gallery's map tiles.
+- `python3 scripts/countries.py <ne_110m_admin_0_countries.geojson>` writes the bundled world; `python3 scripts/tiles.py <same file>` writes the gallery's map tiles.
 
 ## Layout
 
@@ -195,6 +195,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Messages go through `i18n::I18n`, a global the app sets: `cx.global::<I18n>().text(key, args)` fills each `{name}`. Every catalog holds the first one's keys; a missing key, argument or catalog fails. A right-to-left locale mirrors a stack with `Direction::row` and sets its text with `Direction::align`; CoreText orders mixed Hebrew and Latin runs on macOS, but gpui sets no paragraph direction, so a line takes its first strong character's: `text` leads a right-to-left message with U+200F, so its words suit labels, not a field's value, and `Locale::number` a right-to-left minus with U+200E, as CLDR does. gpui 0.2.2 wraps shaped glyphs in the order they are drawn, so a right-to-left line that wraps comes out garbled: right-to-left text stays on one line, an `Ellipsis`, which cuts by characters and sits by its text's alignment.
 - gpui orders Tab stops by `tab_index` before paint order, and registers none for an `invisible()` element. A stop that must come first where it sits, yet draw over what paints after it, stays in flow at zero size and raises what it shows (`i18n::SkipLink`): a lower `tab_index` would sort it before the root scope's own handle, so Tab from the root would pass it.
 - Color-blind safe charts swap Ely's chart hues for a set fitted to stay apart under Machado's protanopia, deuteranopia and tritanopia; a test holds every pair 0.10 apart in Oklab and each hue 3:1 on its page (`Theme::set_color_blind_safe`, in Ely's own palettes alone).
+- gpui 0.2.2's Metal renderer starts its instance buffer at 2 MB; a frame that outgrows it logs "failed to render … retrying with larger instance buffer size" and the buffer doubles, up to 256 MB. A world map's first frame grows it to 16 MB, then draws: the log is gpui's recovery, not a failure.
 - gpui 0.2.2 packs pictures in its atlas without padding and samples them with a linear filter, so a scaled picture's edge takes color from its atlas neighbor, and pictures laid edge to edge show seams. A map tile carries a one-pixel rim copied from its own edge and draws one of its pixels larger each side, clipped to its box (`maps::tile`).
 - A map keeps places in `f64`: at zoom 19 the world is 134 million pixels across. Its wheel pans and Command or Control with the wheel zooms about the pointer, as the canvas's does. Its tiles stay in gpui's asset cache, as every `img()` picture does. Its popup is an overlay that is not modal: it takes focus when it shows, and the frame it stops showing, by any way out, hands focus back. Its layers, lines and areas unwrap across the date line and repeat on every world in view. Clustered pins gather by squares of the world, not of the view, so a pan never regroups them; a zoom may, so it hands a focused pin's or cluster's focus to the map.
 

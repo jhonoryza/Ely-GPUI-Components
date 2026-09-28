@@ -25,6 +25,8 @@ pub struct MapSizes {
     pub cluster: Rems,
     /// The square of the world that gathers pins into one cluster.
     pub gather: Rems,
+    /// A choropleth legend's scale bar.
+    pub legend: Rems,
 }
 
 impl Theme {
@@ -40,6 +42,7 @@ impl Theme {
             heat_reach: px_to_rems(28.0),
             cluster: px_to_rems(32.0),
             gather: px_to_rems(56.0),
+            legend: px_to_rems(96.0),
         }
     }
 }
