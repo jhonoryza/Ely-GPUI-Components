@@ -136,7 +136,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T39b Theme · Importing — `tasks/ch31-43.md`
 - [x] T39c Theme · Platform — `tasks/ch31-43.md`
 - [x] T40a i18n — `tasks/ch31-43.md`
-- [ ] T40b a11y
+- [x] T40b a11y — `tasks/ch31-43.md`
 - [ ] T41 Maps
 - [ ] T42 Misc
 - [ ] T43 Library Tooling
@@ -431,3 +431,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T40a | 1 | FAIL | a wrapped right-to-left line came out garbled, since gpui wraps glyphs in drawn order; a Hebrew minus sat right of its digits; two dates claimed CLDR's short year; two catalog guards untested |
 | T40a | 2 | FAIL | a Hebrew line that opened with a signed number laid out left to right, since gpui sets no paragraph direction |
 | T40a | 3 | PASS | |
+| T40b | 1 | FAIL | the gallery's blocked note could not wrap, so the a11y note ran past its column and lost its dot; a check between rounds failed on the reviewer's mutant left in the shared target, so reviewers now build in their own |
+| T40b | 2 | PASS | |
