@@ -29,6 +29,7 @@ pub mod maps;
 pub mod media;
 pub mod menus;
 pub mod messaging;
+pub mod misc;
 pub mod motion;
 pub mod navigation;
 pub mod onboarding;

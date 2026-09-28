@@ -27,6 +27,7 @@ mod maps;
 mod media;
 mod menus;
 mod messaging;
+mod misc;
 mod motion;
 mod navigation;
 mod onboarding;
@@ -96,6 +97,7 @@ pub const ALL: &[Page] = &[
     theme::PAGE,
     i18n::PAGE,
     maps::PAGE,
+    misc::PAGE,
 ];
 
 pub use i18n::install as install_i18n;
