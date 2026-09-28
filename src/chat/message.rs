@@ -238,7 +238,6 @@ impl RenderOnce for MessageBubble {
             .children(self.body);
         match self.role {
             Role::System => div()
-                .w_full()
                 .flex()
                 .justify_center()
                 .py_1()
@@ -247,7 +246,6 @@ impl RenderOnce for MessageBubble {
                 .child(body.text_size(theme.text_size(TextSize::Xs)))
                 .into_any_element(),
             Role::User => div()
-                .w_full()
                 .flex()
                 .gap_3()
                 .child(
@@ -282,7 +280,6 @@ impl RenderOnce for MessageBubble {
                 .children(self.avatar)
                 .into_any_element(),
             Role::Assistant | Role::Error => div()
-                .w_full()
                 .flex()
                 .gap_3()
                 .children(self.avatar)

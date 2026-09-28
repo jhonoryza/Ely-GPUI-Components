@@ -69,8 +69,7 @@ impl RenderOnce for ActionBar {
                 .border_color(colors.border)
                 .shadow(theme.elevation(Elevation::Floating))
         } else {
-            bar.w_full()
-                .justify_end()
+            bar.justify_end()
                 .px_4()
                 .py_3()
                 .bg(colors.surface)

@@ -237,7 +237,7 @@ impl RenderOnce for Tabs {
                 move |panel, t| if turn == 0 { panel } else { panel.opacity(t) },
             )
         });
-        let frame = div().id(self.id).flex().gap_4().w_full();
+        let frame = div().id(self.id).flex().gap_4();
         match placement {
             TabPlacement::Top => frame.flex_col().child(strip).children(panel),
             TabPlacement::Bottom => frame.flex_col().children(panel).child(strip),

@@ -115,7 +115,7 @@ impl RenderOnce for Playlist {
         let theme = cx.theme();
         let (muted, lead) = (theme.colors.fg_muted, theme.icon_size(IconSize::Lg));
         let small = theme.text_size(TextSize::Sm);
-        let mut list = SelectableList::new(self.id.clone()).w_full();
+        let mut list = SelectableList::new(self.id.clone());
         for (ix, track) in self.tracks.into_iter().enumerate() {
             let now = self.current.as_ref() == Some(&track.key);
             let mark = if now {

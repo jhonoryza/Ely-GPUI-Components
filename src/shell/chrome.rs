@@ -376,7 +376,6 @@ impl RenderOnce for TitleBar {
             .flex_none()
             .items_center()
             .gap_2()
-            .w_full()
             .h(theme.titlebar_height())
             .bg(theme.colors.bg)
             .border_b_1()

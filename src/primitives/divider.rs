@@ -39,12 +39,11 @@ impl RenderOnce for Divider {
             return line().h_full().border_l_1();
         }
         match self.label {
-            None => line().w_full().border_t_1(),
+            None => line().border_t_1(),
             Some(label) => div()
                 .flex()
                 .items_center()
                 .gap_3()
-                .w_full()
                 .child(line().flex_1().border_t_1())
                 .child(
                     div()

@@ -364,7 +364,6 @@ impl RenderOnce for PromptInput {
         let body = div()
             .id(self.id.clone())
             .relative()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

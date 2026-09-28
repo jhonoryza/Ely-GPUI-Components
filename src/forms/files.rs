@@ -298,7 +298,6 @@ impl RenderOnce for DropZone {
             .flex_col()
             .items_center()
             .gap_2()
-            .w_full()
             .px_6()
             .py_8()
             .rounded(theme.radius(Radius::Lg))

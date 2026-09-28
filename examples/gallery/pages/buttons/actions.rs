@@ -171,6 +171,7 @@ pub fn action_bar(cx: &App) -> impl IntoElement + use<> {
             )
             .child(
                 ActionBar::new()
+                    .w_full()
                     .child(Button::new("bar-cancel", "Cancel").variant(ButtonVariant::Ghost))
                     .child(Button::new("bar-save", "Save changes").primary()),
             ),
