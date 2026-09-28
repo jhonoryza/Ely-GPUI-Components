@@ -128,7 +128,10 @@ impl RenderOnce for Poll {
                             };
                             let percent = format::percent(share as f64, 0, false);
                             div()
-                                .debug_selector(|| format!("poll-{label}-{percent}"))
+                                .debug_selector(|| match ix == voted {
+                                    true => format!("poll-{label}-{percent}-voted"),
+                                    false => format!("poll-{label}-{percent}"),
+                                })
                                 .flex()
                                 .flex_col()
                                 .gap_1()
@@ -189,16 +192,12 @@ impl RenderOnce for Poll {
                         window.focus(&focus);
                     })
             }
-            Some(_) => {
-                let focus = action.clone();
-                Button::new((id.clone(), "change"), "Change vote")
-                    .focus_handle(&action)
-                    .on_click(move |_, window, cx| {
-                        log::info!("poll: vote taken back");
-                        on_vote(None, window, cx);
-                        window.focus(&focus);
-                    })
-            }
+            Some(_) => Button::new((id.clone(), "change"), "Change vote")
+                .focus_handle(&action)
+                .on_click(move |_, window, cx| {
+                    log::info!("poll: vote taken back");
+                    on_vote(None, window, cx);
+                }),
         };
         div()
             .flex()

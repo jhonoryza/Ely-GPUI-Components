@@ -143,7 +143,13 @@ impl RenderOnce for Radio {
                     })
             })
             .child(radio_mark(self.on, focused, self.disabled, changes, cx))
-            .children(self.label)
+            .children(self.label.map(|label| {
+                div()
+                    .debug_selector(|| "radio-label".into())
+                    .flex_1()
+                    .min_w_0()
+                    .child(label)
+            }))
     }
 }
 

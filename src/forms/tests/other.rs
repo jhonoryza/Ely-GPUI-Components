@@ -1,11 +1,11 @@
 use gpui::{
-    Context, IntoElement, KeyBinding, KeyUpEvent, Keystroke, Modifiers, MouseButton, Render,
-    SharedString, TestAppContext, VisualTestContext, Window, point, px,
+    Context, IntoElement, KeyBinding, KeyUpEvent, Keystroke, Modifiers, MouseButton, ParentElement,
+    Render, SharedString, Styled, TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
 use super::setup;
 use crate::{
-    forms::{IconPicker, InlineEdit, SignaturePad, Stroke},
+    forms::{Checkbox, Choice, IconPicker, InlineEdit, RadioGroup, SignaturePad, Stroke},
     primitives::{FocusNext, IconName},
 };
 
@@ -143,4 +143,31 @@ fn an_inline_edit_takes_tab_opens_on_enter_and_takes_focus_back(cx: &mut TestApp
         ["Stairs", "Light"],
         "focus came back after the first"
     );
+}
+
+/// A checkbox and a radio whose labels run past their narrow box.
+struct Worded;
+
+impl Render for Worded {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let label = "Projects/Atrium/Recordings/Walkthrough of the atrium at noon.mov";
+        div()
+            .w(px(200.0))
+            .child(Checkbox::new("worded", false).label(label))
+            .child(RadioGroup::new(
+                "worded-radios",
+                [Choice::new("one", label)],
+            ))
+    }
+}
+
+#[gpui::test]
+fn long_labels_wrap_inside_their_box(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Worded);
+    cx.run_until_parked();
+    for selector in ["checkbox-label", "radio-label"] {
+        let label = cx.debug_bounds(selector).expect("the label draws");
+        assert!(label.right() <= px(200.0), "{selector}: {label:?}");
+    }
 }

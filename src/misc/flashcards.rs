@@ -18,6 +18,18 @@ struct Deck {
     back: bool,
 }
 
+impl Deck {
+    fn turn(&mut self) {
+        self.back = !self.back;
+    }
+
+    /// Goes `by` cards round a deck of `count`, front up.
+    fn go(&mut self, by: isize, count: usize) {
+        self.at = (self.at as isize + by).rem_euclid(count as isize) as usize;
+        self.back = false;
+    }
+}
+
 /// Cards with a question on the front and its answer on the back, one at a time: a press on the card turns it, and Previous and Next go round the deck, front up. Each face fades in.
 #[derive(IntoElement)]
 pub struct Flashcards {
@@ -90,8 +102,7 @@ impl RenderOnce for Flashcards {
             let deck = deck.clone();
             move |_: &gpui::ClickEvent, _: &mut Window, cx: &mut App| {
                 deck.update(cx, |deck, cx| {
-                    deck.at = (deck.at as isize + by).rem_euclid(count as isize) as usize;
-                    deck.back = false;
+                    deck.go(by, count);
                     log::info!("flashcards: card {} of {count}", deck.at + 1);
                     cx.notify();
                 })
@@ -117,7 +128,7 @@ impl RenderOnce for Flashcards {
                     .cursor_pointer()
                     .on_click(move |_, _, cx| {
                         turned.update(cx, |deck, cx| {
-                            deck.back = !deck.back;
+                            deck.turn();
                             log::info!(
                                 "flashcards: turned to the {}",
                                 if deck.back { "back" } else { "front" }
@@ -150,5 +161,23 @@ impl RenderOnce for Flashcards {
                             .on_click(go(1)),
                     ),
             )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Deck;
+
+    #[test]
+    fn a_deck_turns_and_goes_round_front_up() {
+        let mut deck = Deck::default();
+        deck.turn();
+        deck.turn();
+        assert!(!deck.back, "a second press turns it back");
+        deck.turn();
+        deck.go(-1, 3);
+        assert_eq!((deck.at, deck.back), (2, false));
+        deck.go(1, 3);
+        assert_eq!(deck.at, 0);
     }
 }

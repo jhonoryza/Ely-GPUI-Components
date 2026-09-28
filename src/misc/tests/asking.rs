@@ -53,7 +53,7 @@ fn a_poll_votes_shows_results_and_takes_the_vote_back(cx: &mut TestAppContext) {
     assert_eq!(said(), ["Some(1)"]);
     VOTED.set(Some(1));
     show(cx);
-    assert!(shown("poll-Tea-60%", cx) && shown("poll-Soup-20%", cx));
+    assert!(shown("poll-Tea-60%-voted", cx) && shown("poll-Soup-20%", cx));
     press("enter", cx);
     assert_eq!(said(), ["Some(1)", "None"], "Change vote held Vote's focus");
     VOTED.set(None);
@@ -133,7 +133,7 @@ fn a_survey_sends_every_answer(cx: &mut TestAppContext) {
     assert!(shown("survey-sent", cx) && !at_root(cx));
 }
 
-/// Submit rests while an answer is missing; a pointer's Submit hands focus to the thanks.
+/// Submit asks for what is missing: words of only spaces, or a box ticked and unticked; a pointer's Submit hands focus to the thanks.
 #[gpui::test]
 fn a_survey_waits_for_every_answer(cx: &mut TestAppContext) {
     let (_, cx) = stage(survey, cx);
@@ -141,13 +141,30 @@ fn a_survey_waits_for_every_answer(cx: &mut TestAppContext) {
     press("down", cx);
     press("tab", cx);
     press("space", cx);
+    press("tab", cx);
+    press("tab", cx);
+    cx.simulate_input("   ");
+    press("tab", cx);
+    press("enter", cx);
+    assert!(
+        said().is_empty() && shown("survey-answer-first", cx),
+        "blank words are no answer"
+    );
+    press("shift-tab", cx);
+    cx.simulate_input("Fine");
+    press("shift-tab", cx);
+    press("shift-tab", cx);
+    press("space", cx);
     for _ in 0..3 {
         press("tab", cx);
     }
     press("enter", cx);
-    assert!(said().is_empty(), "no words yet, so Submit is no stop");
+    assert!(said().is_empty(), "no box ticked is no answer");
+    assert!(!at_root(cx), "Submit kept its focus");
     press("shift-tab", cx);
-    cx.simulate_input("Fine");
+    press("shift-tab", cx);
+    press("shift-tab", cx);
+    press("space", cx);
     click("survey-action", cx);
     assert_eq!(said().len(), 1);
     assert!(!at_root(cx), "the field left, and focus went to the thanks");

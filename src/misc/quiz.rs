@@ -59,6 +59,11 @@ struct Sitting {
 }
 
 impl Sitting {
+    fn pick(&mut self, option: usize) {
+        self.pick = Some(option);
+        self.nudged = false;
+    }
+
     /// What the one button does next, and says.
     fn next(&self, count: usize) -> &'static str {
         match (self.done, self.checked, self.at + 1 == count) {
@@ -172,8 +177,7 @@ impl RenderOnce for Quiz {
                     .on_change(move |value, _, cx| {
                         let ix = value.parse().expect("an option's place");
                         chose.update(cx, |sitting, cx| {
-                            sitting.pick = Some(ix);
-                            sitting.nudged = false;
+                            sitting.pick(ix);
                             cx.notify();
                         })
                     });
@@ -289,7 +293,8 @@ mod tests {
         assert_eq!(sitting.next(2), "Check");
         sitting.advance(1, 2);
         assert!(sitting.nudged, "Check with no pick asks for one");
-        sitting.pick = Some(1);
+        sitting.pick(1);
+        assert!(!sitting.nudged, "a pick answers the ask");
         sitting.advance(1, 2);
         assert_eq!(
             (sitting.checked, sitting.right, sitting.next(2)),
@@ -300,7 +305,7 @@ mod tests {
             (sitting.at, sitting.pick, sitting.checked),
             (1, None, false)
         );
-        sitting.pick = Some(0);
+        sitting.pick(0);
         sitting.advance(2, 2);
         assert_eq!(
             (sitting.right, sitting.next(2)),

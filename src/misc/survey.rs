@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     App, AppContext as _, ElementId, Entity, InteractiveElement, IntoElement, ParentElement,
-    RenderOnce, SharedString, Styled, Window, div,
+    RenderOnce, SharedString, Styled, Window, div, prelude::*,
 };
 
 use crate::{
@@ -43,14 +43,15 @@ pub enum Answer {
     Text(SharedString),
 }
 
-/// What the survey holds: the answers picked, a field for each question in words, and whether it was sent.
+/// What the survey holds: the answers picked, a field for each question in words, whether it was sent, and whether Submit came with an answer missing.
 struct Sheet {
     picked: Vec<Option<Answer>>,
     fields: Vec<Option<Entity<TextInput>>>,
     sent: bool,
+    nudged: bool,
 }
 
-/// Questions on one page, each answered by one option, several, or words; Submit rests until every one is answered, then hands the answers to the owner, and the survey thanks the viewer in Submit's place and focus.
+/// Questions on one page, each answered by one option, several, or words. Submit hands the answers to the owner once every one is answered, and asks for the rest before; then the survey thanks the viewer in Submit's place and focus.
 #[derive(IntoElement)]
 pub struct Survey {
     id: ElementId,
@@ -125,6 +126,7 @@ impl RenderOnce for Survey {
                     })
                     .collect(),
                 sent: false,
+                nudged: false,
             }
         });
         assert_eq!(
@@ -226,6 +228,7 @@ impl RenderOnce for Survey {
                 )
                 .child(input)
         });
+        let nudged = sheet.read(cx).nudged && !complete;
         let (submitted, focus, asked) = (sheet.clone(), action.clone(), questions.clone());
         div()
             .flex()
@@ -233,6 +236,14 @@ impl RenderOnce for Survey {
             .gap_5()
             .text_size(theme.text_size(TextSize::Sm))
             .children(items)
+            .when(nudged, |survey| {
+                survey.child(
+                    div()
+                        .debug_selector(|| "survey-answer-first".into())
+                        .text_color(colors.danger)
+                        .child("Answer each question first."),
+                )
+            })
             .child(
                 div()
                     .debug_selector(|| "survey-action".into())
@@ -241,12 +252,19 @@ impl RenderOnce for Survey {
                         Button::new((id, "submit-button"), "Submit")
                             .variant(ButtonVariant::Primary)
                             .focus_handle(&action)
-                            .disabled(!complete)
                             .on_click(move |_, window, cx| {
-                                let given: Vec<Answer> = answers(&asked, submitted.read(cx), cx)
-                                    .into_iter()
-                                    .map(|answer| answer.expect("Submit waits for every answer"))
-                                    .collect();
+                                let given: Option<Vec<Answer>> =
+                                    answers(&asked, submitted.read(cx), cx)
+                                        .into_iter()
+                                        .collect();
+                                let Some(given) = given else {
+                                    log::info!("survey: an answer is missing");
+                                    submitted.update(cx, |sheet, cx| {
+                                        sheet.nudged = true;
+                                        cx.notify();
+                                    });
+                                    return;
+                                };
                                 log::info!("survey: sent {} answers", given.len());
                                 on_submit(&given, window, cx);
                                 submitted.update(cx, |sheet, cx| {
