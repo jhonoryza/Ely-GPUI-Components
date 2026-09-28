@@ -20,7 +20,7 @@ fn iso(country: &Feature) -> Option<&str> {
     country.properties.get("iso").and_then(Value::as_str)
 }
 
-/// The world's countries, washed each by its value keyed by ISO 3166 alpha-2 code, with a legend; Natural Earth is named in the corner unless the map names a source. Fails on a key that is no ISO code; a code with no country at this scale draws nowhere and is logged once.
+/// The world's countries, washed each by its value keyed by ISO 3166 alpha-2 code, with a legend; Natural Earth is named in the corner unless the map names a source. Fails on a key that is neither an ISO code nor one of the bundle's; a code with no country at this scale draws nowhere and is logged once.
 #[derive(IntoElement)]
 pub struct WorldMap {
     id: ElementId,

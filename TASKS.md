@@ -139,7 +139,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T40b a11y — `tasks/ch31-43.md`
 - [x] T41a Maps · View — `tasks/ch31-43.md`
 - [x] T41b Maps · Layers — `tasks/ch31-43.md`
-- [ ] T41c Maps · World
+- [x] T41c Maps · World — `tasks/ch31-43.md`
 - [ ] T42 Misc
 - [ ] T43 Library Tooling
 - [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
@@ -440,3 +440,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T41a | 3 | PASS | |
 | T41b | 1 | FAIL | the code held, but four cluster claims had no test of the item's own: a pan keeping a group, an off-view cluster out of Tab, a folded pin's hand-off, members far apart shown whole |
 | T41b | 2 | PASS | |
+| T41c | 1 | FAIL | a choropleth's points and lines drew in the page color; the legend covered the attribution under 332px; WorldMap's keying, credit and XK untested; a key given twice kept the last |
+| T41c | 2 | PASS | |
