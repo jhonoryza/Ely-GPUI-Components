@@ -127,8 +127,9 @@ impl RenderOnce for Poll {
                                 _ => *votes as f32 / total as f32,
                             };
                             let percent = format::percent(share as f64, 0, false);
+                            let marked = ix == voted;
                             div()
-                                .debug_selector(|| match ix == voted {
+                                .debug_selector(|| match marked {
                                     true => format!("poll-{label}-{percent}-voted"),
                                     false => format!("poll-{label}-{percent}"),
                                 })
@@ -147,7 +148,7 @@ impl RenderOnce for Poll {
                                                 .text_color(colors.fg)
                                                 .child(Ellipsis::new(label.clone())),
                                         )
-                                        .when(ix == voted, |row| {
+                                        .when(marked, |row| {
                                             row.child(
                                                 Icon::new(IconName::CircleCheck)
                                                     .size(IconSize::Sm)
