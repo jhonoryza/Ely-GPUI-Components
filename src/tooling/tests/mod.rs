@@ -12,6 +12,7 @@ use crate::{
     tooling::{Knob, Playground},
 };
 
+mod catalogs;
 mod inspection;
 
 struct Stage {

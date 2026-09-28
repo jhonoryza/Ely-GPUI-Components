@@ -55,6 +55,14 @@ macro_rules! mixable {
             pub const NAMES: &'static [&'static str] = &[$(stringify!($color)),*];
 
             /// The color named `token`, a field's name; any other name fails.
+            pub fn token(&self, token: &str) -> Hsla {
+                match token {
+                    $(stringify!($color) => self.$color,)*
+                    other => panic!("no {} color {other}", stringify!($name).to_lowercase()),
+                }
+            }
+
+            /// The color named `token`, to change; any other name fails.
             pub fn token_mut(&mut self, token: &str) -> &mut Hsla {
                 match token {
                     $(stringify!($color) => &mut self.$color,)*
@@ -177,7 +185,7 @@ impl Palette {
             border_strong: c(0xcccac8),
             fg: c(0x181613),
             fg_muted: c(0x605d5a),
-            fg_subtle: c(0x82807d),
+            fg_subtle: c(0x6f6d6a),
             fg_disabled: c(0xacaaa8),
             accent: c(0x181613),
             accent_hover: c(0x302d2b),
@@ -248,7 +256,7 @@ impl Palette {
             border_strong: c(0x413f3d),
             fg: c(0xf3f1f0),
             fg_muted: c(0xafadab),
-            fg_subtle: c(0x858380),
+            fg_subtle: c(0x8c8a87),
             fg_disabled: c(0x5c5a58),
             accent: c(0xf3f1f0),
             accent_hover: c(0xd9d7d5),
@@ -325,6 +333,19 @@ mod tests {
         let (light, dark) = (Palette::light(false), Palette::dark(false));
         assert_eq!(light.mix(&dark, 1.0), dark);
         assert_eq!(light.mix(&dark, 0.0), light);
+    }
+
+    #[test]
+    fn a_color_goes_by_its_name() {
+        let palette = Palette::dark(false);
+        assert_eq!(palette.token("fg_subtle"), palette.fg_subtle);
+        assert_eq!(palette.syntax.token("keyword"), palette.syntax.keyword);
+    }
+
+    #[test]
+    #[should_panic(expected = "no palette color ink_blot")]
+    fn a_name_no_color_has_fails() {
+        Palette::light(false).token("ink_blot");
     }
 
     #[test]

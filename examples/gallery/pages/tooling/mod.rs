@@ -6,6 +6,7 @@ use ely_gpui_component::{
 };
 use gpui::{AnyElement, App, IntoElement, ParentElement, Styled, Window, div, px};
 
+mod catalogs;
 mod inspection;
 
 use super::Page;
@@ -17,7 +18,7 @@ pub const PAGE: Page = Page {
     number: 43,
     slug: "tooling",
     title: "Library Tooling",
-    summary: "Tools for building with the library: this gallery, a playground that edits a component live, and tools that inspect a running window: its boxes, frames, renders and input.",
+    summary: "Tools for building with the library: this gallery, a playground that edits a component live, tools that inspect a running window, its boxes, frames, renders and input, and catalogs of its tokens, icons and contrast.",
     render,
     script: &[
         Step::DownAt("button-playground", 472.0, 207.0),
@@ -53,11 +54,18 @@ pub const PAGE: Page = Page {
         Step::Type("Hi"),
         Step::Key("backspace"),
         Step::Shot("events"),
+        Step::DownAt("icon-browser", 100.0, 14.0),
+        Step::UpAt("icon-browser", 100.0, 14.0),
+        Step::Type("sun"),
+        Step::DownAt("icon-browser", 16.0, 52.0),
+        Step::UpAt("icon-browser", 16.0, 52.0),
+        Step::Shot("icon-browser"),
     ],
 };
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
     let inspection = inspection::sections(window, cx);
+    let catalogs = catalogs::sections(window, cx);
     div()
         .child(section(
             "ComponentGallery / Storybook",
@@ -132,5 +140,6 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
             ),
         )
         .children(inspection)
+        .children(catalogs)
         .into_any_element()
 }
