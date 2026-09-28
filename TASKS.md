@@ -149,9 +149,9 @@ Per-component lines live in `tasks/`. Tags there:
 - [ ] T42g Misc · Export and import — `tasks/ch31-43.md`
 - [ ] T43 Library Tooling
 - [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
-- [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark, motion
+- [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark: a home page in motion (three.js, smooth scroll), and a components page with every component, categories on the left and the chosen one's detail on the right, after astryx.atmeta.com
 - [ ] T46 E2E: Playwright against the built site
-- [ ] T47 Ship: GitHub repo (public), CI, Pages deploy
+- [ ] T47 Ship: GitHub repo (public), CI, Cloudflare deploy through `npx wrangler`
 - [ ] T48 Acceptance: live URL and MVP checklist
 
 ## T00 detail

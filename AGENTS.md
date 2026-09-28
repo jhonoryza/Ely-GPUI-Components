@@ -15,7 +15,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Markdown: `pulldown-cmark` 0.13 (MIT, default features off) for CommonMark with tables, tasks, strikethrough, footnotes and math.
 - Pictures: `image` 0.25 (MIT OR Apache-2.0), the crate gpui decodes with, default features off; it turns decoded frames and rims map tiles.
 - Maps: Natural Earth's 110m countries (public domain). `assets/maps/countries.geojson`, trimmed by `scripts/countries.py` to an ISO code, a name and positions to 0.01°, backs `maps::WorldMap`; the gallery's tiles are cut from the same file, z0 to z3, by `scripts/tiles.py` with Pillow.
-- Gallery: `examples/gallery`. Website: `frontend/` (Vite 8, pnpm), built after the components.
+- Gallery: `examples/gallery`. Website: `frontend/` (Vite 8, pnpm), built after the components: a home page in motion with three.js and smooth scroll, and a components page with categories on the left and the chosen component on the right, after astryx.atmeta.com. It deploys to Cloudflare through `npx wrangler`.
 
 ## Commands
 
