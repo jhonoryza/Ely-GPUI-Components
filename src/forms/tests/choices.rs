@@ -67,14 +67,16 @@ struct Picker {
 impl Render for Picker {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let view = cx.entity();
-        Select::new("select", abc(false))
-            .selected(self.chosen.clone())
-            .on_change(move |value, _, cx| {
-                view.update(cx, |view, cx| {
-                    view.chosen = value.clone();
-                    cx.notify();
-                })
-            })
+        div().size_full().child(
+            Select::new("select", abc(false))
+                .selected(self.chosen.clone())
+                .on_change(move |value, _, cx| {
+                    view.update(cx, |view, cx| {
+                        view.chosen = value.clone();
+                        cx.notify();
+                    })
+                }),
+        )
     }
 }
 
@@ -425,9 +427,11 @@ struct Empty(bool);
 
 impl Render for Empty {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-        Select::new("empty", [])
-            .placeholder("Nothing yet")
-            .disabled(self.0)
+        div().size_full().child(
+            Select::new("empty", [])
+                .placeholder("Nothing yet")
+                .disabled(self.0),
+        )
     }
 }
 

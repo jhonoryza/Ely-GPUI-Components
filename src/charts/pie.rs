@@ -302,7 +302,7 @@ impl RenderOnce for PieChart {
             |legend, (ix, (name, _))| legend.entry(tint(&colors, ix), name.clone(), false),
         );
         let (moved, left, measured, hit) = (ring.clone(), ring.clone(), ring.clone(), arcs.clone());
-        let mut frame = div().w_full().h(sizes.height);
+        let mut frame = div().debug_selector(|| "chart-root".into()).h(sizes.height);
         frame.style().refine(self.base.style());
         frame.flex().flex_col().gap_2().child(legend).child(
             div()

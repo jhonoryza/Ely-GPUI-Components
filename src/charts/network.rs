@@ -287,7 +287,10 @@ impl RenderOnce for NetworkGraph {
             graph.clone(),
         );
         let press_hit = hit.clone();
-        let mut root = div().relative().w_full().h(sizes.height);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height);
         root.style().refine(self.base.style());
         root.id((self.id.clone(), "network"))
             .on_mouse_down(MouseButton::Left, move |event: &MouseDownEvent, _, cx| {

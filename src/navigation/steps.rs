@@ -200,10 +200,10 @@ impl RenderOnce for Steps {
             }
         });
         div()
+            .debug_selector(|| "steps-root".into())
             .id(self.id)
             .flex()
             .when(vertical, |steps| steps.flex_col())
-            .w_full()
             .children(steps)
     }
 }

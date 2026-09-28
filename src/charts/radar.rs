@@ -245,7 +245,7 @@ impl RenderOnce for RadarChart {
         let (stroke, hairline) = (sizes.stroke.to_pixels(rem), sizes.hairline);
         let palette = colors.clone();
         let (moved, left, measured) = (radar.clone(), radar.clone(), radar.clone());
-        let mut frame = div().w_full().h(sizes.height);
+        let mut frame = div().debug_selector(|| "chart-root".into()).h(sizes.height);
         frame.style().refine(self.base.style());
         frame.flex().flex_col().gap_2().children(legend).child(
             div()

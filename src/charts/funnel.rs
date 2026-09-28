@@ -184,7 +184,10 @@ impl RenderOnce for FunnelChart {
             frame.h / self.stages.len().max(1) as f32,
         );
         let count = self.stages.len();
-        let mut root = div().relative().w_full().h(sizes.height);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height);
         root.style().refine(self.base.style());
         root.id((self.id.clone(), "funnel"))
             .on_mouse_move(move |event: &MouseMoveEvent, _, cx| {

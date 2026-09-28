@@ -410,6 +410,17 @@ impl RenderOnce for IndexManager {
         );
         let ready = !name.read(cx).text().trim().is_empty() && !picked.is_empty();
         let [chose, flipped, pick_method, made] = [(); 4].map(|_| draft.clone());
+        let methods = Select::new(
+            (id.clone(), "method"),
+            METHODS.iter().map(|method| Choice::new(*method, *method)),
+        )
+        .selected(method)
+        .on_change(move |value, _, cx| {
+            pick_method.update(cx, |draft, cx| {
+                draft.method = value.clone();
+                cx.notify();
+            })
+        });
         div()
             .flex()
             .flex_col()
@@ -453,19 +464,7 @@ impl RenderOnce for IndexManager {
                                         })
                                     }),
                             )
-                            .child(
-                                Select::new(
-                                    (id.clone(), "method"),
-                                    METHODS.iter().map(|method| Choice::new(*method, *method)),
-                                )
-                                .selected(method)
-                                .on_change(move |value, _, cx| {
-                                    pick_method.update(cx, |draft, cx| {
-                                        draft.method = value.clone();
-                                        cx.notify();
-                                    })
-                                }),
-                            ),
+                            .child(div().flex_1().min_w_0().child(methods)),
                     )
                     .child(
                         Button::new((id, "create"), "Create index")

@@ -7,8 +7,9 @@ use gpui::{
 
 use super::{press, settle};
 use crate::{
-    agent::{ArtifactPanel, BrowserPreview, ComputerUseViewer},
+    agent::{ArtifactPanel, BrowserPreview, ComputerUseViewer, LivePreview},
     forms,
+    layout::tests::narrow_width,
     primitives::{FocusNext, IconName},
     theme::{ActiveTheme, AvatarSize, Theme},
 };
@@ -286,5 +287,26 @@ fn a_screen_takes_its_pictures_shape(cx: &mut TestAppContext) {
         (height.get() - expected).abs() < px(1.0),
         "478px inside the border at 4:3, plus the border: {:?} vs {expected:?}",
         height.get()
+    );
+}
+
+#[gpui::test]
+fn previews_fill_a_column_their_block_measures_by_content(cx: &mut TestAppContext) {
+    setup(cx);
+    let widths = [
+        narrow_width(cx, "preview-root", |_, _| {
+            BrowserPreview::new("browser", "localhost", ["a.png"], 0).into_any_element()
+        }),
+        narrow_width(cx, "preview-root", |_, _| {
+            ComputerUseViewer::new("screen", "a.png").into_any_element()
+        }),
+        narrow_width(cx, "preview-root", |_, _| {
+            LivePreview::new("live", "localhost", div()).into_any_element()
+        }),
+    ];
+    assert_eq!(
+        widths,
+        [px(240.0); 3],
+        "each preview spans the card inside its padding"
     );
 }

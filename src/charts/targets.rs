@@ -193,8 +193,8 @@ impl RenderOnce for BulletChart {
             colors.clone(),
         );
         let mut root = div()
+            .debug_selector(|| "chart-root".into())
             .relative()
-            .w_full()
             .h(theme.table_row(Density::Comfortable) * count as f32);
         root.style().refine(self.base.style());
         tracked(

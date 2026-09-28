@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Div, ElementId, Entity, IntoElement, ParentElement, PathBuilder, Pixels, Refineable,
-    RenderOnce, SharedString, StyleRefinement, Styled, Window, canvas, div,
+    App, Div, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, PathBuilder,
+    Pixels, Refineable, RenderOnce, SharedString, StyleRefinement, Styled, Window, canvas, div,
 };
 
 use super::{
@@ -215,7 +215,10 @@ impl RenderOnce for ParallelCoordinates {
             lines.clone(),
         );
         let reach = pixels(sizes.inset);
-        let mut root = div().relative().w_full().h(sizes.height);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height);
         root.style().refine(self.base.style());
         tracked(
             root,

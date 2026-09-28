@@ -88,13 +88,13 @@ pub(crate) fn field_button(
     let theme = cx.theme();
     let colors = &theme.colors;
     div()
+        .debug_selector(|| "field-root".into())
         .id(id)
         .track_focus(focus)
         .relative()
         .flex()
         .items_center()
         .gap_2()
-        .w_full()
         .h(theme.control_height(size))
         .px(theme.control_padding(size))
         .rounded(theme.radius(Radius::Md))

@@ -1,6 +1,7 @@
 use gpui::{
-    App, Bounds, Div, ElementId, Entity, IntoElement, ParentElement, PathBuilder, Pixels,
-    Refineable, RenderOnce, SharedString, StyleRefinement, Styled, Window, canvas, div, fill, size,
+    App, Bounds, Div, ElementId, Entity, InteractiveElement, IntoElement, ParentElement,
+    PathBuilder, Pixels, Refineable, RenderOnce, SharedString, StyleRefinement, Styled, Window,
+    canvas, div, fill, size,
 };
 use jiff::{
     Span,
@@ -267,8 +268,8 @@ impl RenderOnce for GanttChart {
         );
         let painted = bars.clone();
         let mut root = div()
+            .debug_selector(|| "chart-root".into())
             .relative()
-            .w_full()
             .h(sizes.foot + theme.table_row(Density::Compact) * count as f32);
         root.style().refine(self.base.style());
         tracked(

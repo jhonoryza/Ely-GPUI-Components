@@ -401,10 +401,10 @@ impl RenderOnce for NumberInput {
                     .child(stepper),
             );
         div()
+            .debug_selector(|| "number-root".into())
             .flex()
             .items_center()
             .gap_2()
-            .w_full()
             .children(label)
             .child(
                 div()

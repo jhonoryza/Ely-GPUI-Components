@@ -208,7 +208,10 @@ impl RenderOnce for Treemap {
             rects.clone(),
             rects,
         );
-        let mut root = div().relative().w_full().h(sizes.height);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height);
         root.style().refine(self.base.style());
         tracked(
             root,
@@ -406,7 +409,10 @@ impl RenderOnce for HeatmapChart {
             sizes.hairline,
         );
         let legend = key(steps(ink), ("Less", "More"), cx);
-        let mut root = div().relative().w_full().h(sizes.height);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height);
         root.style().refine(self.base.style());
         let chart = tracked(
             div().relative().flex_1().min_h_0(),

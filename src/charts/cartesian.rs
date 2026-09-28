@@ -1,8 +1,8 @@
 use std::{collections::HashSet, rc::Rc};
 
 use gpui::{
-    App, Div, ElementId, IntoElement, Refineable, RenderOnce, SharedString, StyleRefinement,
-    Styled, Window, div,
+    App, Div, ElementId, InteractiveElement, IntoElement, Refineable, RenderOnce, SharedString,
+    StyleRefinement, Styled, Window, div,
 };
 
 use super::{
@@ -131,7 +131,9 @@ impl Chart {
 
 /// Renders a plot at the theme's chart height unless the owner sizes it.
 pub(crate) fn sized(base: &mut Div, plotted: Plot, window: &mut Window, cx: &mut App) -> Div {
-    let mut frame = div().w_full().h(cx.theme().chart().height);
+    let mut frame = div()
+        .debug_selector(|| "chart-root".into())
+        .h(cx.theme().chart().height);
     frame.style().refine(base.style());
     plot(plotted, frame, window, cx)
 }

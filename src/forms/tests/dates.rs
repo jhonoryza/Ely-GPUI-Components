@@ -1,4 +1,7 @@
-use gpui::{Context, IntoElement, KeyUpEvent, Keystroke, Render, TestAppContext, Window};
+use gpui::{
+    Context, IntoElement, KeyUpEvent, Keystroke, ParentElement, Render, Styled, TestAppContext,
+    Window, div,
+};
 use jiff::civil::{Date, Time, date, time};
 
 use super::setup;
@@ -14,15 +17,17 @@ struct Day {
 impl Render for Day {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let view = cx.entity();
-        DatePicker::new("day", self.value)
-            .today(TODAY)
-            .disabled(self.disabled)
-            .on_change(move |picked, _, cx| {
-                view.update(cx, |view, cx| {
-                    view.value = Some(picked);
-                    cx.notify();
-                })
-            })
+        div().size_full().child(
+            DatePicker::new("day", self.value)
+                .today(TODAY)
+                .disabled(self.disabled)
+                .on_change(move |picked, _, cx| {
+                    view.update(cx, |view, cx| {
+                        view.value = Some(picked);
+                        cx.notify();
+                    })
+                }),
+        )
     }
 }
 
@@ -48,14 +53,16 @@ struct Span {
 impl Render for Span {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let view = cx.entity();
-        DateRangePicker::new("span", self.value)
-            .today(TODAY)
-            .on_change(move |picked, _, cx| {
-                view.update(cx, |view, cx| {
-                    view.value = Some(picked);
-                    cx.notify();
-                })
-            })
+        div().size_full().child(
+            DateRangePicker::new("span", self.value)
+                .today(TODAY)
+                .on_change(move |picked, _, cx| {
+                    view.update(cx, |view, cx| {
+                        view.value = Some(picked);
+                        cx.notify();
+                    })
+                }),
+        )
     }
 }
 
@@ -78,14 +85,18 @@ struct Clock {
 impl Render for Clock {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let view = cx.entity();
-        TimePicker::new("clock", self.value)
-            .step(15)
-            .on_change(move |picked, _, cx| {
-                view.update(cx, |view, cx| {
-                    view.value = Some(picked);
-                    cx.notify();
-                })
-            })
+        div()
+            .size_full()
+            .child(
+                TimePicker::new("clock", self.value)
+                    .step(15)
+                    .on_change(move |picked, _, cx| {
+                        view.update(cx, |view, cx| {
+                            view.value = Some(picked);
+                            cx.notify();
+                        })
+                    }),
+            )
     }
 }
 

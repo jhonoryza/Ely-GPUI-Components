@@ -473,3 +473,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T43c | 1 | FAIL | the audit left fg_subtle on active and every syntax color unread, both under 4.5:1; the viewer left out avatar and container sizes while claiming every token |
 | T43c | 2 | PASS | the AGENTS.md decision narrowed to the pairs the audit holds, in the pass commit |
 | T44a | 1 | FAIL | twelve roots in nine components still said w_full: a root held in a variable, a match arm or an animation passed the sweep |
+| T44a | 2 | FAIL | roots built in render(mut self), returned by shared helpers or passed through them still said w_full: fields, charts, state views, Steps, previews; five measured at content width in a padded card |

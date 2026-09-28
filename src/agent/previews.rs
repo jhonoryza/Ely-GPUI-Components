@@ -56,7 +56,7 @@ fn address_bar(
 fn card(cx: &App) -> Div {
     let theme = cx.theme();
     div()
-        .w_full()
+        .debug_selector(|| "preview-root".into())
         .flex()
         .flex_col()
         .rounded(theme.radius(Radius::Lg))
@@ -395,7 +395,7 @@ impl RenderOnce for LivePreview {
                 .into_any_element()
         });
         card(cx)
-            .size_full()
+            .h_full()
             .child(address_bar(&self.id, self.url, self.updating, reload, cx))
             .child(
                 div()

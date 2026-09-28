@@ -342,7 +342,10 @@ impl RenderOnce for SankeyChart {
         let palette = colors.clone();
         let (hit_nodes, hit_ribbons) = (nodes, ribbons);
         let (moved, left) = (flows.clone(), flows.clone());
-        let mut root = div().relative().w_full().h(sizes.height);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height);
         root.style().refine(self.base.style());
         root.id((self.id.clone(), "sankey"))
             .on_mouse_move(move |event: &MouseMoveEvent, _, cx| {

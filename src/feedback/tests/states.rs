@@ -10,8 +10,10 @@ use super::{press, settle, setup, wait};
 use crate::{
     buttons::Button,
     feedback::{
-        ConfirmationCard, Countdown, EmptyState, ErrorBoundary, SaveState, SavingIndicator,
+        ConfirmationCard, Countdown, EmptyState, ErrorBoundary, ErrorView, ResultView, SaveState,
+        SavingIndicator,
     },
+    layout::tests::narrow_width,
     primitives::{FocusScope, IconName, Measure},
 };
 
@@ -199,4 +201,25 @@ fn a_long_inline_message_wraps_inside_its_box(cx: &mut TestAppContext) {
         .debug_bounds("inline-message-text")
         .expect("the words draw");
     assert!(text.right() <= px(200.0), "{text:?}");
+}
+
+#[gpui::test]
+fn state_views_fill_a_column_their_block_measures_by_content(cx: &mut TestAppContext) {
+    setup(cx);
+    let widths = [
+        narrow_width(cx, "state-root", |_, _| {
+            EmptyState::new("empty", IconName::Search, "Nothing here").into_any_element()
+        }),
+        narrow_width(cx, "state-root", |_, _| {
+            ErrorView::not_found("missing").into_any_element()
+        }),
+        narrow_width(cx, "state-root", |_, _| {
+            ResultView::success("done", "Saved").into_any_element()
+        }),
+    ];
+    assert_eq!(
+        widths,
+        [px(240.0); 3],
+        "each view spans the card inside its padding"
+    );
 }

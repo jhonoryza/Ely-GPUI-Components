@@ -1,8 +1,9 @@
 use std::time::Instant;
 
 use gpui::{
-    App, Bounds, ContentMask, Div, ElementId, Entity, IntoElement, ParentElement, PathBuilder,
-    Pixels, Refineable, RenderOnce, StyleRefinement, Styled, Window, canvas, div, fill, size,
+    App, Bounds, ContentMask, Div, ElementId, Entity, InteractiveElement, IntoElement,
+    ParentElement, PathBuilder, Pixels, Refineable, RenderOnce, StyleRefinement, Styled, Window,
+    canvas, div, fill, size,
 };
 
 use super::{
@@ -128,7 +129,10 @@ impl RenderOnce for RealtimeChart {
             pixels(sizes.inset),
         );
         let measured = live.clone();
-        let mut chart = div().relative().w_full().h(sizes.height * 0.6);
+        let mut chart = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height * 0.6);
         chart.style().refine(self.base.style());
         chart
             .child(

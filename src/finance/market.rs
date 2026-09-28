@@ -422,7 +422,10 @@ impl RenderOnce for CandlestickChart {
             },
         };
         let height = sizes.height + sizes.height * 0.3 * self.studies.len() as f32;
-        let mut root = div().relative().w_full().h(height);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(height);
         root.style().refine(self.base.style());
         let steering = Steering {
             stage: stage.clone(),

@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Div, ElementId, Entity, IntoElement, ParentElement, PathBuilder, Pixels, Refineable,
-    RenderOnce, StyleRefinement, Styled, Window, canvas, div, fill,
+    App, Div, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, PathBuilder,
+    Pixels, Refineable, RenderOnce, StyleRefinement, Styled, Window, canvas, div, fill,
 };
 
 use jiff::tz::TimeZone;
@@ -146,7 +146,10 @@ fn board(
         theme.radius(crate::theme::Radius::Sm).to_pixels(rem),
     );
     let box_px = boxes.map(|size| (ys.at(0.0) - ys.at(size)).abs());
-    let mut root = div().relative().w_full().h(sizes.height);
+    let mut root = div()
+        .debug_selector(|| "chart-root".into())
+        .relative()
+        .h(sizes.height);
     root.style().refine(base.style());
     tracked(root, (id, "marks").into(), &tiles, move |place| {
         hit.iter().position(|(rect, _)| rect.contains(place))

@@ -26,7 +26,7 @@ fn frame(cx: &App) -> Div {
         .min_w_0()
         .h_80()
         .flex()
-        .items_center()
+        .flex_col()
         .justify_center()
         .rounded(theme.radius(Radius::Lg))
         .border_1()

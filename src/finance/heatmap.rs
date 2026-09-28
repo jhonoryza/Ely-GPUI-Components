@@ -165,7 +165,10 @@ impl RenderOnce for MarketHeatmap {
             theme.radius(Radius::Sm).to_pixels(rem),
             colors.fg,
         );
-        let mut root = div().relative().w_full().h(sizes.height);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height);
         root.style().refine(self.base.style());
         tracked(
             root,

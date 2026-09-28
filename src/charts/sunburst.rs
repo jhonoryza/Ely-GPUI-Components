@@ -187,7 +187,10 @@ impl RenderOnce for Sunburst {
             );
         let (moved, left, measured, hit) = (ring.clone(), ring.clone(), ring.clone(), arcs.clone());
         let painted = arcs.clone();
-        let mut frame = div().relative().w_full().h(sizes.height);
+        let mut frame = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height);
         frame.style().refine(self.base.style());
         frame
             .id((self.id.clone(), "ring"))

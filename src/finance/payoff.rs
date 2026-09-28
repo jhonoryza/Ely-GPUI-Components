@@ -196,7 +196,9 @@ impl RenderOnce for PayoffDiagram {
         }
         chart.labels = labels;
         chart.format = Rc::new(|value| format::currency(value, "USD"));
-        let mut base = div().w_full().h(cx.theme().chart().height);
+        let mut base = div()
+            .debug_selector(|| "chart-root".into())
+            .h(cx.theme().chart().height);
         base.style().refine(self.base.style());
         plot(chart, base, window, cx)
     }

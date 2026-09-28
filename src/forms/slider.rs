@@ -243,13 +243,14 @@ impl Track {
                     })
             });
         div()
+            .debug_selector(|| "slider-root".into())
             .id(self.id)
             .flex_none()
             .map(|outer| {
                 if vertical {
                     outer.h_full().w(thumb).py(thumb * 0.5)
                 } else {
-                    outer.w_full().h(thumb).px(thumb * 0.5)
+                    outer.h(thumb).px(thumb * 0.5)
                 }
             })
             .when(self.disabled, |outer| outer.opacity(0.5))

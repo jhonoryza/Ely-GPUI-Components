@@ -222,7 +222,10 @@ impl RenderOnce for ChordDiagram {
             })
             .collect();
         let (palette, arcs, hit) = (colors.clone(), groups.clone(), groups);
-        let mut root = div().relative().w_full().h(sizes.height);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height);
         root.style().refine(self.base.style());
         tracked(
             root,

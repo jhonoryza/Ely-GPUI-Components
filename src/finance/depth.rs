@@ -1,6 +1,6 @@
 use gpui::{
-    App, Div, ElementId, Entity, IntoElement, ParentElement, PathBuilder, Pixels, Point,
-    Refineable, RenderOnce, StyleRefinement, Styled, Window, canvas, div, fill,
+    App, Div, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, PathBuilder,
+    Pixels, Point, Refineable, RenderOnce, StyleRefinement, Styled, Window, canvas, div, fill,
 };
 
 use super::quotes::moves;
@@ -250,7 +250,10 @@ impl RenderOnce for DepthChart {
         let (stroke, bottom) = (sizes.stroke.to_pixels(rem), frame.y + frame.h);
         let mark = reading.map(|(price, _, total)| (xs.at(price), ys.at(total)));
         let palette = colors.clone();
-        let mut root = div().relative().w_full().h(sizes.height);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .relative()
+            .h(sizes.height);
         root.style().refine(self.base.style());
         tracked(
             root,

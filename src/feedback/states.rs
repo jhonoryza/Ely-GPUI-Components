@@ -53,7 +53,7 @@ pub(super) fn state_view(
     let theme = cx.theme();
     let colors = &theme.colors;
     div()
-        .w_full()
+        .debug_selector(|| "state-root".into())
         .flex()
         .flex_col()
         .items_center()

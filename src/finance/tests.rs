@@ -6,8 +6,11 @@ use gpui::{
 };
 use jiff::Timestamp;
 
-use crate::finance::{CandlestickChart, ChartSync, candles::Candle, stage::Visible};
-use crate::theme::Theme;
+use crate::finance::{
+    CandlestickChart, ChartSync, DepthChart, Leg, MarketHeatmap, PayoffDiagram, PointFigureChart,
+    RenkoChart, candles::Candle, stage::Visible,
+};
+use crate::{layout::tests::narrow_width, theme::Theme};
 
 fn candles(count: usize) -> Rc<Vec<Candle>> {
     Rc::new(
@@ -104,5 +107,43 @@ fn a_lagging_chart_leaves_the_shared_window_alone(cx: &mut TestAppContext) {
         start(&sync, cx),
         25.0,
         "the lagging chart's append is already shown"
+    );
+}
+
+#[gpui::test]
+fn every_chart_fills_a_column_its_block_measures_by_content(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let leg = Leg {
+        call: true,
+        strike: 100.0,
+        quantity: 1.0,
+        premium: 2.0,
+    };
+    let widths = [
+        narrow_width(cx, "chart-root", |_, _| {
+            DepthChart::new("depth", [(99.0, 2.0)], [(101.0, 3.0)]).into_any_element()
+        }),
+        narrow_width(cx, "chart-root", |_, _| {
+            MarketHeatmap::new("heatmap")
+                .tile("A", 1.0, 0.5)
+                .into_any_element()
+        }),
+        narrow_width(cx, "chart-root", |_, _| {
+            CandlestickChart::new("candles", candles(30)).into_any_element()
+        }),
+        narrow_width(cx, "chart-root", move |_, _| {
+            PayoffDiagram::new("payoff", [leg], (80.0, 120.0), 100.0).into_any_element()
+        }),
+        narrow_width(cx, "chart-root", |_, _| {
+            RenkoChart::new("renko", candles(30), 0.1).into_any_element()
+        }),
+        narrow_width(cx, "chart-root", |_, _| {
+            PointFigureChart::new("figure", candles(30), 0.1, 3).into_any_element()
+        }),
+    ];
+    assert_eq!(
+        widths,
+        [px(240.0); 6],
+        "each chart spans the card inside its padding"
     );
 }

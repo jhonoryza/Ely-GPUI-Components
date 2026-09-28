@@ -1,12 +1,16 @@
 use gpui::{
-    AppContext as _, Context, Entity, InteractiveElement, IntoElement, KeyUpEvent, Keystroke,
+    App, AppContext as _, Context, Entity, InteractiveElement, IntoElement, KeyUpEvent, Keystroke,
     ParentElement, Render, Styled, TestAppContext, VisualTestContext, Window, div, px,
 };
 
 use super::setup;
 use crate::{
     buttons::Button,
-    forms::{FieldArray, Form, FormField, Input, InputEvent, TextInput},
+    forms::{
+        Choice, DatePicker, EmailInput, FieldArray, Form, FormField, Input, InputEvent,
+        MentionInput, NumberInput, Select, Slider, TextInput,
+    },
+    layout::tests::narrow_width,
 };
 
 struct Signup {
@@ -193,5 +197,37 @@ fn a_field_keeps_inside_its_cards_padding(cx: &mut TestAppContext) {
         control.size.width,
         px(360.),
         "a percent min would take the card's outer width"
+    );
+}
+
+#[gpui::test]
+fn fields_fill_a_column_their_block_measures_by_content(cx: &mut TestAppContext) {
+    setup(cx);
+    let field =
+        |window: &mut Window, cx: &mut App| window.use_keyed_state("field", cx, TextInput::new);
+    let widths = [
+        narrow_width(cx, "field-root", |_, _| {
+            Select::new("select", [Choice::new("a", "A")]).into_any_element()
+        }),
+        narrow_width(cx, "field-root", |_, _| {
+            DatePicker::new("date", None).into_any_element()
+        }),
+        narrow_width(cx, "checked-root", move |window, cx| {
+            EmailInput::new(&field(window, cx)).into_any_element()
+        }),
+        narrow_width(cx, "mention-root", move |window, cx| {
+            MentionInput::new("mention", &field(window, cx)).into_any_element()
+        }),
+        narrow_width(cx, "slider-root", |_, _| {
+            Slider::new("slider", 0.5).into_any_element()
+        }),
+        narrow_width(cx, "number-root", |_, _| {
+            NumberInput::new("number", 42.0).into_any_element()
+        }),
+    ];
+    assert_eq!(
+        widths,
+        [px(240.0); 6],
+        "each field spans the card inside its padding"
     );
 }

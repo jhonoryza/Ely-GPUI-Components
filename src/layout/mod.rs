@@ -12,6 +12,8 @@ mod sidebar;
 mod split;
 mod stack;
 mod surface;
+#[cfg(all(test, feature = "test-support"))]
+pub(crate) mod tests;
 mod viewport;
 mod workspace;
 

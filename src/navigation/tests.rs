@@ -6,10 +6,11 @@ use gpui::{
 
 use super::{
     BackForwardNavigation, Breadcrumb, Crumb, EditorTab, EditorTabs, GoToLine, LoadMore,
-    NavigationMenu, Tabs, Wizard,
+    NavigationMenu, Steps, Tabs, Wizard,
 };
 use crate::{
     forms::{Choice, TextInput},
+    layout::tests::narrow_width,
     theme::Theme,
 };
 
@@ -454,5 +455,18 @@ fn load_more_asks_once_per_press_and_goes_once_all_show(cx: &mut TestAppContext)
         view.read_with(cx, |more, _| more.asks),
         1,
         "all shown, no button"
+    );
+}
+
+#[gpui::test]
+fn steps_fill_a_column_their_block_measures_by_content(cx: &mut TestAppContext) {
+    setup(cx);
+    let width = narrow_width(cx, "steps-root", |_, _| {
+        Steps::new("steps", [Choice::new("a", "A"), Choice::new("b", "B")], 0).into_any_element()
+    });
+    assert_eq!(
+        width,
+        px(240.0),
+        "the steps span the card inside its padding"
     );
 }

@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Div, ElementId, Entity, Hsla, IntoElement, ParentElement, Pixels, Refineable, RenderOnce,
-    StyleRefinement, Styled, Window, canvas, div, fill,
+    App, Div, ElementId, Entity, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
+    Refineable, RenderOnce, StyleRefinement, Styled, Window, canvas, div, fill,
 };
 use jiff::{Span, civil::Date};
 
@@ -157,7 +157,9 @@ impl RenderOnce for CalendarHeatmap {
         );
         let hit = days.iter().map(|(rect, _)| *rect).collect::<Vec<_>>();
         let legend = key(shades, ("Less", "More"), cx);
-        let mut root = div().w_full().h(sizes.height * 0.5);
+        let mut root = div()
+            .debug_selector(|| "chart-root".into())
+            .h(sizes.height * 0.5);
         root.style().refine(self.base.style());
         let chart = tracked(
             div().relative().flex_1().min_h_0(),

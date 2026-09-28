@@ -172,9 +172,9 @@ impl Suggestions {
         let (up_rows, down_rows, enter_rows) = (rows.clone(), rows.clone(), rows.clone());
         let (enter, trigger) = (self.pick.clone(), self.trigger);
         div()
+            .debug_selector(|| "mention-root".into())
             .id(self.id)
             .relative()
-            .w_full()
             .capture_action(move |_: &Up, _, cx| {
                 if open {
                     cx.stop_propagation();

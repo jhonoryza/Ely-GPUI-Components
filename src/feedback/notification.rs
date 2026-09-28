@@ -248,7 +248,7 @@ impl RenderOnce for NotificationCenter {
             div()
                 .flex_1()
                 .flex()
-                .items_center()
+                .flex_col()
                 .justify_center()
                 .child(
                     EmptyState::new(

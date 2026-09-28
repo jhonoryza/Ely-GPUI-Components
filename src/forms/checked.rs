@@ -43,10 +43,10 @@ fn checked(
     let theme = cx.theme();
     let (subtle, danger) = (theme.colors.fg_subtle, theme.colors.danger);
     div()
+        .debug_selector(|| "checked-root".into())
         .flex()
         .flex_col()
         .gap_1()
-        .w_full()
         .child(
             Input::new(state)
                 .size(size)
