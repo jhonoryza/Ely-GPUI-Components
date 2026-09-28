@@ -175,3 +175,28 @@ fn a_wrapped_body_pushes_the_actions_down(cx: &mut TestAppContext) {
     );
     assert!(long > short + px(24.0), "{short:?} then {long:?}");
 }
+
+/// A message too long for its box.
+struct Worded;
+
+impl Render for Worded {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .w(px(200.0))
+            .child(crate::feedback::InlineMessage::new(
+                crate::primitives::Severity::Danger,
+                "This file does not read as CSV: line 2: a quote inside a field it did not open.",
+            ))
+    }
+}
+
+#[gpui::test]
+fn a_long_inline_message_wraps_inside_its_box(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Worded);
+    cx.run_until_parked();
+    let text = cx
+        .debug_bounds("inline-message-text")
+        .expect("the words draw");
+    assert!(text.right() <= px(200.0), "{text:?}");
+}

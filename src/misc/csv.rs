@@ -16,10 +16,11 @@ use crate::{
 
 type OnRecords = Rc<dyn Fn(&[Vec<SharedString>], &mut Window, &mut App)>;
 
-/// Rows of fields from CSV text, as RFC 4180 has it: commas between fields, quotes around a field that holds a comma, a quote or a line break, a doubled quote for a quote inside, and CRLF or LF between rows. A last line break adds no row. Fails on a quote that never closes, text after a closing quote, or a row whose field count differs from the first's.
+/// Rows of fields from CSV text, as RFC 4180 has it: commas between fields, quotes around a field that holds a comma, a quote or a line break, a doubled quote for a quote inside, and CRLF or LF between rows; a byte order mark before the first field is no part of it, and a last line break adds no row. Fails on a quote that never closes, naming the line it opened on; text after a closing quote; a quote inside a field it did not open; or a row whose field count differs from the first's.
 pub fn read_csv(text: &str) -> Result<Vec<Vec<String>>, String> {
     let (mut rows, mut row, mut field) = (Vec::new(), Vec::new(), String::new());
-    let (mut quoted, mut closed, mut line) = (false, false, 1);
+    let (mut quoted, mut closed, mut line, mut opened) = (false, false, 1, 1);
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let mut chars = text.chars().peekable();
     while let Some(ch) = chars.next() {
         match (quoted, ch) {
@@ -32,7 +33,7 @@ pub fn read_csv(text: &str) -> Result<Vec<Vec<String>>, String> {
                 line += usize::from(ch == '\n');
                 field.push(ch);
             }
-            (false, '"') if field.is_empty() && !closed => quoted = true,
+            (false, '"') if field.is_empty() && !closed => (quoted, opened) = (true, line),
             (false, '"') => {
                 return Err(format!(
                     "line {line}: a quote inside a field it did not open"
@@ -53,7 +54,7 @@ pub fn read_csv(text: &str) -> Result<Vec<Vec<String>>, String> {
         }
     }
     if quoted {
-        return Err(format!("line {line}: a quote never closes"));
+        return Err(format!("line {opened}: a quote never closes"));
     }
     if !field.is_empty() || !row.is_empty() || closed {
         row.push(field);
@@ -76,6 +77,18 @@ pub fn read_csv(text: &str) -> Result<Vec<Vec<String>>, String> {
 struct Reading {
     text: SharedString,
     rows: Result<Vec<Vec<String>>, String>,
+}
+
+/// Reads the text once, a file of no rows being a fault too, and logs what does not read.
+fn read(id: &ElementId, text: SharedString) -> Reading {
+    let rows = read_csv(&text).and_then(|rows| match rows.is_empty() {
+        true => Err("it holds no rows".to_string()),
+        false => Ok(rows),
+    });
+    if let Err(why) = &rows {
+        log::warn!("csv importer {id:?}: {why}");
+    }
+    Reading { text, rows }
 }
 
 /// CSV text into records: read as RFC 4180, its first row naming the columns unless the box says otherwise, then mapped to the owner's fields through an `ImportDialog`. Text that does not read as CSV, or holds no rows, says why, with only Cancel. Each way out answers once. Render it while open.
@@ -114,32 +127,19 @@ impl RenderOnce for CsvImporter {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
         let reading = window.use_keyed_state((id.clone(), "reading"), cx, {
-            let text = self.text.clone();
-            move |_, _| Reading {
-                rows: read_csv(&text),
-                text,
-            }
+            let (id, text) = (id.clone(), self.text.clone());
+            move |_, _| read(&id, text)
         });
         if reading.read(cx).text != self.text {
-            let rows = read_csv(&self.text);
-            reading.update(cx, |reading, _| {
-                *reading = Reading {
-                    text: self.text.clone(),
-                    rows,
-                }
-            });
+            let fresh = read(&id, self.text.clone());
+            reading.update(cx, |reading, _| *reading = fresh);
         }
         let headed = window.use_keyed_state((id.clone(), "headed"), cx, |_, _| true);
-        let rows = match &reading.read(cx).rows {
-            Ok(rows) if rows.is_empty() => Err("it holds no rows".to_string()),
-            Ok(rows) => Ok(rows.clone()),
-            Err(why) => Err(why.clone()),
-        };
+        let rows = reading.read(cx).rows.clone();
         let cancel = self.on_cancel;
         let rows = match rows {
             Ok(rows) => rows,
             Err(why) => {
-                log::warn!("csv importer {id:?}: {why}");
                 return Dialog::new(id.clone(), self.title, move |window, cx| cancel(window, cx))
                     .child(
                         div()
@@ -234,6 +234,27 @@ mod tests {
             [vec!["a".to_string(), String::new(), "b".into()]]
         );
         assert_eq!(read_csv("").expect("nothing"), Vec::<Vec<String>>::new());
+    }
+
+    #[test]
+    fn a_byte_order_mark_is_no_part_of_the_first_field() {
+        assert_eq!(
+            read_csv("\u{feff}Name\nAda").expect("valid CSV"),
+            [vec!["Name".to_string()], vec!["Ada".to_string()]]
+        );
+    }
+
+    #[test]
+    fn faults_name_their_lines() {
+        assert_eq!(
+            read_csv("a,b\nc,\"d\nd\ne"),
+            Err("line 2: a quote never closes".into()),
+            "the line the quote opened on"
+        );
+        assert_eq!(
+            read_csv("a\nb\"c"),
+            Err("line 2: a quote inside a field it did not open".into())
+        );
     }
 
     #[test]

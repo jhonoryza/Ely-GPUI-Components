@@ -1,9 +1,13 @@
 use std::cell::{Cell, RefCell};
 
-use gpui::{AnyElement, IntoElement, TestAppContext, div};
+use gpui::{
+    AnyElement, App, Context, FocusHandle, IntoElement, Modifiers, ParentElement, Render, Styled,
+    TestAppContext, VisualTestContext, Window, div, point, px,
+};
 
-use super::{press, shown, stage};
+use super::{press, settle, shown, stage};
 use crate::misc::{CsvImporter, ExportDialog, ExportFormat, ImportDialog, ImportField};
+use crate::{buttons::Button, primitives::FocusScope, theme::Theme};
 
 thread_local! {
     static SAID: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
@@ -147,15 +151,15 @@ fn the_first_row_can_be_data(cx: &mut TestAppContext) {
     assert!(said().is_empty() && shown("import-missing-name", cx));
 }
 
-/// Text that does not read as CSV says why, and Escape cancels.
+/// Text that does not read as CSV says why, and its Cancel cancels.
 #[gpui::test]
 fn broken_csv_says_why(cx: &mut TestAppContext) {
     TEXT.with(|text| text.replace("a,\"b"));
     let (_, cx) = stage(csv, cx);
     assert!(shown("csv-unread", cx));
     press("tab", cx);
-    press("escape", cx);
-    assert_eq!(said(), ["cancelled"]);
+    press("enter", cx);
+    assert_eq!(said(), ["cancelled"], "its Cancel cancels");
 }
 
 /// Text with no rows says so.
@@ -164,4 +168,127 @@ fn empty_csv_says_why(cx: &mut TestAppContext) {
     TEXT.with(|text| text.replace(""));
     let (_, cx) = stage(csv, cx);
     assert!(shown("csv-unread", cx));
+}
+
+/// Shows the dialog again after an answer closed it.
+fn reopen(cx: &mut VisualTestContext) {
+    OPEN.set(true);
+    cx.update(|window, _| window.refresh());
+    settle(cx);
+}
+
+/// Cancel and a press on the scrim cancel each dialog once; with nothing picked, Export hands over the first format.
+#[gpui::test]
+fn every_way_out_answers_once(cx: &mut TestAppContext) {
+    let (_, cx) = stage(export, cx);
+    for _ in 0..4 {
+        press("tab", cx);
+    }
+    press("enter", cx);
+    reopen(cx);
+    cx.simulate_click(point(px(3.0), px(3.0)), Modifiers::none());
+    settle(cx);
+    reopen(cx);
+    for _ in 0..5 {
+        press("tab", cx);
+    }
+    press("enter", cx);
+    assert_eq!(said(), ["cancelled", "cancelled", "Pdf"]);
+}
+
+/// The import dialog's Cancel and scrim cancel once each.
+#[gpui::test]
+fn import_cancels_once(cx: &mut TestAppContext) {
+    let (_, cx) = stage(import, cx);
+    for _ in 0..3 {
+        press("tab", cx);
+    }
+    press("enter", cx);
+    reopen(cx);
+    cx.simulate_click(point(px(3.0), px(3.0)), Modifiers::none());
+    settle(cx);
+    assert_eq!(said(), ["cancelled", "cancelled"]);
+}
+
+/// New text under an open importer reads again and imports, a field with no column coming empty.
+#[gpui::test]
+fn new_text_reads_again(cx: &mut TestAppContext) {
+    TEXT.with(|text| text.replace("a,\"b"));
+    let (_, cx) = stage(csv, cx);
+    assert!(shown("csv-unread", cx));
+    TEXT.with(|text| text.replace("Name,Team\nAda,Engines\n"));
+    cx.update(|window, _| window.refresh());
+    settle(cx);
+    for _ in 0..5 {
+        press("tab", cx);
+    }
+    press("enter", cx);
+    assert_eq!(said(), [r#"[["Ada", ""]]"#]);
+}
+
+/// A page with a button that opens a dialog, and the dialog while it is open.
+struct Opener {
+    root: FocusHandle,
+    button: FocusHandle,
+    part: fn() -> AnyElement,
+}
+
+impl Render for Opener {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let view = cx.entity();
+        FocusScope::new(&self.root)
+            .root()
+            .size_full()
+            .child(
+                Button::new("open", "Open")
+                    .focus_handle(&self.button)
+                    .on_click(move |_, _, cx| {
+                        OPEN.set(true);
+                        view.update(cx, |_, cx| cx.notify());
+                    }),
+            )
+            .child(div().child((self.part)()))
+    }
+}
+
+/// Opens `part` from a button, presses Tab `tabs` times and Enter, and says whether focus came back to the button.
+fn answered_from_button(part: fn() -> AnyElement, tabs: usize, cx: &mut TestAppContext) -> bool {
+    OPEN.set(false);
+    cx.update(|cx: &mut App| {
+        Theme::init(cx);
+        crate::forms::bind_keys(cx);
+        cx.bind_keys([
+            gpui::KeyBinding::new("tab", crate::primitives::FocusNext, None),
+            gpui::KeyBinding::new("shift-tab", crate::primitives::FocusPrev, None),
+        ]);
+    });
+    let (view, cx) = cx.add_window_view(|_, cx| Opener {
+        root: cx.focus_handle(),
+        button: cx.focus_handle(),
+        part,
+    });
+    let button = view.read_with(cx, |opener, _| opener.button.clone());
+    cx.update(|window, _| window.focus(&button));
+    settle(cx);
+    press("enter", cx);
+    for _ in 0..tabs {
+        press("tab", cx);
+    }
+    press("enter", cx);
+    cx.update(|window, _| button.is_focused(window))
+}
+
+/// Export hands focus back to the button that opened it.
+#[gpui::test]
+fn export_hands_focus_back(cx: &mut TestAppContext) {
+    assert!(answered_from_button(export, 5, cx));
+    assert_eq!(said(), ["Pdf"]);
+}
+
+/// Import hands focus back to the button that opened it.
+#[gpui::test]
+fn import_hands_focus_back(cx: &mut TestAppContext) {
+    TEXT.with(|text| text.replace("Name,Email\nAda,ada@x.io\n"));
+    assert!(answered_from_button(csv, 5, cx));
+    assert_eq!(said(), [r#"[["Ada", "ada@x.io"]]"#]);
 }

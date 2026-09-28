@@ -271,7 +271,7 @@ impl RenderOnce for Callout {
     }
 }
 
-/// One line beside what it is about, in the severity's color.
+/// A line beside what it is about, in the severity's color; a long one wraps.
 #[derive(IntoElement)]
 pub struct InlineMessage {
     severity: Severity,
@@ -302,7 +302,13 @@ impl RenderOnce for InlineMessage {
                     .size(IconSize::Xs)
                     .color(tone),
             )
-            .child(self.text)
+            .child(
+                div()
+                    .debug_selector(|| "inline-message-text".into())
+                    .flex_1()
+                    .min_w_0()
+                    .child(self.text),
+            )
     }
 }
 
