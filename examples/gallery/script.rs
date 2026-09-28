@@ -46,7 +46,7 @@ pub enum Step {
     ExpectClosed(&'static str),
     /// Photographs this app's frontmost popup, such as the share picker.
     ShotPopup(&'static str),
-    /// Posts a key to AppKit itself; only `escape` is known.
+    /// Posts a key down to AppKit itself; `escape` and `5` are known.
     NativeKey(&'static str),
     /// Cancels the open file panel, whose content runs out of process.
     CancelPanel,
@@ -210,9 +210,13 @@ pub async fn play(
                 log::info!("script: wrote {}", file.display());
             }
             Step::NativeKey(key) => {
-                anyhow::ensure!(key == "escape", "native key {key} is not known");
+                let (text, code) = match key {
+                    "escape" => ("\u{1b}", 53),
+                    "5" => ("5", 23),
+                    other => anyhow::bail!("native key {other} is not known"),
+                };
                 let number = window.update(cx, |_, window, _| number(window))??;
-                post_key(number, true, "\u{1b}", 53)?;
+                post_key(number, true, text, code)?;
             }
             Step::CancelPanel => cancel_panel()?,
             Step::ExpectClosed(key) => {

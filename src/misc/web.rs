@@ -18,11 +18,12 @@ pub enum WebSource {
 }
 
 /// Whether a box lies, at least in part, inside what the window shows of its region.
+#[cfg(any(target_os = "macos", test))]
 pub(crate) fn in_view(bounds: Bounds<Pixels>, shown: Bounds<Pixels>) -> bool {
     bounds.intersects(&shown)
 }
 
-/// A web page in a native web view laid over this box: an address, or the owner's HTML. The page draws above everything gpui paints, dialogs too, and gpui's clipping does not reach it; it follows the box each frame and hides while the box is out of view. macOS only; elsewhere the box says so.
+/// A web page in a native web view laid over this box: an address, or the owner's HTML. The page draws above everything gpui paints, dialogs too, and gpui's clipping does not reach it; it follows the box each frame and hides while the box is out of view. A press on the page gives it the keys; a press anywhere gpui draws, or the view leaving, gives them back. macOS only; elsewhere the box says so.
 #[derive(IntoElement)]
 pub struct WebView {
     id: ElementId,
@@ -61,8 +62,8 @@ impl RenderOnce for WebView {
 #[cfg(target_os = "macos")]
 mod mac {
     use gpui::{
-        AnyElement, App, Bounds, ElementId, IntoElement, ParentElement, Pixels, Styled, Window,
-        canvas, div,
+        AnyElement, App, Bounds, DispatchPhase, ElementId, IntoElement, MouseDownEvent,
+        ParentElement, Pixels, Styled, Window, canvas, div,
     };
     use wry::{
         Rect, WebViewBuilder,
@@ -75,6 +76,14 @@ mod mac {
     struct Page {
         view: wry::WebView,
         shown: WebSource,
+    }
+
+    impl Drop for Page {
+        fn drop(&mut self) {
+            if let Err(error) = self.view.focus_parent() {
+                log::error!("web view: keys stay with the page as it goes: {error}");
+            }
+        }
     }
 
     fn rect(bounds: Bounds<Pixels>) -> Rect {
@@ -118,6 +127,7 @@ mod mac {
             loaded.unwrap_or_else(|error| panic!("web view {id:?}: load failed: {error}"));
             page.update(cx, |page, _| page.shown = source);
         }
+        let pressed = page.clone();
         div()
             .relative()
             .size_full()
@@ -130,7 +140,20 @@ mod mac {
                         view.set_visible(in_view(bounds, window.content_mask().bounds))
                             .unwrap_or_else(|error| panic!("web view {id:?}: visibility: {error}"));
                     },
-                    |_, _, _, _| {},
+                    move |_, _, window, _| {
+                        window.on_mouse_event(move |_: &MouseDownEvent, phase, _, cx| {
+                            if phase == DispatchPhase::Capture {
+                                log::debug!("web view: keys go back to gpui");
+                                pressed
+                                    .read(cx)
+                                    .view
+                                    .focus_parent()
+                                    .unwrap_or_else(|error| {
+                                        panic!("web view: keys stay with the page: {error}")
+                                    });
+                            }
+                        });
+                    },
                 )
                 .absolute()
                 .top_0()
@@ -167,6 +190,7 @@ impl RenderOnce for IframeEmbed {
         let (id, url) = (self.id, self.url);
         let opened = url.clone();
         let frame: AnyElement = framed(self.ratio, cx)
+            .rounded_b(theme.radius(Radius::Lg))
             .child(WebView::new(
                 (id.clone(), "page"),
                 WebSource::Url(url.clone()),
@@ -220,6 +244,10 @@ mod tests {
         let shown = Bounds::new(point(px(0.0), px(0.0)), size(px(400.0), px(300.0)));
         let at = |y: f32| Bounds::new(point(px(20.0), px(y)), size(px(200.0), px(100.0)));
         assert!(in_view(at(250.0), shown), "part of it shows");
+        assert!(
+            in_view(at(-50.0), shown),
+            "its top lies above the view, its body in it"
+        );
         assert!(!in_view(at(320.0), shown), "below the view");
         assert!(!in_view(at(-120.0), shown), "above it");
     }

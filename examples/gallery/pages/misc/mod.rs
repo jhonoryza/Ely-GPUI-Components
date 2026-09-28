@@ -66,6 +66,13 @@ pub const PAGE: Page = Page {
         Step::UpAt("cookies", 230.0, 84.0),
         Step::HoverAt("cookies", 20.0, 20.0),
         Step::Shot("cookies-choosing"),
+        Step::DownAt("web", 240.0, 100.0),
+        Step::UpAt("web", 240.0, 100.0),
+        Step::DownAt("converter", 24.0, 60.0),
+        Step::UpAt("converter", 24.0, 60.0),
+        Step::Key("cmd-a"),
+        Step::NativeKey("5"),
+        Step::Shot("keys-back"),
     ],
 };
 

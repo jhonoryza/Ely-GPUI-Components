@@ -1,6 +1,7 @@
 use ely_gpui_component::misc::{IframeEmbed, WebSource, WebView};
 use gpui::{App, IntoElement, ParentElement, Styled, div, px};
 
+use crate::probe::probe;
 use crate::ui::{blocked, section};
 
 const PAGE: &str = r#"<!doctype html>
@@ -25,12 +26,13 @@ pub fn render(cx: &App) -> impl IntoElement + use<> {
                 "A native web view laid over its box: an address, or HTML the owner hands in, which makes it an HTML preview. It draws above everything gpui paints and follows the box each frame.",
                 cx,
             )
-            .child(
+            .child(probe(
+                "web",
                 div()
                     .w(px(480.0))
                     .h(px(200.0))
                     .child(WebView::new("web", WebSource::Html(PAGE.into()))),
-            ),
+            )),
         )
         .child(
             section(
