@@ -13,6 +13,7 @@ mod survey;
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
 mod units;
+mod web;
 
 pub use calculator::Calculator;
 pub use captcha::{Captcha, CaptchaState};
@@ -27,3 +28,4 @@ pub use scanner::QrCodeScanner;
 pub use stopwatch::Stopwatch;
 pub use survey::{Answer, Question, Survey};
 pub use units::UnitConverter;
+pub use web::{IframeEmbed, WebSource, WebView};

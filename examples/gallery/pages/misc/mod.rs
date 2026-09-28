@@ -10,12 +10,13 @@ use crate::ui::{section, specimen, specimens};
 mod asking;
 mod codes;
 mod notices;
+mod web;
 
 pub const PAGE: Page = Page {
     number: 42,
     slug: "misc",
     title: "Misc",
-    summary: "Small tools that stand alone: clocks, a stopwatch, a calculator, a unit converter, a QR code scanner, a captcha, a poll, a survey, a quiz, flashcards, licenses, terms and a cookie banner.",
+    summary: "Small tools that stand alone: clocks, a stopwatch, a calculator, a unit converter, a QR code scanner, a captcha, a poll, a survey, a quiz, flashcards, licenses, terms, a cookie banner and web views.",
     render,
     script: &[
         Step::DownAt("stopwatch-start", 30.0, 62.0),
@@ -81,6 +82,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(codes::render(window, cx))
         .child(asking::render(window, cx))
         .child(notices::render(window, cx))
+        .child(web::render(cx))
         .into_any_element()
 }
 

@@ -10,6 +10,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Catalog data: `emojis` (Unicode emoji), `isolang` (ISO 639, native names), `isocountry` (ISO 3166), `iso_currency` (ISO 4217, also minor units for money).
 - Codes: `qrcode` (QR) and `barcoders` (Code 128, EAN-13), both MIT OR Apache-2.0, default features off. `rqrr` 0.11 ((MIT OR Apache-2.0) AND ISC, default features off) reads QR codes from the host's frames.
 - macOS extras (tray icon, Dock badge) call AppKit through `cocoa` 0.26 and `objc` 0.2, the crates gpui already links.
+- Web views: `wry` 0.57 (Apache-2.0 OR MIT, default features off, macOS only) lays a child WKWebView over the window.
 - Terminal: `alacritty_terminal` 0.26 (Apache-2.0, default features off) for the grid, its parser and the pseudo-terminal; `futures` carries its events.
 - Diffs: `similar` 3.2 (Apache-2.0) for line and word diffs and three-way merges; its `unicode` feature splits words at punctuation.
 - Markdown: `pulldown-cmark` 0.13 (MIT, default features off) for CommonMark with tables, tasks, strikethrough, footnotes and math.
@@ -216,3 +217,4 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - 2026-09-26: Terminal proven with `alacritty_terminal` 0.26: its grid, parser and pseudo-terminal, drawn by Ely. A replayed grid serves recorded output and tests.
 - 2026-09-27: ThemeSwitcher is `settings::ThemeSelector`: `src/theme` sits under every chapter and cannot draw with buttons.
 - 2026-09-28: QRCodeScanner proven with `rqrr` 0.11: the host hands in frames as `RenderImage`s, read off the main thread; gpui 0.2.2 has no camera.
+- 2026-09-28: WebView proven with `wry` 0.57: a child WKWebView over the window, placed from a canvas in prepaint at its box each frame and hidden once the box leaves the view. It draws above everything gpui paints and gpui's clipping does not reach it; gpui's test windows have no native handle, so the capture proves it.
