@@ -119,26 +119,34 @@ impl Paper {
         }
     }
 
-    /// A shape: areas washed in `wash` and edged in `ink`, points and lines in `ink`.
-    fn geometry(&self, geometry: &Geometry, wash: Hsla, ink: Hsla, window: &mut Window) {
+    /// A shape: areas washed and edged, points and lines in their mark.
+    fn geometry(&self, geometry: &Geometry, inks: Inks, window: &mut Window) {
         match geometry {
-            Geometry::Point(place) => self.dot(*place, ink, window),
+            Geometry::Point(place) => self.dot(*place, inks.mark, window),
             Geometry::MultiPoint(places) => places
                 .iter()
-                .for_each(|place| self.dot(*place, ink, window)),
-            Geometry::LineString(places) => self.line(places, self.line, ink, window),
+                .for_each(|place| self.dot(*place, inks.mark, window)),
+            Geometry::LineString(places) => self.line(places, self.line, inks.mark, window),
             Geometry::MultiLineString(lines) => lines
                 .iter()
-                .for_each(|places| self.line(places, self.line, ink, window)),
-            Geometry::Polygon(rings) => self.area(rings.iter(), wash, ink, window),
+                .for_each(|places| self.line(places, self.line, inks.mark, window)),
+            Geometry::Polygon(rings) => self.area(rings.iter(), inks.wash, inks.edge, window),
             Geometry::MultiPolygon(polygons) => {
-                self.area(polygons.iter().flatten(), wash, ink, window)
+                self.area(polygons.iter().flatten(), inks.wash, inks.edge, window)
             }
             Geometry::Collection(parts) => parts
                 .iter()
-                .for_each(|part| self.geometry(part, wash, ink, window)),
+                .for_each(|part| self.geometry(part, inks, window)),
         }
     }
+}
+
+/// How a shape is colored: its areas' wash and edge, and the mark of its points and lines.
+#[derive(Clone, Copy)]
+struct Inks {
+    wash: Hsla,
+    edge: Hsla,
+    mark: Hsla,
 }
 
 /// Something the map draws over its tiles and under its pins.
@@ -161,7 +169,15 @@ impl MapLayer {
                 let ink = paper.ink(layer.hue, "features");
                 for feature in layer.features.iter() {
                     if let Some(geometry) = &feature.geometry {
-                        paper.geometry(geometry, ink.alpha(0.25), ink, window);
+                        paper.geometry(
+                            geometry,
+                            Inks {
+                                wash: ink.alpha(0.25),
+                                edge: ink,
+                                mark: ink,
+                            },
+                            window,
+                        );
                     }
                 }
             }
@@ -175,7 +191,16 @@ impl MapLayer {
                         Some(share) => ink.alpha(0.15 + 0.85 * share as f32),
                         None => paper.colors.fg_disabled.alpha(0.2),
                     };
-                    paper.geometry(geometry, wash, paper.colors.bg, window);
+                    let edge = paper.colors.bg;
+                    paper.geometry(
+                        geometry,
+                        Inks {
+                            wash,
+                            edge,
+                            mark: wash,
+                        },
+                        window,
+                    );
                 }
             }
             MapLayer::Heat(heat) => {

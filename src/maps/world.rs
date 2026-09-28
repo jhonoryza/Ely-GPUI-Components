@@ -53,31 +53,44 @@ impl WorldMap {
     }
 }
 
+/// Whether a key names a country: an ISO 3166 alpha-2 code, or a code the bundle carries, as Kosovo's XK.
+fn known(code: &str) -> bool {
+    CountryCode::for_alpha2(code).is_ok()
+        || COUNTRIES.iter().any(|country| iso(country) == Some(code))
+}
+
+/// The map with Natural Earth named in its corner, unless it names a source of its own.
+fn sourced(map: MapView) -> MapView {
+    match map.attribution.is_some() {
+        true => map,
+        false => map.attribution("Countries: Natural Earth"),
+    }
+}
+
+/// The bundled countries keyed by their ISO codes.
+fn countries(values: Vec<(String, f64)>, hue: usize) -> ChoroplethLayer {
+    ChoroplethLayer::new(COUNTRIES.clone(), values)
+        .key_by("iso")
+        .hue(hue)
+}
+
 impl RenderOnce for WorldMap {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         for (code, _) in &self.values {
-            let known = CountryCode::for_alpha2(code).is_ok()
-                || COUNTRIES.iter().any(|country| iso(country) == Some(code));
             assert!(
-                known,
+                known(code),
                 "world map {:?}: {code} is no ISO 3166 alpha-2 code",
                 self.id
             );
         }
-        let map = match self.map.attribution.is_some() {
-            true => self.map,
-            false => self.map.attribution("Countries: Natural Earth"),
-        };
-        let layer = ChoroplethLayer::new(COUNTRIES.clone(), self.values)
-            .key_by("iso")
-            .hue(self.hue);
-        ChoroplethMap::new(self.id, map, layer)
+        ChoroplethMap::new(self.id, sourced(self.map), countries(self.values, self.hue))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{COUNTRIES, iso};
+    use super::{COUNTRIES, countries, iso, known, sourced};
+    use crate::maps::{LatLon, MapView, MapViewport};
 
     #[test]
     fn the_bundle_holds_the_worlds_countries_by_code() {
@@ -101,6 +114,46 @@ mod tests {
                 .filter(|country| iso(country).is_none())
                 .count(),
             2
+        );
+    }
+
+    #[test]
+    fn countries_wash_by_iso_code() {
+        let layer = countries(
+            vec![("FR".into(), 10.0), ("JP".into(), 30.0), ("SG".into(), 5.0)],
+            0,
+        );
+        let france = COUNTRIES
+            .iter()
+            .find(|country| iso(country) == Some("FR"))
+            .expect("France");
+        assert_eq!(layer.share(france), Some(0.2), "France keys by its code");
+        assert_eq!(
+            layer.unmatched().into_iter().collect::<Vec<_>>(),
+            ["SG"],
+            "Singapore has no country here"
+        );
+    }
+
+    #[test]
+    fn a_code_is_a_country_by_iso_or_by_the_bundle() {
+        assert!(known("FR"));
+        assert!(known("XK"), "Kosovo, in the bundle though not in ISO 3166");
+        assert!(
+            known("SG"),
+            "Singapore, in ISO 3166 though not in the bundle"
+        );
+        assert!(!known("ZZ"));
+    }
+
+    #[test]
+    fn natural_earth_is_named_unless_the_map_names_its_source() {
+        let map = || MapView::new("map", MapViewport::new(LatLon::new(0.0, 0.0), 0.0));
+        let source = |map: MapView| sourced(map).attribution.map(|text| text.to_string());
+        assert_eq!(source(map()), Some("Countries: Natural Earth".into()));
+        assert_eq!(
+            source(map().attribution("Tiles: Ely")),
+            Some("Tiles: Ely".into())
         );
     }
 }

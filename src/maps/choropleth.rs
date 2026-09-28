@@ -33,19 +33,21 @@ pub struct ChoroplethLayer {
 }
 
 impl ChoroplethLayer {
-    /// Values by each feature's key, its id unless `key_by` names a property; fails on a value that is not finite.
+    /// Values by each feature's key, its id unless `key_by` names a property; fails on a value that is not finite or a key given twice.
     pub fn new(
         features: impl Into<Arc<[Feature]>>,
         values: impl IntoIterator<Item = (impl Into<String>, f64)>,
     ) -> Self {
-        let values: HashMap<String, f64> = values
-            .into_iter()
-            .map(|(key, value)| {
-                let key = key.into();
-                assert!(value.is_finite(), "choropleth value {value} for {key}");
-                (key, value)
-            })
-            .collect();
+        let mut kept = HashMap::new();
+        for (key, value) in values {
+            let key: String = key.into();
+            assert!(value.is_finite(), "choropleth value {value} for {key}");
+            assert!(
+                kept.insert(key.clone(), value).is_none(),
+                "choropleth values repeat {key}"
+            );
+        }
+        let values = kept;
         Self {
             features: features.into(),
             values: Rc::new(values),
@@ -112,7 +114,7 @@ impl ChoroplethLayer {
     }
 }
 
-/// A map of areas washed by value, with a legend of the scale and of no data in its corner. It takes the owner's map, with or without tiles, and lays the layer on it; values that match no area are logged once.
+/// A map of areas washed by value, with a legend of the scale and of no data at its top left, clear of the zoom buttons and the attribution. It takes the owner's map, with or without tiles, and lays the layer on it; values that match no area are logged once.
 #[derive(IntoElement)]
 pub struct ChoroplethMap {
     id: ElementId,
@@ -173,7 +175,7 @@ impl RenderOnce for ChoroplethMap {
         });
         let legend = div()
             .absolute()
-            .bottom_2()
+            .top_2()
             .left_2()
             .flex()
             .flex_col()
@@ -262,7 +264,19 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "choropleth value NaN for a")]
-    fn a_value_that_is_not_finite_fails() {
+    fn a_value_that_is_not_a_number_fails() {
         ChoroplethLayer::new(Vec::<Feature>::new(), [("a", f64::NAN)]);
+    }
+
+    #[test]
+    #[should_panic(expected = "choropleth value inf for a")]
+    fn an_endless_value_fails() {
+        ChoroplethLayer::new(Vec::<Feature>::new(), [("a", f64::INFINITY)]);
+    }
+
+    #[test]
+    #[should_panic(expected = "choropleth values repeat US")]
+    fn a_key_given_twice_fails() {
+        ChoroplethLayer::new(Vec::<Feature>::new(), [("US", 1.0), ("US", 100.0)]);
     }
 }
