@@ -9,12 +9,13 @@ use crate::ui::{section, specimen, specimens};
 
 mod asking;
 mod codes;
+mod notices;
 
 pub const PAGE: Page = Page {
     number: 42,
     slug: "misc",
     title: "Misc",
-    summary: "Small tools that stand alone: clocks, a stopwatch, a calculator, a unit converter, a QR code scanner, a captcha, a poll, a survey, a quiz, flashcards.",
+    summary: "Small tools that stand alone: clocks, a stopwatch, a calculator, a unit converter, a QR code scanner, a captcha, a poll, a survey, a quiz, flashcards, licenses, terms and a cookie banner.",
     render,
     script: &[
         Step::DownAt("stopwatch-start", 30.0, 62.0),
@@ -56,6 +57,13 @@ pub const PAGE: Page = Page {
         Step::DownAt("flashcards", 140.0, 80.0),
         Step::UpAt("flashcards", 140.0, 80.0),
         Step::Shot("flashcard-turned"),
+        Step::DownAt("consent-open", 20.0, 16.0),
+        Step::UpAt("consent-open", 20.0, 16.0),
+        Step::Shot("consent"),
+        Step::Key("escape"),
+        Step::DownAt("cookies", 230.0, 84.0),
+        Step::UpAt("cookies", 230.0, 84.0),
+        Step::Shot("cookies-choosing"),
     ],
 };
 
@@ -71,6 +79,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(converter(cx))
         .child(codes::render(window, cx))
         .child(asking::render(window, cx))
+        .child(notices::render(window, cx))
         .into_any_element()
 }
 

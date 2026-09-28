@@ -15,6 +15,7 @@ use crate::{
 
 mod asking;
 mod codes;
+mod notices;
 mod numbers;
 
 struct Stage {
