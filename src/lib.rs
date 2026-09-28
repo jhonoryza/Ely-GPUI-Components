@@ -25,6 +25,7 @@ pub mod interaction;
 pub mod layout;
 pub mod lists;
 pub mod mail;
+pub mod maps;
 pub mod media;
 pub mod menus;
 pub mod messaging;

@@ -23,6 +23,7 @@ mod interaction;
 mod layout;
 mod lists;
 mod mail;
+mod maps;
 mod media;
 mod menus;
 mod messaging;
@@ -94,6 +95,7 @@ pub const ALL: &[Page] = &[
     interaction::PAGE,
     theme::PAGE,
     i18n::PAGE,
+    maps::PAGE,
 ];
 
 pub use i18n::install as install_i18n;
