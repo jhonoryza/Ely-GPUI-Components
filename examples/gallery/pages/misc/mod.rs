@@ -7,13 +7,14 @@ use crate::probe::probe;
 use crate::script::Step;
 use crate::ui::{section, specimen, specimens};
 
+mod asking;
 mod codes;
 
 pub const PAGE: Page = Page {
     number: 42,
     slug: "misc",
     title: "Misc",
-    summary: "Small tools that stand alone: clocks, a stopwatch, a calculator, a unit converter, a QR code scanner, a captcha.",
+    summary: "Small tools that stand alone: clocks, a stopwatch, a calculator, a unit converter, a QR code scanner, a captcha, a poll, a survey, a quiz, flashcards.",
     render,
     script: &[
         Step::DownAt("stopwatch-start", 30.0, 62.0),
@@ -42,6 +43,19 @@ pub const PAGE: Page = Page {
         Step::Type("w7xk"),
         Step::Key("enter"),
         Step::Shot("captcha-passed"),
+        Step::DownAt("poll", 50.0, 70.0),
+        Step::UpAt("poll", 50.0, 70.0),
+        Step::DownAt("poll", 27.0, 135.0),
+        Step::UpAt("poll", 27.0, 135.0),
+        Step::Shot("poll-voted"),
+        Step::DownAt("quiz", 45.0, 103.0),
+        Step::UpAt("quiz", 45.0, 103.0),
+        Step::DownAt("quiz", 33.0, 168.0),
+        Step::UpAt("quiz", 33.0, 168.0),
+        Step::Shot("quiz-checked"),
+        Step::DownAt("flashcards", 140.0, 80.0),
+        Step::UpAt("flashcards", 140.0, 80.0),
+        Step::Shot("flashcard-turned"),
     ],
 };
 
@@ -56,6 +70,7 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(calculator(cx))
         .child(converter(cx))
         .child(codes::render(window, cx))
+        .child(asking::render(window, cx))
         .into_any_element()
 }
 
