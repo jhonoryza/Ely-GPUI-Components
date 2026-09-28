@@ -15,6 +15,7 @@ mod platform;
 mod project;
 mod syntax;
 mod tokens;
+mod tooling;
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
@@ -43,6 +44,7 @@ pub use syntax::{SyntaxTheme, syntax_themes};
 pub use tokens::{
     AvatarSize, ContainerSize, ControlSize, Density, Elevation, IconSize, Radius, TextSize,
 };
+pub use tooling::ToolingSizes;
 
 const FRAME: Duration = Duration::from_millis(8);
 

@@ -6,6 +6,8 @@ use ely_gpui_component::{
 };
 use gpui::{AnyElement, App, IntoElement, ParentElement, Styled, Window, div, px};
 
+mod inspection;
+
 use super::Page;
 use crate::probe::probe;
 use crate::script::Step;
@@ -15,16 +17,46 @@ pub const PAGE: Page = Page {
     number: 43,
     slug: "tooling",
     title: "Library Tooling",
-    summary: "Tools for building with the library: this gallery, and a playground that edits a component live.",
+    summary: "Tools for building with the library: this gallery, a playground that edits a component live, and tools that inspect a running window: its boxes, frames, renders and input.",
     render,
     script: &[
         Step::DownAt("button-playground", 472.0, 207.0),
         Step::UpAt("button-playground", 472.0, 207.0),
         Step::Shot("playground-loading"),
+        Step::DownAt("inspect-button", 12.0, 12.0),
+        Step::UpAt("inspect-button", 12.0, 12.0),
+        Step::HoverAt("inspect-sample", 60.0, 30.0),
+        Step::Shot("inspector-picking"),
+        Step::DownAt("inspect-sample", 60.0, 30.0),
+        Step::UpAt("inspect-sample", 60.0, 30.0),
+        Step::HoverAt("inspect-button", 12.0, 12.0),
+        Step::Shot("inspector-held"),
+        Step::DownAt("inspect-button", 12.0, 12.0),
+        Step::UpAt("inspect-button", 12.0, 12.0),
+        Step::DownAt("fps-switch", 14.0, 10.0),
+        Step::UpAt("fps-switch", 14.0, 10.0),
+        Step::Wait(1200),
+        Step::Shot("fps-measuring"),
+        Step::DownAt("fps-switch", 14.0, 10.0),
+        Step::UpAt("fps-switch", 14.0, 10.0),
+        Step::DownAt("renders-apart", 200.0, 18.0),
+        Step::UpAt("renders-apart", 200.0, 18.0),
+        Step::DownAt("renders-apart", 200.0, 18.0),
+        Step::UpAt("renders-apart", 200.0, 18.0),
+        Step::Shot("renders"),
+        Step::HoverAt("events", 40.0, 20.0),
+        Step::HoverAt("events", 120.0, 30.0),
+        Step::DownAt("events", 120.0, 30.0),
+        Step::UpAt("events", 120.0, 30.0),
+        Step::DownAt("events", 60.0, 60.0),
+        Step::UpAt("events", 60.0, 60.0),
+        Step::Type("Hi"),
+        Step::Shot("events"),
     ],
 };
 
-fn render(_: &mut Window, cx: &mut App) -> AnyElement {
+fn render(window: &mut Window, cx: &mut App) -> AnyElement {
+    let inspection = inspection::sections(window, cx);
     div()
         .child(section(
             "ComponentGallery / Storybook",
@@ -98,5 +130,6 @@ fn render(_: &mut Window, cx: &mut App) -> AnyElement {
                     ))),
             ),
         )
+        .children(inspection)
         .into_any_element()
 }

@@ -204,6 +204,10 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A native view laid over the window takes AppKit's first responder on a press, and gpui's view never asks for it back, so typed text would go to the native view for good. The component hands the keyboard back on every press gpui gets and when the view leaves (`misc::WebView`, through wry's `focus_parent`); `Step::NativeKey` proves it, since gpui's own dispatch skips AppKit.
 - A map keeps places in `f64`: at zoom 19 the world is 134 million pixels across. Its wheel pans and Command or Control with the wheel zooms about the pointer, as the canvas's does. Its tiles stay in gpui's asset cache, as every `img()` picture does. Its popup is an overlay that is not modal: it takes focus when it shows, and the frame it stops showing, by any way out, hands focus back. Its layers, lines and areas unwrap across the date line and repeat on every world in view. Clustered pins gather by squares of the world, not of the view, so a pan never regroups them; a zoom may, so it hands a focused pin's or cluster's focus to the map.
 
+- gpui's inspector (debug builds) runs no mouse listener while picking and holds a pick on a press without a redraw, so Ely's panel requests a frame each render while picking (`tooling::install_inspector`). Its panel scrolls, so the box model it draws over the page goes through `primitives::raise`, which paints unclipped.
+- A tool that measures redraws cannot move: any animation redraws the view it counts (`tooling::RenderCounter`). `AnyView::cached` renders again only on its own notify or a window refresh. A meter that counts frames keeps its view drawing while shown (`tooling::FpsMeter`).
+- A logger of input lays its canvas before what it holds, so its capture listeners run first and see what a child stops (`tooling::EventLogger`).
+
 ## Decisions
 
 - 2026-09-24: official gpui 0.2.2 over the `gpui-pre` snapshot. Older API, first-party publisher.
@@ -219,3 +223,4 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - 2026-09-27: ThemeSwitcher is `settings::ThemeSelector`: `src/theme` sits under every chapter and cannot draw with buttons.
 - 2026-09-28: QRCodeScanner proven with `rqrr` 0.11: the host hands in frames as `RenderImage`s, read off the main thread; gpui 0.2.2 has no camera.
 - 2026-09-28: WebView proven with `wry` 0.57: a child WKWebView over the window, placed from a canvas in prepaint at its box each frame and hidden once the box leaves the view. It draws above everything gpui paints and gpui's clipping does not reach it; gpui's test windows have no native handle, so the capture proves it.
+- 2026-09-28: InspectorOverlay is gpui's inspector drawn by Ely, `tooling::install_inspector`, in debug builds only, as gpui has it.

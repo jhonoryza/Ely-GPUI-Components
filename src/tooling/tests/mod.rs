@@ -5,12 +5,14 @@ use gpui::{
 
 use std::cell::Cell;
 
-use super::{Knob, Playground};
 use crate::{
     forms,
     primitives::{FocusNext, FocusPrev, FocusScope},
     theme::Theme,
+    tooling::{Knob, Playground},
 };
+
+mod inspection;
 
 struct Stage {
     root: FocusHandle,
