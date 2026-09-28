@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
     AnyElement, Context, FocusHandle, IntoElement, KeyUpEvent, Keystroke, ParentElement, Render,
@@ -34,7 +34,11 @@ fn settle(cx: &mut VisualTestContext) {
     cx.run_until_parked();
 }
 
-fn stage(part: fn() -> AnyElement, cx: &mut TestAppContext) -> &mut VisualTestContext {
+/// Stages `part`, counting the times the stage is told to redraw.
+fn stage(
+    part: fn() -> AnyElement,
+    cx: &mut TestAppContext,
+) -> (Rc<Cell<usize>>, &mut VisualTestContext) {
     cx.update(|cx| {
         Theme::init(cx);
         cx.bind_keys([
@@ -47,9 +51,15 @@ fn stage(part: fn() -> AnyElement, cx: &mut TestAppContext) -> &mut VisualTestCo
         part,
     });
     let root = view.read_with(cx, |stage, _| stage.root.clone());
-    cx.update(|window, _| window.focus(&root));
+    let wakes = Rc::new(Cell::new(0));
+    let count = wakes.clone();
+    cx.update(|window, cx| {
+        window.focus(&root);
+        cx.observe(&view, move |_, _| count.set(count.get() + 1))
+            .detach();
+    });
     settle(cx);
-    cx
+    (wakes, cx)
 }
 
 fn press(key: &str, cx: &mut VisualTestContext) {
@@ -74,29 +84,78 @@ fn watch() -> AnyElement {
     Stopwatch::new("watch").into_any_element()
 }
 
-/// Start runs the time on the executor's clock, Pause holds it, and Reset clears it for the next run.
+/// Start runs the time on the executor's clock, Lap lists the laps newest first, Pause holds it, and Reset clears it and hands focus to Start.
 #[gpui::test]
-fn a_stopwatch_runs_holds_and_resets(cx: &mut TestAppContext) {
-    let cx = stage(watch, cx);
+fn a_stopwatch_runs_laps_holds_and_resets(cx: &mut TestAppContext) {
+    let (_, cx) = stage(watch, cx);
     press("tab", cx);
     press("enter", cx);
-    wait(1_250, cx);
-    assert!(shown("stopwatch-00:01.2", cx), "running");
+    wait(1_100, cx);
+    assert!(shown("stopwatch-00:01.1", cx), "running");
+    press("tab", cx);
+    press("enter", cx);
+    wait(1_200, cx);
+    press("enter", cx);
+    let row = |selector: &'static str, cx: &mut VisualTestContext| {
+        cx.debug_bounds(selector)
+            .unwrap_or_else(|| panic!("no row {selector}"))
+    };
+    assert!(
+        row("lap-2-00:01.2-00:02.3", cx).origin.y < row("lap-1-00:01.1-00:01.1", cx).origin.y,
+        "each lap's own time and total, the newest on top"
+    );
+    press("shift-tab", cx);
     press("enter", cx);
     wait(2_000, cx);
     assert!(
-        shown("stopwatch-00:01.2", cx) && !shown("stopwatch-00:03.2", cx),
+        shown("stopwatch-00:02.3", cx) && !shown("stopwatch-00:04.3", cx),
         "Pause, on the same button, holds it"
     );
     press("tab", cx);
     press("enter", cx);
-    press("shift-tab", cx);
     press("enter", cx);
     wait(300, cx);
     assert!(
         shown("stopwatch-00:00.3", cx),
-        "Reset cleared it, and Start ran it from nothing"
+        "Lap, now Reset, cleared it and handed focus to Start"
     );
+}
+
+/// The ticker wakes the stopwatch each tenth while it runs, and not at all once paused.
+#[gpui::test]
+fn a_running_stopwatch_wakes_each_tenth_and_rests_paused(cx: &mut TestAppContext) {
+    let (wakes, cx) = stage(watch, cx);
+    press("tab", cx);
+    press("enter", cx);
+    let started = wakes.get();
+    for _ in 0..12 {
+        wait(100, cx);
+    }
+    assert!(
+        wakes.get() - started >= 12,
+        "woke {} times",
+        wakes.get() - started
+    );
+    press("enter", cx);
+    let paused = wakes.get();
+    for _ in 0..10 {
+        wait(100, cx);
+    }
+    assert_eq!(wakes.get(), paused, "paused, it sleeps");
+}
+
+/// A clock on the wall clock wakes its view within each second.
+#[gpui::test]
+fn a_clock_ticks_each_second(cx: &mut TestAppContext) {
+    let (wakes, cx) = stage(
+        || Clock::new("clock").zone(TimeZone::UTC).into_any_element(),
+        cx,
+    );
+    for second in 1..=2 {
+        let before = wakes.get();
+        wait(1_000, cx);
+        assert!(wakes.get() > before, "no tick in second {second}");
+    }
 }
 
 fn clocks() -> AnyElement {
@@ -126,6 +185,8 @@ fn clocks() -> AnyElement {
 /// Clocks shown at the owner's moment draw without a ticker.
 #[gpui::test]
 fn clocks_draw_at_the_owners_moment(cx: &mut TestAppContext) {
-    let cx = stage(clocks, cx);
+    let (wakes, cx) = stage(clocks, cx);
+    let before = wakes.get();
     wait(5_000, cx);
+    assert_eq!(wakes.get(), before, "nothing woke them");
 }

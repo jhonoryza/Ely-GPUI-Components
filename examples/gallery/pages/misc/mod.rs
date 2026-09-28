@@ -64,7 +64,7 @@ fn clocks(cx: &App) -> impl IntoElement + use<> {
 fn stopwatch(cx: &App) -> impl IntoElement + use<> {
     section(
         "Stopwatch",
-        "Time that runs while started and holds while paused, in tenths; Lap marks the time so far, Reset clears it once paused.",
+        "Time that runs while started and holds while paused, in tenths. Lap marks the time so far; once paused, it reads Reset and clears it.",
         cx,
     )
     .child(probe("stopwatch-start", div().w(px(320.0)).child(Stopwatch::new("stopwatch"))))

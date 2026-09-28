@@ -187,7 +187,7 @@ impl RenderOnce for Clock {
     }
 }
 
-/// Places and their zones, a row each: a small face, the place, how its day and hour stand against home, and its time. Home is the system zone unless told; it ticks each second, or shows the owner's moment.
+/// Places and their zones, a row each: a small face, the place, how its day and hour stand against home, and its time; fails without places. Home is the system zone unless told; it ticks each second, or shows the owner's moment.
 #[derive(IntoElement)]
 pub struct WorldClock {
     id: ElementId,
@@ -201,12 +201,15 @@ impl WorldClock {
         id: impl Into<ElementId>,
         places: impl IntoIterator<Item = (impl Into<SharedString>, TimeZone)>,
     ) -> Self {
+        let id = id.into();
+        let places: Vec<_> = places
+            .into_iter()
+            .map(|(name, zone)| (name.into(), zone))
+            .collect();
+        assert!(!places.is_empty(), "world clock {id:?} has no places");
         Self {
-            id: id.into(),
-            places: places
-                .into_iter()
-                .map(|(name, zone)| (name.into(), zone))
-                .collect(),
+            id,
+            places,
             home: None,
             now: None,
         }
@@ -289,6 +292,12 @@ mod tests {
         );
         assert!((minute - 30.25 / 60.0).abs() < 1e-6);
         assert_eq!(second, 0.25);
+    }
+
+    #[test]
+    #[should_panic(expected = "has no places")]
+    fn a_world_clock_without_places_fails() {
+        super::WorldClock::new("world", Vec::<(&str, TimeZone)>::new());
     }
 
     #[test]

@@ -1,8 +1,8 @@
 use std::time::{Duration, Instant};
 
 use gpui::{
-    App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled, Task,
-    Window, div,
+    App, ElementId, FocusHandle, InteractiveElement, IntoElement, ParentElement, RenderOnce,
+    Styled, Task, Window, div,
 };
 
 use crate::{
@@ -69,7 +69,7 @@ pub(crate) fn tenths(elapsed: Duration) -> String {
     }
 }
 
-/// Time that runs while started and holds while paused, in tenths, with Start or Pause, Lap and Reset under it and the laps below, newest first: each lap's own time and the total at its end. It reads the executor's clock.
+/// Time that runs while started and holds while paused, in tenths, with Start or Pause under it beside Lap, which reads Reset once paused, and the laps below, newest first: each lap's own time and the total at its end. It reads the executor's clock.
 #[derive(IntoElement)]
 pub struct Stopwatch {
     id: ElementId,
@@ -87,7 +87,14 @@ impl RenderOnce for Stopwatch {
         let run = window.use_keyed_state((id.clone(), "run"), cx, |_, _| Run::default());
         let toggle = tab_stop((id.clone(), "toggle").into(), true, window, cx);
         let now = cx.background_executor().now();
-        if run.read(cx).since.is_some() && run.read(cx).tick.is_none() {
+        let (running, elapsed) = (run.read(cx).since.is_some(), run.read(cx).elapsed(now));
+        let side = tab_stop(
+            (id.clone(), "side").into(),
+            running || !elapsed.is_zero(),
+            window,
+            cx,
+        );
+        if running && run.read(cx).tick.is_none() {
             let (view, weak) = (window.current_view(), run.downgrade());
             let task = window.spawn(cx, async move |cx| {
                 loop {
@@ -103,26 +110,28 @@ impl RenderOnce for Stopwatch {
             });
             run.update(cx, |run, _| run.tick = Some(task));
         }
-        let (running, elapsed, laps) = {
-            let run = run.read(cx);
-            (run.since.is_some(), run.elapsed(now), run.laps.clone())
-        };
+        let laps = run.read(cx).laps.clone();
         let theme = cx.theme();
         let shown = tenths(elapsed);
-        let act = |name: &'static str, edit: fn(&mut Run, Instant)| {
-            let run = run.clone();
-            move |_: &gpui::ClickEvent, _: &mut Window, cx: &mut App| {
+        let act = |name: &'static str, edit: fn(&mut Run, Instant), then: Option<&FocusHandle>| {
+            let (run, then) = (run.clone(), then.cloned());
+            move |_: &gpui::ClickEvent, window: &mut Window, cx: &mut App| {
                 let now = cx.background_executor().now();
                 run.update(cx, |run, cx| {
                     edit(run, now);
                     log::info!("stopwatch: {name} at {}", tenths(run.elapsed(now)));
                     cx.notify();
                 });
+                if let Some(then) = &then {
+                    window.focus(then);
+                }
             }
         };
         let rows = laps.iter().enumerate().rev().map(|(ix, total)| {
             let before = ix.checked_sub(1).map_or(Duration::ZERO, |last| laps[last]);
+            let own = tenths(*total - before);
             div()
+                .debug_selector(|| format!("lap-{}-{own}-{}", ix + 1, tenths(*total)))
                 .flex()
                 .gap_3()
                 .py_1()
@@ -134,7 +143,7 @@ impl RenderOnce for Stopwatch {
                     tabular(div())
                         .flex_none()
                         .text_color(theme.colors.fg)
-                        .child(tenths(*total - before)),
+                        .child(own.clone()),
                 )
                 .child(tabular(div()).flex_none().child(tenths(*total)))
         });
@@ -166,19 +175,25 @@ impl RenderOnce for Stopwatch {
                         })
                         .focus_handle(&toggle)
                         .on_click(match running {
-                            true => act("pause", Run::pause),
-                            false => act("start", Run::start),
+                            true => act("pause", Run::pause, None),
+                            false => act("start", Run::start, None),
                         }),
                     )
                     .child(
-                        Button::new((id.clone(), "lap"), "Lap")
-                            .disabled(!running)
-                            .on_click(act("lap", Run::lap)),
-                    )
-                    .child(
-                        Button::new((id.clone(), "reset"), "Reset")
-                            .disabled(running || elapsed.is_zero())
-                            .on_click(act("reset", |run, _| run.reset())),
+                        Button::new(
+                            (id.clone(), "side"),
+                            if running || elapsed.is_zero() {
+                                "Lap"
+                            } else {
+                                "Reset"
+                            },
+                        )
+                        .focus_handle(&side)
+                        .disabled(!running && elapsed.is_zero())
+                        .on_click(match running {
+                            true => act("lap", Run::lap, None),
+                            false => act("reset", |run, _| run.reset(), Some(&toggle)),
+                        }),
                     ),
             )
             .child(div().flex().flex_col().children(rows))
