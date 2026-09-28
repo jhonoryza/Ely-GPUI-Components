@@ -1,12 +1,13 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, IntoElement, ParentElement, RenderOnce, SharedString,
-    Styled, Window, div,
+    AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement,
+    RenderOnce, SharedString, Styled, Window, div,
 };
 
 use crate::{
     forms::{Choice, Select, Slider, Switch},
+    layout::seeded::use_seeded,
     theme::{ActiveTheme, Radius, TextSize},
     typography::{format, tabular},
 };
@@ -14,7 +15,7 @@ use crate::{
 type Preview = Rc<dyn Fn(&Settings, &mut Window, &mut App) -> AnyElement>;
 
 /// A property a playground edits: a switch, a choice among names, or a number in a range, each by its name.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Knob {
     Toggle(SharedString, bool),
     Choice(SharedString, Vec<SharedString>, usize),
@@ -96,7 +97,7 @@ impl Settings {
     }
 }
 
-/// A component beside the knobs that shape it: each knob edits one property as the preview redraws with the settings. Narrow, the knobs drop below.
+/// A component beside the knobs that shape it: each knob edits one property as the preview redraws with the settings. The knobs are the owner's: when any changes, every setting starts over from them. Narrow, the knobs drop below.
 #[derive(IntoElement)]
 pub struct Playground {
     id: ElementId,
@@ -105,14 +106,32 @@ pub struct Playground {
 }
 
 impl Playground {
+    /// Fails on no knobs, two knobs of one name, or a number that starts outside its range.
     pub fn new(
         id: impl Into<ElementId>,
         knobs: impl IntoIterator<Item = Knob>,
         preview: impl Fn(&Settings, &mut Window, &mut App) -> AnyElement + 'static,
     ) -> Self {
+        let (id, knobs): (ElementId, Vec<Knob>) = (id.into(), knobs.into_iter().collect());
+        assert!(!knobs.is_empty(), "playground {id:?} has no knobs");
+        for (ix, knob) in knobs.iter().enumerate() {
+            assert!(
+                knobs[..ix]
+                    .iter()
+                    .all(|before| before.name() != knob.name()),
+                "playground {id:?} has two knobs named {}",
+                knob.name()
+            );
+            if let Knob::Number(name, value, (least, most), _) = knob {
+                assert!(
+                    (*least..=*most).contains(value),
+                    "playground {id:?}: {name} starts at {value}, outside {least}..={most}"
+                );
+            }
+        }
         Self {
-            id: id.into(),
-            knobs: knobs.into_iter().collect(),
+            id,
+            knobs,
             preview: Rc::new(preview),
         }
     }
@@ -121,35 +140,37 @@ impl Playground {
 impl RenderOnce for Playground {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        assert!(!self.knobs.is_empty(), "playground {id:?} has no knobs");
-        let settings = window.use_keyed_state((id.clone(), "settings"), cx, {
-            let knobs = self.knobs.clone();
-            move |_, _| {
-                Settings(
-                    knobs
-                        .iter()
-                        .map(|knob| (knob.name().clone(), knob.first()))
-                        .collect(),
-                )
-            }
-        });
-        let now = settings.read(cx).clone();
+        let firsts = Settings(
+            self.knobs
+                .iter()
+                .map(|knob| (knob.name().clone(), knob.first()))
+                .collect(),
+        );
+        // The knobs join the seed, so a changed option list or range starts over too.
+        let settings = use_seeded(
+            (id.clone(), "settings"),
+            (self.knobs.clone(), firsts),
+            window,
+            cx,
+        );
+        let now = settings.read(cx).value.1.clone();
         let preview = (self.preview)(&now, window, cx);
         let theme = cx.theme();
         let colors = &theme.colors;
-        let rows = self.knobs.iter().enumerate().map(|(ix, knob)| {
+        let rows = self.knobs.iter().map(|knob| {
             let (name, set) = (knob.name().clone(), settings.clone());
+            let key = (id.clone(), format!("knob-{name}"));
             let control = match knob {
-                Knob::Toggle(..) => Switch::new((id.clone(), format!("knob-{ix}")), now.on(&name))
+                Knob::Toggle(..) => Switch::new(key, now.on(&name))
                     .on_change(move |on, _, cx| {
                         set.update(cx, |settings, cx| {
-                            settings.set(&name, Setting::On(on));
+                            settings.value.1.set(&name, Setting::On(on));
                             cx.notify();
                         })
                     })
                     .into_any_element(),
                 Knob::Choice(_, options, _) => Select::new(
-                    (id.clone(), format!("knob-{ix}")),
+                    key,
                     options
                         .iter()
                         .map(|option| Choice::new(option.clone(), option.clone())),
@@ -157,7 +178,7 @@ impl RenderOnce for Playground {
                 .selected(now.picked(&name).clone())
                 .on_change(move |option, _, cx| {
                     set.update(cx, |settings, cx| {
-                        settings.set(&name, Setting::Picked(option.clone()));
+                        settings.value.1.set(&name, Setting::Picked(option.clone()));
                         cx.notify();
                     })
                 })
@@ -168,27 +189,29 @@ impl RenderOnce for Playground {
                     .gap_2()
                     .child(
                         div().flex_1().min_w_0().child(
-                            Slider::new((id.clone(), format!("knob-{ix}")), now.number(&name))
+                            Slider::new(key, now.number(&name))
                                 .range(*least, *most)
                                 .step(*step)
                                 .on_change(move |value, _, cx| {
                                     set.update(cx, |settings, cx| {
-                                        settings.set(&name, Setting::Number(value));
+                                        settings.value.1.set(&name, Setting::Number(value));
                                         cx.notify();
                                     })
                                 }),
                         ),
                     )
-                    .child(
+                    .child({
+                        let shown = format::number(
+                            now.number(knob.name()),
+                            format::decimals(*step),
+                            format::Separators::EN,
+                        );
                         tabular(div())
+                            .debug_selector(|| format!("knob-readout-{}-{shown}", knob.name()))
                             .flex_none()
                             .text_color(colors.fg_muted)
-                            .child(format::number(
-                                now.number(knob.name()),
-                                format::decimals(*step),
-                                format::Separators::EN,
-                            )),
-                    )
+                            .child(shown.clone())
+                    })
                     .into_any_element(),
             };
             div()
@@ -236,6 +259,8 @@ impl RenderOnce for Playground {
 
 #[cfg(test)]
 mod tests {
+    use gpui::IntoElement;
+
     use super::{Knob, Setting, Settings};
 
     #[test]
@@ -255,6 +280,34 @@ mod tests {
         assert_eq!(settings.picked("size").as_ref(), "Md");
         settings.set("share", Setting::Number(0.7));
         assert_eq!(settings.number("share"), 0.7);
+    }
+
+    #[test]
+    #[should_panic(expected = "has no knobs")]
+    fn a_playground_without_knobs_fails() {
+        super::Playground::new("p", [], |_, _, _| gpui::div().into_any_element());
+    }
+
+    #[test]
+    #[should_panic(expected = "has two knobs named size")]
+    fn twin_knob_names_fail() {
+        let size = || Knob::Toggle("size".into(), true);
+        super::Playground::new("p", [size(), size()], |_, _, _| {
+            gpui::div().into_any_element()
+        });
+    }
+
+    #[test]
+    #[should_panic(expected = "share starts at 5, outside 0..=1")]
+    fn a_number_outside_its_range_fails() {
+        let share = Knob::Number("share".into(), 5.0, (0.0, 1.0), 0.1);
+        super::Playground::new("p", [share], |_, _, _| gpui::div().into_any_element());
+    }
+
+    #[test]
+    #[should_panic(expected = "no knob named color")]
+    fn a_name_the_knobs_lack_fails() {
+        Settings(vec![("size".into(), Setting::Picked("Md".into()))]).on("color");
     }
 
     #[test]
