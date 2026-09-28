@@ -27,12 +27,22 @@ fn calculator() -> AnyElement {
 fn a_calculator_takes_typed_keys(cx: &mut TestAppContext) {
     let (_, cx) = stage(calculator, cx);
     press("tab", cx);
-    for key in ["1", "2", "+", "3", "*", "4", "cmd-backspace", "5"] {
+    for key in [
+        "1",
+        "2",
+        "+",
+        "3",
+        "*",
+        "4",
+        "cmd-backspace",
+        "ctrl-backspace",
+        "5",
+    ] {
         press(key, cx);
     }
     assert!(
         shown("calculator-12 + 3 × 45", cx),
-        "Command left the delete to the app"
+        "Command and Control left the delete to the app"
     );
     press("backspace", cx);
     for _ in 0..5 {
@@ -51,12 +61,16 @@ fn a_calculator_takes_typed_keys(cx: &mut TestAppContext) {
         shown("calculator-153", cx),
         "Enter on the calculator is equals"
     );
+    for key in ["/", "9", "="] {
+        press(key, cx);
+    }
+    assert!(shown("calculator-17", cx), "= is equals too");
     press("tab", cx);
     press("enter", cx);
     press("+", cx);
     press("5", cx);
     assert!(
-        shown("calculator-5", cx) && !shown("calculator-153 + 5", cx),
+        shown("calculator-5", cx) && !shown("calculator-17 + 5", cx),
         "Enter on the focused AC cleared the result"
     );
 }

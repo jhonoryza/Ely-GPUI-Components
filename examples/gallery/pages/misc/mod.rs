@@ -27,6 +27,11 @@ pub const PAGE: Page = Page {
         Step::Shot("calculator-typed"),
         Step::Key("enter"),
         Step::Shot("calculator-result"),
+        Step::DownAt("converter", 24.0, 60.0),
+        Step::UpAt("converter", 24.0, 60.0),
+        Step::Key("cmd-a"),
+        Step::Type("1000000000000000"),
+        Step::Shot("converter-long"),
     ],
 };
 
@@ -96,5 +101,8 @@ fn converter(cx: &App) -> impl IntoElement + use<> {
         "An amount read in another unit: length, area, volume, mass, temperature, speed and data, with a swap.",
         cx,
     )
-    .child(div().w(px(280.0)).child(UnitConverter::new("unit-converter")))
+    .child(probe(
+        "converter",
+        div().w(px(280.0)).child(UnitConverter::new("unit-converter")),
+    ))
 }

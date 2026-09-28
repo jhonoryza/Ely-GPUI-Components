@@ -9,7 +9,6 @@ use crate::{
     primitives::IconName,
     theme::{ActiveTheme, ControlSize, Radius},
     typography::{
-        Ellipsis,
         format::{MINUS, Separators, significant},
         tabular,
     },
@@ -144,6 +143,12 @@ pub(crate) fn convert(amount: f64, from: &Unit, to: &Unit) -> f64 {
     (amount * from.scale + from.offset - to.offset) / to.scale
 }
 
+/// `amount` in `from` as it reads in `to`: six significant digits and the symbol.
+fn read(amount: f64, from: &Unit, to: &Unit) -> String {
+    let value = significant(convert(amount, from, to), 6, Separators::EN);
+    format!("{value} {}", to.symbol)
+}
+
 /// The converter's own field, kind and units.
 struct Desk {
     input: Entity<TextInput>,
@@ -160,7 +165,7 @@ fn place(units: &[Unit], name: &str) -> usize {
         .unwrap_or_else(|| panic!("unit converter: no unit named {name}"))
 }
 
-/// An amount in one unit read in another: length, area, volume, mass, temperature, speed or data, with a swap of the two units. It shows six significant digits.
+/// An amount in one unit read in another: length, area, volume, mass, temperature, speed or data, with a swap of the two units. It shows six significant digits, wrapped in its box when long.
 #[derive(IntoElement)]
 pub struct UnitConverter {
     id: ElementId,
@@ -193,15 +198,7 @@ impl RenderOnce for UnitConverter {
         let text = input.read(cx).text().to_string();
         let amount = parse_number(&text);
         let result = match amount {
-            Some(amount) => format!(
-                "{} {}",
-                significant(
-                    convert(amount, &kind.units[from], &kind.units[to]),
-                    6,
-                    Separators::EN
-                ),
-                kind.units[to].symbol
-            ),
+            Some(amount) => read(amount, &kind.units[from], &kind.units[to]),
             None => "—".to_string(),
         };
         let theme = cx.theme();
@@ -288,8 +285,9 @@ impl RenderOnce for UnitConverter {
                             div()
                                 .flex()
                                 .items_center()
-                                .h(theme.control_height(ControlSize::Md))
+                                .min_h(theme.control_height(ControlSize::Md))
                                 .px(theme.control_padding(ControlSize::Md))
+                                .py_1()
                                 .rounded(theme.radius(Radius::Md))
                                 .bg(theme.colors.sunken)
                                 .text_color(theme.colors.fg)
@@ -298,7 +296,7 @@ impl RenderOnce for UnitConverter {
                                         .flex_1()
                                         .min_w_0()
                                         .debug_selector(|| format!("converted-{result}"))
-                                        .child(Ellipsis::new(result.clone())),
+                                        .child(result.clone()),
                                 ),
                         ),
                     )
@@ -315,7 +313,7 @@ impl RenderOnce for UnitConverter {
 
 #[cfg(test)]
 mod tests {
-    use super::{KINDS, Kind, convert, place};
+    use super::{KINDS, Kind, convert, place, read};
 
     fn between(kind: &Kind, amount: f64, from: &str, to: &str) -> f64 {
         convert(
@@ -357,6 +355,17 @@ mod tests {
             between(temperature, 0.0, "Kelvin", "Celsius"),
             -273.15
         ));
+    }
+
+    #[test]
+    fn a_reading_keeps_six_significant_digits_and_the_symbol() {
+        let length = &KINDS[0];
+        let unit = |name: &str| &length.units[place(length.units, name)];
+        assert_eq!(read(1.0, unit("Mile"), unit("Kilometer")), "1.60934 km");
+        assert_eq!(
+            read(1e9, unit("Meter"), unit("Millimeter")),
+            "1,000,000,000,000 mm"
+        );
     }
 
     #[test]

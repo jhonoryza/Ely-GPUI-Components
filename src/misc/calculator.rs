@@ -51,10 +51,14 @@ const PAD: [(Key, &str); 19] = [
 
 const OPS: [char; 4] = ['+', '-', '*', '/'];
 
-/// The entry as typed, in ASCII; the sum that gave it while it is a result; and why that sum failed.
+/// Stands for the last result in the entry, so a sum goes on with its whole value.
+const ANSWER: char = 'a';
+
+/// The entry as typed, in ASCII, where `a` is the last result, kept whole in `answer`; the sum that gave it, as shown; and why a sum failed.
 #[derive(Default)]
 struct Tape {
     entry: String,
+    answer: f64,
     worked: Option<String>,
     problem: Option<String>,
 }
@@ -75,9 +79,12 @@ impl Tape {
     }
 
     fn press(&mut self, key: Key) {
-        let failed = self.problem.take().is_some();
-        let result = self.worked.take().is_some() && !failed;
-        if failed || (result && matches!(key, Key::Digit(_) | Key::Point)) {
+        if self.problem.take().is_some() {
+            self.entry.clear();
+        }
+        self.worked = None;
+        let answered = self.entry.ends_with(ANSWER);
+        if answered && matches!(key, Key::Digit(_) | Key::Point) {
             self.entry.clear();
         }
         let start = self.number_start();
@@ -107,6 +114,7 @@ impl Tape {
                     }
                 }
             }
+            Key::Sign if answered => self.answer = -self.answer,
             Key::Sign if number.starts_with('-') => {
                 self.entry.remove(start);
             }
@@ -116,29 +124,20 @@ impl Tape {
                 self.entry.pop();
             }
             Key::Clear => self.entry.clear(),
-            Key::Equals if self.entry.is_empty() => {}
-            Key::Equals => match evaluate(&self.entry, &[]) {
-                Ok(value) => self.worked = Some(std::mem::replace(&mut self.entry, plain(value))),
-                Err(problem) => {
-                    self.worked = Some(self.entry.clone());
-                    self.problem = Some(problem);
+            Key::Equals if self.entry.is_empty() || self.entry.ends_with(OPS) => {}
+            Key::Equals => {
+                self.worked = Some(format!("{} =", shown(&self.entry, self.answer)));
+                match evaluate(&self.entry, &[(ANSWER.to_string().into(), self.answer)]) {
+                    Ok(value) => (self.entry, self.answer) = (ANSWER.to_string(), value),
+                    Err(problem) => self.problem = Some(problem),
                 }
-            },
+            }
         }
     }
 }
 
-/// A result as the entry types it: twelve significant digits, no groups, an ASCII minus.
-fn plain(value: f64) -> String {
-    significant(value, 12, Separators::EN)
-        .chars()
-        .filter(|ch| *ch != ',')
-        .map(|ch| if ch == MINUS { '-' } else { ch })
-        .collect()
-}
-
-/// The entry as it reads: digits grouped, and ×, ÷ and a true minus between spaced terms.
-fn shown(entry: &str) -> String {
+/// The entry as it reads: digits grouped, the last result to twelve significant digits, and ×, ÷ and a true minus between spaced terms.
+fn shown(entry: &str, answer: f64) -> String {
     let (mut out, mut number, mut after_op) = (String::new(), String::new(), true);
     let flush = |out: &mut String, number: &mut String| {
         let (whole, part) = number.split_once('.').unwrap_or((number, ""));
@@ -150,6 +149,11 @@ fn shown(entry: &str) -> String {
         number.clear();
     };
     for ch in entry.chars() {
+        if ch == ANSWER {
+            out.push_str(&significant(answer, 12, Separators::EN));
+            after_op = false;
+            continue;
+        }
         if ch.is_ascii_digit() || ch == '.' {
             number.push(ch);
             after_op = false;
@@ -166,13 +170,17 @@ fn shown(entry: &str) -> String {
         after_op = true;
     }
     flush(&mut out, &mut number);
-    out
+    out.trim_end().to_string()
 }
 
 fn hit(tape: &Entity<Tape>, key: Key, cx: &mut App) {
     tape.update(cx, |tape, cx| {
         tape.press(key);
-        log::info!("calculator: {key:?}, entry {:?}", tape.entry);
+        log::info!(
+            "calculator: {key:?}, entry {:?}, answer {}",
+            tape.entry,
+            tape.answer
+        );
         cx.notify();
     });
 }
@@ -197,7 +205,7 @@ fn typed(event: &KeyDownEvent, own: bool) -> Option<Key> {
     }
 }
 
-/// A calculator: the sum as you type it over its result, and a pad of digits, the four operations, sign, delete and clear. Keys type too: digits, + − * /, = or Enter, Backspace and Escape. It works in precedence, × and ÷ before + and −, and shows twelve significant digits.
+/// A calculator: the sum as you type it over its result, and a pad of digits, the four operations, sign, delete and clear. Keys type too: digits, `.`, `+ - * /`, `=` or Enter, Backspace and Escape; Equals waits while the sum ends in an operator. It works in precedence, × and ÷ before + and −, and shows twelve significant digits.
 #[derive(IntoElement)]
 pub struct Calculator {
     id: ElementId,
@@ -221,13 +229,9 @@ impl RenderOnce for Calculator {
             let main = match (&tape.problem, tape.entry.is_empty()) {
                 (Some(problem), _) => problem.clone(),
                 (None, true) => "0".to_string(),
-                (None, false) => shown(&tape.entry),
+                (None, false) => shown(&tape.entry, tape.answer),
             };
-            let above = tape
-                .worked
-                .as_deref()
-                .map(|sum| format!("{} =", shown(sum)));
-            (above, main, tape.problem.is_some())
+            (tape.worked.clone(), main, tape.problem.is_some())
         };
         let keys = PAD.iter().map(|&(key, label)| {
             let button = match key {
@@ -301,7 +305,7 @@ impl RenderOnce for Calculator {
 
 #[cfg(test)]
 mod tests {
-    use super::{Key, Tape, plain, shown};
+    use super::{Key, Tape, shown};
 
     fn typed(keys: &[Key]) -> Tape {
         let mut tape = Tape::default();
@@ -323,31 +327,50 @@ mod tests {
             .collect()
     }
 
+    /// What the calculator's main line reads after `keys`.
+    fn reads(keys: &str) -> String {
+        let tape = typed(&sum(keys));
+        match tape.problem {
+            Some(problem) => problem,
+            None if tape.entry.is_empty() => "0".into(),
+            None => shown(&tape.entry, tape.answer),
+        }
+    }
+
     #[test]
-    fn it_works_in_precedence_and_carries_the_result_on() {
-        let tape = typed(&sum("12+3*4="));
+    fn it_works_in_precedence_and_goes_on_with_the_whole_result() {
         assert_eq!(
-            (tape.entry.as_str(), tape.worked.as_deref()),
-            ("24", Some("12+3*4"))
+            typed(&sum("12+3*4=")).worked.as_deref(),
+            Some("12 + 3 × 4 =")
         );
+        assert_eq!(reads("12+3*4="), "24");
         assert_eq!(
-            typed(&sum("12+3*4=-4=")).entry,
+            reads("12+3*4=-4="),
             "20",
             "an operator goes on from the result"
         );
-        assert_eq!(typed(&sum("12+3*4=7")).entry, "7", "a digit starts afresh");
         assert_eq!(
-            typed(&sum(".1+.2=")).entry,
-            "0.3",
-            "twelve digits hide binary noise"
+            reads("1/3=*3="),
+            "1",
+            "the whole result, not its twelve digits"
         );
-        assert_eq!(typed(&sum("2/3=")).entry, "0.666666666667");
+        assert_eq!(reads("12+3*4=7"), "7", "a digit starts afresh");
+        assert_eq!(reads("12+3*4=.5"), "0.5", "so does a point");
+        assert_eq!(reads("12+3*4=~+4="), "−20", "sign turns the result");
+        assert_eq!(reads("12+3*4=<"), "0", "delete takes the whole result");
+        assert_eq!(reads(".1+.2="), "0.3", "twelve digits hide binary noise");
+        assert_eq!(reads("2/3="), "0.666666666667");
     }
 
     #[test]
     fn keys_keep_the_entry_a_sum() {
         assert_eq!(typed(&sum("007")).entry, "7", "no leading zeros");
         assert_eq!(typed(&sum("1..5.")).entry, "1.5", "one point a number");
+        assert_eq!(
+            typed(&sum(".5+.5")).entry,
+            "0.5+0.5",
+            "a point starts with a zero"
+        );
         assert_eq!(
             typed(&sum("5+*")).entry,
             "5*",
@@ -366,21 +389,25 @@ mod tests {
             "a dangling sign goes with the operator"
         );
         assert_eq!(typed(&sum("12+3C")).entry, "");
+        assert_eq!(
+            reads("1234+5*="),
+            "1,234 + 5 ×",
+            "Equals waits on a dangling operator"
+        );
     }
 
     #[test]
     fn a_failed_sum_says_why_and_the_next_key_starts_afresh() {
-        let tape = typed(&sum("5/0="));
-        assert_eq!(tape.problem.as_deref(), Some("division by zero"));
+        assert_eq!(reads("5/0="), "division by zero");
+        assert_eq!(typed(&sum("5/0=")).worked.as_deref(), Some("5 ÷ 0 ="));
         assert_eq!(typed(&sum("5/0=8")).entry, "8");
         assert_eq!(typed(&sum("5/0=+")).entry, "", "no result to go on from");
     }
 
     #[test]
     fn the_entry_reads_grouped_with_true_signs() {
-        assert_eq!(shown("-1234.5*-6/7-8"), "−1,234.5 × −6 ÷ 7 − 8");
-        assert_eq!(shown("0."), "0.");
-        assert_eq!(plain(-1_234_567.0), "-1234567");
-        assert_eq!(plain(1e-15), "0.000000000000001");
+        assert_eq!(shown("-1234.5*-6/7-8", 0.0), "−1,234.5 × −6 ÷ 7 − 8");
+        assert_eq!(shown("0.", 0.0), "0.");
+        assert_eq!(shown("a*2", -1_234.5), "−1,234.5 × 2");
     }
 }
