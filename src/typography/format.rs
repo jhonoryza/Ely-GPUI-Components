@@ -50,6 +50,40 @@ pub fn group_digits(digits: &str, group: char) -> String {
     out
 }
 
+/// `value` rounded to `digits` significant digits and written out in full, grouped, without trailing zeros. Non-finite values print as Rust prints them.
+pub fn significant(value: f64, digits: usize, separators: Separators) -> String {
+    assert!(digits > 0, "a number keeps at least one significant digit");
+    if !value.is_finite() {
+        return value.to_string();
+    }
+    let rounded = format!("{:.*e}", digits - 1, value.abs());
+    let (mantissa, exponent) = rounded.split_once('e').expect("Rust writes an exponent");
+    let point = exponent.parse::<i32>().expect("a whole exponent") + 1;
+    let figures: String = mantissa.chars().filter(char::is_ascii_digit).collect();
+    let (whole, part) = match usize::try_from(point) {
+        Err(_) | Ok(0) => (
+            "0".to_string(),
+            "0".repeat(point.unsigned_abs() as usize) + &figures,
+        ),
+        Ok(point) if point >= figures.len() => (
+            figures.clone() + &"0".repeat(point - figures.len()),
+            String::new(),
+        ),
+        Ok(point) => (figures[..point].to_string(), figures[point..].to_string()),
+    };
+    let mut out = String::new();
+    if value < 0.0 && figures.chars().any(|ch| ch != '0') {
+        out.push(MINUS);
+    }
+    out.push_str(&group_digits(&whole, separators.group));
+    let part = part.trim_end_matches('0');
+    if !part.is_empty() {
+        out.push(separators.decimal);
+        out.push_str(part);
+    }
+    out
+}
+
 /// ISO 4217 code to symbol, minor units, and whether a space follows.
 pub fn currency_parts(code: &str) -> (&str, usize, bool) {
     let places = iso_currency::Currency::from_code(code)
@@ -244,6 +278,31 @@ mod tests {
             "float noise from a difference drops away"
         );
         assert_eq!(decimals(1e-11), 11, "a tiny step keeps its places");
+    }
+
+    #[test]
+    fn significant_digits_round_at_every_size() {
+        let en = Separators::EN;
+        assert_eq!(
+            significant(0.1 + 0.2, 12, en),
+            "0.3",
+            "binary noise rounds away"
+        );
+        assert_eq!(significant(2.0 / 3.0, 12, en), "0.666666666667");
+        assert_eq!(significant(1234.5678, 6, en), "1,234.57");
+        assert_eq!(
+            significant(9.999_999_6, 6, en),
+            "10",
+            "a carry adds a digit"
+        );
+        assert_eq!(
+            significant(12_345_678_901_234_567_890.0, 12, en),
+            "12,345,678,901,200,000,000"
+        );
+        assert_eq!(significant(-1.0e-15, 12, en), "−0.000000000000001");
+        assert_eq!(significant(0.0, 12, en), "0");
+        assert_eq!(significant(-0.0, 12, en), "0");
+        assert_eq!(significant(f64::INFINITY, 12, en), "inf");
     }
 
     #[test]

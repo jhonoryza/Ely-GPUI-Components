@@ -8,9 +8,12 @@ use jiff::{Timestamp, tz::TimeZone};
 
 use super::{Clock, Stopwatch, WorldClock};
 use crate::{
+    forms,
     primitives::{FocusNext, FocusPrev, FocusScope},
     theme::Theme,
 };
+
+mod numbers;
 
 struct Stage {
     root: FocusHandle,
@@ -35,12 +38,13 @@ fn settle(cx: &mut VisualTestContext) {
 }
 
 /// Stages `part`, counting the times the stage is told to redraw.
-fn stage(
+pub(super) fn stage(
     part: fn() -> AnyElement,
     cx: &mut TestAppContext,
 ) -> (Rc<Cell<usize>>, &mut VisualTestContext) {
     cx.update(|cx| {
         Theme::init(cx);
+        forms::bind_keys(cx);
         cx.bind_keys([
             gpui::KeyBinding::new("tab", FocusNext, None),
             gpui::KeyBinding::new("shift-tab", FocusPrev, None),
@@ -62,7 +66,7 @@ fn stage(
     (wakes, cx)
 }
 
-fn press(key: &str, cx: &mut VisualTestContext) {
+pub(super) fn press(key: &str, cx: &mut VisualTestContext) {
     cx.simulate_keystrokes(key);
     settle(cx);
     cx.simulate_event(KeyUpEvent {
@@ -76,7 +80,7 @@ fn wait(ms: u64, cx: &mut VisualTestContext) {
     settle(cx);
 }
 
-fn shown(selector: &'static str, cx: &mut VisualTestContext) -> bool {
+pub(super) fn shown(selector: &'static str, cx: &mut VisualTestContext) -> bool {
     cx.debug_bounds(selector).is_some()
 }
 

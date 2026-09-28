@@ -1,4 +1,4 @@
-use ely_gpui_component::misc::{Clock, Stopwatch, WorldClock};
+use ely_gpui_component::misc::{Calculator, Clock, Stopwatch, UnitConverter, WorldClock};
 use gpui::{AnyElement, App, IntoElement, ParentElement, Styled, Window, div, px};
 use jiff::tz::TimeZone;
 
@@ -11,7 +11,7 @@ pub const PAGE: Page = Page {
     number: 42,
     slug: "misc",
     title: "Misc",
-    summary: "Small tools that stand alone: clocks, a stopwatch.",
+    summary: "Small tools that stand alone: clocks, a stopwatch, a calculator, a unit converter.",
     render,
     script: &[
         Step::DownAt("stopwatch-start", 30.0, 62.0),
@@ -21,6 +21,12 @@ pub const PAGE: Page = Page {
         Step::UpAt("stopwatch-start", 30.0, 62.0),
         Step::Wait(300),
         Step::Shot("stopwatch"),
+        Step::DownAt("calculator", 24.0, 24.0),
+        Step::UpAt("calculator", 24.0, 24.0),
+        Step::Type("1234+5*6"),
+        Step::Shot("calculator-typed"),
+        Step::Key("enter"),
+        Step::Shot("calculator-result"),
     ],
 };
 
@@ -32,6 +38,8 @@ fn render(_: &mut Window, cx: &mut App) -> AnyElement {
     div()
         .child(clocks(cx))
         .child(stopwatch(cx))
+        .child(calculator(cx))
+        .child(converter(cx))
         .into_any_element()
 }
 
@@ -68,4 +76,25 @@ fn stopwatch(cx: &App) -> impl IntoElement + use<> {
         cx,
     )
     .child(probe("stopwatch-start", div().w(px(320.0)).child(Stopwatch::new("stopwatch"))))
+}
+
+fn calculator(cx: &App) -> impl IntoElement + use<> {
+    section(
+        "Calculator",
+        "Digits, the four operations, sign, delete and clear, worked in precedence; keys type too, and Enter gives the result.",
+        cx,
+    )
+    .child(probe(
+        "calculator",
+        div().w(px(280.0)).child(Calculator::new("calculator")),
+    ))
+}
+
+fn converter(cx: &App) -> impl IntoElement + use<> {
+    section(
+        "UnitConverter",
+        "An amount read in another unit: length, area, volume, mass, temperature, speed and data, with a swap.",
+        cx,
+    )
+    .child(div().w(px(280.0)).child(UnitConverter::new("unit-converter")))
 }

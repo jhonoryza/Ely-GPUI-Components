@@ -85,6 +85,7 @@ pub(crate) use mention::{
     Suggestions, active_trigger, handles_matching, one_word, replace_trigger,
 };
 pub use multi::MultiSelect;
+pub(crate) use number::parse as parse_number;
 pub use number::{NumberInput, ScrubInput};
 pub use options::Choice;
 pub(crate) use options::{
