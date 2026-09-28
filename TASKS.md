@@ -147,7 +147,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T42e Misc · Terms and notices — `tasks/ch31-43.md`
 - [x] T42f Misc · Web — `tasks/ch31-43.md`
 - [x] T42g Misc · Export and import — `tasks/ch31-43.md`
-- [ ] T43a Tooling · Workbench — `tasks/ch31-43.md`
+- [x] T43a Tooling · Workbench — `tasks/ch31-43.md`
 - [ ] T43b Tooling · Inspection — `tasks/ch31-43.md`
 - [ ] T43c Tooling · Catalogs — `tasks/ch31-43.md`
 - [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
@@ -464,3 +464,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T42f | 2 | PASS | off-macOS imports and fields tidied in the pass commit |
 | T42g | 1 | FAIL | the unread CSV dialog cut its reason at the card's edge, since InlineMessage laid its words unwrapped; nine ways out untested; a warning logged every render; an unclosed quote named the last line |
 | T42g | 2 | PASS | |
+| T43a | 1 | FAIL | the knobs' starting values sat outside layout::seeded, so a new one was lost and a renamed knob failed; the redraw untested behind a refreshing helper; twin names and an out-of-range number taken |
+| T43a | 2 | PASS | |
