@@ -137,7 +137,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T39c Theme · Platform — `tasks/ch31-43.md`
 - [x] T40a i18n — `tasks/ch31-43.md`
 - [x] T40b a11y — `tasks/ch31-43.md`
-- [ ] T41a Maps · View
+- [x] T41a Maps · View — `tasks/ch31-43.md`
 - [ ] T41b Maps · Layers
 - [ ] T41c Maps · World
 - [ ] T42 Misc
@@ -435,3 +435,6 @@ Per-component lines live in `tasks/`. Tags there:
 | T40a | 3 | PASS | |
 | T40b | 1 | FAIL | the gallery's blocked note could not wrap, so the a11y note ran past its column and lost its dot; a check between rounds failed on the reviewer's mutant left in the shared target, so reviewers now build in their own |
 | T40b | 2 | PASS | |
+| T41a | 1 | FAIL | off-view pins took Tab and Enter; closing the popup stranded focus at the root; a tile that failed to load logged nothing; a tall popup ran past the map and under the zoom buttons |
+| T41a | 2 | FAIL | a focused pin that panned out of view lost its handle, so focus fell to the root; the popup's height cap and scrolling body untested |
+| T41a | 3 | PASS | |
