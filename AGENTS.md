@@ -8,7 +8,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui 0.2.2 from crates.io. Feature `runtime_shaders` is on by default: machines without Xcode lack the Metal compiler.
 - Assets, embedded with `rust-embed`: Lucide 1.48.0 icons (ISC), Inter 4.1 (regular, medium, semibold, italic) and JetBrains Mono 2.304 (OFL).
 - Catalog data: `emojis` (Unicode emoji), `isolang` (ISO 639, native names), `isocountry` (ISO 3166), `iso_currency` (ISO 4217, also minor units for money).
-- Codes: `qrcode` (QR) and `barcoders` (Code 128, EAN-13), both MIT OR Apache-2.0, default features off.
+- Codes: `qrcode` (QR) and `barcoders` (Code 128, EAN-13), both MIT OR Apache-2.0, default features off. `rqrr` 0.11 ((MIT OR Apache-2.0) AND ISC, default features off) reads QR codes from the host's frames.
 - macOS extras (tray icon, Dock badge) call AppKit through `cocoa` 0.26 and `objc` 0.2, the crates gpui already links.
 - Terminal: `alacritty_terminal` 0.26 (Apache-2.0, default features off) for the grid, its parser and the pseudo-terminal; `futures` carries its events.
 - Diffs: `similar` 3.2 (Apache-2.0) for line and word diffs and three-way merges; its `unicode` feature splits words at punctuation.
@@ -199,6 +199,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui 0.2.2 packs pictures in its atlas without padding and samples them with a linear filter, so a scaled picture's edge takes color from its atlas neighbor, and pictures laid edge to edge show seams. A map tile carries a one-pixel rim copied from its own edge and draws one of its pixels larger each side, clipped to its box (`maps::tile`).
 - A wall clock reads `Timestamp::now` and wakes its view at each whole second through a keyed task, only while the owner passes no moment; a stopwatch reads the executor's clock, so tests advance it (`misc::Clock`, `misc::Stopwatch`).
 - A number shown to so many significant digits goes through `typography::format::significant`, which rounds through Rust's exponent form, so no binary noise shows at any size (`misc::Calculator`, `misc::UnitConverter`).
+- A component that reads the host's frames reads one at a time off the main thread and passes over frames that come meanwhile; when a read ends it redraws, so the newest frame is read next (`misc::QrCodeScanner`).
 - A map keeps places in `f64`: at zoom 19 the world is 134 million pixels across. Its wheel pans and Command or Control with the wheel zooms about the pointer, as the canvas's does. Its tiles stay in gpui's asset cache, as every `img()` picture does. Its popup is an overlay that is not modal: it takes focus when it shows, and the frame it stops showing, by any way out, hands focus back. Its layers, lines and areas unwrap across the date line and repeat on every world in view. Clustered pins gather by squares of the world, not of the view, so a pan never regroups them; a zoom may, so it hands a focused pin's or cluster's focus to the map.
 
 ## Decisions
@@ -214,3 +215,4 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - 2026-09-25: `unexpected_cfgs` declares `feature = "cargo-clippy"`, which the objc 0.2 macros test.
 - 2026-09-26: Terminal proven with `alacritty_terminal` 0.26: its grid, parser and pseudo-terminal, drawn by Ely. A replayed grid serves recorded output and tests.
 - 2026-09-27: ThemeSwitcher is `settings::ThemeSelector`: `src/theme` sits under every chapter and cannot draw with buttons.
+- 2026-09-28: QRCodeScanner proven with `rqrr` 0.11: the host hands in frames as `RenderImage`s, read off the main thread; gpui 0.2.2 has no camera.

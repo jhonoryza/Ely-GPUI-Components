@@ -13,6 +13,7 @@ use crate::{
     theme::Theme,
 };
 
+mod codes;
 mod numbers;
 
 struct Stage {
@@ -29,7 +30,7 @@ impl Render for Stage {
     }
 }
 
-fn settle(cx: &mut VisualTestContext) {
+pub(super) fn settle(cx: &mut VisualTestContext) {
     for _ in 0..3 {
         cx.run_until_parked();
         cx.update(|window, _| window.refresh());
@@ -55,6 +56,7 @@ pub(super) fn stage(
         part,
     });
     let root = view.read_with(cx, |stage, _| stage.root.clone());
+    ROOT.with(|kept| kept.replace(Some(root.clone())));
     let wakes = Rc::new(Cell::new(0));
     let count = wakes.clone();
     cx.update(|window, cx| {
@@ -64,6 +66,16 @@ pub(super) fn stage(
     });
     settle(cx);
     (wakes, cx)
+}
+
+thread_local! {
+    static ROOT: std::cell::RefCell<Option<FocusHandle>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Whether focus fell to the stage's root scope.
+pub(super) fn at_root(cx: &mut VisualTestContext) -> bool {
+    let root = ROOT.with(|root| root.borrow().clone().expect("a staged root"));
+    cx.update(|window, _| root.is_focused(window))
 }
 
 pub(super) fn press(key: &str, cx: &mut VisualTestContext) {

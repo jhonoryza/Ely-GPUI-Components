@@ -7,11 +7,13 @@ use crate::probe::probe;
 use crate::script::Step;
 use crate::ui::{section, specimen, specimens};
 
+mod codes;
+
 pub const PAGE: Page = Page {
     number: 42,
     slug: "misc",
     title: "Misc",
-    summary: "Small tools that stand alone: clocks, a stopwatch, a calculator, a unit converter.",
+    summary: "Small tools that stand alone: clocks, a stopwatch, a calculator, a unit converter, a QR code scanner, a captcha.",
     render,
     script: &[
         Step::DownAt("stopwatch-start", 30.0, 62.0),
@@ -32,6 +34,14 @@ pub const PAGE: Page = Page {
         Step::Key("cmd-a"),
         Step::Type("1000000000000000"),
         Step::Shot("converter-long"),
+        Step::DownAt("captcha", 24.0, 104.0),
+        Step::UpAt("captcha", 24.0, 104.0),
+        Step::Type("abcd"),
+        Step::Key("enter"),
+        Step::Shot("captcha-wrong"),
+        Step::Type("w7xk"),
+        Step::Key("enter"),
+        Step::Shot("captcha-passed"),
     ],
 };
 
@@ -39,12 +49,13 @@ fn zone(name: &str) -> TimeZone {
     TimeZone::get(name).unwrap_or_else(|error| panic!("the zone {name}: {error}"))
 }
 
-fn render(_: &mut Window, cx: &mut App) -> AnyElement {
+fn render(window: &mut Window, cx: &mut App) -> AnyElement {
     div()
         .child(clocks(cx))
         .child(stopwatch(cx))
         .child(calculator(cx))
         .child(converter(cx))
+        .child(codes::render(window, cx))
         .into_any_element()
 }
 
