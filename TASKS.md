@@ -140,13 +140,13 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T41a Maps · View — `tasks/ch31-43.md`
 - [x] T41b Maps · Layers — `tasks/ch31-43.md`
 - [x] T41c Maps · World — `tasks/ch31-43.md`
-- [ ] T42a Misc · Time
-- [ ] T42b Misc · Numbers
-- [ ] T42c Misc · Codes and checks
-- [ ] T42d Misc · Asking and learning
-- [ ] T42e Misc · Terms and notices
-- [ ] T42f Misc · Web
-- [ ] T42g Misc · Export and import
+- [x] T42a Misc · Time — `tasks/ch31-43.md`
+- [ ] T42b Misc · Numbers — `tasks/ch31-43.md`
+- [ ] T42c Misc · Codes and checks — `tasks/ch31-43.md`
+- [ ] T42d Misc · Asking and learning — `tasks/ch31-43.md`
+- [ ] T42e Misc · Terms and notices — `tasks/ch31-43.md`
+- [ ] T42f Misc · Web — `tasks/ch31-43.md`
+- [ ] T42g Misc · Export and import — `tasks/ch31-43.md`
 - [ ] T43 Library Tooling
 - [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark, motion
@@ -448,3 +448,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T41b | 2 | PASS | |
 | T41c | 1 | FAIL | a choropleth's points and lines drew in the page color; the legend covered the attribution under 332px; WorldMap's keying, credit and XK untested; a key given twice kept the last |
 | T41c | 2 | PASS | |
+| T42a | 1 | FAIL | Enter on Reset disabled it and stranded focus at the root; the tickers' wakes and the lap rows had no test that could see them |
+| T42a | 2 | PASS | |
