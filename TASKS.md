@@ -138,7 +138,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T40a i18n — `tasks/ch31-43.md`
 - [x] T40b a11y — `tasks/ch31-43.md`
 - [x] T41a Maps · View — `tasks/ch31-43.md`
-- [ ] T41b Maps · Layers
+- [x] T41b Maps · Layers — `tasks/ch31-43.md`
 - [ ] T41c Maps · World
 - [ ] T42 Misc
 - [ ] T43 Library Tooling
@@ -438,3 +438,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T41a | 1 | FAIL | off-view pins took Tab and Enter; closing the popup stranded focus at the root; a tile that failed to load logged nothing; a tall popup ran past the map and under the zoom buttons |
 | T41a | 2 | FAIL | a focused pin that panned out of view lost its handle, so focus fell to the root; the popup's height cap and scrolling body untested |
 | T41a | 3 | PASS | |
+| T41b | 1 | FAIL | the code held, but four cluster claims had no test of the item's own: a pan keeping a group, an off-view cluster out of Tab, a folded pin's hand-off, members far apart shown whole |
+| T41b | 2 | PASS | |
