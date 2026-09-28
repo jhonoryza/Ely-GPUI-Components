@@ -140,7 +140,13 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T41a Maps · View — `tasks/ch31-43.md`
 - [x] T41b Maps · Layers — `tasks/ch31-43.md`
 - [x] T41c Maps · World — `tasks/ch31-43.md`
-- [ ] T42 Misc
+- [ ] T42a Misc · Time
+- [ ] T42b Misc · Numbers
+- [ ] T42c Misc · Codes and checks
+- [ ] T42d Misc · Asking and learning
+- [ ] T42e Misc · Terms and notices
+- [ ] T42f Misc · Web
+- [ ] T42g Misc · Export and import
 - [ ] T43 Library Tooling
 - [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark, motion
