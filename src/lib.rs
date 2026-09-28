@@ -41,6 +41,7 @@ pub mod shell;
 pub mod tables;
 pub mod terminal;
 pub mod theme;
+pub mod tooling;
 pub mod typography;
 
 pub use assets::Assets;

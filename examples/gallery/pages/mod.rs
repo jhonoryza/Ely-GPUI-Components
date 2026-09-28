@@ -39,6 +39,7 @@ mod shell;
 mod tables;
 mod terminal;
 mod theme;
+mod tooling;
 mod typography;
 
 use gpui::{AnyElement, App, Window};
@@ -98,6 +99,7 @@ pub const ALL: &[Page] = &[
     i18n::PAGE,
     maps::PAGE,
     misc::PAGE,
+    tooling::PAGE,
 ];
 
 pub use i18n::install as install_i18n;
