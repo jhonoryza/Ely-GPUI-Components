@@ -13,7 +13,7 @@ impl Heat {
     }
 }
 
-/// Each weighted view point spreads a quartic kernel `reach` pixels wide over cells `cell` pixels square across a view of `size`; the sum is scaled so its densest cell is 1. Fails on a negative or non-finite weight.
+/// Each weighted view point spreads a quartic kernel reaching `reach` pixels from it over cells `cell` pixels square across a view of `size`; the sum is scaled so its densest cell is 1. Fails on a negative or non-finite weight.
 pub(crate) fn density(
     points: &[((f32, f32), f32)],
     (w, h): (f32, f32),
@@ -74,9 +74,10 @@ mod tests {
             1.0,
             "the cell under the point is the densest"
         );
-        assert!(
-            heat.at(3, 2) > 0.0 && heat.at(3, 2) < 1.0,
-            "it falls off beside"
+        assert_eq!(
+            heat.at(3, 2),
+            0.5625,
+            "halfway out a quartic kernel keeps (1 - 1/4) squared"
         );
         assert_eq!(heat.at(6, 2), 0.0, "past its reach nothing");
     }

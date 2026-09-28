@@ -12,10 +12,10 @@ use crate::{
     theme::Theme,
 };
 
-/// The view inside the map's 1px border, in pixels.
 mod layers;
 mod popup;
 
+/// The view inside the map's 1px border, in pixels.
 const SIZE: (f32, f32) = (398.0, 298.0);
 const TILE: f32 = 256.0;
 

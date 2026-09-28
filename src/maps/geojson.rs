@@ -141,8 +141,14 @@ fn line(json: &Value) -> Result<Vec<LatLon>> {
 
 fn ring(json: &Value) -> Result<Vec<LatLon>> {
     let ring = list(json, position)?;
-    if ring.len() < 4 || ring.first() != ring.last() {
-        bail!("a ring of {} positions that does not close", ring.len());
+    if ring.len() < 4 {
+        bail!(
+            "a ring of {} positions; a ring holds four or more",
+            ring.len()
+        );
+    }
+    if ring.first() != ring.last() {
+        bail!("a ring that does not close");
     }
     Ok(ring)
 }
@@ -211,6 +217,8 @@ mod tests {
         assert!(reason(r#"{"type": "LineString", "coordinates": [[0, 0]]}"#).contains("line of 1"));
         let open = r#"{"type": "Polygon", "coordinates": [[[0,0],[1,0],[1,1],[0,1]]]}"#;
         assert!(reason(open).contains("does not close"));
+        let short = r#"{"type": "Polygon", "coordinates": [[[0,0],[1,1],[0,0]]]}"#;
+        assert!(reason(short).contains("four or more"));
         let named = r#"{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point"}}]}"#;
         let named = reason(named);
         assert!(
