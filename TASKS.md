@@ -142,7 +142,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T41c Maps · World — `tasks/ch31-43.md`
 - [x] T42a Misc · Time — `tasks/ch31-43.md`
 - [x] T42b Misc · Numbers — `tasks/ch31-43.md`
-- [ ] T42c Misc · Codes and checks — `tasks/ch31-43.md`
+- [x] T42c Misc · Codes and checks — `tasks/ch31-43.md`
 - [ ] T42d Misc · Asking and learning — `tasks/ch31-43.md`
 - [ ] T42e Misc · Terms and notices — `tasks/ch31-43.md`
 - [ ] T42f Misc · Web — `tasks/ch31-43.md`
@@ -452,3 +452,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T42a | 2 | PASS | |
 | T42b | 1 | FAIL | a result went on as its twelve-digit text, so 1 ÷ 3 = × 3 = read 0.999999999999; a long reading hid digits at 280px; Equals on a dangling operator said the formula ended early; Control, the = key and a point after a result untested |
 | T42b | 2 | PASS | |
+| T42c | 1 | FAIL | a verdict or a new ask disabled Verify while it held focus, so focus fell to the root; Enter handed a second answer over during the check; a passed field kept its ring and caret |
+| T42c | 2 | PASS | three claims untested; tests for focus after an answer and a resting pass added in the pass commit |

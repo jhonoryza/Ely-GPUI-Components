@@ -163,7 +163,24 @@ fn verify_hands_focus_to_the_field(cx: &mut TestAppContext) {
     press("tab", cx);
     press("enter", cx);
     assert_eq!(said(), ["W7XK"]);
-    assert!(!at_root(cx), "focus went to the field, not the root");
+    cx.simulate_input("again");
+    press("enter", cx);
+    assert_eq!(said(), ["W7XK", "again"], "the typing reached the field");
+}
+
+/// A passed captcha rests: Tab finds no stop in it and typing reaches nothing.
+#[gpui::test]
+fn a_passed_captcha_rests(cx: &mut TestAppContext) {
+    STATE.set(CaptchaState::Passed);
+    let (_, cx) = stage(captcha, cx);
+    press("tab", cx);
+    cx.simulate_input("again");
+    press("enter", cx);
+    assert!(said().is_empty());
+    assert!(
+        !shown("captcha-verified-focused", cx),
+        "Tab found no stop in the resting captcha"
+    );
 }
 
 /// Verify spins while the owner checks, and its mark keeps its focus once passed.
