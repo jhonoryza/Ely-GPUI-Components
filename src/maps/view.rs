@@ -1,4 +1,4 @@
-use std::{f64::consts::LOG2_E, rc::Rc};
+use std::{collections::HashSet, f64::consts::LOG2_E, rc::Rc};
 
 use gpui::{
     AnyElement, App, AppContext as _, Bounds, ElementId, EmptyView, Entity, EntityId, ImageSource,
@@ -36,7 +36,7 @@ struct Stage {
     takeover: Option<Entity<Takeover>>,
 }
 
-/// A map of tiles the host supplies by zoom, column and row, with pins and a popup over them; a pin takes a press only while its place is in view. A drag or the wheel pans it; Command or Control with the wheel zooms about the pointer; focused, the arrows pan and + and - zoom, as its buttons do. The owner keeps the viewport; a new one from the owner shows at once. It fills its box; the host gives it a height.
+/// A map of tiles the host supplies by zoom, column and row, with pins and a popup over them; a pin that holds focus keeps it off view, but takes Tab and presses only while its place is in view. A drag or the wheel pans it; Command or Control with the wheel zooms about the pointer; focused, the arrows pan and + and - zoom, as its buttons do. The owner keeps the viewport; a new one from the owner shows at once. It fills its box; the host gives it a height.
 #[derive(IntoElement)]
 pub struct MapView {
     id: ElementId,
@@ -87,8 +87,18 @@ impl MapView {
         self
     }
 
+    /// Pins keyed by their places; two with one key fail, as they would share a focus.
     pub fn markers(mut self, markers: impl IntoIterator<Item = MapMarker>) -> Self {
         self.markers = markers.into_iter().collect();
+        let mut keys = HashSet::new();
+        for marker in &self.markers {
+            assert!(
+                keys.insert(marker.key.clone()),
+                "map {:?}: two markers keyed {}",
+                self.id,
+                marker.key
+            );
+        }
         self
     }
 
@@ -121,6 +131,11 @@ fn sized(bounds: Bounds<Pixels>) -> (f32, f32) {
     (f32::from(bounds.size.width), f32::from(bounds.size.height))
 }
 
+/// Whether a view point lies in a view of `size`.
+fn inside((x, y): (f32, f32), (w, h): (f32, f32)) -> bool {
+    (0.0..=w).contains(&x) && (0.0..=h).contains(&y)
+}
+
 impl RenderOnce for MapView {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id.clone();
@@ -139,10 +154,23 @@ impl RenderOnce for MapView {
                 .collect(),
             None => Vec::new(),
         };
+        let markers: Vec<AnyElement> = self
+            .markers
+            .into_iter()
+            .map(|marker| {
+                let at = view.to_view(marker.at, size, tile);
+                let seen = inside(at, size);
+                let press = self.on_marker.clone().map(|on_marker| {
+                    let key = (id.clone(), format!("pin-{}", marker.key));
+                    (tab_stop(key.into(), seen, window, cx), on_marker)
+                });
+                marker.place(&id, at, press, seen, cx)
+            })
+            .collect();
         let shown = self
             .popup
             .map(|popup| (view.to_view(popup.at, size, tile), popup))
-            .filter(|((x, y), _)| (0.0..=size.0).contains(x) && (0.0..=size.1).contains(y));
+            .filter(|(at, _)| inside(*at, size));
         let closer = shown.as_ref().and_then(|(_, popup)| popup.closer());
         let popup = match shown {
             Some((at, popup)) => {
@@ -182,15 +210,6 @@ impl RenderOnce for MapView {
             let (local, stage) = (local.clone(), stage.clone());
             Rc::new(move |cx| (local.read(cx).value, sized(stage.read(cx).bounds)))
         };
-        let markers: Vec<AnyElement> = self
-            .markers
-            .into_iter()
-            .map(|marker| {
-                let at = view.to_view(marker.at, size, tile);
-                let seen = (0.0..=size.0).contains(&at.0) && (0.0..=size.1).contains(&at.1);
-                marker.place(&id, at, self.on_marker.clone().filter(|_| seen), cx)
-            })
-            .collect();
         let zoom = |levels: f64, key: &'static str, icon: IconName, words: &'static str| {
             let (now, set) = (now.clone(), set.clone());
             let (least, most) = MapViewport::ZOOMS;

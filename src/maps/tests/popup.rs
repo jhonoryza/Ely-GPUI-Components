@@ -1,4 +1,7 @@
-use gpui::{AnyElement, Entity, IntoElement, Modifiers, TestAppContext, VisualTestContext};
+use gpui::{
+    AnyElement, Entity, InteractiveElement, IntoElement, Modifiers, ParentElement, ScrollDelta,
+    ScrollWheelEvent, TestAppContext, TouchPhase, VisualTestContext, div, point, px,
+};
 
 use super::{Stage, at, focus_map, hear, last, moves, press, said, say, settle, stage, start};
 use crate::maps::{LatLon, LocationPicker, MapMarker, MapPopup, MapView};
@@ -159,4 +162,84 @@ fn escape_from_the_popup_hands_focus_back(cx: &mut TestAppContext) {
         ["opened", "closed", "opened"],
         "the pin holds focus"
     );
+}
+
+/// The popup scrolls out of view with its place; focus goes back to its pin, off view too, and the arrows go on panning.
+#[gpui::test]
+fn keys_keep_panning_after_the_popup_leaves_the_view(cx: &mut TestAppContext) {
+    let (host, cx) = stage(opening, cx);
+    open_by_pin(cx);
+    let before = moves(&host, cx);
+    for _ in 0..5 {
+        press("left", cx);
+    }
+    assert_eq!(moves(&host, cx), before + 5, "every arrow panned");
+}
+
+fn far_opening(stage: &Stage, owner: Entity<Stage>) -> AnyElement {
+    let opened = owner.clone();
+    let map = MapView::new("map", start())
+        .markers([MapMarker::new("middle", LatLon::new(0.0, 0.0))])
+        .on_marker(move |_, _, cx| {
+            opened.update(cx, |stage, cx| {
+                stage.open = true;
+                cx.notify();
+            })
+        })
+        .on_viewport(move |view, _, cx| hear(&owner, view, cx));
+    match stage.open {
+        true => map
+            .popup(MapPopup::new(LatLon::new(-60.0, 120.0), "Far").on_close(|_, _| {}))
+            .into_any_element(),
+        false => map.into_any_element(),
+    }
+}
+
+/// A popup whose place lies away from the view takes no focus: the pin keeps it, and the arrows pan.
+#[gpui::test]
+fn a_popup_away_from_the_view_takes_no_focus(cx: &mut TestAppContext) {
+    let (host, cx) = stage(far_opening, cx);
+    open_by_pin(cx);
+    let before = moves(&host, cx);
+    press("left", cx);
+    assert_eq!(moves(&host, cx), before + 1);
+}
+
+fn tall(_: &Stage, owner: Entity<Stage>) -> AnyElement {
+    let lines = (0..20).map(|ix| {
+        let line = div().child(format!("Line {ix}"));
+        match ix {
+            19 => line.debug_selector(|| "last-line".into()),
+            _ => line,
+        }
+    });
+    MapView::new("map", start())
+        .popup(
+            MapPopup::new(LatLon::new(0.0, 0.0), "Tall")
+                .child(div().children(lines))
+                .on_close(|_, _| {}),
+        )
+        .on_viewport(move |view, _, cx| hear(&owner, view, cx))
+        .into_any_element()
+}
+
+/// A card taller than the room under its point stops inside the map, and a wheel over it scrolls its body, not the map.
+#[gpui::test]
+fn a_tall_card_scrolls_its_body_and_holds_the_map(cx: &mut TestAppContext) {
+    let (host, cx) = stage(tall, cx);
+    let before = cx.debug_bounds("last-line").expect("the last line");
+    assert!(
+        before.top() > px(300.0),
+        "the card stops inside the map: {before:?}"
+    );
+    cx.simulate_event(ScrollWheelEvent {
+        position: point(px(200.0), px(250.0)),
+        delta: ScrollDelta::Pixels(point(px(0.0), px(-60.0))),
+        modifiers: Modifiers::none(),
+        touch_phase: TouchPhase::Moved,
+    });
+    settle(cx);
+    let after = cx.debug_bounds("last-line").expect("the last line");
+    assert_eq!(after.top(), before.top() - px(60.0), "the body scrolled");
+    assert_eq!(moves(&host, cx), 0, "the map stayed");
 }

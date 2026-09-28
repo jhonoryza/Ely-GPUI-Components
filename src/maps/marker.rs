@@ -46,12 +46,13 @@ impl MapMarker {
         self
     }
 
-    /// The pin with its tip at a view point; pressable when the map has a handler.
+    /// The pin with its tip at a view point. With the map's handler it holds `focus` in view and out, and while `seen` it takes Tab and presses.
     pub(crate) fn place(
         self,
         owner: &ElementId,
         (x, y): (f32, f32),
-        on_marker: Option<OnMarker>,
+        press: Option<(FocusHandle, OnMarker)>,
+        seen: bool,
         cx: &App,
     ) -> AnyElement {
         let theme = cx.theme();
@@ -67,12 +68,12 @@ impl MapMarker {
             .border_1()
             .border_color(gpui::transparent_black())
             .child(Icon::new(IconName::MapPin).size(IconSize::Xl).color(ink))
-            .when_some(on_marker, |pin, on_marker| {
+            .when_some(press, |pin, (focus, on_marker)| {
                 let key = self.key.clone();
-                pin.tab_index(0)
-                    .focus_ring(cx)
-                    .cursor_pointer()
-                    .on_click(move |_, window, cx| on_marker(&key, window, cx))
+                pin.track_focus(&focus).focus_ring(cx).when(seen, |pin| {
+                    pin.cursor_pointer()
+                        .on_click(move |_, window, cx| on_marker(&key, window, cx))
+                })
             });
         let point = || {
             div()

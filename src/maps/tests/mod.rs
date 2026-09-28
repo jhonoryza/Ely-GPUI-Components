@@ -405,3 +405,32 @@ fn a_drag_moves_its_own_map_alone(cx: &mut TestAppContext) {
     );
     assert_eq!(moves(&host, cx), west, "the west map stayed");
 }
+
+/// A focused pin keeps focus as it leaves the view, so the arrows go on panning, and it takes no press out there.
+#[gpui::test]
+fn keys_keep_panning_after_the_focused_pin_leaves_the_view(cx: &mut TestAppContext) {
+    let (host, cx) = stage(map, cx);
+    focus_map(cx);
+    press("tab", cx);
+    let before = moves(&host, cx);
+    for _ in 0..4 {
+        press("left", cx);
+    }
+    assert_eq!(moves(&host, cx), before + 4, "every arrow panned");
+    let (x, _) = last(&host, cx).to_view(LatLon::new(0.0, 0.0), SIZE, TILE);
+    assert!(x > SIZE.0, "the pin lies east of the view: {x}");
+    press("enter", cx);
+    assert_eq!(
+        said(&host, cx),
+        Vec::<SharedString>::new(),
+        "no press out of view"
+    );
+}
+
+#[test]
+#[should_panic(expected = "two markers keyed twin")]
+fn two_markers_with_one_key_fail() {
+    let at = LatLon::new(0.0, 0.0);
+    let _ = MapView::new("map", start())
+        .markers([MapMarker::new("twin", at), MapMarker::new("twin", at)]);
+}
