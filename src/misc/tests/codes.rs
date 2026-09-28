@@ -99,15 +99,62 @@ fn a_captcha_hands_over_answers_and_keeps_focus(cx: &mut TestAppContext) {
     STATE.set(CaptchaState::Passed);
     show(cx);
     assert!(
-        shown("captcha-verified", cx) && !at_root(cx),
-        "the field kept focus"
+        shown("captcha-verified-focused", cx),
+        "the resting field handed its focus to the mark"
     );
     cx.simulate_input("again");
     press("enter", cx);
     assert_eq!(said().len(), 2, "a passed captcha takes no more answers");
 }
 
-/// Enter on Verify hands the answer over and focus to the emptied field, as Verify rests.
+/// With the field emptied, verdicts and a new ask turn Verify and its mark into each other on one focus handle.
+#[gpui::test]
+fn the_owners_verdicts_leave_focus_in_place(cx: &mut TestAppContext) {
+    let (_, cx) = stage(captcha, cx);
+    press("tab", cx);
+    cx.simulate_input("W7XK");
+    press("enter", cx);
+    STATE.set(CaptchaState::Checking);
+    show(cx);
+    press("tab", cx);
+    STATE.set(CaptchaState::Wrong);
+    show(cx);
+    assert!(!at_root(cx), "Verify stayed a stop through the verdict");
+    STATE.set(CaptchaState::Passed);
+    show(cx);
+    STATE.set(CaptchaState::Asking);
+    show(cx);
+    assert!(!at_root(cx), "the mark's focus went back to Verify");
+}
+
+/// Enter hands nothing over while the owner checks.
+#[gpui::test]
+fn enter_waits_while_the_owner_checks(cx: &mut TestAppContext) {
+    let (_, cx) = stage(captcha, cx);
+    press("tab", cx);
+    cx.simulate_input("W7XK");
+    press("enter", cx);
+    STATE.set(CaptchaState::Checking);
+    show(cx);
+    cx.simulate_input("again");
+    press("enter", cx);
+    assert_eq!(said(), ["W7XK"]);
+}
+
+/// Verify with nothing typed sends focus to the field.
+#[gpui::test]
+fn an_empty_verify_sends_focus_to_the_field(cx: &mut TestAppContext) {
+    let (_, cx) = stage(captcha, cx);
+    press("tab", cx);
+    press("tab", cx);
+    press("enter", cx);
+    assert!(said().is_empty());
+    cx.simulate_input("W7XK");
+    press("enter", cx);
+    assert_eq!(said(), ["W7XK"], "the typing reached the field");
+}
+
+/// Enter on Verify hands the answer over and focus to the emptied field.
 #[gpui::test]
 fn verify_hands_focus_to_the_field(cx: &mut TestAppContext) {
     let (_, cx) = stage(captcha, cx);

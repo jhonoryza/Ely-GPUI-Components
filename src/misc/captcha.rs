@@ -21,15 +21,15 @@ type OnRefresh = Rc<dyn Fn(&mut Window, &mut App)>;
 pub enum CaptchaState {
     #[default]
     Asking,
-    /// The owner checks the answer: Verify spins and takes no press.
+    /// The owner checks the answer: Verify spins and takes no press, and Enter hands nothing over.
     Checking,
     /// The answer did not match.
     Wrong,
-    /// The field rests, and Verify becomes a mark that keeps its focus.
+    /// The field rests, and Verify becomes a mark that takes its focus and the field's.
     Passed,
 }
 
-/// A picture of characters to copy, from the owner, over a field to type them. Verify or Enter hands the answer to the owner, who checks it and says how it stood; the field empties with each answer and keeps focus. With `on_refresh`, a button asks the owner for a new picture.
+/// A picture of characters to copy, from the owner, over a field to type them. Verify or Enter hands the answer to the owner, who checks it and says how it stood; the field empties with each answer and keeps focus, and Verify with nothing typed sends focus to it. With `on_refresh`, a button asks the owner for a new picture.
 #[derive(IntoElement)]
 pub struct Captcha {
     id: ElementId,
@@ -88,12 +88,20 @@ impl RenderOnce for Captcha {
             field.update(cx, |field, cx| field.set_disabled(passed, cx));
         }
         let verify = tab_stop((id.clone(), "verify").into(), !passed, window, cx);
-        let empty = field.read(cx).text().trim().is_empty();
+        if passed && field.read(cx).focus().is_focused(window) {
+            log::info!("captcha: passed; focus goes to the mark");
+            window.focus(&verify);
+        }
+        let checking = self.state == CaptchaState::Checking;
         let answer = {
             let field = field.clone();
             Rc::new(move |window: &mut Window, cx: &mut App| {
+                if checking {
+                    return;
+                }
                 let text = SharedString::from(field.read(cx).text().trim().to_string());
                 if text.is_empty() {
+                    window.focus(field.read(cx).focus());
                     return;
                 }
                 log::info!("captcha: answered");
@@ -108,7 +116,10 @@ impl RenderOnce for Captcha {
         let action = match passed {
             true => div()
                 .id((id.clone(), "verified"))
-                .debug_selector(|| "captcha-verified".into())
+                .debug_selector(|| match verify.is_focused(window) {
+                    true => "captcha-verified-focused".into(),
+                    false => "captcha-verified".into(),
+                })
                 .track_focus(&verify)
                 .flex()
                 .flex_none()
@@ -133,8 +144,7 @@ impl RenderOnce for Captcha {
                 Button::new((id.clone(), "verify-button"), "Verify")
                     .variant(ButtonVariant::Primary)
                     .focus_handle(&verify)
-                    .loading(self.state == CaptchaState::Checking)
-                    .disabled(empty && self.state != CaptchaState::Checking)
+                    .loading(checking)
                     .on_click(move |_, window, cx| answer(window, cx))
                     .into_any_element()
             }
