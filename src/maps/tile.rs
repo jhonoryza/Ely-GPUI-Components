@@ -4,7 +4,7 @@ use std::{
 };
 
 use gpui::{
-    AnyElement, App, Asset, ImageAssetLoader, ImageSource, IntoElement, ObjectFit, ParentElement,
+    AnyElement, App, Asset, ImageSource, ImgResourceLoader, IntoElement, ObjectFit, ParentElement,
     Pixels, RenderImage, Styled, StyledImage, Window, div, img,
 };
 use image::{Frame, RgbaImage};
@@ -61,7 +61,7 @@ pub(crate) fn rimmed(image: &RenderImage) -> RenderImage {
     RenderImage::new(frames)
 }
 
-/// A tile's picture in its box: its rim lies one pixel past each side, clipped, so the box shows its own pixels alone. Nothing while it loads; a broken-picture mark when it cannot.
+/// A tile's picture in its box: its rim lies one pixel past each side, clipped, so the box shows its own pixels alone. Nothing while it loads; a broken-picture mark, and gpui's log line, when it cannot.
 pub(crate) fn laid_tile(
     laid: &Laid,
     source: ImageSource,
@@ -77,7 +77,7 @@ pub(crate) fn laid_tile(
         .overflow_hidden();
     let decoded = match source {
         ImageSource::Render(image) => Some(Ok(image)),
-        ImageSource::Resource(resource) => window.use_asset::<ImageAssetLoader>(&resource, cx),
+        ImageSource::Resource(resource) => window.use_asset::<ImgResourceLoader>(&resource, cx),
         _ => panic!(
             "map tile {:?}: a web address, a file or a picture drawn in code",
             laid.tile

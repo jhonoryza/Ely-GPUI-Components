@@ -6,13 +6,15 @@ use gpui::{
     SharedString, Styled, TestAppContext, TouchPhase, VisualTestContext, Window, div, point, px,
 };
 
-use super::{LatLon, LocationPicker, MapMarker, MapPopup, MapView, MapViewport, Tile};
+use super::{LatLon, MapMarker, MapView, MapViewport, Tile};
 use crate::{
     primitives::{FocusNext, FocusScope},
     theme::Theme,
 };
 
 /// The view inside the map's 1px border, in pixels.
+mod popup;
+
 const SIZE: (f32, f32) = (398.0, 298.0);
 const TILE: f32 = 256.0;
 
@@ -25,8 +27,10 @@ struct Stage {
     root: FocusHandle,
     part: fn(&Stage, Entity<Stage>) -> AnyElement,
     views: Vec<MapViewport>,
+    others: Vec<MapViewport>,
     said: Vec<SharedString>,
     tiles: Rc<RefCell<HashSet<Tile>>>,
+    open: bool,
 }
 
 impl Render for Stage {
@@ -61,8 +65,10 @@ fn stage(
         root: cx.focus_handle(),
         part,
         views: Vec::new(),
+        others: Vec::new(),
         said: Vec::new(),
         tiles: Rc::default(),
+        open: false,
     });
     settle(cx);
     (host, cx)
@@ -138,6 +144,10 @@ fn near(a: (f32, f32), b: (f32, f32)) -> bool {
 fn focus_map(cx: &mut VisualTestContext) {
     cx.simulate_click(window_at((40.0, 250.0)), Modifiers::none());
     settle(cx);
+}
+
+fn moves(host: &Entity<Stage>, cx: &mut VisualTestContext) -> usize {
+    host.read_with(cx, |stage, _| stage.views.len())
 }
 
 #[gpui::test]
@@ -298,96 +308,6 @@ fn past_the_hosts_zooms_one_tile_scales(cx: &mut TestAppContext) {
     );
 }
 
-fn with_popup(_: &Stage, owner: Entity<Stage>) -> AnyElement {
-    let closed = owner.clone();
-    MapView::new("map", start())
-        .popup(
-            MapPopup::new(LatLon::new(0.0, 0.0), "Null Island")
-                .child("Where the equator meets the prime meridian.")
-                .on_close(move |_, cx| say(&closed, "closed", cx)),
-        )
-        .on_viewport(move |view, _, cx| hear(&owner, view, cx))
-        .into_any_element()
-}
-
-#[gpui::test]
-fn the_popup_closes_by_its_button_and_by_escape(cx: &mut TestAppContext) {
-    let (host, cx) = stage(with_popup, cx);
-    focus_map(cx);
-    press("escape", cx);
-    assert_eq!(said(&host, cx), ["closed"], "Escape on the map");
-    focus_map(cx);
-    press("tab", cx);
-    press("enter", cx);
-    assert_eq!(
-        said(&host, cx),
-        ["closed", "closed"],
-        "Tab reaches the close button first"
-    );
-}
-
-fn far_popup(_: &Stage, owner: Entity<Stage>) -> AnyElement {
-    MapView::new("map", start())
-        .popup(MapPopup::new(LatLon::new(-60.0, 120.0), "Far").on_close(|_, _| {}))
-        .on_viewport(move |view, _, cx| hear(&owner, view, cx))
-        .into_any_element()
-}
-
-/// A popup whose place lies outside the view is not drawn, so Tab passes to the zoom button.
-#[gpui::test]
-fn a_popup_away_from_the_view_hides(cx: &mut TestAppContext) {
-    let (host, cx) = stage(far_popup, cx);
-    focus_map(cx);
-    press("tab", cx);
-    press("enter", cx);
-    assert_eq!(last(&host, cx).zoom, 3.0);
-}
-
-fn picker(_: &Stage, owner: Entity<Stage>) -> AnyElement {
-    LocationPicker::new("picker", MapView::new("pick-map", start()))
-        .on_pick(move |at, _, cx| say(&owner, &format!("{:.4},{:.4}", at.lat, at.lon), cx))
-        .into_any_element()
-}
-
-#[gpui::test]
-fn the_picker_picks_the_center_as_the_map_moves(cx: &mut TestAppContext) {
-    let (host, cx) = stage(picker, cx);
-    cx.simulate_click(at(40.0, 40.0), Modifiers::none());
-    settle(cx);
-    press("right", cx);
-    press("down", cx);
-    let heard = said(&host, cx);
-    assert_eq!(heard.len(), 2, "one pick per move: {heard:?}");
-    let first: Vec<f64> = heard[0]
-        .split(',')
-        .map(|part| part.parse().expect("a number"))
-        .collect();
-    assert_eq!(first[0], 0.0, "right moves east along the equator");
-    assert!(first[1] > 0.0);
-    let second: Vec<f64> = heard[1]
-        .split(',')
-        .map(|part| part.parse().expect("a number"))
-        .collect();
-    assert!(
-        second[0] < 0.0 && second[1] == first[1],
-        "down moves south: {heard:?}"
-    );
-}
-
-fn loud(_: &Stage, owner: Entity<Stage>) -> AnyElement {
-    LocationPicker::new(
-        "picker",
-        MapView::new("pick-map", start()).on_viewport(move |view, _, cx| hear(&owner, view, cx)),
-    )
-    .into_any_element()
-}
-
-#[gpui::test]
-#[should_panic(expected = "it hears the map's moves")]
-fn a_picker_whose_map_hears_its_own_moves_fails(cx: &mut TestAppContext) {
-    stage(loud, cx);
-}
-
 fn nearest(_: &Stage, owner: Entity<Stage>) -> AnyElement {
     MapView::new(
         "map",
@@ -411,4 +331,77 @@ fn the_zoom_buttons_rest_at_the_limits(cx: &mut TestAppContext) {
 #[should_panic(expected = "tile zooms 4 to 2")]
 fn tile_zooms_out_of_order_fail() {
     let _ = MapView::new("map", start()).tile_zooms(4, 2);
+}
+
+fn far_pin(_: &Stage, owner: Entity<Stage>) -> AnyElement {
+    let heard = owner.clone();
+    MapView::new("map", start())
+        .markers([MapMarker::new("far", LatLon::new(-60.0, 120.0))])
+        .on_marker(move |key, _, cx| say(&heard, key, cx))
+        .on_viewport(move |view, _, cx| hear(&owner, view, cx))
+        .into_any_element()
+}
+
+/// A pin whose place lies outside the view takes no Tab or press, as its popup would not show.
+#[gpui::test]
+fn a_pin_away_from_the_view_takes_no_tab(cx: &mut TestAppContext) {
+    let (host, cx) = stage(far_pin, cx);
+    focus_map(cx);
+    press("tab", cx);
+    press("enter", cx);
+    assert_eq!(said(&host, cx), Vec::<SharedString>::new());
+    assert_eq!(last(&host, cx).zoom, 3.0, "Tab passed to the zoom button");
+}
+
+fn twins(_: &Stage, owner: Entity<Stage>) -> AnyElement {
+    let other = owner.clone();
+    div()
+        .flex()
+        .child(div().w(px(200.0)).h(px(150.0)).child(
+            MapView::new("west", start()).on_viewport(move |view, _, cx| hear(&owner, view, cx)),
+        ))
+        .child(
+            div()
+                .w(px(200.0))
+                .h(px(150.0))
+                .child(
+                    MapView::new("east", start()).on_viewport(move |view, _, cx| {
+                        other.update(cx, |stage, cx| {
+                            stage.others.push(view);
+                            cx.notify();
+                        })
+                    }),
+                ),
+        )
+        .into_any_element()
+}
+
+fn drag_line(from: (f32, f32), to: (f32, f32), cx: &mut VisualTestContext) {
+    let none = Modifiers::none();
+    cx.simulate_mouse_move(at(from.0, from.1), None, none);
+    cx.simulate_mouse_down(at(from.0, from.1), MouseButton::Left, none);
+    for step in 1..=4 {
+        let share = step as f32 / 4.0;
+        let x = from.0 + (to.0 - from.0) * share;
+        let y = from.1 + (to.1 - from.1) * share;
+        cx.simulate_mouse_move(at(x, y), Some(MouseButton::Left), none);
+        settle(cx);
+    }
+    cx.simulate_mouse_up(at(to.0, to.1), MouseButton::Left, none);
+    settle(cx);
+}
+
+/// A drag let go outside the west map leaves its grip; a drag on the east map moves the east map alone.
+#[gpui::test]
+fn a_drag_moves_its_own_map_alone(cx: &mut TestAppContext) {
+    let (host, cx) = stage(twins, cx);
+    drag_line((100.0, 75.0), (100.0, 280.0), cx);
+    let west = moves(&host, cx);
+    assert!(west > 0, "the west map followed its drag");
+    drag_line((300.0, 75.0), (330.0, 100.0), cx);
+    assert!(
+        host.read_with(cx, |stage, _| !stage.others.is_empty()),
+        "the east map moved"
+    );
+    assert_eq!(moves(&host, cx), west, "the west map stayed");
 }

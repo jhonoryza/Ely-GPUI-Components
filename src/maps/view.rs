@@ -14,7 +14,7 @@ use super::{
 use crate::{
     buttons::{ButtonVariant, IconButton},
     layout::seeded::use_seeded,
-    primitives::{FocusRing, IconName, tab_stop},
+    primitives::{FocusRing, IconName, Takeover, give_back, tab_stop, take_focus},
     theme::{ActiveTheme, Radius, TextSize},
 };
 
@@ -28,14 +28,15 @@ struct Pan {
     owner: EntityId,
 }
 
-/// The map's box, and the pointer and viewport at the press of a pan under way.
+/// The map's box, the pointer and viewport at the press of a pan under way, and the focus a shown popup took.
 #[derive(Default)]
 struct Stage {
     bounds: Bounds<Pixels>,
     grip: Option<(Point<Pixels>, MapViewport)>,
+    takeover: Option<Entity<Takeover>>,
 }
 
-/// A map of tiles the host supplies by zoom, column and row, with pins and a popup over them. A drag or the wheel pans it; Command or Control with the wheel zooms about the pointer; focused, the arrows pan and + and - zoom, as its buttons do. The owner keeps the viewport; a new one from the owner shows at once. It fills its box; the host gives it a height.
+/// A map of tiles the host supplies by zoom, column and row, with pins and a popup over them; a pin takes a press only while its place is in view. A drag or the wheel pans it; Command or Control with the wheel zooms about the pointer; focused, the arrows pan and + and - zoom, as its buttons do. The owner keeps the viewport; a new one from the owner shows at once. It fills its box; the host gives it a height.
 #[derive(IntoElement)]
 pub struct MapView {
     id: ElementId,
@@ -138,12 +139,31 @@ impl RenderOnce for MapView {
                 .collect(),
             None => Vec::new(),
         };
+        let shown = self
+            .popup
+            .map(|popup| (view.to_view(popup.at, size, tile), popup))
+            .filter(|((x, y), _)| (0.0..=size.0).contains(x) && (0.0..=size.1).contains(y));
+        let closer = shown.as_ref().and_then(|(_, popup)| popup.closer());
+        let popup = match shown {
+            Some((at, popup)) => {
+                let takeover = take_focus((id.clone(), "popup"), window, cx);
+                stage.update(cx, |stage, _| stage.takeover = Some(takeover.clone()));
+                let held = takeover.read(cx).focus.clone();
+                popup.place(&id, at, size, &held, window, cx)
+            }
+            None => {
+                if let Some(taken) = stage.update(cx, |stage, _| stage.takeover.take()) {
+                    give_back(&taken, window, cx);
+                }
+                None
+            }
+        };
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let set: OnMapViewport = {
             let (local, on_viewport) = (local.clone(), self.on_viewport.clone());
             Rc::new(move |next, window, cx| {
-                log::info!(
+                log::debug!(
                     "map: {:.4}, {:.4} at zoom {:.2}",
                     next.center.lat,
                     next.center.lon,
@@ -167,14 +187,10 @@ impl RenderOnce for MapView {
             .into_iter()
             .map(|marker| {
                 let at = view.to_view(marker.at, size, tile);
-                marker.place(&id, at, self.on_marker.clone(), cx)
+                let seen = (0.0..=size.0).contains(&at.0) && (0.0..=size.1).contains(&at.1);
+                marker.place(&id, at, self.on_marker.clone().filter(|_| seen), cx)
             })
             .collect();
-        let closer = self.popup.as_ref().and_then(MapPopup::closer);
-        let popup = self.popup.and_then(|popup| {
-            let at = view.to_view(popup.at, size, tile);
-            popup.place(&id, at, size, window, cx)
-        });
         let zoom = |levels: f64, key: &'static str, icon: IconName, words: &'static str| {
             let (now, set) = (now.clone(), set.clone());
             let (least, most) = MapViewport::ZOOMS;
@@ -322,9 +338,9 @@ impl RenderOnce for MapView {
             .on_drop(move |_: &Pan, _, cx| dropped.update(cx, |stage, _| stage.grip = None))
             .children(tiles)
             .children(markers)
-            .children(popup)
             .child(controls)
             .children(attribution)
+            .children(popup)
             .child(measured)
     }
 }
