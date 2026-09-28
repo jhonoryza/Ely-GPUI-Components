@@ -58,7 +58,6 @@ impl RenderOnce for HotkeyInput {
             .items_center()
             .justify_between()
             .gap_2()
-            .w_full()
             .h(theme.control_height(ControlSize::Md))
             .px(theme.control_padding(ControlSize::Md))
             .rounded(theme.radius(Radius::Md))

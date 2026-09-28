@@ -81,7 +81,6 @@ impl RenderOnce for ImageThumbnail {
             .children(label);
         div()
             .id(self.id)
-            .w_full()
             .rounded(outer)
             .border_1()
             .border_color(if self.selected {

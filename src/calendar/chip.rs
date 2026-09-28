@@ -93,7 +93,6 @@ impl RenderOnce for EventChip {
             .flex()
             .items_center()
             .gap_1()
-            .w_full()
             .h(theme.calendar().chip)
             .px_1p5()
             .rounded(round)

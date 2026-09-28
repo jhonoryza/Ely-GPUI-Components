@@ -81,7 +81,6 @@ impl RenderOnce for SearchInput {
         });
         div()
             .relative()
-            .w_full()
             .child(
                 Input::new(&self.state)
                     .size(self.size)

@@ -168,7 +168,6 @@ impl RenderOnce for ABCompareView {
                 .collect(),
         };
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

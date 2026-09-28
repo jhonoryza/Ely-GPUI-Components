@@ -333,7 +333,6 @@ impl RenderOnce for Wizard {
             .flex()
             .flex_col()
             .gap_6()
-            .w_full()
             .when(!self.headless, |wizard| {
                 wizard.child(
                     Steps::new((id.clone(), "steps"), self.steps, current).on_select(

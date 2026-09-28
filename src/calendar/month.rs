@@ -420,7 +420,6 @@ impl RenderOnce for CalendarMonthView {
             .collect();
         let title = shown.strftime("%B %Y").to_string();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

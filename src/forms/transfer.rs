@@ -181,7 +181,6 @@ impl RenderOnce for TransferList {
         div()
             .flex()
             .gap_3()
-            .w_full()
             .child(side("left", available_title, available, left, cx))
             .child(buttons)
             .child(side("right", chosen_title, picked, right, cx))

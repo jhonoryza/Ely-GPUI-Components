@@ -164,7 +164,6 @@ impl RenderOnce for WebResultCard {
         let open = self.on_open;
         div()
             .id(self.id.clone())
-            .w_full()
             .flex()
             .flex_col()
             .gap_0p5()
@@ -273,7 +272,6 @@ impl RenderOnce for DocumentChunkPreview {
             ..HighlightStyle::default()
         };
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_1p5()

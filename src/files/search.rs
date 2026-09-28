@@ -122,7 +122,6 @@ impl RenderOnce for FileSearch {
         };
         div()
             .debug_selector(|| "file-search".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

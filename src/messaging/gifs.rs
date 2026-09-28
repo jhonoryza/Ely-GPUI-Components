@@ -295,7 +295,6 @@ impl RenderOnce for GifPicker {
             .then(|| Masonry::new((self.id.clone(), "gifs"), 2, gap).children(tiles));
         div()
             .debug_selector(|| "gif-picker".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

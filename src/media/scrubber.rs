@@ -264,7 +264,6 @@ impl RenderOnce for Scrubber {
         div()
             .id(self.id.clone())
             .debug_selector(|| "scrubber".into())
-            .w_full()
             .px(thumb / 2.0)
             .rounded(theme.radius(Radius::Sm))
             .border_1()

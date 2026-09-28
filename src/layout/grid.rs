@@ -87,7 +87,6 @@ impl RenderOnce for SimpleGrid {
         let columns = columns_for(*width.read(cx), self.min, self.gap);
         self.base
             .relative()
-            .w_full()
             .grid()
             .grid_cols(columns)
             .gap(self.gap)

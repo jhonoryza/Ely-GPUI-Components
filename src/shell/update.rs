@@ -133,7 +133,6 @@ impl RenderOnce for UpdateBanner {
             .flex()
             .items_center()
             .gap_3()
-            .w_full()
             .py_2()
             .pl_4()
             .pr_2()

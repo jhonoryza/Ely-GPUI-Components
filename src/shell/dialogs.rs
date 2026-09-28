@@ -93,7 +93,6 @@ impl RenderOnce for AboutDialog {
             .px_8()
             .pt_4()
             .pb_8()
-            .w_full()
             .child(mark(&self.name, self.icon, cx))
             .child(div().pt_3().child(Title::new(self.name.clone())))
             .child(CopyableText::new(
@@ -234,7 +233,7 @@ impl RenderOnce for SplashScreen {
                     .flex_col()
                     .items_center()
                     .gap_2()
-                    .child(track)
+                    .child(div().w_full().child(track))
                     .child(
                         div()
                             .text_size(theme.text_size(TextSize::Xs))

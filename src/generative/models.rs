@@ -95,7 +95,6 @@ impl RenderOnce for ModelCard {
                 })
         });
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()
@@ -260,7 +259,6 @@ impl RenderOnce for ModelStatus {
             _ => None,
         };
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

@@ -84,7 +84,6 @@ impl RenderOnce for PromptDiff {
             Some((range, style))
         });
         div()
-            .w_full()
             .text_size(theme.text_size(TextSize::Sm))
             .text_color(colors.fg)
             .child(StyledText::new(text).with_highlights(styles))
@@ -251,7 +250,6 @@ impl RenderOnce for PromptVersionHistory {
             },
         );
         div()
-            .w_full()
             .flex()
             .flex_wrap()
             .items_start()

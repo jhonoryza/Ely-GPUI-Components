@@ -207,6 +207,6 @@ impl RenderOnce for GenerationGrid {
                     .children((0..short).map(|_| div().flex_1())),
             );
         }
-        div().w_full().flex().flex_col().gap_2().children(rows)
+        div().flex().flex_col().gap_2().children(rows)
     }
 }

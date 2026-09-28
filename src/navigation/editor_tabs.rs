@@ -345,7 +345,6 @@ impl RenderOnce for EditorTabs {
             .id(self.id)
             .flex()
             .items_center()
-            .w_full()
             .bg(colors.sunken)
             .border_b_1()
             .border_color(colors.border)

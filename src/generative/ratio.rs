@@ -76,7 +76,6 @@ impl RenderOnce for AspectRatioPicker {
         let colors = theme.colors.clone();
         let glyph = theme.icon_size(IconSize::Md);
         div()
-            .w_full()
             .flex()
             .flex_wrap()
             .gap_2()

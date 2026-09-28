@@ -68,12 +68,14 @@ fn choose(window: WindowHandle<shell::Gallery>, choice: shell::Choice, cx: &mut 
 struct Args {
     page: Option<usize>,
     capture: Option<PathBuf>,
+    narrow: Option<f32>,
 }
 
 fn parse_args() -> Result<Args> {
     let mut args = Args {
         page: None,
         capture: None,
+        narrow: None,
     };
     let mut iter = std::env::args().skip(1);
     while let Some(flag) = iter.next() {
@@ -85,6 +87,13 @@ fn parse_args() -> Result<Args> {
                 args.page = Some(pages::find(&value).with_context(|| format!("no page {value}"))?)
             }
             "--capture" => args.capture = Some(PathBuf::from(value)),
+            "--narrow" => {
+                args.narrow = Some(
+                    value
+                        .parse()
+                        .with_context(|| format!("bad width {value}"))?,
+                )
+            }
             other => bail!("unknown flag {other}"),
         }
     }
@@ -118,13 +127,15 @@ fn main() -> Result<()> {
             };
             let window = cx
                 .open_window(options, |window, cx| {
-                    cx.new(|cx| shell::Gallery::new(args.page.unwrap_or(0), window, cx))
+                    cx.new(|cx| {
+                        shell::Gallery::new(args.page.unwrap_or(0), args.narrow, window, cx)
+                    })
                 })
                 .expect("gallery window failed to open");
             menu_actions(window, cx);
             cx.activate(true);
             if let Some(dir) = args.capture {
-                capture::run(window, dir, args.page, cx);
+                capture::run(window, dir, args.page, args.narrow.is_none(), cx);
             }
         });
     Ok(())

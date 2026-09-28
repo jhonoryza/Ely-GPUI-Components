@@ -119,7 +119,6 @@ impl RenderOnce for AllDayRow {
         });
         div()
             .relative()
-            .w_full()
             .h(pad * 2.0 + pitch * lanes as f32 - gap)
             .border_b_1()
             .border_color(theme.colors.border)

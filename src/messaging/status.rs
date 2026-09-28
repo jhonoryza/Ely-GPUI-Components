@@ -300,7 +300,6 @@ impl RenderOnce for StatusSetter {
         });
         div()
             .debug_selector(|| "status-setter".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_4()

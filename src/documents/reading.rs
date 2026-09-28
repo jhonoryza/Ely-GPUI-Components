@@ -208,27 +208,23 @@ impl RenderOnce for ReadingProgress {
         let theme = cx.theme();
         let (track, bar) = (theme.colors.border, theme.colors.accent);
         let scroll = self.scroll;
-        div()
-            .w_full()
-            .h(theme.progress_thickness())
-            .bg(track)
-            .child(
-                canvas(
-                    |_, _, _| {},
-                    move |bounds, _, window, _| {
-                        let share = read_share(
-                            f32::from(scroll.offset().y),
-                            f32::from(scroll.max_offset().height),
-                        );
-                        let filled = Bounds::new(
-                            bounds.origin,
-                            size(bounds.size.width * share, bounds.size.height),
-                        );
-                        window.paint_quad(fill(filled, bar));
-                    },
-                )
-                .size_full(),
+        div().h(theme.progress_thickness()).bg(track).child(
+            canvas(
+                |_, _, _| {},
+                move |bounds, _, window, _| {
+                    let share = read_share(
+                        f32::from(scroll.offset().y),
+                        f32::from(scroll.max_offset().height),
+                    );
+                    let filled = Bounds::new(
+                        bounds.origin,
+                        size(bounds.size.width * share, bounds.size.height),
+                    );
+                    window.paint_quad(fill(filled, bar));
+                },
             )
+            .size_full(),
+        )
     }
 }
 

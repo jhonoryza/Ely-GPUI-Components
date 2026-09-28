@@ -174,7 +174,6 @@ impl RenderOnce for FileOperationProgress {
         );
         div()
             .debug_selector(|| "file-operation".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

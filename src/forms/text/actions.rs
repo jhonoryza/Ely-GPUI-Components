@@ -358,7 +358,6 @@ impl Render for TextInput {
             .id("ely-text-input")
             .key_context(CONTEXT)
             .track_focus(&self.focus)
-            .w_full()
             .cursor(if self.disabled {
                 CursorStyle::OperationNotAllowed
             } else {

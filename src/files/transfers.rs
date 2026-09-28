@@ -80,7 +80,6 @@ impl RenderOnce for TransferQueue {
         let theme = cx.theme();
         div()
             .debug_selector(|| "transfer-queue".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_1()
@@ -192,7 +191,6 @@ impl RenderOnce for DownloadManager {
         });
         div()
             .debug_selector(|| "download-manager".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_1()

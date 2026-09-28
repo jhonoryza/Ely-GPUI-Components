@@ -180,7 +180,6 @@ impl RenderOnce for FollowUpSuggestions {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .children(
@@ -253,7 +252,6 @@ impl RenderOnce for CapabilityCards {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
-            .w_full()
             .grid()
             .grid_cols(3)
             .gap_3()

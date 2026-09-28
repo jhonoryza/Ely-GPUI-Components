@@ -129,7 +129,6 @@ impl RenderOnce for InlineEdit {
             let (escape, enter) = (state.clone(), state.clone());
             return div()
                 .id(self.id)
-                .w_full()
                 .on_key_down(move |event, window, cx| {
                     if event.keystroke.key == "escape" {
                         cx.stop_propagation();

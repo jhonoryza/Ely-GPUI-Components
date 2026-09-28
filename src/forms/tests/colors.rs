@@ -1,6 +1,6 @@
 use gpui::{
-    Context, Hsla, IntoElement, Modifiers, MouseButton, Render, TestAppContext, Window, point, px,
-    rgb, rgba,
+    Context, Hsla, IntoElement, Modifiers, MouseButton, ParentElement, Render, Styled,
+    TestAppContext, Window, div, point, px, rgb, rgba,
 };
 
 use super::setup;
@@ -13,14 +13,16 @@ struct Picked {
 impl Render for Picked {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let view = cx.entity();
-        ColorPicker::new("picked", self.color)
-            .opaque()
-            .on_change(move |color, _, cx| {
-                view.update(cx, |view, cx| {
-                    view.color = color;
-                    cx.notify();
-                })
-            })
+        div()
+            .size_full()
+            .child(ColorPicker::new("picked", self.color).opaque().on_change(
+                move |color, _, cx| {
+                    view.update(cx, |view, cx| {
+                        view.color = color;
+                        cx.notify();
+                    })
+                },
+            ))
     }
 }
 
@@ -41,12 +43,14 @@ struct Gradient {
 impl Render for Gradient {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let view = cx.entity();
-        GradientEditor::new("gradient", self.stops.clone()).on_change(move |next, _, cx| {
-            view.update(cx, |view, cx| {
-                view.stops = next.to_vec();
-                cx.notify();
-            })
-        })
+        div().size_full().child(
+            GradientEditor::new("gradient", self.stops.clone()).on_change(move |next, _, cx| {
+                view.update(cx, |view, cx| {
+                    view.stops = next.to_vec();
+                    cx.notify();
+                })
+            }),
+        )
     }
 }
 

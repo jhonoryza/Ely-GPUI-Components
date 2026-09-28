@@ -72,7 +72,6 @@ impl RenderOnce for ImageMessage {
         let widest = theme.prose_width().to_pixels(window.rem_size());
         let open = self.on_open;
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_1()
@@ -235,7 +234,6 @@ impl RenderOnce for FileMessage {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
-            .w_full()
             .max_w(theme.prose_width())
             .flex()
             .items_center()
@@ -339,7 +337,6 @@ impl RenderOnce for LinkPreviewCard {
         let open = self.on_open;
         div()
             .id(self.id.clone())
-            .w_full()
             .max_w(theme.container_width(ContainerSize::Sm))
             .flex()
             .gap_3()

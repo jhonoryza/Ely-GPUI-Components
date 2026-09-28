@@ -138,13 +138,9 @@ impl RenderOnce for FontPicker {
         if let Some(on_change) = self.on_change {
             combobox = combobox.on_change(move |family, window, cx| on_change(family, window, cx));
         }
-        div()
-            .flex()
-            .flex_col()
-            .gap_2()
-            .w_full()
-            .child(combobox)
-            .when_some(self.selected, |picker, family| {
+        div().flex().flex_col().gap_2().child(combobox).when_some(
+            self.selected,
+            |picker, family| {
                 picker.child(
                     div()
                         .font_family(family)
@@ -152,7 +148,8 @@ impl RenderOnce for FontPicker {
                         .text_color(theme.colors.fg_muted)
                         .child("The quick brown fox jumps over the lazy dog"),
                 )
-            })
+            },
+        )
     }
 }
 

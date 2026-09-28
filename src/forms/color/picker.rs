@@ -375,7 +375,6 @@ impl RenderOnce for ColorPicker {
             .flex()
             .flex_col()
             .gap_3()
-            .w_full()
             .px(knob * 0.5)
             .pt(knob * 0.5)
             .child(plane)

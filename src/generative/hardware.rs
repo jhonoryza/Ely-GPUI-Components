@@ -45,8 +45,11 @@ impl HardwareMonitor {
 impl RenderOnce for HardwareMonitor {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let spark = cx.theme().spark_size();
-        div().w_full().flex().flex_col().gap_3().children(
-            self.readings.into_iter().enumerate().map(|(ix, reading)| {
+        div()
+            .flex()
+            .flex_col()
+            .gap_3()
+            .children(self.readings.into_iter().enumerate().map(|(ix, reading)| {
                 div()
                     .flex()
                     .items_end()
@@ -71,7 +74,6 @@ impl RenderOnce for HardwareMonitor {
                                 .child(Sparkline::new(reading.history).area()),
                         )
                     })
-            }),
-        )
+            }))
     }
 }

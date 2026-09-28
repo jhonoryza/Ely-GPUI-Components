@@ -166,7 +166,6 @@ impl RenderOnce for Banner {
             .items_center()
             .justify_center()
             .gap_2()
-            .w_full()
             .min_h(theme.control_height(ControlSize::Lg))
             .py_1()
             .px_10()

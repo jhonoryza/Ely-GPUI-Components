@@ -255,7 +255,6 @@ impl RenderOnce for MicLevelMeter {
         let (unlit, round) = (colors.border, theme.radius(Radius::Sm));
         div()
             .debug_selector(|| "mic-level".into())
-            .w_full()
             .h(theme.meter_track())
             .flex()
             .gap_0p5()

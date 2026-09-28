@@ -88,7 +88,6 @@ impl RenderOnce for HumanInputRequest {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()
@@ -177,7 +176,6 @@ impl RenderOnce for CostBreakdown {
             )
         });
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

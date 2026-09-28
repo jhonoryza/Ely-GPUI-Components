@@ -276,7 +276,6 @@ impl RenderOnce for ExpressionInput {
             .flex()
             .flex_col()
             .gap_1()
-            .w_full()
             .child(
                 div().font_family(mono).child(
                     Input::new(&self.state)

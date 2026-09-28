@@ -344,7 +344,6 @@ impl RenderOnce for MailReader {
         let theme = cx.theme();
         div()
             .debug_selector(|| "mail-reader".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_4()

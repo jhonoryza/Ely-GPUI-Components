@@ -173,7 +173,6 @@ impl RenderOnce for AttendeeList {
             })
             .collect();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_1()

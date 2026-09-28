@@ -173,7 +173,6 @@ impl RenderOnce for CodeInput {
             "a code input is one line; JsonInput takes several"
         );
         div()
-            .w_full()
             .font_family(cx.theme().mono_family.clone())
             .child(Input::new(&self.state).size(self.size))
     }
@@ -205,7 +204,6 @@ impl RenderOnce for JsonInput {
             .flex()
             .flex_col()
             .gap_1()
-            .w_full()
             .child(
                 div()
                     .font_family(theme.mono_family.clone())

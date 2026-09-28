@@ -212,7 +212,6 @@ impl RenderOnce for DuplicateFinder {
         });
         div()
             .debug_selector(|| "duplicate-finder".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_4()

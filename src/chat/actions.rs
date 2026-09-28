@@ -74,7 +74,6 @@ impl RenderOnce for QuoteReply {
         let colors = theme.colors.clone();
         let line = self.text.lines().next().unwrap_or_default().to_string();
         div()
-            .w_full()
             .flex()
             .items_center()
             .gap_2()
@@ -261,7 +260,6 @@ impl RenderOnce for MessageEditor {
             self.on_cancel,
         );
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

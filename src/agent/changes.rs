@@ -119,7 +119,6 @@ impl RenderOnce for FileChangeCard {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
-            .w_full()
             .rounded(theme.radius(Radius::Md))
             .border_1()
             .border_color(colors.border)
@@ -270,7 +269,6 @@ impl RenderOnce for MultiFileDiffReview {
                 )
         });
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

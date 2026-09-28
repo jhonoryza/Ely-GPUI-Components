@@ -330,7 +330,6 @@ impl RenderOnce for MailComposer {
         });
         div()
             .debug_selector(|| "mail-composer".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

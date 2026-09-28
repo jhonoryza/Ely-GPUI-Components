@@ -179,7 +179,6 @@ impl RenderOnce for ConversationItem {
             .id(self.id.clone())
             .group(group.clone())
             .track_focus(&focus)
-            .w_full()
             .flex()
             .items_center()
             .gap_1()

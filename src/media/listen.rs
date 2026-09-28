@@ -251,7 +251,6 @@ impl RenderOnce for AudioPlayer {
         };
         let left = format!("-{}", clock(self.length - self.at));
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

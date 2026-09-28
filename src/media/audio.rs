@@ -145,7 +145,6 @@ impl RenderOnce for AudioWaveform {
             .id(self.id.clone())
             .debug_selector(|| "audio-waveform".into())
             .relative()
-            .w_full()
             .h(sizes.waveform)
             .border_1()
             .border_color(transparent_black())
@@ -226,7 +225,6 @@ impl RenderOnce for AudioSpectrum {
         let (color, round) = (theme.colors.fg_muted, theme.radius(Radius::Sm));
         div()
             .debug_selector(|| "audio-spectrum".into())
-            .w_full()
             .h(theme.media().waveform)
             .flex()
             .items_end()

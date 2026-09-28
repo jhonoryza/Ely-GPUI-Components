@@ -5,9 +5,9 @@ use ely_gpui_component::{
     theme::{ActiveTheme, ControlSize, Mode, Radius, TextSize, Theme},
 };
 use gpui::{
-    Bounds, Context, FocusHandle, FontWeight, InteractiveElement, IntoElement, ParentElement,
-    Pixels, Render, ScrollHandle, SharedString, StatefulInteractiveElement, Styled, Subscription,
-    Window, div, point, prelude::*, px,
+    AnyElement, App, Bounds, Context, FocusHandle, FontWeight, InteractiveElement, IntoElement,
+    ParentElement, Pixels, Render, ScrollHandle, SharedString, StatefulInteractiveElement, Styled,
+    Subscription, Window, div, point, prelude::*, px,
 };
 
 use crate::pages;
@@ -26,11 +26,18 @@ pub struct Gallery {
     choice: Choice,
     focus: FocusHandle,
     scroll: ScrollHandle,
+    /// Narrow check width, if any.
+    narrow: Option<Pixels>,
     _appearance: Subscription,
 }
 
 impl Gallery {
-    pub fn new(page: usize, window: &mut Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(
+        page: usize,
+        narrow: Option<f32>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
         let appearance = cx.observe_window_appearance(window, |gallery, window, cx| {
             if gallery.choice == Choice::System {
                 Theme::set_mode(window.appearance().into(), cx);
@@ -44,6 +51,7 @@ impl Gallery {
             choice: Choice::Light,
             focus,
             scroll: ScrollHandle::new(),
+            narrow: narrow.map(px),
             _appearance: appearance,
         }
     }
@@ -174,6 +182,7 @@ impl Gallery {
         ];
         let colors = &cx.theme().colors;
         div()
+            .flex_none()
             .flex()
             .gap_0p5()
             .p_0p5()
@@ -195,6 +204,24 @@ impl Gallery {
                         }),
                     )
             }))
+    }
+}
+
+impl Gallery {
+    /// Header and body; a padded card when narrow.
+    fn card(&self, header: impl IntoElement, body: AnyElement, cx: &App) -> AnyElement {
+        let content = div().child(header).child(body);
+        match self.narrow {
+            // Width plus padding and hairlines.
+            Some(width) => div()
+                .w(width + px(34.0))
+                .p_4()
+                .border_1()
+                .border_color(cx.theme().colors.border)
+                .child(content)
+                .into_any_element(),
+            None => content.into_any_element(),
+        }
     }
 }
 
@@ -229,32 +256,38 @@ impl Render for Gallery {
                             .pt(px(56.0))
                             .pb(px(96.0))
                             .child(
-                                div()
-                                    .flex()
-                                    .items_start()
-                                    .justify_between()
-                                    .gap_6()
-                                    .child(
-                                        div()
-                                            .flex()
-                                            .flex_col()
-                                            .gap_2()
-                                            .child(
-                                                div()
-                                                    .text_size(theme.text_size(TextSize::Xxl))
-                                                    .font_weight(FontWeight::SEMIBOLD)
-                                                    .child(page.title),
-                                            )
-                                            .child(
-                                                div()
-                                                    .text_size(theme.text_size(TextSize::Md))
-                                                    .text_color(colors.fg_muted)
-                                                    .child(page.summary),
-                                            ),
-                                    )
-                                    .child(switcher),
-                            )
-                            .child(body),
+                                self.card(
+                                    div()
+                                        .flex()
+                                        .flex_wrap()
+                                        .items_start()
+                                        .justify_between()
+                                        .gap_6()
+                                        .child(
+                                            div()
+                                                .flex_1()
+                                                .min_w(px(200.0))
+                                                .flex()
+                                                .flex_col()
+                                                .gap_2()
+                                                .child(
+                                                    div()
+                                                        .text_size(theme.text_size(TextSize::Xxl))
+                                                        .font_weight(FontWeight::SEMIBOLD)
+                                                        .child(page.title),
+                                                )
+                                                .child(
+                                                    div()
+                                                        .text_size(theme.text_size(TextSize::Md))
+                                                        .text_color(colors.fg_muted)
+                                                        .child(page.summary),
+                                                ),
+                                        )
+                                        .child(switcher),
+                                    body,
+                                    cx,
+                                ),
+                            ),
                     ),
             )
     }

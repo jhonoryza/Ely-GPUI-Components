@@ -68,7 +68,6 @@ impl RenderOnce for MessageThread {
         div()
             .id(self.id)
             .debug_selector(|| "message-thread".into())
-            .w_full()
             .flex()
             .items_center()
             .gap_2()

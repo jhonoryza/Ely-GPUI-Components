@@ -176,7 +176,6 @@ impl RenderOnce for UserProfileCard {
         });
         div()
             .debug_selector(|| "profile-card".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

@@ -275,7 +275,6 @@ impl RenderOnce for GradientEditor {
             .flex()
             .flex_col()
             .gap_2()
-            .w_full()
             .child(
                 div()
                     .flex()

@@ -112,7 +112,6 @@ impl RenderOnce for RateLimitNotice {
             None => countdown,
         };
         div()
-            .w_full()
             .flex()
             .items_center()
             .gap_3()
@@ -198,7 +197,6 @@ impl RenderOnce for FeedbackForm {
         let ready = !self.picked.is_empty() || !self.note.read(cx).text().trim().is_empty();
         let (pick, send) = (self.on_pick, self.on_send);
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()
@@ -356,7 +354,6 @@ impl RenderOnce for ThinkingBlock {
             ThinkingDuration::new(self.took).into_any_element()
         };
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

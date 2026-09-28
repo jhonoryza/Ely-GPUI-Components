@@ -123,13 +123,9 @@ impl RenderOnce for ProgressBar {
         let Some(value) = self.value else {
             let sweep = bar(0.3).bg(fill);
             if theme.reduced_motion {
-                return lane()
-                    .w_full()
-                    .child(sweep.left(relative(0.35)))
-                    .into_any_element();
+                return lane().child(sweep.left(relative(0.35))).into_any_element();
             }
             return lane()
-                .w_full()
                 .child(
                     sweep.with_animation(
                         (self.id, "sweep"),
@@ -159,7 +155,6 @@ impl RenderOnce for ProgressBar {
             })
         };
         div()
-            .w_full()
             .flex()
             .gap_1()
             .with_animation(

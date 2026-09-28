@@ -177,7 +177,6 @@ impl RenderOnce for FileGrid {
             .id(self.id)
             .debug_selector(|| "file-grid".into())
             .relative()
-            .w_full()
             .flex()
             .flex_wrap()
             .gap(gap)

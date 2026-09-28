@@ -141,7 +141,6 @@ impl RenderOnce for ChatMessage {
             .id(self.id.clone())
             .debug_selector(move || format!("message {}", self.id))
             .group(group)
-            .w_full()
             .flex()
             .gap_3()
             .px_3()
@@ -192,7 +191,6 @@ impl RenderOnce for UnreadDivider {
         let theme = cx.theme();
         let danger = theme.colors.danger;
         div()
-            .w_full()
             .flex()
             .items_center()
             .gap_2()

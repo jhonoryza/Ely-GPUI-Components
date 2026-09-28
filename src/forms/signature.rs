@@ -260,7 +260,6 @@ impl RenderOnce for SignaturePad {
             .flex_col()
             .items_end()
             .gap_1()
-            .w_full()
             .child(pad)
             .child(
                 Button::new((self.id, "clear"), "Clear")

@@ -224,6 +224,6 @@ impl RenderOnce for TTSVoicePicker {
                             .children(voice.tags.into_iter().map(Badge::new)),
                     )
             });
-        div().w_full().flex().flex_col().gap_0p5().children(rows)
+        div().flex().flex_col().gap_0p5().children(rows)
     }
 }

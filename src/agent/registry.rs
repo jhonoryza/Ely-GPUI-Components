@@ -112,7 +112,6 @@ impl RenderOnce for ToolRegistry {
         let groups = grouped(&self.tools, &found(&self.tools, &self.query));
         let empty = groups.is_empty();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_4()

@@ -290,7 +290,6 @@ impl RenderOnce for MailList {
         if self.mails.is_empty() {
             return div()
                 .debug_selector(|| "mail-none".into())
-                .w_full()
                 .px_3()
                 .py_4()
                 .text_size(theme.text_size(TextSize::Sm))
@@ -320,7 +319,6 @@ impl RenderOnce for MailList {
         let (id, on_select) = (self.id.clone(), self.on_select);
         div()
             .debug_selector(|| "mail-list".into())
-            .w_full()
             .child(
                 list.selected(self.selected)
                     .on_change(move |keys, window, cx| {

@@ -287,7 +287,6 @@ impl RenderOnce for VideoGenerationTimeline {
                 })
         });
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

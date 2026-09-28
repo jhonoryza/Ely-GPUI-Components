@@ -55,7 +55,6 @@ impl RenderOnce for Form {
             .flex()
             .flex_col()
             .gap_8()
-            .w_full()
             .when_some(self.on_submit, |form, submit| {
                 form.capture_action(move |_: &Submit, window, cx| {
                     cx.stop_propagation();
@@ -102,7 +101,6 @@ impl RenderOnce for FormSection {
             .flex()
             .flex_col()
             .gap_4()
-            .w_full()
             .child(
                 div()
                     .flex()
@@ -304,7 +302,6 @@ impl RenderOnce for InlineForm {
             .flex_wrap()
             .items_end()
             .gap_3()
-            .w_full()
             .children(self.children)
     }
 }

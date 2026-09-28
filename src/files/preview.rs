@@ -122,7 +122,6 @@ impl RenderOnce for FilePreview {
         };
         div()
             .debug_selector(|| "file-preview".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

@@ -152,7 +152,6 @@ impl RenderOnce for AudioGenerationPlayer {
             }
         };
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

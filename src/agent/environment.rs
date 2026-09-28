@@ -117,7 +117,6 @@ impl RenderOnce for SandboxStatus {
         let live = matches!(self.state, SandboxState::Starting | SandboxState::Busy);
         let color = self.state.color(&colors);
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

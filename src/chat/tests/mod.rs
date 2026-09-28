@@ -13,7 +13,8 @@ mod history;
 mod welcome;
 
 use super::{
-    ImageMessage, MessageAvatar, MessageBubble, MessageEditor, MessageList, Role, ThinkingBlock,
+    DateSeparator, ImageMessage, MessageAvatar, MessageBubble, MessageEditor, MessageList, Role,
+    ThinkingBlock,
 };
 use crate::{forms, forms::TextInput, theme::Theme};
 
@@ -360,4 +361,30 @@ fn the_reasoning_opens_from_the_keyboard(cx: &mut TestAppContext) {
         open > closed,
         "Tab and Space open it: {closed:?} to {open:?}"
     );
+}
+
+struct Dated;
+
+impl Render for Dated {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let day = jiff::civil::date(2026, 9, 28);
+        div()
+            .size_full()
+            .child(MessageList::new("dated", 1, move |_, _, _| {
+                DateSeparator::new(day, day).into_any_element()
+            }))
+    }
+}
+
+/// A row no wider than its words still spans the list.
+#[gpui::test]
+fn a_narrow_row_spans_the_list(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Dated);
+    settle(cx);
+    let row = cx
+        .debug_bounds("date-separator-Today")
+        .expect("the separator draws");
+    let width = cx.update(|window, _| window.viewport_size().width);
+    assert_eq!(row.size.width, width);
 }

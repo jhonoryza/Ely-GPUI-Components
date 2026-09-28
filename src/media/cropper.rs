@@ -200,7 +200,6 @@ impl RenderOnce for ImageCropper {
         div()
             .id(self.id.clone())
             .relative()
-            .w_full()
             .p(side / 2.0)
             .border_1()
             .border_color(transparent_black())

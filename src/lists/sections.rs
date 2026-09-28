@@ -115,6 +115,6 @@ impl RenderOnce for Sections {
                             }),
                     )
             });
-        div().w_full().flex().flex_col().gap_4().children(sections)
+        div().flex().flex_col().gap_4().children(sections)
     }
 }

@@ -230,7 +230,6 @@ impl RenderOnce for TabBar {
             .flex()
             .items_center()
             .gap_1()
-            .w_full()
             .min_w_0()
             .children(tabs)
             .when_some(self.on_add, |bar, add| {

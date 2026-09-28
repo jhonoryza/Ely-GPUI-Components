@@ -48,12 +48,16 @@ struct Pad {
 impl Render for Pad {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let view = cx.entity();
-        SignaturePad::new("pad", self.strokes.clone()).on_change(move |next, _, cx| {
-            view.update(cx, |view, cx| {
-                view.strokes = next.to_vec();
-                cx.notify();
-            })
-        })
+        div()
+            .size_full()
+            .child(
+                SignaturePad::new("pad", self.strokes.clone()).on_change(move |next, _, cx| {
+                    view.update(cx, |view, cx| {
+                        view.strokes = next.to_vec();
+                        cx.notify();
+                    })
+                }),
+            )
     }
 }
 

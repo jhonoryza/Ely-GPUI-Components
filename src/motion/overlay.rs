@@ -143,7 +143,6 @@ impl RenderOnce for LazyLoad {
                 });
             }
         })
-        .w_full()
         .child(
             Skeleton::new((self.id, "placeholder"))
                 .w_full()

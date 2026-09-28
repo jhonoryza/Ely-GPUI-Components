@@ -278,7 +278,6 @@ impl RenderOnce for FileExplorer {
         };
         div()
             .debug_selector(|| "file-explorer".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

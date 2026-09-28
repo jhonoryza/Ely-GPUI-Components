@@ -240,7 +240,6 @@ impl RenderOnce for LabelPicker {
         let (up, down, chosen) = (finding.clone(), finding.clone(), finding);
         div()
             .id(self.id.clone())
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

@@ -206,7 +206,6 @@ impl RenderOnce for VoiceCallBar {
             .then(|| AvatarGroup::new(self.people).max(3).size(AvatarSize::Xs));
         div()
             .debug_selector(|| "voice-call-bar".into())
-            .w_full()
             .flex()
             .flex_wrap()
             .items_center()

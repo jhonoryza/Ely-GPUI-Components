@@ -109,7 +109,6 @@ impl RenderOnce for ToolCallCard {
                 .child(text)
         };
         div()
-            .w_full()
             .rounded(theme.radius(Radius::Md))
             .border_1()
             .border_color(colors.border)
@@ -217,7 +216,6 @@ impl RenderOnce for ToolCallGroup {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

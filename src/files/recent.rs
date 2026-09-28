@@ -140,7 +140,6 @@ impl RenderOnce for RecentFiles {
         });
         div()
             .debug_selector(|| "recent-files".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_4()

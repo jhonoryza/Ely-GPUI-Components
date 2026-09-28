@@ -97,7 +97,6 @@ impl RenderOnce for AudioMessage {
         let playing = self.playing;
         let tall = theme.control_height(ControlSize::Md);
         div()
-            .w_full()
             .max_w(theme.prose_width())
             .flex()
             .items_center()

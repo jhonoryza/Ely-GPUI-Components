@@ -152,7 +152,6 @@ impl RenderOnce for PinnedMessages {
         });
         div()
             .debug_selector(|| "pinned-messages".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_1()

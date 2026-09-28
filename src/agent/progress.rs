@@ -118,7 +118,6 @@ impl RenderOnce for AgentPlan {
             .filter(|(_, state)| *state == StepState::Done)
             .count();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()
@@ -284,7 +283,6 @@ impl RenderOnce for AgentProgress {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

@@ -142,7 +142,6 @@ impl RenderOnce for AgendaView {
         if owners.is_empty() {
             return div()
                 .debug_selector(|| "agenda-none".into())
-                .w_full()
                 .py_6()
                 .flex()
                 .justify_center()
@@ -172,7 +171,6 @@ impl RenderOnce for AgendaView {
             })
         };
         div()
-            .w_full()
             .child(
                 sections
                     .selected(picked.read(cx).clone())

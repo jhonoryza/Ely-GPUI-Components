@@ -75,7 +75,6 @@ impl RenderOnce for StylePresetPicker {
         let colors = theme.colors.clone();
         let side = theme.generative().preset;
         div()
-            .w_full()
             .flex()
             .flex_wrap()
             .gap_3()

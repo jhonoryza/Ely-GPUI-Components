@@ -15,11 +15,17 @@ use crate::{
 const SETTLE: Duration = Duration::from_millis(700);
 const SCROLL_SETTLE: Duration = Duration::from_millis(250);
 
-/// Shoots one page, or all, in both modes, then quits. Exits 1 on failure.
-pub fn run(window: WindowHandle<Gallery>, dir: PathBuf, only: Option<usize>, cx: &mut App) {
+/// Shoots one page, or all, in both modes, then quits; exits 1 on failure.
+pub fn run(
+    window: WindowHandle<Gallery>,
+    dir: PathBuf,
+    only: Option<usize>,
+    scripted: bool,
+    cx: &mut App,
+) {
     Theme::update(cx, |theme| theme.reduced_motion = true);
     cx.spawn(async move |cx| {
-        let outcome = shoot_all(window, &dir, only, cx).await;
+        let outcome = shoot_all(window, &dir, only, scripted, cx).await;
         if let Err(error) = outcome.and_then(|()| cx.update(|cx| cx.quit())) {
             log::error!("capture failed: {error:#}");
             std::process::exit(1);
@@ -32,6 +38,7 @@ async fn shoot_all(
     window: WindowHandle<Gallery>,
     dir: &Path,
     only: Option<usize>,
+    scripted: bool,
     cx: &mut AsyncApp,
 ) -> Result<()> {
     std::fs::create_dir_all(dir).with_context(|| format!("create {}", dir.display()))?;
@@ -70,7 +77,7 @@ async fn shoot_all(
                 window.update(cx, |gallery, _, cx| gallery.scroll_to(offset, cx))?;
                 cx.background_executor().timer(SCROLL_SETTLE).await;
             }
-            if !page.script.is_empty() {
+            if scripted && !page.script.is_empty() {
                 window.update(cx, |gallery, _, cx| gallery.select(ix, cx))?;
                 cx.background_executor().timer(SETTLE).await;
                 let shot = |step: &str| dir.join(format!("{}-{step}-{name}.png", page.slug));

@@ -53,6 +53,8 @@ pub enum Step {
 }
 
 const FRAME: Duration = Duration::from_millis(120);
+/// How long an out-of-process file panel may take to open.
+const PANEL: Duration = Duration::from_secs(10);
 const DRAG_STEPS: u32 = 10;
 
 #[derive(Clone, Copy)]
@@ -218,7 +220,15 @@ pub async fn play(
                 let number = window.update(cx, |_, window, _| number(window))??;
                 post_key(number, true, text, code)?;
             }
-            Step::CancelPanel => cancel_panel()?,
+            Step::CancelPanel => {
+                let mut waited = Duration::ZERO;
+                while !cancel_panel()? {
+                    anyhow::ensure!(waited < PANEL, "no file panel became key in {PANEL:?}");
+                    cx.background_executor().timer(FRAME).await;
+                    waited += FRAME;
+                }
+                log::info!("script: file panel cancelled after {waited:?}");
+            }
             Step::ExpectClosed(key) => {
                 let handle = opened(key, cx)?;
                 let open = cx.update(|cx| cx.windows().contains(&handle))?;
@@ -363,7 +373,8 @@ fn post_key(_: u32, _: bool, _: &str, _: u16) -> Result<()> {
 }
 
 #[cfg(target_os = "macos")]
-fn cancel_panel() -> Result<()> {
+/// Cancels a key file panel; false while none is key.
+fn cancel_panel() -> Result<bool> {
     use cocoa::{
         appkit::NSApp,
         base::{BOOL, NO, id, nil},
@@ -371,16 +382,20 @@ fn cancel_panel() -> Result<()> {
     use objc::{class, msg_send, sel, sel_impl};
     unsafe {
         let key: id = msg_send![NSApp(), keyWindow];
-        anyhow::ensure!(key != nil, "no key window to cancel");
+        if key == nil {
+            return Ok(false);
+        }
         let panel: BOOL = msg_send![key, isKindOfClass: class!(NSSavePanel)];
-        anyhow::ensure!(panel != NO, "the key window is not a file panel");
+        if panel == NO {
+            return Ok(false);
+        }
         let _: () = msg_send![key, cancel: nil];
     }
-    Ok(())
+    Ok(true)
 }
 
 #[cfg(not(target_os = "macos"))]
-fn cancel_panel() -> Result<()> {
+fn cancel_panel() -> Result<bool> {
     anyhow::bail!("file panels need macOS")
 }
 

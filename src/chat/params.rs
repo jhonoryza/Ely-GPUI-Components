@@ -81,7 +81,6 @@ impl RenderOnce for ParameterPanel {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_4()
@@ -274,7 +273,6 @@ impl RenderOnce for SystemPromptEditor {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

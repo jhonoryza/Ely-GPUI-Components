@@ -199,7 +199,6 @@ impl RenderOnce for PromptEnhancer {
                     ),
             );
         div()
-            .w_full()
             .flex()
             .flex_col()
             .child(Input::new(&self.field))

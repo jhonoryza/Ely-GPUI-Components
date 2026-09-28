@@ -193,7 +193,6 @@ impl RenderOnce for MemberList {
         });
         div()
             .debug_selector(|| "member-list".into())
-            .w_full()
             .children(empty)
             .when(!self.members.is_empty(), |list| {
                 list.child(

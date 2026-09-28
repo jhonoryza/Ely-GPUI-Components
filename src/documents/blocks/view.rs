@@ -253,7 +253,6 @@ impl Render for BlockEditor {
         let start = cx.entity();
         div()
             .id(id.clone())
-            .w_full()
             .flex()
             .flex_col()
             .capture_action(cx.listener(|editor, _: &Undo, window, cx| {

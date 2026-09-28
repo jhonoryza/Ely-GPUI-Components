@@ -251,7 +251,6 @@ impl RenderOnce for VideoThumbnailStrip {
         let (pressed_strip, moved_strip) = (strip.clone(), strip.clone());
         div()
             .id(self.id.clone())
-            .w_full()
             .px(handle / 2.0)
             .border_1()
             .border_color(transparent_black())

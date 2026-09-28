@@ -94,7 +94,6 @@ impl RenderOnce for CodeBlock {
         let lines = code.lines().count();
         let toggle = open.clone();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .rounded(theme.radius(Radius::Md))

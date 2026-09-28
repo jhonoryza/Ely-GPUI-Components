@@ -199,7 +199,6 @@ impl RenderOnce for MailThreadView {
         );
         div()
             .debug_selector(|| "mail-thread".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

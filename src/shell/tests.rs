@@ -261,3 +261,28 @@ fn a_short_title_sits_at_the_center(cx: &mut TestAppContext) {
     let middle = title.left() + title.size.width / 2.0;
     assert!((middle - px(140.0)).abs() < px(1.0), "{title:?} centered");
 }
+
+struct Splash;
+
+impl Render for Splash {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .size_full()
+            .child(super::SplashScreen::new("Ely").progress(Some(0.5)))
+    }
+}
+
+/// The splash's bar spans its column, though the column centers what it holds.
+#[gpui::test]
+fn the_splash_bar_spans_its_column(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Splash);
+    settle(cx);
+    let fill = cx.debug_bounds("progress-fill-0").expect("the bar fills");
+    let width = cx.update(|window, _| window.viewport_size().width);
+    let column = (width - px(80.0)) * 0.6;
+    assert!(
+        (fill.size.width - column * 0.5).abs() < px(1.0),
+        "half the column, not {fill:?}"
+    );
+}

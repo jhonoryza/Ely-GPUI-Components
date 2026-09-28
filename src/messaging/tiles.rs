@@ -191,7 +191,6 @@ impl RenderOnce for VideoCallGrid {
         div()
             .debug_selector(|| "video-call-grid".into())
             .relative()
-            .w_full()
             .flex()
             .flex_col()
             .children(rows)
@@ -321,7 +320,6 @@ impl RenderOnce for ScreenShareView {
         });
         div()
             .debug_selector(|| "screen-share".into())
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

@@ -12,10 +12,26 @@ fn open(
         forms::bind_keys(cx);
         crate::documents::bind_keys(cx);
     });
-    let (editor, cx) = cx.add_window_view(|window, cx| BlockEditor::new(blocks, window, cx));
+    let (full, cx) =
+        cx.add_window_view(|window, cx| Full(cx.new(|cx| BlockEditor::new(blocks, window, cx))));
+    let editor = full.read_with(cx, |full, _| full.0.clone());
     cx.update(|window, _| window.activate_window());
     settle(cx);
     (editor, cx)
+}
+
+/// The editor as a window's content, in the box that fills the window.
+struct Full(Entity<BlockEditor>);
+
+impl gpui::Render for Full {
+    fn render(
+        &mut self,
+        _: &mut gpui::Window,
+        _: &mut gpui::Context<Self>,
+    ) -> impl gpui::IntoElement {
+        use gpui::{ParentElement, Styled};
+        gpui::div().size_full().child(self.0.clone())
+    }
 }
 
 fn settle(cx: &mut VisualTestContext) {

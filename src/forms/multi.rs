@@ -153,7 +153,6 @@ impl RenderOnce for MultiSelect {
             .flex_wrap()
             .items_center()
             .gap_1()
-            .w_full()
             .min_h(theme.control_height(self.size))
             .pl_1()
             .pr(theme.control_padding(self.size))

@@ -300,7 +300,6 @@ impl RenderOnce for YearView {
             })
             .collect();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_4()

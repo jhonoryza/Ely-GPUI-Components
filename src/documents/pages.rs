@@ -108,7 +108,6 @@ impl RenderOnce for PageCover {
             .id(self.id.clone())
             .group(group.clone())
             .relative()
-            .w_full()
             .h(theme.page_cover())
             .child(
                 Image::new((self.id.clone(), "picture"), source(&self.source))

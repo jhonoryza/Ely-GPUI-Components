@@ -104,7 +104,6 @@ impl RenderOnce for ChannelHeader {
         };
         div()
             .debug_selector(|| "channel-header".into())
-            .w_full()
             .flex()
             .flex_wrap()
             .items_center()

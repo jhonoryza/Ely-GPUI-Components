@@ -214,7 +214,6 @@ impl RenderOnce for Combobox {
         div()
             .id(self.id.clone())
             .relative()
-            .w_full()
             .capture_action(move |_: &Up, _, cx| {
                 if open {
                     cx.stop_propagation();

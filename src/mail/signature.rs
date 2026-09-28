@@ -124,7 +124,6 @@ impl RenderOnce for SignatureEditor {
         let words = input.read(cx).text().to_string();
         let theme = cx.theme();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

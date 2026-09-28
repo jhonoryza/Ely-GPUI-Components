@@ -272,14 +272,11 @@ impl RenderOnce for ChannelList {
                 sections.section(title, rows)
             },
         );
-        div()
-            .debug_selector(|| "channel-list".into())
-            .w_full()
-            .child(
-                sections
-                    .selected(self.open)
-                    .on_select(open.clone())
-                    .on_activate(open),
-            )
+        div().debug_selector(|| "channel-list".into()).child(
+            sections
+                .selected(self.open)
+                .on_select(open.clone())
+                .on_activate(open),
+        )
     }
 }

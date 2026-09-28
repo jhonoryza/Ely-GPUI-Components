@@ -158,7 +158,6 @@ impl RenderOnce for FieldArray {
             .flex()
             .flex_col()
             .gap_2()
-            .w_full()
             .children(lines)
             .child(
                 div().flex().child(

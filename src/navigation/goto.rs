@@ -83,7 +83,6 @@ impl RenderOnce for GoToLine {
             .flex()
             .flex_col()
             .gap_1()
-            .w_full()
             .capture_action(move |_: &Enter, window, cx| {
                 cx.stop_propagation();
                 match target(state.read(cx).text(), lines) {

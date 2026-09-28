@@ -62,7 +62,6 @@ impl RenderOnce for ProjectList {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_0p5()
@@ -163,7 +162,6 @@ impl RenderOnce for ProjectKnowledgePanel {
         let used: u64 = self.files.iter().map(|(_, bytes)| bytes).sum();
         let share = used as f32 / self.capacity as f32;
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

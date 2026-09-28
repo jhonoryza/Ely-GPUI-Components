@@ -150,7 +150,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T43a Tooling · Workbench — `tasks/ch31-43.md`
 - [x] T43b Tooling · Inspection — `tasks/ch31-43.md`
 - [x] T43c Tooling · Catalogs — `tasks/ch31-43.md`
-- [ ] T44a Capture · Roots: roots still on `w_full` drop it; every section checked at 280px and in a padded card
+- [ ] T44a Capture · Roots: roots still on `w_full` drop it, checked at 280px and in padded cards
 - [ ] T44b Capture · Sections: every component's section shot on its own, light and dark, with a manifest the site reads
 - [ ] T44c Capture · Motion: clips of each page's scripted states in motion, for the site
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark: a home page in motion (three.js, smooth scroll), and a components page with every component, categories on the left and the chosen one's detail on the right, after astryx.atmeta.com

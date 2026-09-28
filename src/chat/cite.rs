@@ -105,7 +105,6 @@ impl RenderOnce for SourceCard {
         let open = self.on_open;
         div()
             .id(self.id.clone())
-            .w_full()
             .p_2p5()
             .rounded(theme.radius(Radius::Md))
             .border_1()
@@ -222,7 +221,6 @@ impl RenderOnce for SourceList {
             .take(3)
             .collect();
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()

@@ -105,7 +105,16 @@ impl RenderOnce for MessageList {
         div()
             .relative()
             .size_full()
-            .child(list(state, move |ix, window, cx| render(ix, window, cx)).size_full())
+            // gpui's list lays rows at content width.
+            .child(
+                list(state, move |ix, window, cx| {
+                    div()
+                        .w_full()
+                        .child(render(ix, window, cx))
+                        .into_any_element()
+                })
+                .size_full(),
+            )
             .child(
                 canvas(
                     move |_, window, cx| {
@@ -234,8 +243,10 @@ impl RenderOnce for DateSeparator {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let rule = || div().flex_1().h_px().bg(colors.border);
+        let name = day_name(self.day, self.today);
+        let shown = format!("date-separator-{name}");
         div()
-            .w_full()
+            .debug_selector(move || shown)
             .flex()
             .items_center()
             .gap_3()
@@ -245,7 +256,7 @@ impl RenderOnce for DateSeparator {
                 div()
                     .text_size(theme.text_size(TextSize::Xs))
                     .text_color(colors.fg_subtle)
-                    .child(day_name(self.day, self.today)),
+                    .child(name),
             )
             .child(rule())
     }

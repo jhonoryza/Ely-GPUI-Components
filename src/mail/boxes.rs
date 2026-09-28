@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, SharedString,
-    Styled, Window, div,
+    Window, div,
 };
 
 use super::labels::hue_dot;
@@ -173,14 +173,11 @@ impl RenderOnce for MailboxList {
                 sections.section(title.clone(), rows)
             },
         );
-        div()
-            .debug_selector(|| "mailbox-list".into())
-            .w_full()
-            .child(
-                sections
-                    .selected(self.open)
-                    .on_select(open.clone())
-                    .on_activate(open),
-            )
+        div().debug_selector(|| "mailbox-list".into()).child(
+            sections
+                .selected(self.open)
+                .on_select(open.clone())
+                .on_activate(open),
+        )
     }
 }

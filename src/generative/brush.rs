@@ -80,7 +80,6 @@ impl RenderOnce for MaskBrush {
             })
         };
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_3()

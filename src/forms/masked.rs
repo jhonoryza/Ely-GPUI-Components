@@ -270,7 +270,6 @@ impl RenderOnce for PhoneInput {
             );
         div()
             .relative()
-            .w_full()
             .child(MaskedInput::new(self.id.clone(), &self.state, mask).prefix(code))
             .child(
                 canvas(

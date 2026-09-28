@@ -22,6 +22,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 
 - `cargo run --example gallery` opens the gallery. `-- --page <slug>` starts on a page.
 - `cargo run --example gallery -- --capture <dir>` writes PNGs of every page, light and dark, top to bottom, then each page's scripted states, including windows the demos open. macOS only.
+- `cargo run --example gallery -- --narrow 280 --capture <dir>` lays each page, header and body, at that width in a padded card and shoots it without its script, whose aims are measured at full width. Demos that set their own width run past the card.
 - `cargo test --lib --features test-support`, `cargo clippy --all-targets --features test-support -- -D warnings`, `cargo fmt --check`. `scripts/check.sh` runs them with the house rules.
 - `rm -rf target/debug/incremental` and `cargo clean -p ely-gpui-component` after each task item keep the disk lean. Cargo keeps every old build of the crate and its tests under a new hash; by T25 they had filled the disk.
 - `scripts/icons.sh <lucide-name>...` adds icons. Then add a line to `IconName` in `src/primitives/icon.rs`.
@@ -111,7 +112,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Trackpad momentum arrives as `TouchPhase::Moved` after `Ended`, so a gesture acts only between `Started` and `Ended` (`lists::SwipeableListItem`).
 - Quartz scroll events carry no window. The harness hands them to the window itself, placed in window points (`Step::Swipe`).
 - A chevron that opens and closes is `primitives::Disclosure`.
-- `uniform_list` does not stretch its rows; each row sets `w_full`, or `min_w_full` when the same row also sits in a flex column, where it stretches (`tables::DataTable`).
+- `uniform_list` does not stretch its rows; each row sets `w_full`, or `min_w_full` when the same row also sits in a flex column, where it stretches (`tables::DataTable`). gpui's `list` lays rows at their content's width too; `chat::MessageList` boxes each row at the list's width.
 - Chapters import only earlier chapters, so a select of tree nodes lives in `lists` (`TreeSelect`) and reaches `forms::listing`.
 - Script clicks aim at a probe's corner, so a scripted target must fit in the window; a tall probe puts its top off screen. The log names each probe's bounds as the script aims, and a probe around content with no width of its own measures smaller than what it draws, so a scripted demo sets its width.
 - `scripts/check.sh` fails by its exit status; a pipe into `tail` hides it.
@@ -152,7 +153,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A row that holds text beside fixed parts lets the text give way: the text takes `flex_1().min_w_0()` and an `Ellipsis`; counts, icons, dates and chevrons take `flex_none`. A label that must stay whole wraps in that block instead, as `forms::Checkbox`'s does.
 - A mark over a text field reads the field at paint time, from a canvas laid over it (`collab::RemoteCursor`): by then `TextInput::bounds_for` holds this frame's layout, and a still page never renders again to catch up.
 - A callback field holds a named `type` alias; clippy's type_complexity rejects `Option<Rc<dyn Fn(..)>>`. A chapter shares one alias per shape.
-- A component that fills its container takes no width on its root: a block or a flex column stretches it. Percents fill badly in taffy 0.9. `w_full` in a flex column that a block measures by content keeps its content's width: taffy lays the column out once at unknown width and keeps that layout when the width comes out the same. `min_w_full` resolves against a block's outer width, padding and all (`forms::FormField`). In a flex row the host gives it `flex_1`; as a window's root it sits in a `size_full` box. Roots made before T30d still say `w_full`; T44 takes it off.
+- A component that fills its container takes no width on its root: a block or a flex column stretches it. Percents fill badly in taffy 0.9. `w_full` in a flex column that a block measures by content keeps its content's width: taffy lays the column out once at unknown width and keeps that layout when the width comes out the same. `min_w_full` resolves against a block's outer width, padding and all (`forms::FormField`). In a flex row the host gives it `flex_1`; as a window's root it sits in a `size_full` box. A root centered under a cap keeps `w_full`, since `mx_auto` needs a width to fill (`layout::Container`). A row that hands a text field a `flex_1` share keeps `w_full` too: stretched without a width, taffy 0.9 can keep a pass that laid the share at no width, and the field draws nothing (`forms::Input`, `InputGroup`, `TagInput`).
 - A field's `Highlight` sets color, wash, weight, slant and strike per span; measuring and painting share one set of runs, so wrapped heights match.
 - A block editor keeps one undo for the document: text and structure together, as snapshots through `forms::History`; it takes Undo and Redo before its fields do.
 - gpui calls focus listeners only while the window is active. A test that needs focus events activates its window with `window.activate_window()`.

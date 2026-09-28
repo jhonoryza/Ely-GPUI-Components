@@ -85,7 +85,6 @@ impl RenderOnce for SkeletonText {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let line = cx.theme().text_size(TextSize::Base);
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_2()
@@ -141,7 +140,6 @@ impl RenderOnce for SkeletonCard {
         let line = theme.text_size(TextSize::Base);
         let id = |part: &'static str| (self.id.clone(), part);
         div()
-            .w_full()
             .flex()
             .flex_col()
             .gap_4()
@@ -219,11 +217,7 @@ impl RenderOnce for SkeletonTable {
                     )
                 }))
         };
-        div()
-            .w_full()
-            .flex()
-            .flex_col()
-            .children((0..=self.rows).map(row))
+        div().flex().flex_col().children((0..=self.rows).map(row))
     }
 }
 

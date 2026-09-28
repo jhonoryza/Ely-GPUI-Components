@@ -200,7 +200,6 @@ impl RenderOnce for EllipsisTooltip {
         div()
             .id(self.id)
             .relative()
-            .w_full()
             .truncate()
             .text_size(theme.text_size(TextSize::Base))
             .line_height(relative(LEADING))

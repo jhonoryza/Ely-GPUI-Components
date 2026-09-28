@@ -256,7 +256,7 @@ impl RenderOnce for ModelDownloadManager {
                 )
                 .children(bar)
         });
-        div().w_full().flex().flex_col().children(rows)
+        div().flex().flex_col().children(rows)
     }
 }
 

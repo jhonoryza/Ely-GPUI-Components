@@ -155,7 +155,7 @@ impl RenderOnce for Flip {
             }
         }
         rest.append(&mut raised);
-        div().relative().w_full().h(total).children(rest)
+        div().relative().h(total).children(rest)
     }
 }
 

@@ -313,12 +313,6 @@ impl RenderOnce for EmbeddingVisualizer {
                     cx.notify();
                 })
             });
-        div()
-            .w_full()
-            .flex()
-            .flex_col()
-            .gap_3()
-            .child(legend)
-            .child(area)
+        div().flex().flex_col().gap_3().child(legend).child(area)
     }
 }

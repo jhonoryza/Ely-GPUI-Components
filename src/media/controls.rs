@@ -92,7 +92,6 @@ impl RenderOnce for VolumeControl {
             None => slider,
         };
         div()
-            .w_full()
             .flex()
             .items_center()
             .gap_2()
