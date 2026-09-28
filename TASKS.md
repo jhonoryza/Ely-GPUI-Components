@@ -137,7 +137,9 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T39c Theme · Platform — `tasks/ch31-43.md`
 - [x] T40a i18n — `tasks/ch31-43.md`
 - [x] T40b a11y — `tasks/ch31-43.md`
-- [ ] T41 Maps
+- [ ] T41a Maps · View
+- [ ] T41b Maps · Layers
+- [ ] T41c Maps · World
 - [ ] T42 Misc
 - [ ] T43 Library Tooling
 - [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
