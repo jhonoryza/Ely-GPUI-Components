@@ -17,7 +17,7 @@ pub fn sections(window: &mut Window, cx: &mut App) -> Vec<AnyElement> {
     vec![
         section(
             "DesignTokenViewer",
-            "Every token of the theme in the mode shown, each named as code reads it: the colors with their hex, the syntax, chart and terminal colors, the type scale, radii, control and icon sizes, elevations and the spacing steps.",
+            "The theme's shared colors and scales in the mode shown, each named as code reads it: every palette, syntax, chart and terminal color with its hex, and the type, radius, control, icon, avatar and container sizes, the elevations and the spacing steps.",
             cx,
         )
         .child(div().max_w(px(840.0)).child(DesignTokenViewer::new()))
@@ -56,7 +56,7 @@ pub fn sections(window: &mut Window, cx: &mut App) -> Vec<AnyElement> {
         .into_any_element(),
         section(
             "A11yChecker",
-            "The theme's contrast in the mode shown: each text color over the surfaces it sits on at 4.5:1, the focus ring and the chart hues beside the page at 3:1, failures first. Ely's palettes pass in both modes, with high contrast and without.",
+            "The theme's contrast in the mode shown: each text color over the surfaces it sits on and each code color over the editor's at 4.5:1, the focus ring and the chart hues beside the page at 3:1, failures first. Ely's palettes pass in both modes, with high contrast and without.",
             cx,
         )
         .child(div().max_w(px(560.0)).child(A11yChecker::new()))

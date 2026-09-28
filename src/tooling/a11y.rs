@@ -6,7 +6,7 @@ use gpui::{
 use crate::{
     data_display::{Badge, Tone},
     devtools::{contrast, over},
-    theme::{ActiveTheme, HUE_NAMES, Palette, Radius, TextSize},
+    theme::{ActiveTheme, HUE_NAMES, Palette, Radius, Syntax, TextSize},
     typography::{Ellipsis, literal, tabular},
 };
 
@@ -27,7 +27,7 @@ const TEXT_PAIRS: &[(&str, &[&str])] = &[
     ),
     (
         "fg_subtle",
-        &["bg", "surface", "sunken", "overlay", "hover"],
+        &["bg", "surface", "sunken", "overlay", "hover", "active"],
     ),
     ("link", &["bg", "surface", "sunken"]),
     ("on_accent", &["accent", "accent_hover"]),
@@ -37,6 +37,9 @@ const TEXT_PAIRS: &[(&str, &[&str])] = &[
     ("danger", &["bg", "danger_subtle"]),
     ("info", &["bg", "info_subtle"]),
 ];
+
+/// The surfaces code sits on: the editor, a code block, the editor's current line.
+const CODE: [&str; 3] = ["surface", "sunken", "hover"];
 
 /// A color, what it stands on, the contrast between them, and the contrast it needs.
 #[derive(Clone, Debug)]
@@ -63,7 +66,7 @@ impl Check {
     }
 }
 
-/// Every pair in `palette`: its text over its surfaces at 4.5:1, the focus ring and the chart hues beside the page at 3:1.
+/// Every pair in `palette`: its text over its surfaces and its code colors over the code surfaces at 4.5:1, the focus ring and the chart hues beside the page at 3:1.
 fn audit(palette: &Palette) -> Vec<Check> {
     let check = |front: String, fg: Hsla, back: &'static str, need: f32| {
         let bg = palette.token(back);
@@ -81,6 +84,16 @@ fn audit(palette: &Palette) -> Vec<Check> {
             .iter()
             .map(move |back| check(front.to_string(), palette.token(front), back, TEXT))
     });
+    let code = Syntax::NAMES.iter().flat_map(|name| {
+        CODE.iter().map(move |back| {
+            check(
+                format!("syntax.{name}"),
+                palette.syntax.token(name),
+                back,
+                TEXT,
+            )
+        })
+    });
     let focus = ["bg", "surface"]
         .into_iter()
         .map(|back| check("focus".into(), palette.focus, back, MARK));
@@ -92,10 +105,10 @@ fn audit(palette: &Palette) -> Vec<Check> {
             MARK,
         )
     });
-    text.chain(focus).chain(hues).collect()
+    text.chain(code).chain(focus).chain(hues).collect()
 }
 
-/// Audits the theme's contrast in the mode shown: each text color over the surfaces it sits on at 4.5:1, the focus ring and the chart hues beside the page at 3:1, failures first under a count. It reads the theme as it stands, an owner's palette and high contrast included.
+/// Audits the theme's contrast in the mode shown: each text color over the surfaces it sits on and each code color over the editor's surfaces at 4.5:1, the focus ring and the chart hues beside the page at 3:1, failures first under a count. It reads the theme as it stands, an owner's palette and high contrast included.
 #[derive(IntoElement, Default)]
 pub struct A11yChecker;
 
@@ -206,7 +219,12 @@ mod tests {
         let checks = audit(&palette);
         let subtle: Vec<&Check> = checks.iter().filter(|c| c.front == "fg_subtle").collect();
         assert!(subtle.iter().all(|check| check.grade() == "Fails"));
-        assert_eq!(checks.len(), 41, "31 text pairs, 2 for the ring, 8 hues");
+        assert_eq!(
+            checks.len(),
+            81,
+            "32 text pairs, 39 for code, 2 for the ring, 8 hues"
+        );
+        assert_eq!(subtle.len(), 6);
     }
 
     #[test]
@@ -223,6 +241,27 @@ mod tests {
         };
         assert_eq!(grade("focus"), Some("AA"), "a ring at 3.3:1");
         assert_eq!(grade("fg_muted"), Some("Fails"), "text at 3.3:1");
+    }
+
+    #[test]
+    fn code_and_hues_read_their_own_colors() {
+        let mut palette = Palette::light(false);
+        palette.syntax.comment = palette.surface;
+        let checks = audit(&palette);
+        let failing: Vec<&str> = checks
+            .iter()
+            .filter(|check| !check.passes())
+            .map(|check| check.back)
+            .collect();
+        assert_eq!(
+            failing,
+            ["surface", "sunken", "hover"],
+            "the comment over code"
+        );
+        for (ix, name) in crate::theme::HUE_NAMES.iter().enumerate() {
+            let hue = checks.iter().find(|c| c.front == format!("chart {name}"));
+            assert_eq!(hue.map(|check| check.fg), Some(palette.chart[ix]));
+        }
     }
 
     #[test]

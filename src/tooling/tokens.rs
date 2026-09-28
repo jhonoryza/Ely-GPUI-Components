@@ -1,13 +1,14 @@
 use gpui::{
     AnyElement, App, FontWeight, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
-    Rems, RenderOnce, Rgba, Styled, Window, div, rems,
+    Rems, RenderOnce, Rgba, Styled, Window, div, relative, rems,
 };
 
 use crate::{
     forms::hex,
     primitives::{Icon, IconName},
     theme::{
-        ActiveTheme, ControlSize, Elevation, HUE_NAMES, IconSize, Palette, Radius, Syntax, TextSize,
+        ActiveTheme, AvatarSize, ContainerSize, ControlSize, Elevation, HUE_NAMES, IconSize,
+        Palette, Radius, Syntax, TextSize,
     },
     typography::{Ellipsis, literal, tabular},
 };
@@ -114,7 +115,7 @@ fn measure(name: String, size: Pixels, sample: impl IntoElement, cx: &App) -> An
         .into_any_element()
 }
 
-/// Every token of the theme in the mode shown, each named as code reads it: the colors with their hex, the syntax, chart and terminal colors, the type scale, radii, control and icon sizes, elevations and gpui's spacing steps.
+/// The theme's shared colors and scales in the mode shown, each named as code reads it: every palette, syntax, chart and terminal color with its hex, and the type, radius, control, icon, avatar and container sizes, the elevations and gpui's spacing steps. A chapter's own measures stay with the chapter.
 #[derive(IntoElement, Default)]
 pub struct DesignTokenViewer;
 
@@ -213,6 +214,44 @@ impl RenderOnce for DesignTokenViewer {
                 .bg(colors.surface);
             measure(format!("ControlSize::{name}"), at(height), sample, cx)
         });
+        let avatars = [
+            (AvatarSize::Xs, "Xs"),
+            (AvatarSize::Sm, "Sm"),
+            (AvatarSize::Md, "Md"),
+            (AvatarSize::Lg, "Lg"),
+            (AvatarSize::Xl, "Xl"),
+        ]
+        .map(|(size, name)| {
+            let side = theme.avatar_size(size);
+            let sample = div()
+                .size(side)
+                .rounded_full()
+                .border_1()
+                .border_color(colors.border_strong)
+                .bg(colors.sunken);
+            measure(format!("AvatarSize::{name}"), at(side), sample, cx)
+        });
+        let containers = [
+            (ContainerSize::Sm, "Sm"),
+            (ContainerSize::Md, "Md"),
+            (ContainerSize::Lg, "Lg"),
+        ]
+        .map(|(size, name)| {
+            let width = theme.container_width(size);
+            let widest = theme.container_width(ContainerSize::Lg);
+            // Drawn at its share of the widest, so the bar stays inside the row.
+            let sample = div().relative().flex_1().h_2().child(
+                div()
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .h_full()
+                    .w(relative(width.0 / widest.0))
+                    .rounded(theme.radius(Radius::Sm))
+                    .bg(colors.border_strong),
+            );
+            measure(format!("ContainerSize::{name}"), at(width), sample, cx)
+        });
         let icons = [
             (IconSize::Xs, "Xs"),
             (IconSize::Sm, "Sm"),
@@ -276,6 +315,8 @@ impl RenderOnce for DesignTokenViewer {
             .child(group("Radii", cx).children(radii))
             .child(group("Controls", cx).children(controls))
             .child(group("Icons", cx).children(icons))
+            .child(group("Avatars", cx).children(avatars))
+            .child(group("Containers", cx).children(containers))
             .child(
                 group("Elevation", cx)
                     .child(div().flex().flex_wrap().gap_6().p_2().children(elevations)),

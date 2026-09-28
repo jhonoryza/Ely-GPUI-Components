@@ -224,4 +224,4 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - 2026-09-28: QRCodeScanner proven with `rqrr` 0.11: the host hands in frames as `RenderImage`s, read off the main thread; gpui 0.2.2 has no camera.
 - 2026-09-28: WebView proven with `wry` 0.57: a child WKWebView over the window, placed from a canvas in prepaint at its box each frame and hidden once the box leaves the view. It draws above everything gpui paints and gpui's clipping does not reach it; gpui's test windows have no native handle, so the capture proves it.
 - 2026-09-28: InspectorOverlay is gpui's inspector drawn by Ely, `tooling::install_inspector`, in debug builds only, as gpui has it.
-- 2026-09-28: `fg_subtle` meets 4.5:1 on every surface it sits on, #6f6d6a light and #8c8a87 dark; the contrast audit found #82807d and #858380 under it.
+- 2026-09-28: every text color meets 4.5:1 on the surfaces it sits on: `fg_subtle` is #696764 light and #94928f dark, `syntax.comment` with it, and the light syntax's number, constant and attribute are #a3591b, #aa5529 and #9f5d12; the contrast audit found them under.
