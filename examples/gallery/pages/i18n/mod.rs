@@ -8,6 +8,8 @@ use ely_gpui_component::{
 use gpui::{AnyElement, App, IntoElement, ParentElement, Styled, Window, div, px};
 use jiff::{Timestamp, tz::TimeZone};
 
+mod a11y;
+
 use super::Page;
 use crate::probe::probe;
 use crate::script::Step;
@@ -28,6 +30,19 @@ pub const PAGE: Page = Page {
         Step::Click("locale"),
         Step::Key("home"),
         Step::Key("enter"),
+        Step::Wait(300),
+        Step::Key("tab"),
+        Step::HoverAt("skip-demo", 300.0, 70.0),
+        Step::Wait(300),
+        Step::Shot("skip-link"),
+        Step::Key("enter"),
+        Step::Key("tab"),
+        Step::Wait(300),
+        Step::Shot("skipped"),
+        Step::Click("color-blind"),
+        Step::Wait(300),
+        Step::Shot("color-blind"),
+        Step::Click("color-blind"),
         Step::Wait(300),
     ],
 };
@@ -105,11 +120,13 @@ pub fn install(cx: &mut App) {
     );
 }
 
-fn render(_: &mut Window, cx: &mut App) -> AnyElement {
+fn render(window: &mut Window, cx: &mut App) -> AnyElement {
     div()
         .child(messages(cx))
         .child(formats(cx))
         .child(mirrored(cx))
+        .child(a11y::skip_link(window, cx))
+        .child(a11y::color_blind(cx))
         .into_any_element()
 }
 

@@ -62,6 +62,7 @@ impl From<WindowAppearance> for Mode {
 pub struct Theme {
     mode: Mode,
     high_contrast: bool,
+    color_blind_safe: bool,
     transition: u64,
     custom: [Option<Palette>; 2],
     pub colors: Palette,
@@ -91,6 +92,7 @@ impl Theme {
         cx.set_global(Theme {
             mode: Mode::Light,
             high_contrast: false,
+            color_blind_safe: false,
             transition: 0,
             custom: [None, None],
             colors: Palette::light(false),
@@ -112,6 +114,10 @@ impl Theme {
         self.high_contrast
     }
 
+    pub fn color_blind_safe(&self) -> bool {
+        self.color_blind_safe
+    }
+
     pub fn is_dark(&self) -> bool {
         self.mode == Mode::Dark
     }
@@ -129,7 +135,14 @@ impl Theme {
         Self::fade_to_target(cx);
     }
 
-    /// The owner's palette for `mode`, as an edited or imported theme gives, or none to bring Ely's back. The colors fade to it when `mode` shows. High contrast strengthens Ely's own palettes alone.
+    /// Chart hues that stay apart for color-blind eyes, in Ely's own palettes.
+    pub fn set_color_blind_safe(on: bool, cx: &mut App) {
+        log::info!("theme: color-blind safe charts -> {on}");
+        cx.global_mut::<Theme>().color_blind_safe = on;
+        Self::fade_to_target(cx);
+    }
+
+    /// The owner's palette for `mode`, as an edited or imported theme gives, or none to bring Ely's back. The colors fade to it when `mode` shows. High contrast and color-blind safe charts change Ely's own palettes alone.
     pub fn set_palette(mode: Mode, palette: Option<Palette>, cx: &mut App) {
         log::info!(
             "theme: {mode:?} palette -> {}",
@@ -158,10 +171,14 @@ impl Theme {
         if let Some(palette) = &self.custom[self.mode as usize] {
             return palette.clone();
         }
-        match self.mode {
+        let mut palette = match self.mode {
             Mode::Light => Palette::light(self.high_contrast),
             Mode::Dark => Palette::dark(self.high_contrast),
+        };
+        if self.color_blind_safe {
+            palette.chart = palette::color_blind_chart(self.mode);
         }
+        palette
     }
 
     fn fade_to_target(cx: &mut App) {

@@ -2,6 +2,9 @@ use jiff::{Timestamp, tz::TimeZone};
 
 use super::{Direction, I18n, LOCALES, Locale, fill};
 
+#[cfg(feature = "test-support")]
+mod a11y;
+
 fn i18n() -> I18n {
     I18n::new("en-US")
         .catalog(

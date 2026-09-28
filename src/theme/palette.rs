@@ -1,5 +1,7 @@
 use gpui::{Hsla, Rgba, rgb, rgba};
 
+use super::Mode;
+
 pub trait Mix {
     fn mix(&self, to: &Self, t: f32) -> Self;
 }
@@ -141,6 +143,18 @@ fn c8<const N: usize>(hex: [u32; N]) -> [Hsla; N] {
 pub const HUE_NAMES: [&str; 8] = [
     "Blue", "Teal", "Ochre", "Rose", "Violet", "Green", "Rust", "Cyan",
 ];
+
+/// Chart hues each 3:1 on its mode's page that stay apart for protanopia, deuteranopia and tritanopia; `HUE_NAMES` still name them.
+pub(crate) fn color_blind_chart(mode: Mode) -> [Hsla; 8] {
+    match mode {
+        Mode::Light => c8([
+            0x0240b1, 0x08a399, 0xcd8017, 0x844954, 0xa276e3, 0x184606, 0xb84f10, 0x20789d,
+        ]),
+        Mode::Dark => c8([
+            0x3471e3, 0x57b6b2, 0xf6a537, 0xde545a, 0x695a91, 0xc4ecb7, 0xa93d0e, 0x52dafe,
+        ]),
+    }
+}
 
 impl Palette {
     /// The chart color at `hue`; a hue past the chart fails, naming `owner`.

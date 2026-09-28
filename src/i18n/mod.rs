@@ -1,4 +1,5 @@
 mod locale;
+mod skip;
 #[cfg(test)]
 mod tests;
 
@@ -7,6 +8,7 @@ use std::collections::HashMap;
 use gpui::{App, Global, SharedString};
 
 pub use locale::{Direction, LOCALES, Locale};
+pub use skip::SkipLink;
 
 type Catalog = HashMap<&'static str, &'static str>;
 
