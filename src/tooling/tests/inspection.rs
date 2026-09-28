@@ -1,13 +1,15 @@
 use std::time::Duration;
 
 use gpui::{
-    Context, FocusHandle, InteractiveElement, IntoElement, KeyUpEvent, Keystroke, Modifiers,
-    ParentElement, Render, ScrollDelta, ScrollWheelEvent, Styled, TestAppContext, TouchPhase,
-    VisualTestContext, Window, div, point, px,
+    AppContext, Context, Entity, FocusHandle, Focusable, InteractiveElement, IntoElement,
+    KeyBinding, KeyUpEvent, Keystroke, Modifiers, ParentElement, Render, ScrollDelta,
+    ScrollWheelEvent, Styled, TestAppContext, TouchPhase, VisualTestContext, Window, div, point,
+    px,
 };
 
 use crate::{
-    primitives::FocusScope,
+    forms::{self, TextInput},
+    primitives::{FocusNext, FocusPrev, FocusScope},
     theme::Theme,
     tooling::{EventLogger, FpsMeter, RenderCounter, install_inspector},
 };
@@ -73,6 +75,75 @@ fn the_inspector_shows_the_picked_box(cx: &mut TestAppContext) {
     );
 }
 
+struct Stops {
+    root: FocusHandle,
+    first: FocusHandle,
+    second: FocusHandle,
+}
+
+impl Render for Stops {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        FocusScope::new(&self.root)
+            .root()
+            .size_full()
+            .child(div().track_focus(&self.first).size(px(40.0)))
+            .child(div().track_focus(&self.second).size(px(40.0)))
+    }
+}
+
+fn press(key: &str, cx: &mut VisualTestContext) {
+    cx.simulate_keystrokes(key);
+    cx.run_until_parked();
+}
+
+/// Tab reaches the panel's Pick and goes on from it, both ways.
+#[gpui::test]
+fn tab_passes_through_the_panel(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        Theme::init(cx);
+        install_inspector(cx);
+        cx.bind_keys([
+            KeyBinding::new("tab", FocusNext, None),
+            KeyBinding::new("shift-tab", FocusPrev, None),
+        ]);
+    });
+    let (view, cx) = cx.add_window_view(|_, cx| Stops {
+        root: cx.focus_handle(),
+        first: cx.focus_handle().tab_stop(true),
+        second: cx.focus_handle().tab_stop(true),
+    });
+    let (root, first, second) = view.read_with(cx, |stops, _| {
+        (
+            stops.root.clone(),
+            stops.first.clone(),
+            stops.second.clone(),
+        )
+    });
+    cx.update(|window, cx| {
+        window.focus(&root);
+        window.toggle_inspector(cx);
+    });
+    cx.run_until_parked();
+    cx.simulate_click(point(px(20.0), px(20.0)), Modifiers::none());
+    redraw(cx);
+    assert!(shown("inspector-pick", cx), "a press holds the box");
+    let focused = |cx: &mut VisualTestContext| cx.update(|window, cx| window.focused(cx));
+    for _ in 0..3 {
+        press("tab", cx);
+    }
+    let pick = focused(cx).expect("Pick holds focus");
+    assert!(
+        ![&root, &first, &second].contains(&&pick),
+        "Tab reached Pick"
+    );
+    press("tab", cx);
+    assert_eq!(focused(cx), Some(first.clone()), "Tab went on from Pick");
+    press("shift-tab", cx);
+    assert_eq!(focused(cx), Some(pick), "Shift-Tab came back");
+    press("shift-tab", cx);
+    assert_eq!(focused(cx), Some(second));
+}
+
 struct Meter;
 
 impl Render for Meter {
@@ -120,6 +191,7 @@ fn the_counter_counts_renders(cx: &mut TestAppContext) {
 struct Logged {
     root: FocusHandle,
     target: FocusHandle,
+    field: Entity<TextInput>,
 }
 
 impl Render for Logged {
@@ -129,24 +201,30 @@ impl Render for Logged {
             .size_full()
             .p(px(10.0))
             .child(
-                EventLogger::new("logger").child(
-                    div()
-                        .id("target")
-                        .track_focus(&self.target)
-                        .h(px(100.0))
-                        .capture_any_mouse_down(|_, _, cx| cx.stop_propagation()),
-                ),
+                EventLogger::new("logger")
+                    .child(
+                        div()
+                            .id("target")
+                            .track_focus(&self.target)
+                            .h(px(100.0))
+                            .capture_any_mouse_down(|_, _, cx| cx.stop_propagation()),
+                    )
+                    .child(self.field.clone()),
             )
     }
 }
 
-/// Pointer events inside the box, even ones a child stops as they arrive, and keys while focus is inside, list with what they carried, placed in the box.
+/// Pointer events inside the box, even ones a child stops as they arrive, and keys while focus is inside, bound ones too, list newest first with what they carried, placed in the box.
 #[gpui::test]
 fn the_logger_lists_events(cx: &mut TestAppContext) {
-    cx.update(Theme::init);
-    let (view, cx) = cx.add_window_view(|_, cx| Logged {
+    cx.update(|cx| {
+        Theme::init(cx);
+        forms::bind_keys(cx);
+    });
+    let (view, cx) = cx.add_window_view(|window, cx| Logged {
         root: cx.focus_handle(),
         target: cx.focus_handle(),
+        field: cx.new(|cx| TextInput::new(window, cx)),
     });
     let target = view.read_with(cx, |logged, _| logged.target.clone());
     cx.update(|window, _| window.focus(&target));
@@ -157,11 +235,13 @@ fn the_logger_lists_events(cx: &mut TestAppContext) {
     cx.simulate_mouse_move(point(px(30.0), px(40.0)), None, Modifiers::none());
     assert!(shown("event-move to 20, 30 ×2", cx), "moves run together");
     cx.simulate_click(point(px(30.0), px(40.0)), Modifiers::none());
-    assert!(
-        shown("event-press left at 20, 30", cx),
-        "a press the child stops"
-    );
-    assert!(shown("event-release left at 20, 30", cx));
+    let pressed = cx
+        .debug_bounds("event-press left at 20, 30")
+        .expect("a press the child stops");
+    let released = cx
+        .debug_bounds("event-release left at 20, 30")
+        .expect("its release");
+    assert!(released.top() < pressed.top(), "newest first");
     cx.simulate_event(ScrollWheelEvent {
         position: point(px(30.0), px(40.0)),
         delta: ScrollDelta::Pixels(point(px(0.0), px(-24.0))),
@@ -177,6 +257,28 @@ fn the_logger_lists_events(cx: &mut TestAppContext) {
     assert!(shown("event-key up a", cx));
     cx.simulate_modifiers_change(Modifiers::shift());
     assert!(shown("event-modifiers shift", cx));
+    let (field, root) = view.read_with(cx, |logged, cx| {
+        (logged.field.focus_handle(cx), logged.root.clone())
+    });
+    cx.update(|window, _| window.focus(&field));
+    for key in ["b", "c", "backspace", "left", "enter"] {
+        press(key, cx);
+    }
+    let text = view.read_with(cx, |logged, cx| logged.field.read(cx).text().to_string());
+    assert_eq!(text, "b", "the field took Backspace");
+    for row in [
+        "event-key down backspace",
+        "event-key down left",
+        "event-key down enter",
+    ] {
+        assert!(shown(row, cx), "{row}: a key the field's bindings take");
+    }
+    cx.update(|window, _| window.focus(&root));
+    press("z", cx);
+    assert!(
+        !shown("event-key down z", cx),
+        "a key while focus is outside"
+    );
     cx.simulate_click(point(px(30.0), px(410.0)), Modifiers::none());
     assert!(
         !shown("event-press left at 20, 400", cx),

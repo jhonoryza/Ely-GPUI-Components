@@ -25,7 +25,7 @@ fn missed(interval: Duration) -> u32 {
     (interval.as_secs_f64() / BUDGET.as_secs_f64() - 0.5).max(0.0) as u32
 }
 
-/// Frame stamps over the last second, oldest first.
+/// Frame stamps over the last second and the one before it, oldest first, so a frame that ran into the second counts whole.
 #[derive(Default)]
 struct Frames(VecDeque<Instant>);
 
@@ -34,8 +34,8 @@ impl Frames {
         self.0.push_back(now);
         while self
             .0
-            .front()
-            .is_some_and(|first| now.duration_since(*first) > SPAN)
+            .get(1)
+            .is_some_and(|second| now.duration_since(*second) >= SPAN)
         {
             self.0.pop_front();
         }
@@ -60,7 +60,7 @@ impl Frames {
     }
 }
 
-/// Frames per second over the last second, the worst frame, and a bar per recent frame against the 60 Hz budget: success on time, warning a frame late, danger later. While shown it keeps its view drawing, so it counts the display's frames and holds the window awake; show it only while measuring. Its numbers are readings, so reduced motion leaves them live.
+/// Frames per second and the worst frame over the last second, a frame that ran into it counted whole, and a bar per recent frame against the 60 Hz budget: success on time, warning a frame late, danger later. While shown it keeps its view drawing, so it counts the display's frames and holds the window awake; show it only while measuring. Its numbers are readings, so reduced motion leaves them live.
 #[derive(IntoElement)]
 pub struct FpsMeter {
     id: ElementId,
@@ -202,6 +202,16 @@ mod tests {
         assert_eq!(frames.0.len(), 51, "older stamps drop");
         frames.record(start + Duration::from_millis(2100));
         assert_eq!(frames.worst(), Some(Duration::from_millis(100)));
+    }
+
+    #[test]
+    fn a_stall_longer_than_the_span_counts_whole() {
+        let (start, mut frames) = (Instant::now(), Frames::default());
+        for ms in [0, 500, 2000] {
+            frames.record(start + Duration::from_millis(ms));
+        }
+        assert_eq!(frames.worst(), Some(Duration::from_millis(1500)));
+        assert_eq!(frames.fps().map(|fps| (fps * 100.0).round()), Some(67.0));
     }
 
     #[test]

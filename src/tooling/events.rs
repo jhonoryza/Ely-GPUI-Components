@@ -6,10 +6,10 @@ use std::{
 };
 
 use gpui::{
-    AnyElement, App, DispatchPhase, ElementId, InteractiveElement, IntoElement, Modifiers,
-    MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, Pixels, Point,
-    RenderOnce, ScrollDelta, ScrollWheelEvent, StatefulInteractiveElement, Styled, Window, canvas,
-    div, prelude::FluentBuilder,
+    AnyElement, App, DispatchPhase, ElementId, InteractiveElement, IntoElement, KeyContext,
+    Modifiers, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, Pixels,
+    Point, RenderOnce, ScrollDelta, ScrollWheelEvent, StatefulInteractiveElement, Styled, Window,
+    canvas, div, prelude::FluentBuilder,
 };
 use smallvec::SmallVec;
 
@@ -30,7 +30,7 @@ enum Seen {
     /// Where the pointer is, and how many moves ran together to get there.
     Move(Point<Pixels>, usize),
     Wheel(ScrollDelta),
-    KeyDown(String, bool),
+    KeyDown(String),
     KeyUp(String),
     Modifiers(Modifiers),
 }
@@ -59,8 +59,7 @@ impl fmt::Display for Seen {
             Seen::Wheel(ScrollDelta::Lines(delta)) => {
                 write!(f, "wheel {}, {} lines", delta.x, delta.y)
             }
-            Seen::KeyDown(key, false) => write!(f, "key down {key}"),
-            Seen::KeyDown(key, true) => write!(f, "key held {key}"),
+            Seen::KeyDown(key) => write!(f, "key down {key}"),
             Seen::KeyUp(key) => write!(f, "key up {key}"),
             Seen::Modifiers(held) => {
                 let names = [
@@ -109,7 +108,7 @@ impl Log {
 
 type Record = Rc<dyn Fn(Seen, &mut App)>;
 
-/// The input events that reach what it holds, newest first below it: presses, releases, moves run together while the pointer travels, wheels, keys and modifiers, each timed from the first. Pointer events count inside its box, even where a child stops them; keys count while focus is inside. It keeps the last fifty.
+/// The input events that reach what it holds, newest first below it: presses, releases, moves run together while the pointer travels, wheels, keys and modifiers, each timed from the first. Pointer events count inside its box, even where a child stops them; keys count while focus is inside, a key a binding takes too. It keeps the last fifty.
 #[derive(IntoElement)]
 pub struct EventLogger {
     id: ElementId,
@@ -149,14 +148,30 @@ impl RenderOnce for EventLogger {
                 });
             }
         });
+        // Bindings run before key listeners, so key downs come through an interceptor.
+        let mark = id.to_string();
+        window.use_keyed_state((id.clone(), "keys"), cx, {
+            let (down, mark) = (record.clone(), mark.clone());
+            move |_, cx| {
+                cx.intercept_keystrokes(move |event, _, cx| {
+                    let inside = event
+                        .context_stack
+                        .iter()
+                        .any(|context| context.get("logger").is_some_and(|logger| *logger == mark));
+                    if inside {
+                        down(Seen::KeyDown(event.keystroke.unparse()), cx)
+                    }
+                })
+            }
+        });
+        let mut context = KeyContext::default();
+        context.set("logger", mark);
         let theme = cx.theme();
         let colors = &theme.colors;
-        let (down, up, held) = (record.clone(), record.clone(), record.clone());
+        let (up, held) = (record.clone(), record.clone());
         let watched = div()
             .relative()
-            .capture_key_down(move |event, _, cx| {
-                down(Seen::KeyDown(event.keystroke.unparse(), event.is_held), cx)
-            })
+            .key_context(context)
             .capture_key_up(move |event, _, cx| up(Seen::KeyUp(event.keystroke.unparse()), cx))
             .on_modifiers_changed(move |event, _, cx| held(Seen::Modifiers(event.modifiers), cx))
             // Laid first, so its capture listeners run before any child's.

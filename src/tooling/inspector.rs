@@ -9,7 +9,7 @@ use gpui::{
 
 use crate::{
     buttons::{Button, ButtonVariant},
-    primitives::raise,
+    primitives::{FocusScope, raise},
     theme::{ActiveTheme, ControlSize, Radius, TextSize},
     typography::{Ellipsis, LEADING, literal, tabular},
 };
@@ -305,6 +305,10 @@ fn panel(
         )
     });
     let states = inspector.render_inspector_states(window, cx);
+    let focus = window
+        .use_keyed_state("ely-inspector-focus", cx, |_, cx| cx.focus_handle())
+        .read(cx)
+        .clone();
     let owner = cx.entity();
     let theme = cx.theme();
     let colors = &theme.colors;
@@ -314,7 +318,7 @@ fn panel(
         }
         false => "Held. Pick chooses another box.",
     };
-    div()
+    let body = div()
         .id("ely-inspector")
         .size_full()
         .flex()
@@ -365,7 +369,11 @@ fn panel(
                         .child(Ellipsis::new(ids)),
                 )
         }))
-        .children(states)
+        .children(states);
+    // A second root, out of the app's scope: it owns Tab itself.
+    FocusScope::new(&focus)
+        .size_full()
+        .child(body)
         .into_any_element()
 }
 
@@ -394,6 +402,12 @@ mod tests {
         );
         assert_eq!(written.padding, [Side::Px(8.0); 4]);
         assert_eq!(written.border, [Side::Px(2.0); 4]);
+        let bare = layers(&StyleRefinement::default(), px(16.0));
+        assert_eq!(
+            bare.border,
+            [Side::Px(0.0); 4],
+            "no border written, none read"
+        );
         let mut share = StyleRefinement::default();
         share.padding.left = Some(relative(0.25));
         let shown = layers(&share, px(16.0))

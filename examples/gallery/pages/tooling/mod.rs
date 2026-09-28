@@ -51,6 +51,7 @@ pub const PAGE: Page = Page {
         Step::DownAt("events", 60.0, 60.0),
         Step::UpAt("events", 60.0, 60.0),
         Step::Type("Hi"),
+        Step::Key("backspace"),
         Step::Shot("events"),
     ],
 };
