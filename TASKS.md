@@ -146,7 +146,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T42d Misc · Asking and learning — `tasks/ch31-43.md`
 - [x] T42e Misc · Terms and notices — `tasks/ch31-43.md`
 - [x] T42f Misc · Web — `tasks/ch31-43.md`
-- [ ] T42g Misc · Export and import — `tasks/ch31-43.md`
+- [x] T42g Misc · Export and import — `tasks/ch31-43.md`
 - [ ] T43 Library Tooling
 - [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark: a home page in motion (three.js, smooth scroll), and a components page with every component, categories on the left and the chosen one's detail on the right, after astryx.atmeta.com
@@ -460,3 +460,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T42e | 2 | PASS | a Tab-path check for the resting Necessary switch added in the pass commit |
 | T42f | 1 | FAIL | a press on the web view gave WebKit the keyboard for good, since gpui's view never takes the first responder back; in_view warned off macOS; a straddling box untested |
 | T42f | 2 | PASS | off-macOS imports and fields tidied in the pass commit |
+| T42g | 1 | FAIL | the unread CSV dialog cut its reason at the card's edge, since InlineMessage laid its words unwrapped; nine ways out untested; a warning logged every render; an unclosed quote named the last line |
+| T42g | 2 | PASS | |
