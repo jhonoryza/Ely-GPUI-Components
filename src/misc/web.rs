@@ -1,6 +1,6 @@
 use gpui::{
-    AnyElement, App, Bounds, ElementId, IntoElement, ParentElement, Pixels, RenderOnce,
-    SharedString, Styled, Window, div,
+    AnyElement, App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
+    Window, div,
 };
 
 use crate::{
@@ -19,7 +19,10 @@ pub enum WebSource {
 
 /// Whether a box lies, at least in part, inside what the window shows of its region.
 #[cfg(any(target_os = "macos", test))]
-pub(crate) fn in_view(bounds: Bounds<Pixels>, shown: Bounds<Pixels>) -> bool {
+pub(crate) fn in_view(
+    bounds: gpui::Bounds<gpui::Pixels>,
+    shown: gpui::Bounds<gpui::Pixels>,
+) -> bool {
     bounds.intersects(&shown)
 }
 
@@ -45,7 +48,7 @@ impl RenderOnce for WebView {
         return mac::page(self.id, self.source, window, cx);
         #[cfg(not(target_os = "macos"))]
         {
-            let _ = window;
+            let _ = (window, self.id, self.source);
             let theme = cx.theme();
             div()
                 .size_full()

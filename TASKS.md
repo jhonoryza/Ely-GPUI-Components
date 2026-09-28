@@ -145,7 +145,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T42c Misc · Codes and checks — `tasks/ch31-43.md`
 - [x] T42d Misc · Asking and learning — `tasks/ch31-43.md`
 - [x] T42e Misc · Terms and notices — `tasks/ch31-43.md`
-- [ ] T42f Misc · Web — `tasks/ch31-43.md`
+- [x] T42f Misc · Web — `tasks/ch31-43.md`
 - [ ] T42g Misc · Export and import — `tasks/ch31-43.md`
 - [ ] T43 Library Tooling
 - [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
@@ -458,3 +458,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T42d | 2 | PASS | the poll's mark and its selector now share one binding |
 | T42e | 1 | FAIL | the code held, but seven claims had no test: Decline, the scrim, focus back after Accept, necessary cookies on and resting, the list's mark and its rows' lines |
 | T42e | 2 | PASS | a Tab-path check for the resting Necessary switch added in the pass commit |
+| T42f | 1 | FAIL | a press on the web view gave WebKit the keyboard for good, since gpui's view never takes the first responder back; in_view warned off macOS; a straddling box untested |
+| T42f | 2 | PASS | off-macOS imports and fields tidied in the pass commit |
