@@ -149,7 +149,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T42g Misc · Export and import — `tasks/ch31-43.md`
 - [x] T43a Tooling · Workbench — `tasks/ch31-43.md`
 - [x] T43b Tooling · Inspection — `tasks/ch31-43.md`
-- [ ] T43c Tooling · Catalogs — `tasks/ch31-43.md`
+- [x] T43c Tooling · Catalogs — `tasks/ch31-43.md`
 - [ ] T44 Capture: every component, light and dark, plus motion clips; roots still on `w_full` drop it, checked at 280px and in padded cards
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark: a home page in motion (three.js, smooth scroll), and a components page with every component, categories on the left and the chosen one's detail on the right, after astryx.atmeta.com
 - [ ] T46 E2E: Playwright against the built site
@@ -468,3 +468,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T43a | 2 | PASS | |
 | T43b | 1 | FAIL | a stall past a second dropped out of the FPS meter; Tab stranded on the inspector's Pick, a second root out of the app's scope; the event logger missed every key a binding takes |
 | T43b | 2 | PASS | |
+| T43c | 1 | FAIL | the audit left fg_subtle on active and every syntax color unread, both under 4.5:1; the viewer left out avatar and container sizes while claiming every token |
+| T43c | 2 | PASS | the AGENTS.md decision narrowed to the pairs the audit holds, in the pass commit |
