@@ -195,4 +195,13 @@ fn a_cookie_banner_hands_over_the_kinds_chosen(cx: &mut TestAppContext) {
         said(),
         [r#"["Analytics", "Marketing"]"#, "[]", r#"["Marketing"]"#]
     );
+    for _ in 0..5 {
+        press("shift-tab", cx);
+    }
+    press("space", cx);
+    assert_eq!(
+        said().len(),
+        4,
+        "Shift-Tab went round past the resting Necessary switch to Save choices"
+    );
 }

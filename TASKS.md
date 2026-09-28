@@ -144,7 +144,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T42b Misc · Numbers — `tasks/ch31-43.md`
 - [x] T42c Misc · Codes and checks — `tasks/ch31-43.md`
 - [x] T42d Misc · Asking and learning — `tasks/ch31-43.md`
-- [ ] T42e Misc · Terms and notices — `tasks/ch31-43.md`
+- [x] T42e Misc · Terms and notices — `tasks/ch31-43.md`
 - [ ] T42f Misc · Web — `tasks/ch31-43.md`
 - [ ] T42g Misc · Export and import — `tasks/ch31-43.md`
 - [ ] T43 Library Tooling
@@ -456,3 +456,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T42c | 2 | PASS | three claims untested; tests for focus after an answer and a resting pass added in the pass commit |
 | T42d | 1 | FAIL | a pointer's untick disabled Submit while it held focus, so focus fell to the root; six claims untested; radio labels ran past a 280px box |
 | T42d | 2 | PASS | the poll's mark and its selector now share one binding |
+| T42e | 1 | FAIL | the code held, but seven claims had no test: Decline, the scrim, focus back after Accept, necessary cookies on and resting, the list's mark and its rows' lines |
+| T42e | 2 | PASS | a Tab-path check for the resting Necessary switch added in the pass commit |
