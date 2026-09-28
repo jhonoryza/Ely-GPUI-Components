@@ -5,7 +5,7 @@ use gpui::{
 
 use super::setup;
 use crate::{
-    forms::{Checkbox, Choice, IconPicker, InlineEdit, RadioGroup, SignaturePad, Stroke},
+    forms::{Checkbox, Choice, IconPicker, InlineEdit, RadioGroup, SignaturePad, Stroke, Switch},
     primitives::{FocusNext, IconName},
 };
 
@@ -145,7 +145,7 @@ fn an_inline_edit_takes_tab_opens_on_enter_and_takes_focus_back(cx: &mut TestApp
     );
 }
 
-/// A checkbox and a radio whose labels run past their narrow box.
+/// A checkbox, a radio and a switch whose labels run past their narrow box.
 struct Worded;
 
 impl Render for Worded {
@@ -158,6 +158,7 @@ impl Render for Worded {
                 "worded-radios",
                 [Choice::new("one", label)],
             ))
+            .child(Switch::new("worded-switch", false).label(label))
     }
 }
 
@@ -166,7 +167,7 @@ fn long_labels_wrap_inside_their_box(cx: &mut TestAppContext) {
     setup(cx);
     let (_, cx) = cx.add_window_view(|_, _| Worded);
     cx.run_until_parked();
-    for selector in ["checkbox-label", "radio-label"] {
+    for selector in ["checkbox-label", "radio-label", "switch-label"] {
         let label = cx.debug_bounds(selector).expect("the label draws");
         assert!(label.right() <= px(200.0), "{selector}: {label:?}");
     }

@@ -153,7 +153,10 @@ impl RenderOnce for ListItem {
             } else {
                 gpui::transparent_black()
             })
-            .when(self.selected, |row| row.bg(colors.active))
+            .when(self.selected, |row| {
+                row.debug_selector(|| format!("item-selected-{}", self.title))
+                    .bg(colors.active)
+            })
             .when(self.disabled, |row| row.opacity(0.5))
             .when_some(self.on_click.filter(|_| pressable), |row, on_click| {
                 row.cursor_pointer()
@@ -182,7 +185,8 @@ impl RenderOnce for ListItem {
                             }),
                     )
                     .children(self.description.map(|text| {
-                        line(text)
+                        line(text.clone())
+                            .debug_selector(|| format!("item-description-{text}"))
                             .text_size(theme.text_size(TextSize::Sm))
                             .text_color(colors.fg_muted)
                     }))

@@ -63,6 +63,7 @@ pub const PAGE: Page = Page {
         Step::Key("escape"),
         Step::DownAt("cookies", 230.0, 84.0),
         Step::UpAt("cookies", 230.0, 84.0),
+        Step::HoverAt("cookies", 20.0, 20.0),
         Step::Shot("cookies-choosing"),
     ],
 };

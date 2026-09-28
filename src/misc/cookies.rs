@@ -1,7 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window, div,
+    App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, SharedString,
+    Styled, Window, div,
 };
 
 use crate::{
@@ -104,13 +105,18 @@ impl RenderOnce for CookieBanner {
                 .flex()
                 .flex_col()
                 .gap_3()
-                .child(row(
-                    Switch::new((id.clone(), "necessary"), true)
-                        .label("Necessary")
-                        .disabled(true),
-                    "Keeps the site working; always on.".into(),
-                    cx,
-                ))
+                .child({
+                    let (on, rests) = (true, true);
+                    div()
+                        .debug_selector(|| format!("cookie-necessary-{on}-{rests}"))
+                        .child(row(
+                            Switch::new((id.clone(), "necessary"), on)
+                                .label("Necessary")
+                                .disabled(rests),
+                            "Keeps the site working; always on.".into(),
+                            cx,
+                        ))
+                })
                 .children(rows)
         });
         let (all, none, saved) = (answer.clone(), answer.clone(), answer);

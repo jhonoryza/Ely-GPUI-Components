@@ -140,6 +140,12 @@ impl RenderOnce for Switch {
                     })
             })
             .child(rail)
-            .children(self.label)
+            .children(self.label.map(|label| {
+                div()
+                    .debug_selector(|| "switch-label".into())
+                    .flex_1()
+                    .min_w_0()
+                    .child(label)
+            }))
     }
 }
