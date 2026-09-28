@@ -11,6 +11,8 @@ use gpui::{
     AnyElement, App, ImageSource, IntoElement, ParentElement, SharedString, Styled, Window, div, px,
 };
 
+mod layers;
+
 use super::Page;
 use crate::probe::probe;
 use crate::script::Step;
@@ -20,7 +22,7 @@ pub const PAGE: Page = Page {
     number: 41,
     slug: "maps",
     title: "Maps",
-    summary: "Tiles the host supplies, pins with a popup, a picker's crosshair. The land is Natural Earth's.",
+    summary: "Tiles the host supplies, pins with a popup, a picker's crosshair, routes, GeoJSON, heat and clusters. The land is Natural Earth's.",
     render,
     script: &[
         Step::Click("world-map"),
@@ -37,11 +39,16 @@ pub const PAGE: Page = Page {
         Step::Key("down"),
         Step::Wait(300),
         Step::Shot("picked"),
+        Step::Click("cluster-map"),
+        Step::Key("tab"),
+        Step::Key("enter"),
+        Step::Wait(300),
+        Step::Shot("cluster-opened"),
     ],
 };
 
 const TILES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/gallery/assets/tiles");
-const ATTRIBUTION: &str = "Land: Natural Earth";
+pub(super) const ATTRIBUTION: &str = "Land: Natural Earth";
 
 const CITIES: [(&str, &str, f64, f64, usize); 6] = [
     ("london", "London", 51.5072, -0.1276, 0),
@@ -53,7 +60,7 @@ const CITIES: [(&str, &str, f64, f64, usize); 6] = [
 ];
 
 /// The gallery's tiles, cut from Natural Earth by `scripts/tiles.py`.
-fn tile(tile: Tile) -> ImageSource {
+pub(super) fn tile(tile: Tile) -> ImageSource {
     PathBuf::from(format!("{TILES}/{}/{}/{}.png", tile.z, tile.x, tile.y)).into()
 }
 
@@ -62,6 +69,9 @@ fn render(window: &mut Window, cx: &mut App) -> AnyElement {
         .child(world(window, cx))
         .child(coordinates(cx))
         .child(picker(cx))
+        .child(layers::routes(cx))
+        .child(layers::heat(cx))
+        .child(layers::clusters(cx))
         .into_any_element()
 }
 

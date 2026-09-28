@@ -11,6 +11,20 @@ pub struct MapSizes {
     pub popup: Rems,
     /// Room a popup keeps from the map's edges and from its point.
     pub margin: Rems,
+    /// A route's stroke.
+    pub route: Rems,
+    /// A GeoJSON line's and outline's stroke.
+    pub line: Rems,
+    /// A GeoJSON point's side.
+    pub dot: Rems,
+    /// A heat cell's side.
+    pub heat_cell: Rems,
+    /// How far a heat point spreads.
+    pub heat_reach: Rems,
+    /// A cluster's side.
+    pub cluster: Rems,
+    /// The square of the world that gathers pins into one cluster.
+    pub gather: Rems,
 }
 
 impl Theme {
@@ -19,6 +33,13 @@ impl Theme {
             tile: px(256.0),
             popup: px_to_rems(240.0),
             margin: px_to_rems(8.0),
+            route: px_to_rems(3.0),
+            line: px_to_rems(1.5),
+            dot: px_to_rems(8.0),
+            heat_cell: px_to_rems(4.0),
+            heat_reach: px_to_rems(28.0),
+            cluster: px_to_rems(32.0),
+            gather: px_to_rems(56.0),
         }
     }
 }

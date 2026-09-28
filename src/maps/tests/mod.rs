@@ -13,6 +13,7 @@ use crate::{
 };
 
 /// The view inside the map's 1px border, in pixels.
+mod layers;
 mod popup;
 
 const SIZE: (f32, f32) = (398.0, 298.0);

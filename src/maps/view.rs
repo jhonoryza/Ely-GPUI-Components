@@ -1,13 +1,15 @@
 use std::{collections::HashSet, f64::consts::LOG2_E, rc::Rc};
 
 use gpui::{
-    AnyElement, App, AppContext as _, Bounds, ElementId, EmptyView, Entity, EntityId, ImageSource,
-    InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Window, canvas, div,
+    AnyElement, App, AppContext as _, Bounds, ElementId, EmptyView, Entity, EntityId, FocusHandle,
+    ImageSource, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Point,
+    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, canvas, div,
 };
 
 use super::{
     MapViewport, Tile,
+    cluster::Laying,
+    layer::{MapLayer, painted},
     marker::{MapMarker, MapPopup, OnMarker},
     tile::laid_tile,
 };
@@ -28,12 +30,13 @@ struct Pan {
     owner: EntityId,
 }
 
-/// The map's box, the pointer and viewport at the press of a pan under way, and the focus a shown popup took.
+/// The map's box, the pointer and viewport at the press of a pan under way, the focus a shown popup took, and the focus of each pin and cluster a zoom may regroup.
 #[derive(Default)]
 struct Stage {
     bounds: Bounds<Pixels>,
     grip: Option<(Point<Pixels>, MapViewport)>,
     takeover: Option<Entity<Takeover>>,
+    gathered: Vec<FocusHandle>,
 }
 
 /// A map of tiles the host supplies by zoom, column and row, with pins and a popup over them; a pin that holds focus keeps it off view, but takes Tab and presses only while its place is in view. A drag or the wheel pans it; Command or Control with the wheel zooms about the pointer; focused, the arrows pan and + and - zoom, as its buttons do. The owner keeps the viewport; a new one from the owner shows at once. It fills its box; the host gives it a height.
@@ -44,7 +47,9 @@ pub struct MapView {
     tiles: Option<TileSource>,
     zooms: (u8, u8),
     attribution: Option<SharedString>,
+    layers: Vec<MapLayer>,
     markers: Vec<MapMarker>,
+    gathered: bool,
     on_marker: Option<OnMarker>,
     popup: Option<MapPopup>,
     pub(crate) on_viewport: Option<OnMapViewport>,
@@ -58,7 +63,9 @@ impl MapView {
             tiles: None,
             zooms: (0, MapViewport::ZOOMS.1 as u8),
             attribution: None,
+            layers: Vec::new(),
             markers: Vec::new(),
+            gathered: false,
             on_marker: None,
             popup: None,
             on_viewport: None,
@@ -84,6 +91,18 @@ impl MapView {
     /// Whose tiles and data these are, in the corner, as their licenses ask.
     pub fn attribution(mut self, text: impl Into<SharedString>) -> Self {
         self.attribution = Some(text.into());
+        self
+    }
+
+    /// A route, GeoJSON features or heat over the tiles and under the pins, drawn in the order added.
+    pub fn layer(mut self, layer: impl Into<MapLayer>) -> Self {
+        self.layers.push(layer.into());
+        self
+    }
+
+    /// Gathers pins that crowd one square of the world into a cluster that shows their count; a cluster's press shows its members whole. A zoom that regroups them hands a focused pin's or cluster's focus to the map.
+    pub fn cluster_markers(mut self) -> Self {
+        self.gathered = true;
         self
     }
 
@@ -146,6 +165,35 @@ impl RenderOnce for MapView {
         let view = local.read(cx).value;
         let size = sized(stage.read(cx).bounds);
         let tile = f32::from(cx.theme().maps().tile);
+        let set: OnMapViewport = {
+            let (local, on_viewport) = (local.clone(), self.on_viewport.clone());
+            let (regrouped, map) = (stage.clone(), focus.clone());
+            Rc::new(move |next, window, cx| {
+                log::debug!(
+                    "map: {:.4}, {:.4} at zoom {:.2}",
+                    next.center.lat,
+                    next.center.lon,
+                    next.zoom
+                );
+                let zoomed = next.zoom != local.read(cx).value.zoom;
+                let held = regrouped
+                    .read(cx)
+                    .gathered
+                    .iter()
+                    .any(|pin| pin.is_focused(window));
+                if zoomed && held {
+                    log::info!("map: a zoom regroups the pins; focus goes to the map");
+                    window.focus(&map);
+                }
+                local.update(cx, |local, cx| {
+                    local.value = next;
+                    cx.notify();
+                });
+                if let Some(on_viewport) = &on_viewport {
+                    on_viewport(next, window, cx);
+                }
+            })
+        };
         let tiles: Vec<AnyElement> = match &self.tiles {
             Some(source) => view
                 .tiles(size, tile, self.zooms)
@@ -154,19 +202,14 @@ impl RenderOnce for MapView {
                 .collect(),
             None => Vec::new(),
         };
-        let markers: Vec<AnyElement> = self
-            .markers
-            .into_iter()
-            .map(|marker| {
-                let at = view.to_view(marker.at, size, tile);
-                let seen = inside(at, size);
-                let press = self.on_marker.clone().map(|on_marker| {
-                    let key = (id.clone(), format!("pin-{}", marker.key));
-                    (tab_stop(key.into(), seen, window, cx), on_marker)
-                });
-                marker.place(&id, at, press, seen, cx)
-            })
-            .collect();
+        let layers = painted(self.layers, view, size, tile, window, cx);
+        let pins = Laying {
+            markers: self.markers,
+            on_marker: self.on_marker,
+            gathered: self.gathered,
+        }
+        .lay(&id, (view, size, tile), &set, window, cx);
+        stage.update(cx, |stage, _| stage.gathered = pins.gathered);
         let shown = self
             .popup
             .map(|popup| (view.to_view(popup.at, size, tile), popup))
@@ -188,24 +231,6 @@ impl RenderOnce for MapView {
         };
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let set: OnMapViewport = {
-            let (local, on_viewport) = (local.clone(), self.on_viewport.clone());
-            Rc::new(move |next, window, cx| {
-                log::debug!(
-                    "map: {:.4}, {:.4} at zoom {:.2}",
-                    next.center.lat,
-                    next.center.lon,
-                    next.zoom
-                );
-                local.update(cx, |local, cx| {
-                    local.value = next;
-                    cx.notify();
-                });
-                if let Some(on_viewport) = &on_viewport {
-                    on_viewport(next, window, cx);
-                }
-            })
-        };
         let now: Now = {
             let (local, stage) = (local.clone(), stage.clone());
             Rc::new(move |cx| (local.read(cx).value, sized(stage.read(cx).bounds)))
@@ -356,7 +381,8 @@ impl RenderOnce for MapView {
             })
             .on_drop(move |_: &Pan, _, cx| dropped.update(cx, |stage, _| stage.grip = None))
             .children(tiles)
-            .children(markers)
+            .children(layers)
+            .children(pins.elements)
             .child(controls)
             .children(attribution)
             .children(popup)

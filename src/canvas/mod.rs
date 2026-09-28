@@ -52,6 +52,7 @@ pub use mindmap::Topic;
 pub use mindmap_view::MindMap;
 pub use minimap::MiniMap;
 pub use nodes::NodeGraph;
+pub(crate) use paint::{at, finish, outline};
 pub use palette::{BrushSettings, ToolPalette};
 pub(crate) use panel::{OnEdit, caption, color_well, editing};
 pub use plane::InfiniteCanvas;

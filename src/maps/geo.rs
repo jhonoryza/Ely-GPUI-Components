@@ -154,6 +154,78 @@ impl MapViewport {
         }
     }
 
+    /// Places along a line or ring in view pixels, each wrap around the globe undone against the place before, the first place the copy nearest the center.
+    pub(crate) fn run(self, places: &[LatLon], size: (f32, f32), tile: f32) -> Vec<(f32, f32)> {
+        let Some(first) = places.first() else {
+            return Vec::new();
+        };
+        let side = self.world(tile);
+        let (start, _) = self.to_view(*first, size, tile);
+        let (cy, begin) = (self.middle(tile).1, project(*first).0);
+        let mut last = begin;
+        places
+            .iter()
+            .map(|place| {
+                let (x, y) = project(*place);
+                let x = x + (last - x + 0.5).floor();
+                last = x;
+                (
+                    start + ((x - begin) * side) as f32,
+                    (y * side - cy + f64::from(size.1) / 2.0) as f32,
+                )
+            })
+            .collect()
+    }
+
+    /// The shifts by whole worlds that bring a span of view x, from `least` to `most`, into a view `w` wide.
+    pub(crate) fn copies(self, (least, most): (f32, f32), w: f32, tile: f32) -> Vec<f32> {
+        let side = self.world(tile) as f32;
+        let first = (-most / side).ceil() as i64;
+        let last = ((w - least) / side).floor() as i64;
+        (first..=last).map(|shift| shift as f32 * side).collect()
+    }
+
+    /// Shows `places` whole and centered, `margin` view pixels clear of each side, never farther out than now; places at one spot bring it two levels nearer.
+    pub(crate) fn fitting(
+        self,
+        places: &[LatLon],
+        size: (f32, f32),
+        tile: f32,
+        margin: f32,
+    ) -> Self {
+        let unit = MapViewport { zoom: 0.0, ..self };
+        let run = unit.run(places, (0.0, 0.0), tile);
+        let span = |pick: fn(&(f32, f32)) -> f32| {
+            let values = run.iter().map(pick);
+            let least = values.clone().fold(f32::INFINITY, f32::min);
+            (least, values.fold(f32::NEG_INFINITY, f32::max))
+        };
+        let ((left, right), (top, bottom)) = (span(|point| point.0), span(|point| point.1));
+        let (w, h) = (right - left, bottom - top);
+        let room = (
+            (size.0 - margin * 2.0).max(1.0),
+            (size.1 - margin * 2.0).max(1.0),
+        );
+        let (least, most) = Self::ZOOMS;
+        let zoom = if w <= 0.0 && h <= 0.0 {
+            self.zoom + 2.0
+        } else {
+            f64::from((room.0 / w.max(f32::EPSILON)).min(room.1 / h.max(f32::EPSILON))).log2()
+        };
+        let middle = unit.to_geo(
+            ((left + right) / 2.0, (top + bottom) / 2.0),
+            (0.0, 0.0),
+            tile,
+        );
+        let next = Self {
+            center: middle,
+            zoom: zoom.max(self.zoom).clamp(least, most),
+        };
+        let (x, y) = project(middle);
+        let side = next.world(tile);
+        next.centered((x * side, y * side), size, tile)
+    }
+
     /// The tiles that cover a view, cut at the nearest zoom within `zooms` and scaled to the view's.
     pub(crate) fn tiles(&self, (w, h): (f32, f32), tile: f32, zooms: (u8, u8)) -> Vec<Laid> {
         if w <= 0.0 || h <= 0.0 {
@@ -327,6 +399,73 @@ mod tests {
                 assert_eq!(tile.y + tile.h, south.y);
             }
         }
+    }
+
+    #[test]
+    fn a_run_crosses_the_date_line_the_short_way() {
+        let view = MapViewport::new(LatLon::new(0.0, 180.0), 3.0);
+        let run = view.run(
+            &[LatLon::new(0.0, 170.0), LatLon::new(0.0, -170.0)],
+            VIEW,
+            TILE,
+        );
+        let degree = TILE * 8.0 / 360.0;
+        assert!((run[0].0 - (400.0 - 10.0 * degree)).abs() < 1e-2, "{run:?}");
+        assert!(
+            (run[1].0 - (400.0 + 10.0 * degree)).abs() < 1e-2,
+            "east across the line: {run:?}"
+        );
+    }
+
+    #[test]
+    fn copies_repeat_a_span_across_every_world_in_view() {
+        let whole = MapViewport::new(LatLon::new(0.0, 0.0), 0.0);
+        assert_eq!(
+            whole.copies((0.0, 10.0), 800.0, TILE),
+            [0.0, 256.0, 512.0, 768.0]
+        );
+        assert_eq!(
+            whole.copies((-300.0, -200.0), 800.0, TILE),
+            [256.0, 512.0, 768.0, 1024.0]
+        );
+        let near = MapViewport::new(LatLon::new(0.0, 0.0), 6.0);
+        assert_eq!(
+            near.copies((100.0, 200.0), 800.0, TILE),
+            [0.0],
+            "one world when it is wider than the view"
+        );
+    }
+
+    #[test]
+    fn a_fit_shows_its_places_whole_and_never_zooms_out() {
+        let view = MapViewport::new(LatLon::new(50.0, 0.0), 3.0);
+        let places = [
+            LatLon::new(51.5, -0.1),
+            LatLon::new(48.9, 2.35),
+            LatLon::new(52.5, 13.4),
+        ];
+        let fit = view.fitting(&places, VIEW, TILE, 32.0);
+        assert!(fit.zoom > view.zoom, "nearer in: {}", fit.zoom);
+        for place in places {
+            let (x, y) = fit.to_view(place, VIEW, TILE);
+            assert!(
+                (31.9..=768.1).contains(&x) && (31.9..=568.1).contains(&y),
+                "{place:?} at {x}, {y}"
+            );
+        }
+        let one = view.fitting(
+            &[LatLon::new(1.0, 1.0), LatLon::new(1.0, 1.0)],
+            VIEW,
+            TILE,
+            32.0,
+        );
+        assert_eq!(one.zoom, 5.0, "places at one spot come two levels nearer");
+        let wide = [LatLon::new(60.0, -150.0), LatLon::new(-40.0, 150.0)];
+        assert_eq!(
+            view.fitting(&wide, VIEW, TILE, 32.0).zoom,
+            3.0,
+            "never farther out"
+        );
     }
 
     #[test]
