@@ -1,8 +1,9 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    AnyElement, App, Bounds, ElementId, Entity, InteractiveElement, IntoElement, ParentElement,
-    Pixels, RenderOnce, StatefulInteractiveElement, Styled, Task, Window, canvas, div,
+    AnyElement, App, Bounds, ElementId, Entity, HoverListenerMode, InteractiveElement, IntoElement,
+    ParentElement, Pixels, RenderOnce, StatefulInteractiveElement, Styled, Task, Window, canvas,
+    div,
 };
 
 use crate::forms::{float_height, surface};
@@ -78,6 +79,7 @@ impl RenderOnce for HoverCard {
             .id(self.id.clone())
             .relative()
             .child(self.trigger)
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |hovered, window, cx| {
                 enter.update(cx, |hover, _| hover.on_trigger = *hovered);
                 settle_after(&enter, if *hovered { OPEN } else { LINGER }, window, cx);
@@ -108,6 +110,7 @@ impl RenderOnce for HoverCard {
             .relative()
             .occlude()
             .p_4()
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |hovered, window, cx| {
                 over.update(cx, |hover, _| hover.on_card = *hovered);
                 settle_after(&over, LINGER, window, cx);

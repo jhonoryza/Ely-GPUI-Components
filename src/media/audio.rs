@@ -1,9 +1,10 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    App, Bounds, Corners, DragMoveEvent, ElementId, EmptyView, EntityId, InteractiveElement,
-    IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce, StatefulInteractiveElement,
-    Styled, Window, canvas, div, fill, point, prelude::*, relative, size, transparent_black,
+    App, Bounds, Corners, DragMoveEvent, ElementId, EmptyView, EntityId, HoverListenerMode,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce,
+    StatefulInteractiveElement, Styled, Window, canvas, div, fill, point, prelude::*, relative,
+    size, transparent_black,
 };
 
 use super::scrubber::{OnTime, clock, time_at, time_tip};
@@ -157,6 +158,7 @@ impl RenderOnce for AudioWaveform {
                     cx.notify();
                 })
             })
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |inside, _, cx| {
                 if !inside {
                     left.update(cx, |wave, cx| {

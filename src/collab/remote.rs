@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use gpui::{
     App, Bounds, ContentMask, Entity, FontWeight, IntoElement, Pixels, RenderOnce, SharedString,
-    Styled, TextRun, Window, canvas, fill, point, size,
+    Styled, TextAlign, TextRun, Window, canvas, fill, point, size,
 };
 
 use super::peers::Peer;
@@ -92,9 +92,14 @@ impl RenderOnce for RemoteCursor {
                     bottom_right: radius,
                     bottom_left: gpui::Pixels::ZERO,
                 }));
-                if let Err(error) =
-                    line.paint(point(flag.left() + pad, flag.top()), height, window, cx)
-                {
+                if let Err(error) = line.paint(
+                    point(flag.left() + pad, flag.top()),
+                    height,
+                    TextAlign::Left,
+                    None,
+                    window,
+                    cx,
+                ) {
                     log::error!("remote cursor: name did not paint: {error:#}");
                 }
             },

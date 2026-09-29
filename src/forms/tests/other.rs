@@ -29,7 +29,7 @@ impl Render for Icons {
 fn an_icon_is_searched_walked_and_picked_from_the_keyboard(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Icons { picked: None });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_input("arrow down");
     cx.simulate_keystrokes("down right enter");
     let wanted: Vec<IconName> = IconName::ALL
@@ -135,7 +135,7 @@ fn an_inline_edit_takes_tab_opens_on_enter_and_takes_focus_back(cx: &mut TestApp
     cx.update(|cx| cx.bind_keys([KeyBinding::new("tab", FocusNext, None)]));
     let (view, cx) = cx.add_window_view(|_, _| Titled(Vec::new()));
     cx.update(|window, _| window.activate_window());
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     release("enter", cx);
     cx.simulate_input("Stairs");
     release("enter", cx);

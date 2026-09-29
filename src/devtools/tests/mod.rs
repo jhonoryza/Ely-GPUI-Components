@@ -65,9 +65,9 @@ fn said(host: &Entity<Bench>, cx: &mut VisualTestContext) -> Vec<String> {
 }
 
 fn tab(stops: usize, cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
-        (0..stops).for_each(|_| window.focus_next());
+    cx.update(|window, cx| {
+        window.blur(cx);
+        (0..stops).for_each(|_| window.focus_next(cx));
     });
     settle(cx);
 }
@@ -163,9 +163,9 @@ fn form(bench: &Bench, _: &mut Window, _: &mut App, owner: Entity<Bench>) -> Any
 
 /// Save is the form's last stop, so a step back from nothing reaches it.
 fn last(cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
-        window.focus_prev();
+    cx.update(|window, cx| {
+        window.blur(cx);
+        window.focus_prev(cx);
     });
     settle(cx);
 }

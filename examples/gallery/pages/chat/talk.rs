@@ -199,7 +199,7 @@ pub fn streaming(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
                                 cx.background_executor().timer(Duration::from_millis(600)).await;
                                 loop {
                                     cx.background_executor().timer(Duration::from_millis(45)).await;
-                                    let more = feeder.update(cx, |stream, cx| {
+                                    let more = cx.update(|_, cx| feeder.update(cx, |stream, cx| {
                                         let next = (stream.arrived + 7).min(ANSWER.len());
                                         stream.arrived = (next..=ANSWER.len())
                                             .find(|at| ANSWER.is_char_boundary(*at))
@@ -207,8 +207,8 @@ pub fn streaming(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
                                         stream.live = stream.arrived < ANSWER.len();
                                         cx.notify();
                                         stream.live
-                                    });
-                                    if !matches!(more, Ok(true)) {
+                                    }));
+                                    if !matches!(more.and_then(|inner| inner), Ok(true)) {
                                         break;
                                     }
                                 }

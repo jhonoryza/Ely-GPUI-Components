@@ -172,7 +172,7 @@ impl RenderOnce for SelectionArea {
                     })
                     .on_mouse_down(MouseButton::Left, move |event, window, cx| {
                         cx.stop_propagation();
-                        window.focus(&keys_to);
+                        window.focus(&keys_to, cx);
                         at.update(cx, |area, _| area.cursor = ix);
                         let adding = event.modifiers.platform || event.modifiers.shift;
                         press(&pressed(&now, &held, adding), window, cx)

@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Bounds, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, Pixels, Point,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, canvas, div, fill, point,
-    prelude::*, size, transparent_black,
+    App, Bounds, ElementId, Entity, HoverListenerMode, InteractiveElement, IntoElement,
+    ParentElement, Pixels, Point, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
+    Window, canvas, div, fill, point, prelude::*, size, transparent_black,
 };
 
 use crate::{
@@ -336,6 +336,7 @@ impl RenderOnce for InpaintCanvas {
                         cx.notify();
                     })
                 })
+                .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
                 .on_hover(move |hovered, _, cx| {
                     if !hovered {
                         leave.update(cx, |pointer, cx| {

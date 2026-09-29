@@ -110,7 +110,9 @@ impl RenderOnce for InputGroup {
             .bg(colors.surface)
             .text_size(theme.text_size(text_size(self.size)))
             .text_color(colors.fg)
-            .on_mouse_down(MouseButton::Left, move |_, window, _| window.focus(&focus))
+            .on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                window.focus(&focus, cx)
+            })
             .children(self.before.into_iter().map(|block| addon(block, true)))
             .child(div().flex_1().min_w_0().px(pad).child(self.state))
             .children(self.after.into_iter().map(|block| addon(block, false)))

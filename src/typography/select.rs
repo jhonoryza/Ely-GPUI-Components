@@ -82,7 +82,7 @@ impl RenderOnce for SelectableText {
             .on_mouse_down(MouseButton::Left, move |event, window, cx| {
                 let ix = index_at(&down_layout, event.position);
                 down.update(cx, |selection, cx| {
-                    window.focus(&selection.focus);
+                    window.focus(&selection.focus, cx);
                     if !event.modifiers.shift {
                         selection.anchor = ix;
                     }

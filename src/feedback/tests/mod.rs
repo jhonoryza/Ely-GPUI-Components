@@ -75,7 +75,7 @@ fn desk(cx: &mut TestAppContext) -> (Entity<Desk>, &mut VisualTestContext) {
     });
     settle(cx);
     let root = view.read_with(cx, |desk, _| desk.root.clone());
-    cx.update(|window, _| window.focus(&root));
+    cx.update(|window, cx| window.focus(&root, cx));
     (view, cx)
 }
 
@@ -159,6 +159,19 @@ fn the_pointer_on_the_stack_holds_the_clock(cx: &mut TestAppContext) {
     assert_eq!(toasts(&view, cx), [(id, false)], "two seconds were left");
     wait(Duration::from_millis(200), cx);
     assert!(toasts(&view, cx).is_empty());
+}
+
+#[gpui::test]
+fn typing_under_a_resting_pointer_keeps_the_hold(cx: &mut TestAppContext) {
+    let (view, cx) = desk(cx);
+    let id = push(&view, Toast::new("Saved"), cx);
+    let screen = cx.update(|window, _| window.viewport_size());
+    let on_toast = point(screen.width - px(120.0), screen.height - px(48.0));
+    cx.simulate_mouse_move(on_toast, None, Modifiers::none());
+    settle(cx);
+    press("a", cx);
+    wait(Duration::from_secs(20), cx);
+    assert_eq!(toasts(&view, cx), [(id, false)], "a key leaves the pointer");
 }
 
 #[gpui::test]

@@ -1,10 +1,10 @@
 use std::{collections::HashSet, f32::consts::TAU};
 
 use gpui::{
-    App, Bounds, Div, ElementId, Entity, InteractiveElement, IntoElement, MouseButton,
-    MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, PathBuilder, Pixels, Refineable,
-    RenderOnce, SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas,
-    div, prelude::*,
+    App, Bounds, Div, ElementId, Entity, HoverListenerMode, InteractiveElement, IntoElement,
+    MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, PathBuilder, Pixels,
+    Refineable, RenderOnce, SharedString, StatefulInteractiveElement, StyleRefinement, Styled,
+    Window, canvas, div, prelude::*,
 };
 
 use super::{
@@ -331,6 +331,7 @@ impl RenderOnce for NetworkGraph {
                     }
                 })
             })
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |inside, _, cx| {
                 if !*inside {
                     left.update(cx, |graph, cx| {

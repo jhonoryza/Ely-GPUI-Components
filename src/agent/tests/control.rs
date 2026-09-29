@@ -58,10 +58,10 @@ fn asked(cx: &mut TestAppContext) -> (Entity<Asked>, &mut VisualTestContext) {
 #[gpui::test]
 fn a_pick_answers_the_question_and_the_answer_stands_alone(cx: &mut TestAppContext) {
     let (view, cx) = asked(cx);
-    cx.update(|window, _| window.focus_next());
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert_eq!(
         view.read_with(cx, |asked, _| asked.answers.clone()),
@@ -74,7 +74,7 @@ fn a_pick_answers_the_question_and_the_answer_stands_alone(cx: &mut TestAppConte
 fn enter_sends_a_written_answer_and_skips_a_blank_one(cx: &mut TestAppContext) {
     let (view, cx) = asked(cx);
     for _ in 0..3 {
-        cx.update(|window, _| window.focus_next());
+        cx.update(|window, cx| window.focus_next(cx));
     }
     cx.simulate_input(" ");
     press("enter", cx);

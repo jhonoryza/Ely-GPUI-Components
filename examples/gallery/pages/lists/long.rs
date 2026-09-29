@@ -67,7 +67,7 @@ pub fn infinite(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                         let more = more.clone();
                         cx.spawn(async move |cx| {
                             cx.background_executor().timer(Duration::from_millis(700)).await;
-                            cx.update(|cx| set(&more, (rows + PAGE, false), cx)).ok();
+                            cx.update(|cx| set(&more, (rows + PAGE, false), cx));
                         })
                         .detach();
                     }),

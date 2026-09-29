@@ -117,8 +117,7 @@ pub fn panel(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                         settings.enhancing = false;
                         settings.suggestion = Some(text.into());
                     })
-                })
-                .ok();
+                });
             })
             .detach();
         })

@@ -238,7 +238,7 @@ impl Track {
                             _ => 0,
                         };
                         grab.update(cx, |grab, _| *grab = index);
-                        window.focus(&focus[index]);
+                        window.focus(&focus[index], cx);
                         jump(index, next, window, cx);
                     })
             });

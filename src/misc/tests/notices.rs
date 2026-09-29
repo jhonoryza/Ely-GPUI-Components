@@ -148,7 +148,7 @@ fn consent_hands_focus_back_to_its_opener(cx: &mut TestAppContext) {
         button: cx.focus_handle(),
     });
     let button = view.read_with(cx, |opener, _| opener.button.clone());
-    cx.update(|window, _| window.focus(&button));
+    cx.update(|window, cx| window.focus(&button, cx));
     settle(cx);
     press("enter", cx);
     press("tab", cx);

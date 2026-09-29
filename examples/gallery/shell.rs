@@ -44,7 +44,7 @@ impl Gallery {
             }
         });
         let focus = cx.focus_handle();
-        window.focus(&focus);
+        window.focus(&focus, cx);
         Self {
             page,
             pass: 0,
@@ -71,10 +71,7 @@ impl Gallery {
 
     /// Viewport height and furthest scroll, in pixels.
     pub fn scroll_extent(&self) -> (Pixels, Pixels) {
-        (
-            self.scroll.bounds().size.height,
-            self.scroll.max_offset().height,
-        )
+        (self.scroll.bounds().size.height, self.scroll.max_offset().y)
     }
 
     /// Scrolls until `target` sits inside the page. True if it moved.
@@ -87,7 +84,7 @@ impl Gallery {
         } else {
             return false;
         };
-        let y = (-self.scroll.offset().y + shift).clamp(px(0.0), self.scroll.max_offset().height);
+        let y = (-self.scroll.offset().y + shift).clamp(px(0.0), self.scroll.max_offset().y);
         self.scroll_to(y, cx);
         true
     }

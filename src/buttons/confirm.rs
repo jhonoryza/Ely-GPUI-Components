@@ -97,13 +97,15 @@ fn expire(
     let (weak, generation) = (state.downgrade(), state.read(cx).generation);
     window.spawn(cx, async move |cx| {
         cx.background_executor().timer(after).await;
-        let cleared = weak.update(cx, |confirm, cx| {
-            if confirm.generation == generation {
-                clear(confirm);
-                cx.notify();
-            }
+        let cleared = cx.update(|_, cx| {
+            weak.update(cx, |confirm, cx| {
+                if confirm.generation == generation {
+                    clear(confirm);
+                    cx.notify();
+                }
+            })
         });
-        if let Err(error) = cleared {
+        if let Err(error) = cleared.and_then(|inner| inner) {
             log::error!("confirm button: state gone before it expired: {error:#}");
         }
     })

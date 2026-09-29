@@ -3,8 +3,8 @@ use std::fmt;
 use gpui::{
     AbsoluteLength, AnyElement, App, BorderStyle, Bounds, Context, Corners, DefiniteLength,
     DivInspectorState, Edges, FontWeight, Inspector, InteractiveElement, IntoElement, Length,
-    ParentElement, Pixels, StatefulInteractiveElement, StyleRefinement, Styled, TextRun, Window,
-    canvas, div, fill, point, quad, size, transparent_black,
+    ParentElement, Pixels, StatefulInteractiveElement, StyleRefinement, Styled, TextAlign, TextRun,
+    Window, canvas, div, fill, point, quad, size, transparent_black,
 };
 
 use crate::{
@@ -156,7 +156,14 @@ fn paint_layers(bounds: Bounds<Pixels>, layers: Layers, window: &mut Window, cx:
     );
     let radius = theme.radius(Radius::Sm).to_pixels(window.rem_size());
     window.paint_quad(fill(tag, colors.fg).corner_radii(radius));
-    if let Err(error) = line.paint(point(tag.left() + pad, tag.top()), height, window, cx) {
+    if let Err(error) = line.paint(
+        point(tag.left() + pad, tag.top()),
+        height,
+        TextAlign::Left,
+        None,
+        window,
+        cx,
+    ) {
         log::error!("inspector: size tag did not paint: {error:#}");
     }
 }
@@ -380,8 +387,10 @@ fn panel(
 /// Draws gpui's inspector, which debug builds have, in Ely's look. `window.toggle_inspector` opens it at the window's right, and the page gives up its width. Hovering picks the box under the pointer, the wheel steps out to the boxes around it, and a press holds it; the picked box shows its margin, border, padding and size over the page, and its model in the panel.
 pub fn install_inspector(cx: &mut App) {
     cx.set_inspector_renderer(Box::new(panel));
-    cx.register_inspector_element(|_, state: &DivInspectorState, window, cx| {
-        box_model(state, window, cx)
+    cx.register_inspector_element(|_, _| {
+        |_, state: &DivInspectorState, window: &mut Window, cx: &mut App| {
+            box_model(state, window, cx)
+        }
     });
     log::info!("inspector: installed");
 }

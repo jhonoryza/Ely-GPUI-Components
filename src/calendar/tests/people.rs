@@ -96,9 +96,9 @@ fn a_chip_opens_its_details_and_edit_names_it(cx: &mut TestAppContext) {
         cx.debug_bounds("event-popover review").is_some(),
         "the details open"
     );
-    cx.update(|window, _| {
-        window.focus_next();
-        window.focus_next();
+    cx.update(|window, cx| {
+        window.focus_next(cx);
+        window.focus_next(cx);
     });
     press("space", cx);
     assert_eq!(

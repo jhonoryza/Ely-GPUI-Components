@@ -247,7 +247,7 @@ fn a_picture_that_cannot_open_says_so(cx: &mut TestAppContext) {
     let cx = viewing(std::env::temp_dir().join("ely-media-missing.png"), cx);
     assert!(cx.debug_bounds("image-viewer-failed").is_some());
     assert!(cx.debug_bounds("image-viewer-picture").is_none());
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     let focused = cx.update(|window, cx| window.focused(cx));
     assert!(focused.is_none(), "with nothing to show, nothing takes Tab");
 }
@@ -284,9 +284,9 @@ fn only_a_thumbnail_with_a_handler_takes_tab_and_opens_on_enter(cx: &mut TestApp
     let (_, cx) = cx.add_window_view(|_, _| Strip(seen, path));
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     let first = cx.update(|window, cx| window.focused(cx));
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     let wrapped = cx.update(|window, cx| window.focused(cx));
     assert!(
         first.is_some() && first == wrapped,

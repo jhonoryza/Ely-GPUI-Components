@@ -256,7 +256,7 @@ impl RenderOnce for RadioGroup {
                 };
                 cx.stop_propagation();
                 let next = step(&choices, at, by);
-                window.focus(&handles[next]);
+                window.focus(&handles[next], cx);
                 pick(&choices[next].value, window, cx);
             })
             .children(radios)

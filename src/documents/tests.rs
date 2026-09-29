@@ -239,7 +239,7 @@ fn escape_leaves_zen_turned_on_from_outside_and_hands_focus_back(cx: &mut TestAp
     cx.update(|window, cx| {
         window.activate_window();
         let outside = zen.read(cx).outside.focus_handle(cx);
-        window.focus(&outside);
+        window.focus(&outside, cx);
     });
     settle(cx);
     zen.update(cx, |zen, cx| {

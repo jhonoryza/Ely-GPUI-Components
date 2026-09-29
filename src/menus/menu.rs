@@ -296,7 +296,7 @@ pub(crate) fn hang(
     if let Some(typing) = &typing
         && focus.is_focused(window)
     {
-        window.focus(typing);
+        window.focus(typing, cx);
     }
     let mut levels = state.read(cx).levels.clone();
     settle(menu, &mut levels);

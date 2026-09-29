@@ -54,11 +54,11 @@ fn each_row_offers_what_its_state_allows(cx: &mut TestAppContext) {
     setup(cx);
     cx.update(|cx| cx.bind_keys([KeyBinding::new("tab", FocusNext, None)]));
     let (view, cx) = cx.add_window_view(|_, _| Shelf { log: Vec::new() });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     let log = view.read_with(cx, |shelf, _| shelf.log.clone());
     assert_eq!(log, ["cancel 0", "retry 1", "remove 2"]);

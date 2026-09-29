@@ -33,7 +33,7 @@ impl Editing {
         });
         let all = field.read(cx).text().len();
         field.update(cx, |input, cx| input.select(0..all, cx));
-        window.focus(&field.read(cx).focus().clone());
+        window.focus(&field.read(cx).focus().clone(), cx);
         let owner = state.clone();
         let events = window.subscribe(&field, cx, move |_, event, window, cx| match event {
             InputEvent::Submit => owner.update(cx, |editing, cx| {
@@ -58,10 +58,10 @@ impl Editing {
         self.back = Some(back);
     }
 
-    pub(crate) fn give_back(&mut self, window: &mut Window) {
+    pub(crate) fn give_back(&mut self, window: &mut Window, cx: &mut App) {
         if let Some(back) = self.back.take() {
             log::info!("inline edit: focus handed back");
-            window.focus(&back);
+            window.focus(&back, cx);
         }
     }
 
@@ -134,7 +134,7 @@ impl RenderOnce for InlineEdit {
                         cx.stop_propagation();
                         escape.update(cx, |editing, cx| {
                             editing.finish(true, window, cx);
-                            editing.give_back(window);
+                            editing.give_back(window, cx);
                         });
                     }
                 })
@@ -143,7 +143,7 @@ impl RenderOnce for InlineEdit {
                         cx.stop_propagation();
                         enter.update(cx, |editing, cx| {
                             editing.finish(false, window, cx);
-                            editing.give_back(window);
+                            editing.give_back(window, cx);
                         });
                     }
                 })

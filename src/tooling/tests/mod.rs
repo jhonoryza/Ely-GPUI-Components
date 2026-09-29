@@ -93,7 +93,7 @@ fn knobs_redraw_the_preview(cx: &mut TestAppContext) {
         root: cx.focus_handle(),
     });
     let root = view.read_with(cx, |stage, _| stage.root.clone());
-    cx.update(|window, _| window.focus(&root));
+    cx.update(|window, cx| window.focus(&root, cx));
     settle(cx);
     let shown =
         |selector: &'static str, cx: &mut VisualTestContext| cx.debug_bounds(selector).is_some();

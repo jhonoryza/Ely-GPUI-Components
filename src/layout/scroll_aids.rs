@@ -34,7 +34,7 @@ impl ScrollShadow {
 impl RenderOnce for ScrollShadow {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let scrolled = -self.handle.offset().y;
-        let reach = self.handle.max_offset().height;
+        let reach = self.handle.max_offset().y;
         let shade = cx.theme().elevation(Elevation::Floating);
         let edge = || {
             div()

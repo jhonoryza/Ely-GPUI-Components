@@ -36,9 +36,9 @@ impl RenderOnce for SkipLink {
         let shown = handle.is_focused(window);
         let theme = cx.theme();
         let (target, label) = (self.target, self.label.clone());
-        let skip = move |window: &mut Window| {
+        let skip = move |window: &mut Window, cx: &mut App| {
             log::info!("skip link {label:?}: focus to its target");
-            window.focus(&target);
+            window.focus(&target, cx);
         };
         let press = skip.clone();
         let pill = div()
@@ -55,11 +55,11 @@ impl RenderOnce for SkipLink {
             .text_color(theme.colors.fg)
             .cursor_pointer()
             .child(self.label)
-            .on_click(move |_, window, _| press(window));
+            .on_click(move |_, window, cx| press(window, cx));
         div()
             .id(self.id.clone())
             .track_focus(&handle)
-            .on_click(move |_, window, _| skip(window))
+            .on_click(move |_, window, cx| skip(window, cx))
             .when(shown, |link| {
                 link.child(raise(
                     self.id.clone(),

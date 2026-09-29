@@ -491,10 +491,5 @@ impl Theme {
 }
 
 fn shadow(color: Hsla, y: f32, blur: f32) -> BoxShadow {
-    BoxShadow {
-        color,
-        offset: point(px(0.0), px(y)),
-        blur_radius: px(blur),
-        spread_radius: px(0.0),
-    }
+    BoxShadow::new(px(0.0), px(y), color).blur_radius(px(blur))
 }

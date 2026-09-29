@@ -221,8 +221,7 @@ pub fn playground(window: &mut Window, cx: &mut App) -> impl IntoElement + use<>
                         },
                         cx,
                     )
-                })
-                .ok();
+                });
             })
             .detach();
         });

@@ -10,7 +10,7 @@ publish = false
 
 [features]
 default = ["runtime_shaders"]
-runtime_shaders = ["gpui/runtime_shaders"]
+runtime_shaders = ["gpui_platform/runtime_shaders"]
 test-support = ["gpui/test-support"]
 
 [dependencies]
@@ -19,7 +19,8 @@ anyhow = "1"
 barcoders = { version = "2", default-features = false, features = ["std"] }
 emojis = "0.9"
 futures = "0.3"
-gpui = "0.2.2"
+gpui = { git = "https://github.com/zed-industries/zed", rev = "1a28cff4b409169bac058bca40dfbfeb7621d19b", default-features = false, features = ["stacker"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1a28cff4b409169bac058bca40dfbfeb7621d19b", features = ["font-kit"] }
 image = { version = "0.25", default-features = false }
 iso_currency = { version = "0.7", features = ["iterator"] }
 isocountry = "0.3"

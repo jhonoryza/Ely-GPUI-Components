@@ -73,7 +73,7 @@ pub fn park(window: WindowHandle<Gallery>, cx: &mut AsyncApp) -> Result<()> {
 }
 
 fn opened(key: &str, cx: &mut AsyncApp) -> Result<gpui::AnyWindowHandle> {
-    cx.update(|cx| Opened::get(key, cx))?
+    cx.update(|cx| Opened::get(key, cx))
         .with_context(|| format!("no window opened as {key}"))
 }
 
@@ -231,15 +231,15 @@ pub async fn play(
             }
             Step::ExpectClosed(key) => {
                 let handle = opened(key, cx)?;
-                let open = cx.update(|cx| cx.windows().contains(&handle))?;
+                let open = cx.update(|cx| cx.windows().contains(&handle));
                 anyhow::ensure!(!open, "window {key} is still open");
-                cx.update(|cx| Opened::take(key, cx))?;
+                cx.update(|cx| Opened::take(key, cx));
                 log::info!("script: {key} closed");
             }
             Step::CloseWindow(key) => {
                 let handle = opened(key, cx)?;
                 handle.update(cx, |_, window, _| window.remove_window())?;
-                cx.update(|cx| Opened::take(key, cx))?;
+                cx.update(|cx| Opened::take(key, cx));
             }
         }
         cx.background_executor().timer(FRAME).await;
@@ -439,13 +439,13 @@ async fn target_bounds(
     cx: &mut AsyncApp,
 ) -> Result<Bounds<Pixels>> {
     let bounds = cx
-        .update(|cx| Probes::get(key, cx))?
+        .update(|cx| Probes::get(key, cx))
         .with_context(|| format!("probe {key} never rendered"))?;
     if window.update(cx, |gallery, _, cx| gallery.reveal(bounds, cx))? {
         cx.background_executor().timer(FRAME).await;
     }
     let bounds = cx
-        .update(|cx| Probes::get(key, cx))?
+        .update(|cx| Probes::get(key, cx))
         .with_context(|| format!("probe {key} vanished after scrolling"))?;
     log::info!("script: probe {key} at {bounds:?}");
     Ok(bounds)

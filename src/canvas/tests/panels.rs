@@ -7,9 +7,9 @@ use crate::canvas::{
 };
 
 fn tab(stops: usize, cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
-        (0..stops).for_each(|_| window.focus_next());
+    cx.update(|window, cx| {
+        window.blur(cx);
+        (0..stops).for_each(|_| window.focus_next(cx));
     });
     settle(cx);
 }

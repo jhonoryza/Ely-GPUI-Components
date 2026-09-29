@@ -95,7 +95,7 @@ fn press(key: &str, cx: &mut VisualTestContext) {
 #[gpui::test]
 fn arrows_step_a_focused_tile_past_its_neighbours_and_shift_grows_it(cx: &mut TestAppContext) {
     let (host, cx) = wall(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
     press("down", cx);
     assert_eq!(place(&host, "a", cx), (0, 4, 6, 2), "a went below c");
@@ -115,7 +115,7 @@ fn arrows_step_a_focused_tile_past_its_neighbours_and_shift_grows_it(cx: &mut Te
 fn arrows_in_a_control_inside_a_card_leave_the_tiles_where_they_are(cx: &mut TestAppContext) {
     let (host, cx) = wall(cx);
     let inside = host.read_with(cx, |wall, _| wall.inside.clone());
-    cx.update(|window, _| window.focus(&inside));
+    cx.update(|window, cx| window.focus(&inside, cx));
     settle(cx);
     press("right", cx);
     press("down", cx);
@@ -168,9 +168,9 @@ fn said(host: &Entity<Board>, cx: &mut VisualTestContext) -> Vec<String> {
 }
 
 fn tab(stops: usize, cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
-        (0..stops).for_each(|_| window.focus_next());
+    cx.update(|window, cx| {
+        window.blur(cx);
+        (0..stops).for_each(|_| window.focus_next(cx));
     });
     settle(cx);
 }

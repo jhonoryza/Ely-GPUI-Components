@@ -3,8 +3,8 @@ use std::{ops::Range, rc::Rc};
 use alacritty_terminal::vte::ansi::CursorShape;
 use gpui::{
     BorderStyle, Bounds, ElementInputHandler, Entity, Font, FontStyle, FontWeight, Hsla,
-    IntoElement, Pixels, Size, StrikethroughStyle, Styled, TextRun, UnderlineStyle, canvas, fill,
-    outline, point, size,
+    IntoElement, Pixels, Size, StrikethroughStyle, Styled, TextAlign, TextRun, UnderlineStyle,
+    canvas, fill, outline, point, size,
 };
 
 use super::{
@@ -101,7 +101,7 @@ pub(crate) fn grid(
                     Some(cell.width),
                 );
                 shaped
-                    .paint_background(at(ix, 0), cell.height, window, cx)
+                    .paint_background(at(ix, 0), cell.height, TextAlign::Left, None, window, cx)
                     .expect("a terminal row's ground paints");
                 for (_, columns, why) in frame.lit.iter().filter(|(row, ..)| *row == ix) {
                     let wash = match why {
@@ -113,7 +113,7 @@ pub(crate) fn grid(
                     window.paint_quad(fill(Bounds::new(at(ix, columns.start), extent), wash));
                 }
                 shaped
-                    .paint(at(ix, 0), cell.height, window, cx)
+                    .paint(at(ix, 0), cell.height, TextAlign::Left, None, window, cx)
                     .expect("a terminal row paints");
                 for (column, cluster, style) in &row.clusters {
                     let run = TextRun {
@@ -127,7 +127,14 @@ pub(crate) fn grid(
                     window
                         .text_system()
                         .shape_line(cluster.clone().into(), look.size, &[run], None)
-                        .paint(at(ix, *column), cell.height, window, cx)
+                        .paint(
+                            at(ix, *column),
+                            cell.height,
+                            TextAlign::Left,
+                            None,
+                            window,
+                            cx,
+                        )
                         .expect("a terminal cluster paints");
                 }
             }

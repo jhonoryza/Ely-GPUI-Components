@@ -249,7 +249,7 @@ impl RenderOnce for VideoMessage {
         };
         let playing = self.playing;
         let toggle = self.on_toggle.clone();
-        shaped(self.size.0, self.size.1, widest)
+        let video = shaped(self.size.0, self.size.1, widest)
             .id(self.id.clone())
             .relative()
             .bg(colors.media_backdrop)
@@ -316,6 +316,7 @@ impl RenderOnce for VideoMessage {
                             .bg(colors.on_media.opacity(0.25))
                             .child(div().h_full().w(relative(share)).bg(colors.on_media)),
                     ),
-            )
+            );
+        div().child(video)
     }
 }

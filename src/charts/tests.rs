@@ -197,9 +197,9 @@ fn tab_reaches_a_legend_entry_and_enter_toggles_it(cx: &mut TestAppContext) {
     let (_, cx) = cx.add_window_view(|_, _| Keyed(seen));
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| {
-        window.focus_next();
-        window.focus_next();
+    cx.update(|window, cx| {
+        window.focus_next(cx);
+        window.focus_next(cx);
     });
     settle(cx);
     cx.simulate_keystrokes("enter");

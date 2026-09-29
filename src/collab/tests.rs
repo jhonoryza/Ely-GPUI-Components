@@ -49,7 +49,7 @@ fn open(following: bool, cx: &mut TestAppContext) -> (Entity<Desk>, &mut VisualT
     cx.update(|window, cx| {
         window.activate_window();
         let field = desk.read(cx).field.clone();
-        window.focus(&field.focus_handle(cx));
+        window.focus(&field.focus_handle(cx), cx);
     });
     cx.run_until_parked();
     (desk, cx)
@@ -84,7 +84,7 @@ fn following_begun_from_outside_still_stops_on_escape(cx: &mut TestAppContext) {
     let (desk, cx) = open(false, cx);
     cx.update(|window, cx| {
         let outside = desk.read(cx).outside.focus_handle(cx);
-        window.focus(&outside);
+        window.focus(&outside, cx);
     });
     desk.update(cx, |desk, cx| {
         desk.following = true;

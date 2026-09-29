@@ -54,7 +54,8 @@ fn each_second(id: impl Into<ElementId>, window: &mut Window, cx: &mut App) {
                 cx.background_executor()
                     .timer(Duration::from_nanos(1_000_000_000 - past))
                     .await;
-                if ticker.update(cx, |_, cx| cx.notify()).is_err() {
+                let ticked = cx.update(|_, cx| ticker.update(cx, |_, cx| cx.notify()));
+                if ticked.and_then(|inner| inner).is_err() {
                     return;
                 }
             }

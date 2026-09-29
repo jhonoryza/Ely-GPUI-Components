@@ -15,7 +15,7 @@ use crate::{
     typography::{Ellipsis, format::file_size},
 };
 
-/// A box in a picture's own shape: as wide as the picture, but no wider than `widest` or its container.
+/// A box in a picture's own shape: as wide as the picture, but no wider than `widest` or its container. Hand it to a flex column inside a block: taffy 0.13 sizes the column by its width before its cap.
 pub(crate) fn shaped(width: f32, height: f32, widest: Pixels) -> Div {
     assert!(
         width > 0.0 && height > 0.0,
@@ -76,19 +76,21 @@ impl RenderOnce for ImageMessage {
             .flex_col()
             .gap_1()
             .child(
-                shaped(self.size.0, self.size.1, widest)
-                    .id(self.id.clone())
-                    .relative()
-                    .when_some(open, |picture, open| {
-                        picture
-                            .cursor_pointer()
-                            .on_click(move |_, window, cx| open(window, cx))
-                    })
-                    .child(
-                        Image::new((self.id.clone(), "picture"), source(&self.source))
-                            .fit(ObjectFit::Contain)
-                            .size_full(),
-                    ),
+                div().child(
+                    shaped(self.size.0, self.size.1, widest)
+                        .id(self.id.clone())
+                        .relative()
+                        .when_some(open, |picture, open| {
+                            picture
+                                .cursor_pointer()
+                                .on_click(move |_, window, cx| open(window, cx))
+                        })
+                        .child(
+                            Image::new((self.id.clone(), "picture"), source(&self.source))
+                                .fit(ObjectFit::Contain)
+                                .size_full(),
+                        ),
+                ),
             )
             .children(self.caption.map(|caption| {
                 div()
@@ -183,7 +185,7 @@ impl RenderOnce for ImageGrid {
         .flex()
         .flex_col()
         .gap_0p5();
-        match count {
+        let grid = match count {
             1 => grid.child(row().child(tile(0))),
             2 => grid.child(row().child(tile(0)).child(tile(1))),
             3 => grid.child(
@@ -200,7 +202,8 @@ impl RenderOnce for ImageGrid {
             _ => grid
                 .child(row().child(tile(0)).child(tile(1)))
                 .child(row().child(tile(2)).child(tile(3))),
-        }
+        };
+        div().child(grid)
     }
 }
 

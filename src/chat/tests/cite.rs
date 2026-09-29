@@ -78,7 +78,7 @@ fn citations_and_sources_open_from_the_keyboard(cx: &mut TestAppContext) {
     });
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     release("enter", cx);
     assert_eq!(
         cited.read_with(cx, |cited, _| cited.opened),
@@ -86,7 +86,7 @@ fn citations_and_sources_open_from_the_keyboard(cx: &mut TestAppContext) {
         "the badge opens its source"
     );
     let folded = frame.borrow().expect("the list is laid out").size.height;
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     release("space", cx);
     let open = frame.borrow().expect("the list is laid out").size.height;
     assert!(
@@ -126,9 +126,9 @@ fn cards_open_from_the_keyboard(cx: &mut TestAppContext) {
     let (cards, cx) = cx.add_window_view(|_, _| Cards { opened: Vec::new() });
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     release("enter", cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     release("enter", cx);
     assert_eq!(
         cards.read_with(cx, |cards, _| cards.opened.clone()),

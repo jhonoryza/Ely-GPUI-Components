@@ -92,9 +92,9 @@ fn edit(host: &Entity<Bench>, cx: &mut VisualTestContext, change: impl FnOnce(&m
 
 /// Focus on the `stops`th Tab stop from the top.
 fn tab(stops: usize, cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
-        (0..stops).for_each(|_| window.focus_next());
+    cx.update(|window, cx| {
+        window.blur(cx);
+        (0..stops).for_each(|_| window.focus_next(cx));
     });
     settle(cx);
 }

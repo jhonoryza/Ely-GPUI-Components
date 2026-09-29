@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Div, ElementId, Entity, InteractiveElement, IntoElement, MouseMoveEvent, ParentElement,
-    PathBuilder, Pixels, Refineable, RenderOnce, SharedString, StatefulInteractiveElement,
-    StyleRefinement, Styled, Window, canvas, div, fill,
+    App, Div, ElementId, Entity, HoverListenerMode, InteractiveElement, IntoElement,
+    MouseMoveEvent, ParentElement, PathBuilder, Pixels, Refineable, RenderOnce, SharedString,
+    StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, fill,
 };
 
 use super::{
@@ -201,6 +201,7 @@ impl RenderOnce for FunnelChart {
                     }
                 })
             })
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |inside, _, cx| {
                 if !*inside {
                     left.update(cx, |flows, cx| {

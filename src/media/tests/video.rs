@@ -250,10 +250,10 @@ fn captioning_at<'a>(
 
 /// Tabs to the `nth` stop and types over it.
 fn retype(nth: usize, text: &str, cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
+    cx.update(|window, cx| {
+        window.blur(cx);
         for _ in 0..nth {
-            window.focus_next();
+            window.focus_next(cx);
         }
     });
     press("enter", cx);

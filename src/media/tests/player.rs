@@ -97,10 +97,10 @@ fn watching(cx: &mut TestAppContext) -> (Entity<Watching>, &mut VisualTestContex
 #[gpui::test]
 fn space_on_a_focused_bar_button_presses_it_once(cx: &mut TestAppContext) {
     let (view, cx) = watching(cx);
-    cx.update(|window, _| {
-        window.blur();
+    cx.update(|window, cx| {
+        window.blur(cx);
         for _ in 0..3 {
-            window.focus_next();
+            window.focus_next(cx);
         }
     });
     press("space", cx);
@@ -145,7 +145,7 @@ fn a_long_caption_wraps_inside_a_narrow_player(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_caption_stays_while_the_controls_rest(cx: &mut TestAppContext) {
     let (view, cx) = watching_at(480.0, "Light falls on the stair", true, cx);
-    cx.update(|window, _| window.blur());
+    cx.update(|window, cx| window.blur(cx));
     view.update(cx, |view, cx| {
         view.playing = true;
         cx.notify();
@@ -181,7 +181,7 @@ fn space_plays_l_and_j_jump_ten_seconds_and_c_turns_captions(cx: &mut TestAppCon
 #[gpui::test]
 fn controls_rest_once_the_pointer_is_still_while_it_plays(cx: &mut TestAppContext) {
     let (view, cx) = watching(cx);
-    cx.update(|window, _| window.blur());
+    cx.update(|window, cx| window.blur(cx));
     view.update(cx, |view, cx| {
         view.playing = true;
         cx.notify();
@@ -203,7 +203,7 @@ fn controls_rest_once_the_pointer_is_still_while_it_plays(cx: &mut TestAppContex
 
 /// Rests a playing player's bar, focus outside it and the pointer still at `spot`.
 fn rest(spot: Point<Pixels>, view: &Entity<Watching>, cx: &mut VisualTestContext) {
-    cx.update(|window, _| window.blur());
+    cx.update(|window, cx| window.blur(cx));
     view.update(cx, |view, cx| {
         view.playing = true;
         cx.notify();
@@ -244,7 +244,7 @@ fn shift_tab_into_a_resting_bar_keeps_focus_on_its_last_button(cx: &mut TestAppC
     let (view, cx) = watching(cx);
     let frame = cx.debug_bounds("video-player").expect("the player draws");
     rest(frame.center(), &view, cx);
-    cx.update(|window, _| window.focus_prev());
+    cx.update(|window, cx| window.focus_prev(cx));
     settle(cx);
     press("enter", cx);
     assert_eq!(view.read_with(cx, |view, _| view.fullscreens), 1);
@@ -288,7 +288,7 @@ fn the_bar_stays_up_while_a_button_in_it_has_focus(cx: &mut TestAppContext) {
     let (_, cx) = cx.add_window_view(|_, _| Paced { path });
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
     cx.executor().advance_clock(Duration::from_millis(2600));
     settle(cx);

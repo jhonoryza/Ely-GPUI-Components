@@ -117,7 +117,11 @@ impl Render for Grouped {
                 )
             })
             .collect();
-        crate::primitives::Measure::new("measure", move |bounds, _, _| tall.set(bounds.size.height))
+        // gpui fills the window with an auto-sized root, so the measured box sits inside one.
+        div().child(
+            crate::primitives::Measure::new("measure", move |bounds, _, _| {
+                tall.set(bounds.size.height)
+            })
             .w(px(400.0))
             .child(
                 DataTable::new(
@@ -126,7 +130,8 @@ impl Render for Grouped {
                 )
                 .rows(rows)
                 .group_by("region"),
-            )
+            ),
+        )
     }
 }
 

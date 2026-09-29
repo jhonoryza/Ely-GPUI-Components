@@ -47,7 +47,7 @@ fn a_loading_button_ignores_presses_and_keeps_its_tab_stop(cx: &mut TestAppConte
         presses: 0,
     });
     let root = view.read_with(cx, |bench, _| bench.root.clone());
-    cx.update(|window, _| window.focus(&root));
+    cx.update(|window, cx| window.focus(&root, cx));
     press("tab", cx);
     press("enter", cx);
     assert_eq!(view.read_with(cx, |bench, _| bench.presses), 0);

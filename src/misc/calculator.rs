@@ -266,7 +266,7 @@ impl RenderOnce for Calculator {
             .focus_ring(cx)
             .on_mouse_down(MouseButton::Left, {
                 let focus = focus.clone();
-                move |_, window, _| window.focus(&focus)
+                move |_, window, cx| window.focus(&focus, cx)
             })
             .on_key_down({
                 let tape = tape.clone();

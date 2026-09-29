@@ -79,7 +79,7 @@ pub(crate) fn grid(face: Face, base: Div, window: &mut Window, cx: &mut App) -> 
     }
     if sheet.read(cx).editing && editor.read(cx).field().is_none() {
         sheet.update(cx, |sheet, _| sheet.editing = false);
-        window.focus(&focus);
+        window.focus(&focus, cx);
     }
     let theme = cx.theme();
     let colors = theme.colors.clone();
@@ -356,7 +356,7 @@ pub(crate) fn grid(face: Face, base: Div, window: &mut Window, cx: &mut App) -> 
                 return;
             };
             let cell = land(&merges, cell);
-            window.focus(&focus_on_press);
+            window.focus(&focus_on_press, cx);
             pressed.update(cx, |sheet, cx| {
                 sheet.cursor = cell;
                 if !event.modifiers.shift {

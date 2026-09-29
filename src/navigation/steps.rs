@@ -193,7 +193,7 @@ impl RenderOnce for Steps {
                     .flex_1()
                     .items_center()
                     .gap_3()
-                    .when(ix + 1 == count, |step| step.flex_none())
+                    .when(ix + 1 == count, |step| step.flex_grow_0().flex_shrink_0())
                     .child(head.child(circle).child(words))
                     .children(after)
                     .into_any_element()
@@ -337,7 +337,7 @@ impl RenderOnce for Wizard {
                 wizard.child(
                     Steps::new((id.clone(), "steps"), self.steps, current).on_select(
                         move |to, window, cx| {
-                            window.focus(&jumped);
+                            window.focus(&jumped, cx);
                             jump(to, window, cx)
                         },
                     ),
@@ -355,7 +355,7 @@ impl RenderOnce for Wizard {
                             .disabled(current == 0)
                             .on_click(move |_, window, cx| {
                                 if current == 1 {
-                                    window.focus(&to_advance);
+                                    window.focus(&to_advance, cx);
                                 }
                                 back(current - 1, window, cx)
                             }),

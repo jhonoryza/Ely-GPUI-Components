@@ -261,7 +261,7 @@ fn search_refuses_disabled_results(cx: &mut TestAppContext) {
 fn enter_picks_on_release_so_the_opener_stays_shut(cx: &mut TestAppContext) {
     let (view, cx) = host(Kind::Commands, cx);
     press("escape", cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert_eq!(got(&view, cx), (true, None));
     cx.simulate_input("zi");

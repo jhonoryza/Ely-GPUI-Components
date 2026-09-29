@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Bounds, Div, ElementId, Entity, InteractiveElement, IntoElement, MouseMoveEvent,
-    ParentElement, PathBuilder, Pixels, Refineable, RenderOnce, SharedString,
+    App, Bounds, Div, ElementId, Entity, HoverListenerMode, InteractiveElement, IntoElement,
+    MouseMoveEvent, ParentElement, PathBuilder, Pixels, Refineable, RenderOnce, SharedString,
     StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, fill, prelude::*,
 };
 
@@ -368,6 +368,7 @@ impl RenderOnce for SankeyChart {
                     }
                 })
             })
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |inside, _, cx| {
                 if !*inside {
                     left.update(cx, |flows, cx| {

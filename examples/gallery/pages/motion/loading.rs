@@ -24,9 +24,7 @@ pub fn later<T: 'static>(state: &Entity<T>, value: T, wait: Duration, cx: &mut A
     let state = state.clone();
     cx.spawn(async move |cx| {
         cx.background_executor().timer(wait).await;
-        if let Err(error) = cx.update(|cx| set(&state, value, cx)) {
-            log::error!("gallery: the demo closed before its answer: {error:#}");
-        }
+        cx.update(|cx| set(&state, value, cx));
     })
     .detach();
 }

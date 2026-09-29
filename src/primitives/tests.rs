@@ -113,7 +113,7 @@ fn a_raise_keeps_its_state_while_another_comes_before_it(cx: &mut TestAppContext
     cx.run_until_parked();
     let first = seen.borrow().last().cloned().expect("the box drew");
     let handle = first.read_with(cx, |handle, _| handle.clone());
-    cx.update(|window, _| window.focus(&handle));
+    cx.update(|window, cx| window.focus(&handle, cx));
     view.update(cx, |nest, cx| {
         nest.tip = true;
         cx.notify();

@@ -1,10 +1,10 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use gpui::{
-    AppContext as _, Bounds, Context, Entity, Focusable, InteractiveElement, IntoElement,
-    KeyUpEvent, Keystroke, Modifiers, MouseButton, ParentElement, Pixels, Render, ScrollDelta,
-    ScrollWheelEvent, Styled, TestAppContext, TouchPhase, VisualTestContext, Window, canvas, div,
-    point, px,
+    AnyElement, AppContext as _, Bounds, Context, Entity, Focusable, InteractiveElement,
+    IntoElement, KeyUpEvent, Keystroke, Modifiers, MouseButton, ParentElement, Pixels, Render,
+    ScrollDelta, ScrollWheelEvent, Styled, TestAppContext, TouchPhase, VisualTestContext, Window,
+    canvas, div, point, px,
 };
 
 mod cite;
@@ -13,8 +13,8 @@ mod history;
 mod welcome;
 
 use super::{
-    DateSeparator, ImageMessage, MessageAvatar, MessageBubble, MessageEditor, MessageList, Role,
-    ThinkingBlock,
+    DateSeparator, ImageGrid, ImageMessage, MessageAvatar, MessageBubble, MessageEditor,
+    MessageList, Role, ThinkingBlock, VideoMessage,
 };
 use crate::{forms, forms::TextInput, theme::Theme};
 
@@ -139,7 +139,7 @@ fn an_edit_saves_only_a_change_and_escape_cancels(cx: &mut TestAppContext) {
     cx.update(|window, cx| {
         window.activate_window();
         let field = edit.read(cx).field.focus_handle(cx);
-        window.focus(&field);
+        window.focus(&field, cx);
     });
     settle(cx);
     cx.simulate_keystrokes("cmd-enter");
@@ -306,6 +306,63 @@ fn a_picture_fits_a_narrow_column_in_its_own_shape(cx: &mut TestAppContext) {
     assert_eq!(bounds.size.height, px(160.0), "240 wide at 3:2 is 160 tall");
 }
 
+/// A message in a narrow flex column, the column measured.
+struct Column {
+    frame: Measured,
+    message: fn() -> AnyElement,
+}
+
+impl Render for Column {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let frame = self.frame.clone();
+        div().size_full().child(
+            div()
+                .w(px(240.0))
+                .relative()
+                .flex()
+                .flex_col()
+                .child((self.message)())
+                .child(
+                    canvas(
+                        move |bounds, _, _| *frame.borrow_mut() = Some(bounds),
+                        |_, _, _, _| {},
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                ),
+        )
+    }
+}
+
+fn column_height(message: fn() -> AnyElement, cx: &mut TestAppContext) -> Pixels {
+    let frame = Measured::default();
+    let seen = frame.clone();
+    let (_, cx) = cx.add_window_view(move |_, _| Column {
+        frame: seen,
+        message,
+    });
+    settle(cx);
+    frame.borrow().expect("the column is laid out").size.height
+}
+
+#[gpui::test]
+fn a_video_and_a_grid_fit_a_narrow_flex_column_in_their_shape(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let video = || {
+        VideoMessage::new("video", "dunes.jpg", 960.0, 640.0, Duration::from_secs(84))
+            .into_any_element()
+    };
+    assert_eq!(column_height(video, cx), px(160.0), "240 wide at 3:2");
+    let grid = || ImageGrid::new("grid", ["a.jpg", "b.jpg"]).into_any_element();
+    assert_eq!(
+        column_height(grid, cx),
+        px(120.0),
+        "two side by side at 2:1"
+    );
+}
+
 /// Reasoning folded under its time, the block's box measured.
 struct Reasoning {
     frame: Measured,
@@ -350,7 +407,7 @@ fn the_reasoning_opens_from_the_keyboard(cx: &mut TestAppContext) {
     cx.update(|window, _| window.activate_window());
     settle(cx);
     let closed = frame.borrow().expect("the block is laid out").size.height;
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("space");
     cx.simulate_event(KeyUpEvent {
         keystroke: Keystroke::parse("space").expect("space parses"),

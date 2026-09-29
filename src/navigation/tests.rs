@@ -53,7 +53,7 @@ impl Render for Strip {
 fn tab_arrows_skip_disabled_tabs_and_wrap(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Strip { chosen: "a".into() });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("right");
     assert_eq!(view.read_with(cx, |view, _| view.chosen.clone()), "c");
     cx.simulate_keystrokes("right");
@@ -90,9 +90,9 @@ impl Render for Path {
 fn a_level_lists_its_siblings_and_picks_one(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Path { picked: None });
-    cx.update(|window, _| {
-        window.focus_next();
-        window.focus_next();
+    cx.update(|window, cx| {
+        window.focus_next(cx);
+        window.focus_next(cx);
     });
     press("down", cx);
     press("down", cx);
@@ -132,13 +132,13 @@ fn the_wizard_walks_forward_back_and_finishes(cx: &mut TestAppContext) {
         step: 0,
         done: false,
     });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert_eq!(view.read_with(cx, |view, _| view.step), 1);
-    cx.update(|window, _| {
-        window.blur();
-        window.focus_next();
-        window.focus_next();
+    cx.update(|window, cx| {
+        window.blur(cx);
+        window.focus_next(cx);
+        window.focus_next(cx);
     });
     press("enter", cx);
     assert_eq!(view.read_with(cx, |view, _| view.step), 0);
@@ -146,10 +146,10 @@ fn the_wizard_walks_forward_back_and_finishes(cx: &mut TestAppContext) {
         view.step = 2;
         cx.notify();
     });
-    cx.update(|window, _| {
-        window.blur();
+    cx.update(|window, cx| {
+        window.blur(cx);
         for _ in 0..4 {
-            window.focus_next();
+            window.focus_next(cx);
         }
     });
     press("enter", cx);
@@ -164,9 +164,9 @@ fn a_picked_step_hands_focus_to_next(cx: &mut TestAppContext) {
         step: 2,
         done: false,
     });
-    cx.update(|window, _| {
-        window.blur();
-        window.focus_next();
+    cx.update(|window, cx| {
+        window.blur(cx);
+        window.focus_next(cx);
     });
     press("enter", cx);
     assert_eq!(view.read_with(cx, |view, _| view.step), 0);
@@ -305,7 +305,7 @@ impl Render for Site {
 fn the_menu_opens_switches_and_picks_from_the_keyboard(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Site::new());
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("down right down enter");
     let went = view.read_with(cx, |view, _| view.went.clone());
     assert_eq!(went, Some(SharedString::from("api")));
@@ -315,7 +315,7 @@ fn the_menu_opens_switches_and_picks_from_the_keyboard(cx: &mut TestAppContext) 
 fn menu_keys_pass_over_disabled_links(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Site::new());
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("down enter");
     let went = view.read_with(cx, |view, _| view.went.clone());
     assert_eq!(went, Some(SharedString::from("price")));
@@ -328,7 +328,7 @@ fn menu_keys_pass_over_disabled_links(cx: &mut TestAppContext) {
 fn an_open_menu_follows_lists_that_shrink(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Site::new());
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("down right down");
     view.update(cx, |view, cx| {
         view.entries[1].1.pop();
@@ -369,13 +369,13 @@ impl Render for Trail {
 fn back_steps_once_and_the_list_jumps_anywhere(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Trail { at: 2 });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert_eq!(view.read_with(cx, |view, _| view.at), 1);
-    cx.update(|window, _| {
-        window.blur();
+    cx.update(|window, cx| {
+        window.blur(cx);
         for _ in 0..3 {
-            window.focus_next();
+            window.focus_next(cx);
         }
     });
     press("down", cx);
@@ -405,7 +405,7 @@ fn enter_jumps_to_a_line_and_column(cx: &mut TestAppContext) {
         field: cx.new(|cx| TextInput::new(window, cx)),
         to: None,
     });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_input("12:4");
     cx.simulate_keystrokes("enter");
     assert_eq!(view.read_with(cx, |view, _| view.to), Some((12, Some(4))));
@@ -435,7 +435,7 @@ fn load_more_asks_once_per_press_and_goes_once_all_show(cx: &mut TestAppContext)
         shown: 10,
         asks: 0,
     });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert_eq!(view.read_with(cx, |more, _| more.asks), 1);
     view.update(cx, |more, cx| {
@@ -449,7 +449,7 @@ fn load_more_asks_once_per_press_and_goes_once_all_show(cx: &mut TestAppContext)
         more.shown = 30;
         cx.notify();
     });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert_eq!(
         view.read_with(cx, |more, _| more.asks),

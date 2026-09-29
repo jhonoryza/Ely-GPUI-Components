@@ -103,12 +103,9 @@ mod mac {
         fn pick(&self, index: usize) {
             log::info!("tray: picked item {index}");
             let on_pick = self.on_pick.clone();
+            // The app outlives its run loop, the only place this task is polled.
             self.app
-                .spawn(async move |cx| {
-                    if let Err(error) = cx.update(|cx| on_pick(index, cx)) {
-                        log::error!("tray: app gone before item {index} ran: {error:#}");
-                    }
-                })
+                .spawn(async move |cx| cx.update(|cx| on_pick(index, cx)))
                 .detach();
         }
     }

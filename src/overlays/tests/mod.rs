@@ -198,7 +198,7 @@ fn log(view: &Entity<Stage>, cx: &mut VisualTestContext) -> Vec<String> {
 
 fn show(view: &Entity<Stage>, open: Open, cx: &mut VisualTestContext) {
     let before = view.read_with(cx, |stage, _| stage.before.clone());
-    cx.update(|window, _| window.focus(&before));
+    cx.update(|window, cx| window.focus(&before, cx));
     view.update(cx, |stage, cx| {
         stage.open = Some(open);
         cx.notify();
@@ -209,7 +209,7 @@ fn show(view: &Entity<Stage>, open: Open, cx: &mut VisualTestContext) {
 #[gpui::test]
 fn tab_walks_inside_an_open_popover(cx: &mut TestAppContext) {
     let (view, cx) = stage(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     for _ in 0..3 {
         press("tab", cx);
@@ -221,7 +221,7 @@ fn tab_walks_inside_an_open_popover(cx: &mut TestAppContext) {
 #[gpui::test]
 fn escape_closes_the_popover_and_hands_focus_back(cx: &mut TestAppContext) {
     let (view, cx) = stage(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     press("escape", cx);
     press("enter", cx);

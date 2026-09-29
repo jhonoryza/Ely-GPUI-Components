@@ -31,6 +31,7 @@ struct Stage {
     others: Vec<MapViewport>,
     said: Vec<SharedString>,
     tiles: Rc<RefCell<HashSet<Tile>>>,
+    picture: ImageSource,
     open: bool,
 }
 
@@ -69,6 +70,7 @@ fn stage(
         others: Vec::new(),
         said: Vec::new(),
         tiles: Rc::default(),
+        picture: picture(),
         open: false,
     });
     settle(cx);
@@ -100,6 +102,7 @@ fn said(host: &Entity<Stage>, cx: &mut VisualTestContext) -> Vec<SharedString> {
     host.read_with(cx, |stage, _| stage.said.clone())
 }
 
+/// One picture per stage: a new one each render would load and redraw without end.
 fn picture() -> ImageSource {
     let frame = image::Frame::new(image::RgbaImage::new(1, 1));
     ImageSource::Render(Arc::new(RenderImage::new(vec![frame])))
@@ -107,11 +110,12 @@ fn picture() -> ImageSource {
 
 fn map(stage: &Stage, owner: Entity<Stage>) -> AnyElement {
     let tiles = stage.tiles.clone();
+    let picture = stage.picture.clone();
     let heard = owner.clone();
     MapView::new("map", start())
         .tiles(move |tile| {
             tiles.borrow_mut().insert(tile);
-            picture()
+            picture.clone()
         })
         .markers([MapMarker::new("middle", LatLon::new(0.0, 0.0)).label("Null Island")])
         .on_marker(move |key, _, cx| say(&heard, key, cx))
@@ -268,10 +272,11 @@ fn pins_without_a_handler_take_no_tab(cx: &mut TestAppContext) {
 
 fn tiled(stage: &Stage, _: Entity<Stage>) -> AnyElement {
     let tiles = stage.tiles.clone();
+    let picture = stage.picture.clone();
     MapView::new("map", MapViewport::new(LatLon::new(0.0, 0.0), 1.0))
         .tiles(move |tile| {
             tiles.borrow_mut().insert(tile);
-            picture()
+            picture.clone()
         })
         .into_any_element()
 }
@@ -291,11 +296,12 @@ fn the_host_supplies_each_tile_the_view_covers(cx: &mut TestAppContext) {
 
 fn capped(stage: &Stage, _: Entity<Stage>) -> AnyElement {
     let tiles = stage.tiles.clone();
+    let picture = stage.picture.clone();
     MapView::new("map", MapViewport::new(LatLon::new(0.0, 0.0), 1.0))
         .tile_zooms(0, 0)
         .tiles(move |tile| {
             tiles.borrow_mut().insert(tile);
-            picture()
+            picture.clone()
         })
         .into_any_element()
 }

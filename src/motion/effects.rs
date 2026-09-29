@@ -216,6 +216,7 @@ fn glow(color: Hsla, reach: Pixels, strength: f32) -> Vec<BoxShadow> {
         offset: point(Pixels::ZERO, Pixels::ZERO),
         blur_radius: reach * (0.4 + 0.6 * strength),
         spread_radius: Pixels::ZERO,
+        inset: false,
     }]
 }
 

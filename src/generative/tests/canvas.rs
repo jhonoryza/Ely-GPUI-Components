@@ -125,7 +125,7 @@ fn undo_waits_for_a_stroke(cx: &mut TestAppContext) {
         cx.notify();
     });
     settle(cx);
-    cx.update(|window, _| window.blur());
+    cx.update(|window, cx| window.blur(cx));
     tab(4, cx);
     press("enter", cx);
     assert_eq!(

@@ -120,7 +120,7 @@ fn the_prompt_walks_deny_always_then_once(cx: &mut TestAppContext) {
     cx.update(|window, _| window.activate_window());
     settle(cx);
     for _ in 0..3 {
-        cx.update(|window, _| window.focus_next());
+        cx.update(|window, cx| window.focus_next(cx));
     }
     press("enter", cx);
     assert_eq!(

@@ -318,7 +318,7 @@ impl TextInput {
         if self.disabled {
             return;
         }
-        window.focus(&self.focus);
+        window.focus(&self.focus, cx);
         let at = self.offset_for_point(event.position);
         match event.click_count {
             2 => {

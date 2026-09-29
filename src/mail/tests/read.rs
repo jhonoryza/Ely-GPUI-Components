@@ -160,7 +160,7 @@ fn space_on_a_fold_keeps_focus_on_the_message(cx: &mut TestAppContext) {
     let (host, cx) = mailing(answered, cx);
     tab_to(2, cx);
     press("space", cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
     press("space", cx);
     assert_eq!(

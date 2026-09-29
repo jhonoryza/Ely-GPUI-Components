@@ -4,9 +4,9 @@ use std::{
 };
 
 use gpui::{
-    AnyElement, App, Div, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement,
-    RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled, Task, Window, div, prelude::*,
-    relative,
+    AnyElement, App, Div, ElementId, HoverListenerMode, InteractiveElement, IntoElement,
+    MouseButton, ParentElement, RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled,
+    Task, Window, div, prelude::*, relative,
 };
 
 use crate::{
@@ -268,6 +268,7 @@ impl RenderOnce for Carousel {
             .flex()
             .flex_col()
             .gap_2()
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |hovered, _, cx| {
                 hover.update(cx, |deck, cx| {
                     deck.hovered = *hovered;

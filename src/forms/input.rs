@@ -115,7 +115,9 @@ impl RenderOnce for Input {
             } else {
                 colors.fg
             })
-            .on_mouse_down(MouseButton::Left, move |_, window, _| window.focus(&focus))
+            .on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                window.focus(&focus, cx)
+            })
             .children(self.prefix)
             .child(div().flex_1().min_w_0().child(self.state))
             .when(self.clearable && !empty && !disabled, |frame| {
@@ -125,7 +127,7 @@ impl RenderOnce for Input {
                         .tooltip("Clear")
                         .on_click(move |_, window, cx| {
                             state.update(cx, |input, cx| input.set_text("", cx));
-                            window.focus(&state.read(cx).focus().clone());
+                            window.focus(&state.read(cx).focus().clone(), cx);
                         }),
                 )
             })

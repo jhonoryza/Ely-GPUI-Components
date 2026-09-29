@@ -276,7 +276,7 @@ impl RenderOnce for Quiz {
                             if let (true, Some(on_score)) = (finishing, &on_score) {
                                 on_score(score, count, window, cx);
                             }
-                            window.focus(&focus);
+                            window.focus(&focus, cx);
                         }),
                 ),
             )

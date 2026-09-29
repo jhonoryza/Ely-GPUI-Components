@@ -103,7 +103,7 @@ fn heard(
 #[gpui::test]
 fn the_arrows_move_by_tile_and_by_row_and_enter_opens(cx: &mut TestAppContext) {
     let (view, cx) = tiled(None, cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     for key in ["right", "right", "down", "down", "cmd-left"] {
         press(key, cx);
     }
@@ -116,7 +116,7 @@ fn the_arrows_move_by_tile_and_by_row_and_enter_opens(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_keys_start_from_the_tile_picked(cx: &mut TestAppContext) {
     let (view, cx) = tiled(Some("c"), cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("down", cx);
     assert_eq!(heard(&view, cx).0, ["f"]);
 }

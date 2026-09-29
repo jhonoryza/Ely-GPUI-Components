@@ -268,7 +268,7 @@ fn answered_from_button(part: fn() -> AnyElement, tabs: usize, cx: &mut TestAppC
         part,
     });
     let button = view.read_with(cx, |opener, _| opener.button.clone());
-    cx.update(|window, _| window.focus(&button));
+    cx.update(|window, cx| window.focus(&button, cx));
     settle(cx);
     press("enter", cx);
     for _ in 0..tabs {

@@ -219,7 +219,7 @@ fn row(rows: &Rows, ix: usize, window: &mut Window, cx: &mut App) -> AnyElement 
         }))
         .children(landing.filter(|at| *at != DropAt::Inside).map(line))
         .on_click(move |event, window, cx| {
-            window.focus(&focus);
+            window.focus(&focus, cx);
             if event.click_count() == 2 {
                 activate(ix, window, cx);
                 return;

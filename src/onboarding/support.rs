@@ -94,7 +94,7 @@ impl RenderOnce for ContactSupport {
             log::info!("contact support: send about {key}");
             on_send(&key, &words, window, cx);
             emptied.update(cx, |field, cx| field.set_text("", cx));
-            window.focus(&field);
+            window.focus(&field, cx);
         };
         div()
             .flex()

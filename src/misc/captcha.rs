@@ -90,7 +90,7 @@ impl RenderOnce for Captcha {
         let verify = tab_stop((id.clone(), "verify").into(), !passed, window, cx);
         if passed && field.read(cx).focus().is_focused(window) {
             log::info!("captcha: passed; focus goes to the mark");
-            window.focus(&verify);
+            window.focus(&verify, cx);
         }
         let checking = self.state == CaptchaState::Checking;
         let answer = {
@@ -101,13 +101,13 @@ impl RenderOnce for Captcha {
                 }
                 let text = SharedString::from(field.read(cx).text().trim().to_string());
                 if text.is_empty() {
-                    window.focus(field.read(cx).focus());
+                    window.focus(&field.read(cx).focus().clone(), cx);
                     return;
                 }
                 log::info!("captcha: answered");
                 on_answer(&text, window, cx);
                 field.update(cx, |field, cx| field.set_text("", cx));
-                window.focus(field.read(cx).focus());
+                window.focus(&field.read(cx).focus().clone(), cx);
             })
         };
         let theme = cx.theme();

@@ -53,10 +53,13 @@ impl RenderOnce for CopyButton {
                 let weak = state.downgrade();
                 let reset = window.spawn(cx, async move |cx| {
                     cx.background_executor().timer(CONFIRM).await;
-                    if let Err(error) = weak.update(cx, |copied, cx| {
-                        copied._reset = None;
-                        cx.notify();
-                    }) {
+                    let cleared = cx.update(|_, cx| {
+                        weak.update(cx, |copied, cx| {
+                            copied._reset = None;
+                            cx.notify();
+                        })
+                    });
+                    if let Err(error) = cleared.and_then(|inner| inner) {
                         log::error!("copy button: reset lost its state: {error:#}");
                     }
                 });

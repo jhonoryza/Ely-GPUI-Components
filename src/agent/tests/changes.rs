@@ -40,24 +40,29 @@ struct Card {
 impl Render for Card {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let (view, height) = (cx.entity(), self.height.clone());
-        div()
-            .relative()
-            .w(px(640.0))
-            .child(
-                FileChangeCard::new("card", change("src/theme/lift.rs")).on_decide(
-                    move |accepted, _, cx| view.update(cx, |card, _| card.verdicts.push(accepted)),
-                ),
-            )
-            .child(
-                canvas(
-                    move |bounds, _, _| height.set(bounds.size.height),
-                    |_, _, _, _| {},
+        // gpui fills the window with an auto-sized root, so the measured box sits inside one.
+        div().child(
+            div()
+                .relative()
+                .w(px(640.0))
+                .child(
+                    FileChangeCard::new("card", change("src/theme/lift.rs")).on_decide(
+                        move |accepted, _, cx| {
+                            view.update(cx, |card, _| card.verdicts.push(accepted))
+                        },
+                    ),
                 )
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full(),
-            )
+                .child(
+                    canvas(
+                        move |bounds, _, _| height.set(bounds.size.height),
+                        |_, _, _, _| {},
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                ),
+        )
     }
 }
 
@@ -114,8 +119,8 @@ fn review(cx: &mut TestAppContext) -> (Entity<Review>, &mut VisualTestContext) {
 #[gpui::test]
 fn accept_all_decides_every_file(cx: &mut TestAppContext) {
     let (view, cx) = review(cx);
-    cx.update(|window, _| window.focus_next());
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert_eq!(
         view.read_with(cx, |review, _| review.decisions.clone()),
@@ -127,7 +132,7 @@ fn accept_all_decides_every_file(cx: &mut TestAppContext) {
 fn a_cards_verdict_names_its_file(cx: &mut TestAppContext) {
     let (view, cx) = review(cx);
     for _ in 0..8 {
-        cx.update(|window, _| window.focus_next());
+        cx.update(|window, cx| window.focus_next(cx));
     }
     press("enter", cx);
     assert_eq!(
@@ -145,26 +150,28 @@ struct Narrow {
 impl Render for Narrow {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
         let height = self.height.clone();
-        div()
-            .relative()
-            .w(self.width)
-            .child(
-                MultiFileDiffReview::new(
-                    "narrow",
-                    ["src/theme/lift.rs", "src/theme/tokens.rs"].map(change),
+        div().child(
+            div()
+                .relative()
+                .w(self.width)
+                .child(
+                    MultiFileDiffReview::new(
+                        "narrow",
+                        ["src/theme/lift.rs", "src/theme/tokens.rs"].map(change),
+                    )
+                    .on_decide(|_, _, _| {}),
                 )
-                .on_decide(|_, _, _| {}),
-            )
-            .child(
-                canvas(
-                    move |bounds, _, _| height.set(bounds.size.height),
-                    |_, _, _, _| {},
-                )
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full(),
-            )
+                .child(
+                    canvas(
+                        move |bounds, _, _| height.set(bounds.size.height),
+                        |_, _, _, _| {},
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                ),
+        )
     }
 }
 

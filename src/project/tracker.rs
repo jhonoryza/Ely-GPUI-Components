@@ -104,7 +104,8 @@ impl RenderOnce for TimeTracker {
                 cx.spawn_in(window, async move |ticker, cx| {
                     loop {
                         cx.background_executor().timer(Duration::from_secs(1)).await;
-                        if ticker.update(cx, |_, cx| cx.notify()).is_err() {
+                        let ticked = cx.update(|_, cx| ticker.update(cx, |_, cx| cx.notify()));
+                        if ticked.and_then(|inner| inner).is_err() {
                             return;
                         }
                     }
@@ -129,7 +130,7 @@ impl RenderOnce for TimeTracker {
                 let now = cx.background_executor().now();
                 log::info!("time tracker {id:?}: start {task}");
                 field.update(cx, |input, cx| input.set_text(String::new(), cx));
-                window.focus(&action);
+                window.focus(&action, cx);
                 if let Some(on_start) = &on_start {
                     on_start(&task, now, window, cx);
                 }
@@ -144,7 +145,7 @@ impl RenderOnce for TimeTracker {
             Rc::new(move |window, cx| {
                 let now = cx.background_executor().now();
                 log::info!("time tracker {id:?}: stop");
-                window.focus(&typing);
+                window.focus(&typing, cx);
                 if let Some(on_stop) = &on_stop {
                     on_stop(now, window, cx);
                 }

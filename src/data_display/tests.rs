@@ -161,6 +161,9 @@ fn wait(time: Duration, cx: &mut VisualTestContext) {
 #[gpui::test]
 fn autoplay_turns_the_carousel_and_holds_while_pointed_at(cx: &mut TestAppContext) {
     let (places, cx) = deck(cx);
+    // The pointer starts at the corner, over the deck, which gpui now counts as a hover.
+    cx.simulate_mouse_move(point(px(600.0), px(400.0)), None, Modifiers::none());
+    settle(cx);
     assert_eq!(front(&places), Some(0));
     wait(Duration::from_secs(5), cx);
     assert_eq!(front(&places), Some(1), "five seconds turn it once");
@@ -172,6 +175,17 @@ fn autoplay_turns_the_carousel_and_holds_while_pointed_at(cx: &mut TestAppContex
     settle(cx);
     wait(Duration::from_secs(5), cx);
     assert_eq!(front(&places), Some(2));
+}
+
+#[gpui::test]
+fn a_key_under_a_resting_pointer_keeps_the_carousel_held(cx: &mut TestAppContext) {
+    let (places, cx) = deck(cx);
+    cx.simulate_mouse_move(point(px(100.0), px(50.0)), None, Modifiers::none());
+    settle(cx);
+    cx.simulate_keystrokes("a");
+    settle(cx);
+    wait(Duration::from_secs(12), cx);
+    assert_eq!(front(&places), Some(0), "still held");
 }
 
 #[gpui::test]

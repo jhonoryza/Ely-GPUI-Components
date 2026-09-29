@@ -192,7 +192,7 @@ fn run_waits_for_every_value_then_sends_the_filled_prompt(cx: &mut TestAppContex
     press("enter", cx);
     let ran = |cx: &mut VisualTestContext| view.read_with(cx, |view, _| view.ran.clone());
     assert!(ran(cx).is_empty(), "with tone blank, Run is out of reach");
-    cx.update(|window, _| window.blur());
+    cx.update(|window, cx| window.blur(cx));
     tab(3, cx);
     cx.simulate_input("calm");
     settle(cx);
@@ -259,7 +259,7 @@ fn a_version_is_chosen_by_keys_and_only_an_older_one_restores(cx: &mut TestAppCo
     tab(4, cx);
     press("enter", cx);
     assert_eq!(heard(cx), (vec![], vec![]), "the newest offers no Restore");
-    cx.update(|window, _| window.blur());
+    cx.update(|window, cx| window.blur(cx));
     tab(2, cx);
     press("enter", cx);
     tab(2, cx);

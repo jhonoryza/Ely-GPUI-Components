@@ -259,7 +259,7 @@ impl RenderOnce for SelectableList {
                             (false, true) => Pick::Toggle,
                             _ => Pick::One,
                         };
-                        window.focus(&focus);
+                        window.focus(&focus, cx);
                         pick(ix, how, window, cx);
                         if event.click_count() == 2 {
                             activate(&key, window, cx);

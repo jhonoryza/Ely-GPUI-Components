@@ -7,9 +7,9 @@ use std::{
 
 use gpui::{
     AnyElement, App, DispatchPhase, ElementId, InteractiveElement, IntoElement, KeyContext,
-    Modifiers, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, Pixels,
-    Point, RenderOnce, ScrollDelta, ScrollWheelEvent, StatefulInteractiveElement, Styled, Window,
-    canvas, div, prelude::FluentBuilder,
+    Keystroke, Modifiers, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement,
+    Pixels, Point, RenderOnce, ScrollDelta, ScrollWheelEvent, StatefulInteractiveElement, Styled,
+    Window, canvas, div, prelude::FluentBuilder,
 };
 use smallvec::SmallVec;
 
@@ -41,6 +41,12 @@ fn at(point: Point<Pixels>) -> String {
 
 fn button(button: MouseButton) -> String {
     format!("{button:?}").to_lowercase()
+}
+
+/// The key gpui makes of a modifier pressed and released alone; the log shows it as modifiers.
+fn lone_modifier(keystroke: &Keystroke) -> bool {
+    let names = ["shift", "control", "alt", "platform", "function"];
+    !keystroke.modifiers.modified() && names.contains(&keystroke.key.as_str())
 }
 
 impl fmt::Display for Seen {
@@ -158,7 +164,7 @@ impl RenderOnce for EventLogger {
                         .context_stack
                         .iter()
                         .any(|context| context.get("logger").is_some_and(|logger| *logger == mark));
-                    if inside {
+                    if inside && !lone_modifier(&event.keystroke) {
                         down(Seen::KeyDown(event.keystroke.unparse()), cx)
                     }
                 })

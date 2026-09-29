@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use gpui::{
-    Animation, AnimationExt, AnyElement, App, Bounds, Corner, Div, ElementId, Entity,
+    Anchor, Animation, AnimationExt, AnyElement, App, Bounds, Div, ElementId, Entity,
     InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, ScrollHandle,
     SharedString, Stateful, StatefulInteractiveElement, Styled, Window, anchored, canvas, div,
     prelude::*,
@@ -216,7 +216,7 @@ pub(crate) fn float_height(
     let placed = if up {
         anchored()
             .position(anchor.origin)
-            .anchor(Corner::BottomLeft)
+            .anchor(Anchor::BottomLeft)
             .child(
                 div()
                     .child(content)

@@ -181,7 +181,8 @@ impl RenderOnce for PomodoroTimer {
                 cx.spawn_in(window, async move |ticker, cx| {
                     loop {
                         cx.background_executor().timer(Duration::from_secs(1)).await;
-                        if ticker.update(cx, |_, cx| cx.notify()).is_err() {
+                        let ticked = cx.update(|_, cx| ticker.update(cx, |_, cx| cx.notify()));
+                        if ticked.and_then(|inner| inner).is_err() {
                             return;
                         }
                     }

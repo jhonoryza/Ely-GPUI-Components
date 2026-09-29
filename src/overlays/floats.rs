@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnimationExt, AnyElement, App, Corner, ElementId, Entity, FontWeight, InteractiveElement,
+    Anchor, AnimationExt, AnyElement, App, ElementId, Entity, FontWeight, InteractiveElement,
     IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window, anchored, canvas, div,
     point, prelude::*,
 };
@@ -72,7 +72,7 @@ impl RenderOnce for FloatingToolbar {
                         (self.id.clone(), "raised"),
                         anchored()
                             .position(anchor.origin - point(gpui::Pixels::ZERO, lift))
-                            .anchor(Corner::BottomLeft)
+                            .anchor(Anchor::BottomLeft)
                             .snap_to_window()
                             .child(
                                 surface((self.id.clone(), "bar"), cx)

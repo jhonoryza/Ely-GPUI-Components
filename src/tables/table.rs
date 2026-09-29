@@ -408,7 +408,7 @@ impl RenderOnce for DataTable {
                                     .map(|at| drawn.line(at, &cols, true, window, cx))
                                     .collect()
                             })
-                            .track_scroll(scroll)
+                            .track_scroll(&scroll)
                             .flex_1()
                             .min_h_0(),
                         ))

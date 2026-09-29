@@ -180,7 +180,7 @@ impl RenderOnce for Tree {
         }
         if nav.read(cx).renaming.is_some() && editing.read(cx).field().is_none() {
             nav.update(cx, |nav, _| nav.renaming = None);
-            window.focus(&focus);
+            window.focus(&focus, cx);
         }
         let open: HashSet<SharedString> = opened.read(cx).value.iter().cloned().collect();
         let nodes = Rc::new(self.nodes);
@@ -320,7 +320,7 @@ impl RenderOnce for Tree {
         let list = uniform_list((id.clone(), "rows"), count, move |range, window, cx| {
             draw(&data, range, window, cx)
         })
-        .track_scroll(scroll)
+        .track_scroll(&scroll)
         .size_full();
         self.base
             .id(self.id)

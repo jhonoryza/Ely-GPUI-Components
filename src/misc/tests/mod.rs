@@ -63,7 +63,7 @@ pub(super) fn stage(
     let wakes = Rc::new(Cell::new(0));
     let count = wakes.clone();
     cx.update(|window, cx| {
-        window.focus(&root);
+        window.focus(&root, cx);
         cx.observe(&view, move |_, _| count.set(count.get() + 1))
             .detach();
     });

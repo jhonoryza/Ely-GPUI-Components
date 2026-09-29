@@ -62,7 +62,7 @@ fn memories(cx: &mut TestAppContext) -> (Entity<Memories>, &mut VisualTestContex
 #[gpui::test]
 fn enter_keeps_a_memory_and_empties_the_field(cx: &mut TestAppContext) {
     let (view, cx) = memories(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_input("  ");
     press("enter", cx);
     cx.simulate_input("Lifts stay under 20%");
@@ -113,9 +113,9 @@ fn a_servers_switch_turns_it_off_and_on(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|_, _| Servers { thrown: Vec::new() });
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("space", cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("space", cx);
     let thrown = view.read_with(cx, |servers, _| servers.thrown.clone());
     assert_eq!(thrown, [("files".into(), false), ("web".into(), true)]);
@@ -152,9 +152,9 @@ fn every_checkpoint_but_the_current_rewinds(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|_, _| Points { asked: Vec::new() });
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert_eq!(
         view.read_with(cx, |points, _| points.asked.clone()),

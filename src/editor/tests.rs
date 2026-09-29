@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use gpui::{Entity, EntityInputHandler, TestAppContext, VisualTestContext};
+use gpui::{Entity, EntityInputHandler, KeyUpEvent, Keystroke, TestAppContext, VisualTestContext};
 
 use super::{CodeEditor, GhostText, InlayHint, LineNumbers, layout::Row};
 use crate::theme::Theme;
@@ -138,6 +138,29 @@ fn a_read_only_editor_ignores_typing_and_undo(cx: &mut TestAppContext) {
         editor.undo(cx);
         assert_eq!(editor.text(), "xy");
     });
+}
+
+#[gpui::test]
+fn enter_presses_the_banner_button_inside_the_editor(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("x", cx);
+    cx.update(|window, cx| {
+        super::keys::bind_keys(cx);
+        editor.update(cx, |editor, cx| editor.set_read_only(true, cx));
+        window.refresh();
+    });
+    cx.run_until_parked();
+    let focus = editor.read_with(cx, |editor, _| editor.focus.clone());
+    cx.update(|window, cx| {
+        window.focus(&focus, cx);
+        window.focus_next(cx);
+    });
+    cx.run_until_parked();
+    cx.simulate_keystrokes("enter");
+    cx.simulate_event(KeyUpEvent {
+        keystroke: Keystroke::parse("enter").expect("a key"),
+    });
+    cx.run_until_parked();
+    assert!(!editor.read_with(cx, |editor, _| editor.is_read_only()));
 }
 
 #[gpui::test]

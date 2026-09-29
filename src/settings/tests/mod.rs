@@ -66,9 +66,9 @@ fn said(host: &Entity<Desk>, cx: &mut VisualTestContext) -> Vec<String> {
 }
 
 fn tab(stops: usize, cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
-        (0..stops).for_each(|_| window.focus_next());
+    cx.update(|window, cx| {
+        window.blur(cx);
+        (0..stops).for_each(|_| window.focus_next(cx));
     });
     settle(cx);
 }
@@ -271,9 +271,9 @@ fn proxy(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
 #[gpui::test]
 fn apply_hands_on_the_manual_proxy(cx: &mut TestAppContext) {
     let (host, cx) = desk(proxy, cx);
-    cx.update(|window, _| {
-        window.blur();
-        window.focus_prev();
+    cx.update(|window, cx| {
+        window.blur(cx);
+        window.focus_prev(cx);
     });
     settle(cx);
     tap("space", cx);
@@ -430,9 +430,9 @@ fn bad_port(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
 #[gpui::test]
 fn apply_rests_while_the_port_is_bad(cx: &mut TestAppContext) {
     let (host, cx) = desk(bad_port, cx);
-    cx.update(|window, _| {
-        window.blur();
-        window.focus_prev();
+    cx.update(|window, cx| {
+        window.blur(cx);
+        window.focus_prev(cx);
     });
     settle(cx);
     tap("space", cx);

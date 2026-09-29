@@ -343,7 +343,7 @@ impl RenderOnce for ToolLayer {
             )
             .on_mouse_down(MouseButton::Left, move |event, window, cx| {
                 cx.stop_propagation();
-                window.focus(&held_focus);
+                window.focus(&held_focus, cx);
                 let bounds = pressed.read(cx).bounds;
                 let at = point_of(event.position, bounds);
                 let local = event.position - bounds.origin;

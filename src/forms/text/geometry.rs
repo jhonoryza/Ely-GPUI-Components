@@ -59,7 +59,7 @@ impl TextInput {
             return Some(Point::default());
         }
         let mut top = Pixels::ZERO;
-        for (start, line) in &layout.lines {
+        for (start, line) in layout.lines.iter() {
             if display <= start + line.len() {
                 let at = line.position_for_index(display - start, layout.line_height)?;
                 return Some(gpui::point(at.x, at.y + top));
@@ -82,7 +82,7 @@ impl TextInput {
             return 0;
         }
         let mut top = Pixels::ZERO;
-        for (start, line) in &layout.lines {
+        for (start, line) in layout.lines.iter() {
             let height = line.size(layout.line_height).height;
             if local.y < top + height {
                 let inside = gpui::point(local.x.max(Pixels::ZERO), local.y - top);

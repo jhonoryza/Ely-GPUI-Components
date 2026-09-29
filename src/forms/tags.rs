@@ -229,7 +229,9 @@ impl RenderOnce for TagInput {
             .bg(colors.surface)
             .text_size(theme.text_size(TextSize::Base))
             .text_color(colors.fg)
-            .on_mouse_down(MouseButton::Left, move |_, window, _| window.focus(&focus))
+            .on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                window.focus(&focus, cx)
+            })
             .capture_action(move |_: &Up, _, cx| {
                 if open {
                     cx.stop_propagation();

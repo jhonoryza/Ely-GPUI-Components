@@ -185,7 +185,7 @@ impl SplashScreen {
         };
         let handle = cx.open_window(options, |window, cx| {
             let focus = cx.focus_handle();
-            window.focus(&focus);
+            window.focus(&focus, cx);
             cx.new(|_| Hosted::new(self, focus))
         })?;
         log::info!("splash: shown");

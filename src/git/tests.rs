@@ -40,7 +40,7 @@ fn a_fold_opens_from_the_keyboard(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|_, _| Folded { opened: Vec::new() });
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
     cx.simulate_keystrokes("enter");
     settle(cx);

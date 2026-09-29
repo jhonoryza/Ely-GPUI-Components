@@ -271,7 +271,7 @@ impl RenderOnce for Survey {
                                     sheet.sent = true;
                                     cx.notify();
                                 });
-                                window.focus(&focus);
+                                window.focus(&focus, cx);
                             }),
                     ),
             )

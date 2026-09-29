@@ -198,7 +198,7 @@ impl RenderOnce for MindMap {
                     .cursor_pointer()
                     .on_mouse_down(MouseButton::Left, move |event, window, cx| {
                         cx.stop_propagation();
-                        window.focus(&hold);
+                        window.focus(&hold, cx);
                         if let Some(pick) = &pick {
                             pick(Some(&key), window, cx);
                         }
@@ -273,7 +273,7 @@ impl RenderOnce for MindMap {
                     if writing_tab.read(cx).field().is_some() {
                         cx.stop_propagation();
                         writing_tab.update(cx, |editing, cx| editing.finish(false, window, cx));
-                        window.focus(&back);
+                        window.focus(&back, cx);
                         return;
                     }
                     cx.stop_propagation();

@@ -150,7 +150,7 @@ pub(crate) fn grid(
         .capture_action(move |_: &Down, window, cx| {
             if count > 0 {
                 cx.stop_propagation();
-                window.focus(&into);
+                window.focus(&into, cx);
             }
         })
         .capture_action(move |_: &Enter, window, cx| {
@@ -231,7 +231,7 @@ pub(crate) fn grid(
                 })
                 .collect()
         })
-        .track_scroll(scroll)
+        .track_scroll(&scroll)
         .h(theme.list_max_height());
         div()
             .track_focus(&focus)

@@ -54,7 +54,7 @@ fn find_counts_matches_and_steps_round(cx: &mut TestAppContext) {
 fn tab_reaches_the_terminal(cx: &mut TestAppContext) {
     let (terminal, cx) = replayed(b"ok", cx);
     let focused = cx.update(|window, cx| {
-        window.focus_next();
+        window.focus_next(cx);
         terminal.read(cx).focus.is_focused(window)
     });
     assert!(focused);

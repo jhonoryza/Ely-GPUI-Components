@@ -26,7 +26,7 @@ pub fn run(
     Theme::update(cx, |theme| theme.reduced_motion = true);
     cx.spawn(async move |cx| {
         let outcome = shoot_all(window, &dir, only, scripted, cx).await;
-        if let Err(error) = outcome.and_then(|()| cx.update(|cx| cx.quit())) {
+        if let Err(error) = outcome.map(|()| cx.update(|cx| cx.quit())) {
             log::error!("capture failed: {error:#}");
             std::process::exit(1);
         }

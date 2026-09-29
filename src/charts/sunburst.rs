@@ -1,9 +1,9 @@
 use std::f32::consts::{FRAC_PI_2, TAU};
 
 use gpui::{
-    App, Div, ElementId, Entity, Hsla, InteractiveElement, IntoElement, MouseMoveEvent,
-    ParentElement, Pixels, Refineable, RenderOnce, SharedString, StatefulInteractiveElement,
-    StyleRefinement, Styled, Window, canvas, div,
+    App, Div, ElementId, Entity, HoverListenerMode, Hsla, InteractiveElement, IntoElement,
+    MouseMoveEvent, ParentElement, Pixels, Refineable, RenderOnce, SharedString,
+    StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div,
 };
 
 use super::{
@@ -214,6 +214,7 @@ impl RenderOnce for Sunburst {
                     }
                 })
             })
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |inside, _, cx| {
                 if !*inside {
                     left.update(cx, |ring, cx| {

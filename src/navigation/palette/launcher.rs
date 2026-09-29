@@ -81,7 +81,7 @@ impl Render for QuickLauncher {
         .palette(window, cx);
         if !self.focused {
             self.focused = true;
-            window.focus(&palette.input.read(cx).focus().clone());
+            window.focus(&palette.input.read(cx).focus().clone(), cx);
         }
         div()
             .size_full()

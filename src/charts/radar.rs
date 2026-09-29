@@ -5,9 +5,10 @@ use std::{
 };
 
 use gpui::{
-    App, Bounds, Div, ElementId, Entity, InteractiveElement, IntoElement, MouseMoveEvent,
-    ParentElement, PathBuilder, Pixels, Point, Refineable, RenderOnce, SharedString,
-    StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, point, prelude::*,
+    App, Bounds, Div, ElementId, Entity, HoverListenerMode, InteractiveElement, IntoElement,
+    MouseMoveEvent, ParentElement, PathBuilder, Pixels, Point, Refineable, RenderOnce,
+    SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, point,
+    prelude::*,
 };
 
 use super::{
@@ -268,6 +269,7 @@ impl RenderOnce for RadarChart {
                         }
                     })
                 })
+                .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
                 .on_hover(move |inside, _, cx| {
                     if !*inside {
                         left.update(cx, |radar, cx| {

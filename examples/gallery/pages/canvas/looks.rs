@@ -105,6 +105,7 @@ pub fn styles(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     offset: point(px(shadow.x), px(shadow.y)),
                     blur_radius: px(shadow.blur),
                     spread_radius: px(shadow.spread),
+                    inset: false,
                 })
                 .collect(),
         );

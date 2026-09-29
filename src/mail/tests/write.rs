@@ -46,7 +46,7 @@ fn writing(
 }
 
 fn next(cx: &mut VisualTestContext) {
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
 }
 

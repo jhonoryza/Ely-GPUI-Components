@@ -131,7 +131,7 @@ impl RenderOnce for TableOfContents {
         let (viewport, at_end, tops) = {
             let sections = self.sections.read(cx);
             let (scroll, viewport) = (&sections.scroll, sections.scroll.bounds());
-            let room = scroll.max_offset().height;
+            let room = scroll.max_offset().y;
             let at_end = room > Pixels::ZERO && -scroll.offset().y >= room;
             let tops: Vec<Option<Pixels>> = self
                 .entries

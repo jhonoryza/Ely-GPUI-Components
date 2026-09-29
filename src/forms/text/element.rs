@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use gpui::{
     App, AvailableSpace, Bounds, ContentMask, DispatchPhase, Element, ElementId,
     ElementInputHandler, Entity, FontStyle, GlobalElementId, Hsla, InspectorElementId, IntoElement,
@@ -27,7 +29,7 @@ impl IntoElement for TextElement {
 }
 
 pub(crate) struct Prepaint {
-    lines: Vec<(usize, WrappedLine)>,
+    lines: Rc<[(usize, WrappedLine)]>,
     selections: Vec<Bounds<Pixels>>,
     caret: Option<Bounds<Pixels>>,
     selection_color: Hsla,
@@ -219,7 +221,8 @@ impl Element for TextElement {
             .text_system()
             .shape_text(text.clone().into(), font_size, &runs, wrap, None)
             .expect("text input shaping failed");
-        let lines: Vec<(usize, WrappedLine)> = line_starts(&text).into_iter().zip(shaped).collect();
+        let lines: Rc<[(usize, WrappedLine)]> =
+            line_starts(&text).into_iter().zip(shaped).collect();
         let focused = input.focus().is_focused(window);
         let caret_on = input.caret_on();
         self.input.update(cx, |input, _| {
@@ -285,7 +288,7 @@ impl Element for TextElement {
         window.with_content_mask(Some(ContentMask { bounds }), |window| {
             let mut origins = Vec::with_capacity(prepaint.lines.len());
             let mut top = Pixels::ZERO;
-            for (_, line) in &prepaint.lines {
+            for (_, line) in prepaint.lines.iter() {
                 origins.push(bounds.origin - scroll + point(Pixels::ZERO, top));
                 top += line.size(line_height).height;
             }

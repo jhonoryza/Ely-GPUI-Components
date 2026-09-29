@@ -69,7 +69,7 @@ fn text(field: &Entity<TextInput>, cx: &mut VisualTestContext) -> String {
 }
 
 fn focus(field: &Entity<TextInput>, cx: &mut VisualTestContext) {
-    cx.update(|window, cx| window.focus(&field.read(cx).focus().clone()));
+    cx.update(|window, cx| window.focus(&field.read(cx).focus().clone(), cx));
 }
 
 #[gpui::test]
@@ -80,7 +80,7 @@ fn tab_reaches_fields_and_skips_disabled_ones(cx: &mut TestAppContext) {
     let mut order = Vec::new();
     for _ in 0..2 {
         order.push(cx.update(|window, cx| {
-            window.focus_next();
+            window.focus_next(cx);
             fields
                 .iter()
                 .position(|field| field.read(cx).focus().is_focused(window))
@@ -96,9 +96,9 @@ fn enter_on_a_clear_button_clears_its_own_field(cx: &mut TestAppContext) {
         field.update(cx, |input, cx| input.set_text("kept", cx));
     }
     cx.run_until_parked();
-    cx.update(|window, _| {
-        window.focus_next();
-        window.focus_next();
+    cx.update(|window, cx| {
+        window.focus_next(cx);
+        window.focus_next(cx);
     });
     cx.run_until_parked();
     cx.simulate_keystrokes("enter");
@@ -177,7 +177,7 @@ impl Render for Stepped {
 fn stepping_starts_from_the_typed_number(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Stepped { value: 4.0 });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("cmd-a");
     cx.simulate_input("20");
     cx.simulate_keystrokes("up");
@@ -188,7 +188,7 @@ fn stepping_starts_from_the_typed_number(cx: &mut TestAppContext) {
 fn a_typed_number_reaches_the_owner_before_any_blur(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Stepped { value: 100.0 });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("cmd-a");
     cx.simulate_input("250");
     assert_eq!(
@@ -224,7 +224,7 @@ fn select_all_then_typing_replaces_the_pin(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|_, _| Pin {
         code: String::new(),
     });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_input("4821");
     cx.simulate_keystrokes("cmd-a");
     cx.simulate_input("1234");

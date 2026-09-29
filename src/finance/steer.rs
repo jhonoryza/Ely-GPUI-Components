@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Bounds, Div, Entity, InteractiveElement, MouseButton, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, Pixels, Point, ScrollWheelEvent, Stateful, StatefulInteractiveElement, Styled,
-    Subscription, Window,
+    App, Bounds, Div, Entity, HoverListenerMode, InteractiveElement, MouseButton, MouseDownEvent,
+    MouseMoveEvent, MouseUpEvent, Pixels, Point, ScrollWheelEvent, Stateful,
+    StatefulInteractiveElement, Styled, Subscription, Window,
 };
 
 use super::{
@@ -167,6 +167,7 @@ impl Steering {
                 cx.stop_propagation();
                 hold(&wheeled, &sync_wheel, cx, Some(next), None);
             })
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |inside, _, cx| {
                 if !*inside {
                     left.update(cx, |stage, _| {

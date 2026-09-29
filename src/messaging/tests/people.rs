@@ -203,12 +203,12 @@ fn an_emoji_is_searched_and_picked_and_focus_comes_back(cx: &mut TestAppContext)
     let (host, cx) = setting(None, cx);
     tab_to(1, cx);
     press("enter", cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
     cx.simulate_input("palm tree");
     settle(cx);
     press("enter", cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
     cx.simulate_input("Away");
     settle(cx);

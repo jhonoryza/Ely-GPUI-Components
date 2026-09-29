@@ -80,7 +80,7 @@ fn the_switcher_switches_on_release_so_its_opener_stays_shut(cx: &mut TestAppCon
         .expect("a managed window");
     });
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert!(desk.read_with(cx, |desk, _| desk.open));
     let above = desk.read_with(cx, |desk, _| desk.enters_above);

@@ -23,11 +23,13 @@ pub fn animated_number(window: &mut Window, cx: &mut App) -> impl IntoElement + 
         _task: cx.spawn_in(window, async move |ticker, cx| {
             loop {
                 cx.background_executor().timer(STEP).await;
-                let advanced = ticker.update(cx, |ticker: &mut Ticker, cx| {
-                    ticker.index = (ticker.index + 1) % VALUES.len();
-                    cx.notify();
+                let advanced = cx.update(|_, cx| {
+                    ticker.update(cx, |ticker: &mut Ticker, cx| {
+                        ticker.index = (ticker.index + 1) % VALUES.len();
+                        cx.notify();
+                    })
                 });
-                if advanced.is_err() {
+                if advanced.and_then(|inner| inner).is_err() {
                     return;
                 }
             }

@@ -228,7 +228,7 @@ impl RenderOnce for LogViewer {
                     .collect()
             },
         )
-        .track_scroll(scroll)
+        .track_scroll(&scroll)
         .size_full();
         div()
             .size_full()

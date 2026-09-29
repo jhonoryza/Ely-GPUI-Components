@@ -49,7 +49,7 @@ pub(super) fn field(editing: &Entity<Editing>, frame: Frame, cx: &App) -> Option
                     cx.stop_propagation();
                     closing.update(cx, |editing, cx| {
                         editing.finish(true, window, cx);
-                        editing.give_back(window);
+                        editing.give_back(window, cx);
                     });
                 }
             })
@@ -58,7 +58,7 @@ pub(super) fn field(editing: &Entity<Editing>, frame: Frame, cx: &App) -> Option
                     cx.stop_propagation();
                     keeping.update(cx, |editing, cx| {
                         editing.finish(false, window, cx);
-                        editing.give_back(window);
+                        editing.give_back(window, cx);
                     });
                 }
             })

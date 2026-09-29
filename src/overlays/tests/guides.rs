@@ -141,7 +141,7 @@ fn guides(cx: &mut TestAppContext) -> (Entity<Guides>, &mut VisualTestContext) {
 
 fn open(view: &Entity<Guides>, which: Open, cx: &mut VisualTestContext) {
     let before = view.read_with(cx, |guides, _| guides.before.clone());
-    cx.update(|window, _| window.focus(&before));
+    cx.update(|window, cx| window.focus(&before, cx));
     view.update(cx, |guides, cx| {
         guides.open = Some(which);
         guides.at = 0;
@@ -242,7 +242,7 @@ fn the_toolbar_floats_over_a_selection_only(cx: &mut TestAppContext) {
     let (view, cx) = guides(cx);
     let field = view.read_with(cx, |guides, _| guides.field.clone());
     let focus = field.read_with(cx, |input, _| input.focus().clone());
-    cx.update(|window, _| window.focus(&focus));
+    cx.update(|window, cx| window.focus(&focus, cx));
     settle(cx);
     let start = field
         .read_with(cx, |input, _| input.bounds_for(0))
@@ -253,7 +253,7 @@ fn the_toolbar_floats_over_a_selection_only(cx: &mut TestAppContext) {
     );
     click(bold.0, bold.1, cx);
     assert!(state(&view, cx).2.is_empty(), "no selection, no toolbar");
-    cx.update(|window, _| window.focus(&focus));
+    cx.update(|window, cx| window.focus(&focus, cx));
     press("secondary-a", cx);
     click(bold.0, bold.1, cx);
     assert_eq!(state(&view, cx).2, ["bold"]);
@@ -263,10 +263,10 @@ fn the_toolbar_floats_over_a_selection_only(cx: &mut TestAppContext) {
 fn the_peek_closes_from_its_button(cx: &mut TestAppContext) {
     let (view, cx) = guides(cx);
     open(&view, Open::Peek, cx);
-    cx.update(|window, _| {
-        window.blur();
+    cx.update(|window, cx| {
+        window.blur(cx);
         for _ in 0..3 {
-            window.focus_next();
+            window.focus_next(cx);
         }
     });
     press("enter", cx);
@@ -309,7 +309,7 @@ fn the_toolbar_follows_its_field(cx: &mut TestAppContext) {
     let (view, cx) = guides(cx);
     let field = view.read_with(cx, |guides, _| guides.field.clone());
     let focus = field.read_with(cx, |input, _| input.focus().clone());
-    cx.update(|window, _| window.focus(&focus));
+    cx.update(|window, cx| window.focus(&focus, cx));
     press("secondary-a", cx);
     view.update(cx, |guides, cx| {
         guides.lower = true;

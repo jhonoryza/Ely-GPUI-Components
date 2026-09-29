@@ -349,7 +349,7 @@ impl BlockEditor {
         if let Some(at) = at {
             field.update(cx, |field, cx| field.select(at..at, cx));
         }
-        window.focus(&field.focus_handle(cx));
+        window.focus(&field.focus_handle(cx), cx);
     }
 
     /// Adds a block after `after`, or first, and puts the caret in it.

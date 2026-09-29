@@ -60,7 +60,7 @@ pub(crate) fn toggle(
         state.preview = None;
         cx.notify();
     });
-    window.focus(if open { &inner } else { trigger });
+    window.focus(if open { &inner } else { trigger }, cx);
 }
 
 /// What a picker field shows while closed, and how it sits.

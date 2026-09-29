@@ -1,9 +1,9 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    App, Bounds, Div, DragMoveEvent, ElementId, EmptyView, EntityId, InteractiveElement,
-    IntoElement, MouseButton, ParentElement, Pixels, Point, Rems, RenderOnce, SharedString,
-    StatefulInteractiveElement, Styled, Window, canvas, div, prelude::*, relative,
+    App, Bounds, Div, DragMoveEvent, ElementId, EmptyView, EntityId, HoverListenerMode,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Point, Rems, RenderOnce,
+    SharedString, StatefulInteractiveElement, Styled, Window, canvas, div, prelude::*, relative,
     transparent_black,
 };
 
@@ -183,7 +183,7 @@ impl RenderOnce for Scrubber {
                 .relative()
                 .h(line)
                 .flex_basis(relative(share(end - start)))
-                .flex_grow()
+                .flex_grow_1()
                 .rounded_full()
                 .bg(lane)
                 .child(
@@ -275,6 +275,7 @@ impl RenderOnce for Scrubber {
                     cx.notify();
                 })
             })
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |inside, _, cx| {
                 if !inside {
                     left.update(cx, |track, cx| {

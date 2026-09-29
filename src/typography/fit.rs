@@ -128,7 +128,14 @@ fn cut_line(text: SharedString, fit: fn(&str, Pixels, &mut Window) -> String) ->
                     let line = style.line_height_in_pixels(window.rem_size());
                     let x = offset(style.text_align, bounds.size.width - shaped.width);
                     shaped
-                        .paint(bounds.origin + point(x, Pixels::ZERO), line, window, cx)
+                        .paint(
+                            bounds.origin + point(x, Pixels::ZERO),
+                            line,
+                            TextAlign::Left,
+                            None,
+                            window,
+                            cx,
+                        )
                         .expect("a cut line paints");
                 },
             )

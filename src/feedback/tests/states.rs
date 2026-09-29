@@ -73,7 +73,7 @@ fn shelf(
     });
     settle(cx);
     let root = view.read_with(cx, |shelf, _| shelf.root.clone());
-    cx.update(|window, _| window.focus(&root));
+    cx.update(|window, cx| window.focus(&root, cx));
     (view, cx)
 }
 
@@ -113,7 +113,7 @@ fn retry_shows_only_once_saving_failed(cx: &mut TestAppContext) {
     });
     settle(cx);
     let root = view.read_with(cx, |shelf, _| shelf.root.clone());
-    cx.update(|window, _| window.focus(&root));
+    cx.update(|window, cx| window.focus(&root, cx));
     for _ in 0..3 {
         press("tab", cx);
     }

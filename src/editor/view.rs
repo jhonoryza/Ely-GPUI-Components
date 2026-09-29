@@ -268,7 +268,7 @@ impl Render for CodeEditor {
                 range.map(|ix| editor.row(ix, window, cx)).collect()
             }),
         )
-        .track_scroll(self.scroll.clone())
+        .track_scroll(&self.scroll)
         .size_full();
         let (top, focus, input) = (cx.entity(), self.focus.clone(), cx.entity());
         let unlock = cx.entity();

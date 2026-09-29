@@ -26,7 +26,7 @@ impl Render for Handoff {
                 SelectableList::new("handoff")
                     .row("a", ListItem::new("handoff-a", "A"))
                     .on_activate(move |_, window, cx| {
-                        window.focus(&to);
+                        window.focus(&to, cx);
                         opened.update(cx, |view, _| view.heard.push("open"));
                     }),
             )
@@ -49,7 +49,7 @@ fn an_open_that_moves_focus_leaves_the_release_alone(cx: &mut TestAppContext) {
         heard: Vec::new(),
     });
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
     enter(cx);
     settle(cx);
@@ -66,7 +66,7 @@ impl Render for Relay {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let opened = cx.entity();
         div()
-            .capture_action(|_: &Enter, window, _| window.focus_next())
+            .capture_action(|_: &Enter, window, cx| window.focus_next(cx))
             .child(Input::new(&self.field))
             .child(
                 SelectableList::new("relay")
@@ -88,7 +88,7 @@ fn a_release_that_began_elsewhere_opens_nothing(cx: &mut TestAppContext) {
         heard: Vec::new(),
     });
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
     enter(cx);
     settle(cx);
@@ -131,6 +131,7 @@ fn a_letter_with_command_stays_a_shortcut(cx: &mut TestAppContext) {
             key_char: Some("a".into()),
         },
         is_held: false,
+        prefer_character_input: false,
     });
     settle(cx);
     assert_eq!(picks(&view, cx), ["a", "b", "c", "d"]);

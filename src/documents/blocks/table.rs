@@ -248,7 +248,7 @@ pub(super) fn table(
             let wide = span(&merged, columns, row, column);
             line = line.child(
                 div()
-                    .flex_grow()
+                    .flex_grow_1()
                     .flex_basis(gpui::relative(wide as f32 / columns as f32))
                     .min_w_0()
                     .px_2()

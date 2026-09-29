@@ -4,7 +4,9 @@ use ely_gpui_component::media::{
     AudioPlayer, AudioSpectrum, AudioWaveform, MediaControls, PlaybackSpeedControl, Playlist,
     Repeat, Track, VolumeControl,
 };
-use gpui::{App, Entity, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
+use gpui::{
+    App, Entity, IntoElement, ParentElement, SharedString, Styled, TaskExt as _, Window, div, px,
+};
 
 use crate::{
     probe::probe,
@@ -98,19 +100,21 @@ fn tick(state: &Entity<Listening>, window: &mut Window, cx: &mut App) {
         .spawn(cx, async move |cx| {
             loop {
                 cx.background_executor().timer(TICK).await;
-                let going = state.update(cx, |now, cx| {
-                    now.at = (now.at + TICK.mul_f32(now.speed)).min(now.length());
-                    if now.at == now.length() {
-                        match now.repeat {
-                            Repeat::One => now.at = Duration::ZERO,
-                            Repeat::All => now.skip(1),
-                            Repeat::Off if now.song + 1 < SONGS.len() => now.skip(1),
-                            Repeat::Off => now.playing = false,
+                let going = cx.update(|_, cx| {
+                    state.update(cx, |now, cx| {
+                        now.at = (now.at + TICK.mul_f32(now.speed)).min(now.length());
+                        if now.at == now.length() {
+                            match now.repeat {
+                                Repeat::One => now.at = Duration::ZERO,
+                                Repeat::All => now.skip(1),
+                                Repeat::Off if now.song + 1 < SONGS.len() => now.skip(1),
+                                Repeat::Off => now.playing = false,
+                            }
                         }
-                    }
-                    now.ticking = now.playing;
-                    cx.notify();
-                    now.playing
+                        now.ticking = now.playing;
+                        cx.notify();
+                        now.playing
+                    })
                 })?;
                 if !going {
                     return anyhow::Ok(());

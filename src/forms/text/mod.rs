@@ -36,7 +36,7 @@ pub(crate) type Fit = Rc<dyn Fn(&str, Range<usize>, &str) -> (String, usize)>;
 
 /// The last shaped text: one entry per hard line, with its display offset.
 pub(crate) struct Layout {
-    pub lines: Vec<(usize, WrappedLine)>,
+    pub lines: Rc<[(usize, WrappedLine)]>,
     pub bounds: Bounds<Pixels>,
     pub line_height: Pixels,
     /// The lines show the placeholder, not content.

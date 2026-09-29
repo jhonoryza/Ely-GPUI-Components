@@ -1,7 +1,9 @@
 use std::{path::Path, time::Duration};
 
 use ely_gpui_component::media::{Cue, Scrubber, SubtitleEditor, VideoPlayer, VideoThumbnailStrip};
-use gpui::{App, Entity, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
+use gpui::{
+    App, Entity, IntoElement, ParentElement, SharedString, Styled, TaskExt as _, Window, div, px,
+};
 
 use crate::{
     probe::probe,
@@ -61,13 +63,15 @@ fn tick(state: &Entity<Playback>, window: &mut Window, cx: &mut App) {
         .spawn(cx, async move |cx| {
             loop {
                 cx.background_executor().timer(TICK).await;
-                let going = state.update(cx, |now, cx| {
-                    let step = TICK.mul_f32(now.speed);
-                    now.at = (now.at + step).min(LENGTH);
-                    now.playing &= now.at < LENGTH;
-                    now.ticking = now.playing;
-                    cx.notify();
-                    now.playing
+                let going = cx.update(|_, cx| {
+                    state.update(cx, |now, cx| {
+                        let step = TICK.mul_f32(now.speed);
+                        now.at = (now.at + step).min(LENGTH);
+                        now.playing &= now.at < LENGTH;
+                        now.ticking = now.playing;
+                        cx.notify();
+                        now.playing
+                    })
                 })?;
                 if !going {
                     return anyhow::Ok(());

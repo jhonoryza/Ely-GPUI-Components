@@ -95,7 +95,7 @@ impl Element for Raised {
     ) {
         let child = self.child.take().expect("a raised element prepaints once");
         if !self.nested {
-            window.defer_draw(child, window.element_offset(), self.priority);
+            window.defer_draw(child, window.element_offset(), self.priority, None);
             return;
         }
         LAYERS.with_borrow_mut(|layers| {

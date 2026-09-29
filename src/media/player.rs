@@ -154,15 +154,17 @@ fn wake(watch: &Entity<Watch>, window: &mut Window, cx: &mut App) {
             loop {
                 let wait = watch.read_with(cx, |watch, cx| {
                     IDLE.saturating_sub(cx.background_executor().now().duration_since(watch.moved))
-                })?;
+                });
                 if wait.is_zero() {
                     break;
                 }
                 cx.background_executor().timer(wait).await;
             }
-            watch.update(cx, |watch, cx| {
-                watch.waking = false;
-                cx.notify();
+            cx.update(|_, cx| {
+                watch.update(cx, |watch, cx| {
+                    watch.waking = false;
+                    cx.notify();
+                })
             })
         })
         .detach_and_log_err(cx);

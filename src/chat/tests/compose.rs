@@ -67,7 +67,7 @@ fn open(
     cx.update(|window, cx| {
         window.activate_window();
         let field = compose.read(cx).field.focus_handle(cx);
-        window.focus(&field);
+        window.focus(&field, cx);
     });
     settle(cx);
     (compose, cx)

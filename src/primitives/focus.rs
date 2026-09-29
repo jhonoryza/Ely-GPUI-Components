@@ -70,9 +70,9 @@ impl RenderOnce for FocusScope {
         if self.root {
             let handle = self.handle.clone();
             window.use_keyed_state("focus-root", cx, |window, cx| Root {
-                _lost: cx.on_focus_lost(window, move |_: &mut Root, window, _| {
+                _lost: cx.on_focus_lost(window, move |_: &mut Root, window, cx| {
                     log::info!("focus: its element left the tree; the root takes it");
-                    window.focus(&handle);
+                    window.focus(&handle, cx);
                 }),
             });
         }
@@ -85,21 +85,21 @@ impl RenderOnce for FocusScope {
 }
 
 fn step(scope: &FocusHandle, trap: bool, forward: bool, window: &mut Window, cx: &mut App) {
-    let advance = |window: &mut Window| {
+    let advance = |window: &mut Window, cx: &mut App| {
         if forward {
-            window.focus_next()
+            window.focus_next(cx)
         } else {
-            window.focus_prev()
+            window.focus_prev(cx)
         }
     };
     if !trap {
-        advance(window);
+        advance(window, cx);
         return;
     }
     let origin = window.focused(cx);
     let mut first = None;
     loop {
-        advance(window);
+        advance(window, cx);
         let focused = window.focused(cx);
         if scope.contains_focused(window, cx) && focused.as_ref() != Some(scope) {
             return;
@@ -113,7 +113,7 @@ fn step(scope: &FocusHandle, trap: bool, forward: bool, window: &mut Window, cx:
     }
     log::warn!("focus scope: trap holds no tab stop; focus stays");
     if let Some(origin) = origin {
-        window.focus(&origin);
+        window.focus(&origin, cx);
     }
 }
 
@@ -137,16 +137,16 @@ pub(crate) fn take_focus(
         previous: None,
         taken: false,
         returned: false,
-        _lost: cx.on_focus_lost(window, |takeover: &mut Takeover, window, _| {
+        _lost: cx.on_focus_lost(window, |takeover: &mut Takeover, window, cx| {
             if !takeover.returned {
                 log::info!("focus: its element left the tree; the overlay takes it back");
-                window.focus(&takeover.focus);
+                window.focus(&takeover.focus, cx);
             }
         }),
     });
     if !state.read(cx).taken {
         let previous = window.focused(cx);
-        window.focus(&state.read(cx).focus.clone());
+        window.focus(&state.read(cx).focus.clone(), cx);
         state.update(cx, |takeover, _| {
             takeover.previous = previous;
             takeover.taken = true;
@@ -163,7 +163,7 @@ pub(crate) fn give_back(state: &Entity<Takeover>, window: &mut Window, cx: &mut 
     });
     match previous {
         Some(previous) => {
-            window.focus(&previous);
+            window.focus(&previous, cx);
             log::info!("focus: handed back after an overlay");
         }
         None => log::info!("focus: overlay closed, nothing was focused before"),
@@ -193,7 +193,7 @@ pub(crate) fn hold_focus(
     if on && !was_on && !focus.contains_focused(window, cx) {
         log::info!("focus: a mode takes it, so Escape reaches it");
         let previous = window.focused(cx);
-        window.focus(&focus);
+        window.focus(&focus, cx);
         held.update(cx, |held, _| held.previous = previous);
     }
     if on != was_on {
@@ -206,7 +206,7 @@ pub(crate) fn hold_focus(
 pub(crate) fn hand_back(held: &Entity<Held>, window: &mut Window, cx: &mut App) {
     if let Some(previous) = held.update(cx, |held, _| held.previous.take()) {
         log::info!("focus: handed back after a mode");
-        window.focus(&previous);
+        window.focus(&previous, cx);
     }
 }
 

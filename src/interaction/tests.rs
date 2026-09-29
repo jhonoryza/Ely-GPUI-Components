@@ -49,9 +49,9 @@ fn settle(cx: &mut VisualTestContext) {
 }
 
 fn tab(stops: usize, cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
-        (0..stops).for_each(|_| window.focus_next());
+    cx.update(|window, cx| {
+        window.blur(cx);
+        (0..stops).for_each(|_| window.focus_next(cx));
     });
     settle(cx);
 }
@@ -234,14 +234,17 @@ fn picked(host: &Entity<Bench>, cx: &mut VisualTestContext) -> Vec<String> {
 #[gpui::test]
 fn a_band_selects_what_it_crosses(cx: &mut TestAppContext) {
     let (host, cx) = bench(area, cx);
-    drag(
-        at(100.0, 100.0),
-        &[at(110.0, 95.0), at(150.0, 70.0), at(160.0, 60.0)],
-        Modifiers::none(),
-        cx,
-    );
-    assert_eq!(picked(&host, cx), ["b", "c"]);
+    let none = Modifiers::none();
+    cx.simulate_mouse_down(at(100.0, 100.0), MouseButton::Left, none);
+    for step in [at(110.0, 95.0), at(150.0, 70.0), at(160.0, 60.0)] {
+        cx.simulate_mouse_move(step, Some(MouseButton::Left), none);
+        settle(cx);
+    }
+    // gpui now clears debug bounds each frame, and the band leaves on release.
     assert!(cx.debug_bounds("selection-band").is_some());
+    cx.simulate_mouse_up(at(160.0, 60.0), MouseButton::Left, none);
+    settle(cx);
+    assert_eq!(picked(&host, cx), ["b", "c"]);
 }
 
 /// A press selects a tile alone, Command adds another, a press on empty space clears, and with focus Command-A takes all and Escape clears.

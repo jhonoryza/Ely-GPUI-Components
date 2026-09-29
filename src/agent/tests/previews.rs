@@ -43,8 +43,8 @@ fn a_frame_shows_from_the_keyboard(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|_, _| Browsing { asked: Vec::new() });
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert_eq!(
         view.read_with(cx, |browsing, _| browsing.asked.clone()),
@@ -97,8 +97,8 @@ fn the_source_shows_when_asked(cx: &mut TestAppContext) {
     cx.update(|window, _| window.activate_window());
     settle(cx);
     assert!(!drew.get(), "the preview shows first");
-    cx.update(|window, _| window.focus_next());
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     assert!(drew.get(), "the source shows once asked");
 }
@@ -113,23 +113,26 @@ impl Render for Strip {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let (view, height) = (cx.entity(), self.height.clone());
         let frames = (0..8).map(|ix| format!("{ix}.png"));
-        div()
-            .relative()
-            .w(px(280.0))
-            .child(
-                BrowserPreview::new("strip", "localhost", frames, 0)
-                    .on_show(move |ix, _, cx| view.update(cx, |strip, _| strip.asked.push(ix))),
-            )
-            .child(
-                canvas(
-                    move |bounds, _, _| height.set(bounds.size.height),
-                    |_, _, _, _| {},
+        // gpui fills the window with an auto-sized root, so the measured box sits inside one.
+        div().child(
+            div()
+                .relative()
+                .w(px(280.0))
+                .child(
+                    BrowserPreview::new("strip", "localhost", frames, 0)
+                        .on_show(move |ix, _, cx| view.update(cx, |strip, _| strip.asked.push(ix))),
                 )
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full(),
-            )
+                .child(
+                    canvas(
+                        move |bounds, _, _| height.set(bounds.size.height),
+                        |_, _, _, _| {},
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                ),
+        )
     }
 }
 
@@ -226,7 +229,7 @@ fn tab_brings_a_hidden_frame_into_view(cx: &mut TestAppContext) {
     cx.update(|window, _| window.activate_window());
     settle(cx);
     for _ in 0..8 {
-        cx.update(|window, _| window.focus_next());
+        cx.update(|window, cx| window.focus_next(cx));
         settle(cx);
     }
     settle(cx);
@@ -254,24 +257,26 @@ struct Screen {
 impl Render for Screen {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
         let height = self.height.clone();
-        div()
-            .relative()
-            .w(px(480.0))
-            .child(
-                ComputerUseViewer::new("screen", "a.png")
-                    .ratio(4.0 / 3.0)
-                    .pointer(point(0.5, 0.95)),
-            )
-            .child(
-                canvas(
-                    move |bounds, _, _| height.set(bounds.size.height),
-                    |_, _, _, _| {},
+        div().child(
+            div()
+                .relative()
+                .w(px(480.0))
+                .child(
+                    ComputerUseViewer::new("screen", "a.png")
+                        .ratio(4.0 / 3.0)
+                        .pointer(point(0.5, 0.95)),
                 )
-                .absolute()
-                .top_0()
-                .left_0()
-                .size_full(),
-            )
+                .child(
+                    canvas(
+                        move |bounds, _, _| height.set(bounds.size.height),
+                        |_, _, _, _| {},
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                ),
+        )
     }
 }
 

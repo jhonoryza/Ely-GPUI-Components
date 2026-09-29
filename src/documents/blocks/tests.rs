@@ -59,7 +59,7 @@ fn caret(editor: &Entity<BlockEditor>, ix: usize, at: usize, cx: &mut VisualTest
     cx.update(|window, cx| {
         let field = editor.read(cx).blocks[ix].fields[0].clone();
         field.update(cx, |field, cx| field.select(at..at, cx));
-        window.focus(&field.focus_handle(cx));
+        window.focus(&field.focus_handle(cx), cx);
     });
     settle(cx);
 }
@@ -211,7 +211,7 @@ fn select(
     cx.update(|window, cx| {
         let field = editor.read(cx).blocks[ix].fields[field].clone();
         field.update(cx, |field, cx| field.select(range, cx));
-        window.focus(&field.focus_handle(cx));
+        window.focus(&field.focus_handle(cx), cx);
     });
     settle(cx);
 }
@@ -280,7 +280,7 @@ fn keys_into_a_merged_cell_land_on_the_cell_that_shows(cx: &mut TestAppContext) 
     select(&editor, 0, 0, 1..1, cx);
     cx.update(|window, cx| {
         let field = editor.read(cx).blocks[0].fields[1].clone();
-        window.focus(&field.focus_handle(cx));
+        window.focus(&field.focus_handle(cx), cx);
     });
     settle(cx);
     cx.simulate_keystrokes("down");

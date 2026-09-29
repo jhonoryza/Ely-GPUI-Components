@@ -205,12 +205,12 @@ impl Theme {
                     theme.colors = from.mix(&to, motion::ease_in_out_cubic(t));
                     cx.refresh_windows();
                     t < 1.0
-                })?;
+                });
                 if !running {
-                    return anyhow::Ok(());
+                    return;
                 }
             }
         })
-        .detach_and_log_err(cx);
+        .detach();
     }
 }

@@ -124,8 +124,8 @@ fn tab_reaches_each_span_and_enter_picks_it(cx: &mut TestAppContext) {
     let (_, cx) = cx.add_window_view(|_, _| Spans(store));
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("enter");
     settle(cx);
     cx.simulate_event(KeyUpEvent {

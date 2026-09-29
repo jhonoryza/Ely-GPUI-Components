@@ -73,7 +73,7 @@ impl RenderOnce for HotkeyInput {
                 let bare = !stroke.modifiers.modified();
                 let next = match stroke.key.as_str() {
                     "escape" if bare => {
-                        window.blur();
+                        window.blur(cx);
                         return;
                     }
                     "backspace" | "delete" if bare => None,
@@ -87,7 +87,7 @@ impl RenderOnce for HotkeyInput {
                     next.as_ref()
                         .map_or("cleared".into(), |stroke| stroke.unparse())
                 );
-                window.blur();
+                window.blur(cx);
                 if let Some(on_change) = &on_change {
                     on_change(next, window, cx);
                 }

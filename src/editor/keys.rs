@@ -247,7 +247,13 @@ pub(crate) fn listen<E: InteractiveElement>(root: E, cx: &mut Context<CodeEditor
         e.delete_by(|buffer, at| buffer.word_start(at)..at, cx)
     });
     let root = on!(root, DeleteLineLeft, |e, _, cx| e.delete_by(line_left, cx));
-    let root = on!(root, Newline, |e, _, cx| e.newline(cx));
+    let root = on!(root, Newline, |e, window, cx| {
+        if e.focus.is_focused(window) {
+            e.newline(cx)
+        } else {
+            cx.propagate()
+        }
+    });
     let root = on!(root, Indent, |e, _, cx| e.indent(cx));
     let root = on!(root, Outdent, |e, _, cx| e.outdent(cx));
     let root = on!(root, Undo, |e, _, cx| e.undo(cx));

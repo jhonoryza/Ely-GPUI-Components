@@ -187,7 +187,8 @@ pub(crate) fn fresh(id: impl Into<ElementId>, window: &mut Window, cx: &mut App)
         cx.spawn_in(window, async move |ticker, cx| {
             loop {
                 cx.background_executor().timer(TICK).await;
-                if ticker.update(cx, |_, cx| cx.notify()).is_err() {
+                let ticked = cx.update(|_, cx| ticker.update(cx, |_, cx| cx.notify()));
+                if ticked.and_then(|inner| inner).is_err() {
                     return;
                 }
             }

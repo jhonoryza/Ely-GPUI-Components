@@ -59,7 +59,7 @@ fn signup(cx: &mut TestAppContext) -> (Entity<Signup>, &mut VisualTestContext) {
 #[gpui::test]
 fn cmd_enter_in_a_field_submits_the_form_once(cx: &mut TestAppContext) {
     let (view, cx) = signup(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_input("Ada");
     cx.simulate_keystrokes("cmd-enter");
     let counts = view.read_with(cx, |view, _| (view.sent, view.field_submits));
@@ -69,9 +69,9 @@ fn cmd_enter_in_a_field_submits_the_form_once(cx: &mut TestAppContext) {
 #[gpui::test]
 fn cmd_enter_on_any_control_in_a_form_submits_it(cx: &mut TestAppContext) {
     let (view, cx) = signup(cx);
-    cx.update(|window, _| {
-        window.focus_next();
-        window.focus_next();
+    cx.update(|window, cx| {
+        window.focus_next(cx);
+        window.focus_next(cx);
     });
     cx.simulate_keystrokes("cmd-enter");
     assert_eq!(
@@ -120,16 +120,16 @@ fn field_array_buttons_remove_their_own_row_and_add_one(cx: &mut TestAppContext)
     let (view, cx) = cx.add_window_view(|_, _| Rows {
         rows: vec!["a", "b", "c"],
     });
-    cx.update(|window, _| {
-        window.focus_next();
-        window.focus_next();
+    cx.update(|window, cx| {
+        window.focus_next(cx);
+        window.focus_next(cx);
     });
     press("space", cx);
     assert_eq!(view.read_with(cx, |view, _| view.rows.clone()), ["a", "c"]);
-    cx.update(|window, _| {
-        window.blur();
+    cx.update(|window, cx| {
+        window.blur(cx);
         for _ in 0..3 {
-            window.focus_next();
+            window.focus_next(cx);
         }
     });
     press("space", cx);

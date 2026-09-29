@@ -120,7 +120,7 @@ fn tab_passes_through_the_panel(cx: &mut TestAppContext) {
         )
     });
     cx.update(|window, cx| {
-        window.focus(&root);
+        window.focus(&root, cx);
         window.toggle_inspector(cx);
     });
     cx.run_until_parked();
@@ -227,7 +227,7 @@ fn the_logger_lists_events(cx: &mut TestAppContext) {
         field: cx.new(|cx| TextInput::new(window, cx)),
     });
     let target = view.read_with(cx, |logged, _| logged.target.clone());
-    cx.update(|window, _| window.focus(&target));
+    cx.update(|window, cx| window.focus(&target, cx));
     cx.run_until_parked();
     assert!(shown("event-logger-empty", cx));
     cx.simulate_mouse_move(point(px(20.0), px(20.0)), None, Modifiers::none());
@@ -257,10 +257,16 @@ fn the_logger_lists_events(cx: &mut TestAppContext) {
     assert!(shown("event-key up a", cx));
     cx.simulate_modifiers_change(Modifiers::shift());
     assert!(shown("event-modifiers shift", cx));
+    cx.simulate_modifiers_change(Modifiers::none());
+    assert!(shown("event-modifiers none", cx));
+    assert!(
+        !shown("event-key down shift", cx),
+        "a lone modifier is no key"
+    );
     let (field, root) = view.read_with(cx, |logged, cx| {
         (logged.field.focus_handle(cx), logged.root.clone())
     });
-    cx.update(|window, _| window.focus(&field));
+    cx.update(|window, cx| window.focus(&field, cx));
     for key in ["b", "c", "backspace", "left", "enter"] {
         press(key, cx);
     }
@@ -273,7 +279,7 @@ fn the_logger_lists_events(cx: &mut TestAppContext) {
     ] {
         assert!(shown(row, cx), "{row}: a key the field's bindings take");
     }
-    cx.update(|window, _| window.focus(&root));
+    cx.update(|window, cx| window.focus(&root, cx));
     press("z", cx);
     assert!(
         !shown("event-key down z", cx),

@@ -298,7 +298,7 @@ pub fn focus(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                         .on_click(move |_, window, cx| {
                             change(&show, cx, |focusing| focusing.field = !focusing.field);
                             let focus = focus.clone();
-                            window.defer(cx, move |window, _| window.focus(&focus));
+                            window.defer(cx, move |window, cx| window.focus(&focus, cx));
                         }),
                 )
                 .when(shown, |column| column.child(Input::new(&field))),

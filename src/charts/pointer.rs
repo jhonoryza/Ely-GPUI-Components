@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Bounds, Div, Entity, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
-    MouseMoveEvent, MouseUpEvent, PathBuilder, Pixels, Point, Stateful, StatefulInteractiveElement,
-    Styled, Window, canvas, fill, prelude::*, size,
+    App, Bounds, Div, Entity, HoverListenerMode, InteractiveElement, IntoElement, MouseButton,
+    MouseDownEvent, MouseMoveEvent, MouseUpEvent, PathBuilder, Pixels, Point, Stateful,
+    StatefulInteractiveElement, Styled, Window, canvas, fill, prelude::*, size,
 };
 
 use super::{
@@ -247,6 +247,7 @@ pub(crate) fn answer(
             }
         })
     })
+    .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
     .on_hover(move |inside, _, cx| {
         if !*inside {
             left.update(cx, |state, cx| {

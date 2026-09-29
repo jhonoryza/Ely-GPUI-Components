@@ -56,9 +56,9 @@ fn typing<'a>(
         tags: Vec::new(),
         asked: Vec::new(),
     });
-    cx.update(|window, _| {
+    cx.update(|window, cx| {
         window.activate_window();
-        window.focus_next();
+        window.focus_next(cx);
     });
     settle(cx);
     cx.simulate_input(words);

@@ -248,7 +248,7 @@ impl RenderOnce for MessageEditor {
         let opened = window.use_keyed_state((self.id.clone(), "opened"), cx, |_, _| false);
         if !*opened.read(cx) {
             log::info!("message editor: takes focus");
-            window.focus(&self.field.focus_handle(cx));
+            window.focus(&self.field.focus_handle(cx), cx);
             opened.update(cx, |opened, _| *opened = true);
         }
         let text = self.field.read(cx).text().trim().to_string();

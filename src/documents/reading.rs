@@ -214,7 +214,7 @@ impl RenderOnce for ReadingProgress {
                 move |bounds, _, window, _| {
                     let share = read_share(
                         f32::from(scroll.offset().y),
-                        f32::from(scroll.max_offset().height),
+                        f32::from(scroll.max_offset().y),
                     );
                     let filled = Bounds::new(
                         bounds.origin,

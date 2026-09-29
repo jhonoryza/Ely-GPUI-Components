@@ -135,7 +135,7 @@ fn open(
             input.select(0..0, cx);
         }
     });
-    window.focus(&input.focus_handle(cx));
+    window.focus(&input.focus_handle(cx), cx);
     let blur = {
         let (state, field) = (state.clone(), field.clone());
         cx.subscribe(&input, move |_, event: &InputEvent, cx| {

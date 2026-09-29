@@ -53,7 +53,7 @@ impl Render for Radios {
 fn radio_arrows_skip_disabled_choices_and_wrap(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Radios { chosen: "a".into() });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("down");
     assert_eq!(view.read_with(cx, |view, _| view.chosen.clone()), "c");
     cx.simulate_keystrokes("down");
@@ -84,7 +84,7 @@ impl Render for Picker {
 fn select_opens_moves_and_picks_from_the_keyboard(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Picker { chosen: "a".into() });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("down down enter");
     assert_eq!(view.read_with(cx, |view, _| view.chosen.clone()), "b");
 }
@@ -213,7 +213,7 @@ impl Render for Level {
 fn slider_keys_step_jump_and_reach_the_end(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Level { value: 10.0 });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("right pageup");
     assert_eq!(view.read_with(cx, |view, _| view.value), 21.0);
     cx.simulate_keystrokes("end");
@@ -242,7 +242,7 @@ impl Render for Agree {
 fn space_toggles_a_focused_checkbox(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Agree { on: false });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("space");
     cx.simulate_event(KeyUpEvent {
         keystroke: Keystroke::parse("space").unwrap(),
@@ -254,7 +254,7 @@ fn space_toggles_a_focused_checkbox(cx: &mut TestAppContext) {
 fn a_disabled_choice_still_leaves_the_group_reachable(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Radios { chosen: "b".into() });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("down");
     assert_eq!(view.read_with(cx, |view, _| view.chosen.clone()), "c");
 }
@@ -281,7 +281,7 @@ impl Render for Several {
 fn a_full_enter_press_opens_a_multi_select_and_keeps_it_open(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Several { chosen: Vec::new() });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("enter");
     release("enter", cx);
     cx.simulate_keystrokes("enter");
@@ -333,7 +333,7 @@ fn typed<'a>(
 #[gpui::test]
 fn enter_in_a_combobox_skips_a_disabled_first_row(cx: &mut TestAppContext) {
     let (view, cx) = typed(None, cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("enter");
     assert_eq!(
         view.read_with(cx, |view, _| view.chosen.clone()),
@@ -386,7 +386,7 @@ fn a_disabled_rating_ignores_the_arrows(cx: &mut TestAppContext) {
         value: 2,
         disabled: false,
     });
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     view.update(cx, |view, cx| {
         view.disabled = true;
         cx.notify();
@@ -440,7 +440,7 @@ fn a_shut_select_may_be_empty(cx: &mut TestAppContext) {
     setup(cx);
     let (_, cx) = cx.add_window_view(|_, _| Empty(true));
     cx.run_until_parked();
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     assert!(cx.update(|window, cx| window.focused(cx).is_none()));
 }
 
@@ -469,7 +469,7 @@ fn a_long_choice_keeps_its_list_inside_the_window(cx: &mut TestAppContext) {
     let (_, cx) = cx.add_window_view(|_, _| Named);
     cx.simulate_resize(gpui::size(px(280.0), px(600.0)));
     cx.run_until_parked();
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("enter");
     release("enter", cx);
     cx.run_until_parked();

@@ -1,10 +1,10 @@
 use std::{collections::HashSet, rc::Rc};
 
 use gpui::{
-    App, Bounds, DragMoveEvent, ElementId, EmptyView, EntityId, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, Pixels, Point, RenderOnce, SharedString,
-    StatefulInteractiveElement, Styled, Window, canvas, div, fill, point, prelude::*, size,
-    transparent_black,
+    App, Bounds, DragMoveEvent, ElementId, EmptyView, EntityId, HoverListenerMode,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce,
+    SharedString, StatefulInteractiveElement, Styled, Window, canvas, div, fill, point, prelude::*,
+    size, transparent_black,
 };
 
 use super::lens::{DRAG, Lens, START, STEP, radius, turned};
@@ -285,6 +285,7 @@ impl RenderOnce for EmbeddingVisualizer {
                     })
                 })
             })
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |inside, _, cx| {
                 if !inside {
                     left.update(cx, |view, cx| {

@@ -6,9 +6,9 @@ use std::{
 
 use gpui::{
     AnyElement, App, Axis, Bounds, Canvas, Div, ElementId, EmptyView, Entity, EntityId,
-    FocusHandle, InteractiveElement, IntoElement, ParentElement, Pixels, Point, RenderOnce,
-    ScrollHandle, StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, point,
-    prelude::*,
+    FocusHandle, HoverListenerMode, InteractiveElement, IntoElement, ParentElement, Pixels, Point,
+    RenderOnce, ScrollHandle, StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas,
+    div, point, prelude::*,
 };
 use smallvec::SmallVec;
 
@@ -145,8 +145,8 @@ impl RenderOnce for Scrollbar {
             self.handle.offset(),
         );
         let (span, reach, scrolled) = match self.axis {
-            Axis::Vertical => (view.height, max.height, -offset.y),
-            Axis::Horizontal => (view.width, max.width, -offset.x),
+            Axis::Vertical => (view.height, max.y, -offset.y),
+            Axis::Horizontal => (view.width, max.x, -offset.x),
         };
         let length = (span * (span / (span + reach))).max(min_thumb).min(span);
         let travel = span - length;
@@ -292,6 +292,7 @@ impl RenderOnce for ScrollArea {
             .id(self.id)
             .relative()
             .overflow_hidden()
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |hovered, _, cx| {
                 state.update(cx, |activity, cx| {
                     activity.hovered = *hovered;

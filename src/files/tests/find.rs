@@ -17,10 +17,10 @@ use crate::{
 
 /// Moves focus to the `nth` Tab stop from none.
 fn tab_to(nth: usize, cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.blur();
+    cx.update(|window, cx| {
+        window.blur(cx);
         for _ in 0..nth {
-            window.focus_next();
+            window.focus_next(cx);
         }
     });
     settle(cx);

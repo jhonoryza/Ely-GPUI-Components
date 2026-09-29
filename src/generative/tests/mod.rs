@@ -27,7 +27,7 @@ fn press(key: &str, cx: &mut VisualTestContext) {
 
 fn tab(times: usize, cx: &mut VisualTestContext) {
     for _ in 0..times {
-        cx.update(|window, _| window.focus_next());
+        cx.update(|window, cx| window.focus_next(cx));
     }
 }
 

@@ -79,7 +79,7 @@ fn an_async_view_shows_its_value_once_loaded(cx: &mut TestAppContext) {
 fn a_failed_load_tries_again_from_its_button(cx: &mut TestAppContext) {
     let (loads, shows, cx) = report(true, cx);
     assert_eq!((loads.load(Ordering::SeqCst), shows.get()), (1, 0));
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     settle(cx);
     assert_eq!(loads.load(Ordering::SeqCst), 2);

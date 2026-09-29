@@ -150,8 +150,8 @@ impl RenderOnce for HelpPanel {
         let search_focus = self.search.read(cx).focus().clone();
         let on_open: OnOpen = Rc::new(move |key, window, cx| {
             match key {
-                Some(_) => window.focus(&back_focus),
-                None => window.focus(&search_focus),
+                Some(_) => window.focus(&back_focus, cx),
+                None => window.focus(&search_focus, cx),
             }
             on_open(key, window, cx)
         });

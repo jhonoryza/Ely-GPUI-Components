@@ -4,10 +4,10 @@ use std::{
 };
 
 use gpui::{
-    Animation, AnimationExt, AnyElement, App, ClickEvent, Context, Corner, ElementId, Entity,
-    FontWeight, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce, SharedString,
-    StatefulInteractiveElement, Styled, Task, Window, anchored, canvas, div, point, prelude::*,
-    relative,
+    Anchor, Animation, AnimationExt, AnyElement, App, ClickEvent, Context, ElementId, Entity,
+    FontWeight, HoverListenerMode, InteractiveElement, IntoElement, ParentElement, Pixels,
+    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Task, Window, anchored, canvas,
+    div, point, prelude::*, relative,
 };
 
 use crate::{
@@ -230,6 +230,7 @@ impl RenderOnce for ToastViewport {
             .flex()
             .flex_col()
             .w(width)
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |hovered, _, cx| {
                 hold.update(cx, |toaster, cx| toaster.hold(*hovered, cx))
             })
@@ -238,7 +239,7 @@ impl RenderOnce for ToastViewport {
             (self.id, "raised"),
             anchored()
                 .position(point(viewport.width - margin, viewport.height - margin))
-                .anchor(Corner::BottomRight)
+                .anchor(Anchor::BottomRight)
                 .child(stack),
         )
         .with_priority(1)

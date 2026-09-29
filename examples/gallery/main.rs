@@ -22,8 +22,8 @@ use std::path::PathBuf;
 use anyhow::{Context as _, Result, bail};
 use ely_gpui_component::Assets;
 use gpui::{
-    App, AppContext, Application, Bounds, KeyBinding, Menu, MenuItem, TitlebarOptions,
-    WindowBounds, WindowHandle, WindowOptions, actions, point, px, size,
+    App, AppContext, Bounds, KeyBinding, Menu, MenuItem, TitlebarOptions, WindowBounds,
+    WindowHandle, WindowOptions, actions, point, px, size,
 };
 
 actions!(gallery, [Quit, About, LightMode, DarkMode, NewWindow]);
@@ -38,6 +38,7 @@ fn menus(cx: &mut App) {
                 MenuItem::separator(),
                 MenuItem::action("Quit Ely", Quit),
             ],
+            disabled: false,
         },
         Menu {
             name: "View".into(),
@@ -45,6 +46,7 @@ fn menus(cx: &mut App) {
                 MenuItem::action("Light", LightMode),
                 MenuItem::action("Dark", DarkMode),
             ],
+            disabled: false,
         },
     ]);
     cx.set_dock_menu(vec![MenuItem::action("New Window", NewWindow)]);
@@ -103,7 +105,7 @@ fn parse_args() -> Result<Args> {
 fn main() -> Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     let args = parse_args()?;
-    Application::new()
+    gpui_platform::application()
         .with_assets(Assets)
         .run(move |cx: &mut App| {
             ely_gpui_component::init(cx);
@@ -123,6 +125,8 @@ fn main() -> Result<()> {
                     traffic_light_position: Some(point(px(16.0), px(18.0))),
                 }),
                 window_min_size: Some(size(px(880.0), px(560.0))),
+                // Draws every frame while a demo window is key, as gpui 0.2.2 did.
+                inactive_frame_interval: None,
                 ..Default::default()
             };
             let window = cx

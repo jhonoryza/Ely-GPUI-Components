@@ -123,7 +123,7 @@ impl BlockEditor {
             && let Some(field) = block.fields.get(field)
         {
             field.update(cx, |field, cx| field.select(selection, cx));
-            window.focus(&field.focus_handle(cx));
+            window.focus(&field.focus_handle(cx), cx);
         }
         self.current = snapshot;
         cx.emit(BlockEvent::Changed);

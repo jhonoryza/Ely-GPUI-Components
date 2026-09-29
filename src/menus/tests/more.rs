@@ -24,6 +24,8 @@ fn action(name: &str, action: impl gpui::Action) -> OwnedMenuItem {
         name: name.into(),
         action: Box::new(action),
         os_action: None,
+        checked: false,
+        disabled: false,
     }
 }
 
@@ -33,6 +35,7 @@ impl Render for Bar {
             OwnedMenu {
                 name: "File".into(),
                 items: vec![action("Open", OpenFile), action("Save", Save)],
+                disabled: false,
             },
             OwnedMenu {
                 name: "Edit".into(),
@@ -42,8 +45,10 @@ impl Render for Bar {
                     OwnedMenuItem::Submenu(OwnedMenu {
                         name: "More".into(),
                         items: vec![action("Deep", Deep)],
+                        disabled: false,
                     }),
                 ],
+                disabled: false,
             },
         ];
         div()
@@ -70,7 +75,7 @@ fn bar(cx: &mut TestAppContext) -> (gpui::Entity<Bar>, &mut VisualTestContext) {
         ran: Vec::new(),
     });
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     (view, cx)
 }
 
@@ -150,7 +155,7 @@ fn wheel(cx: &mut TestAppContext) -> (gpui::Entity<Wheel>, &mut VisualTestContex
         enters_above: 0,
     });
     settle(cx);
-    cx.update(|window, cx| window.focus(&view.read(cx).before.clone()));
+    cx.update(|window, cx| window.focus(&view.read(cx).before.clone(), cx));
     let at = point(px(300.0), px(300.0));
     cx.simulate_mouse_move(at, None, Modifiers::none());
     cx.simulate_mouse_down(at, MouseButton::Right, Modifiers::none());

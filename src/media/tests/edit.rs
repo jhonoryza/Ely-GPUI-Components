@@ -157,7 +157,7 @@ fn a_shaped_crop_keeps_its_shape_as_a_corner_moves(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_cropper_with_no_handler_takes_no_tab(cx: &mut TestAppContext) {
     let (_, cx) = cropping(HALF, None, false, cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     assert!(cx.update(|window, cx| window.focused(cx)).is_none());
 }
 
@@ -226,9 +226,9 @@ fn a_picked_picture_crops_from_a_fitted_box_and_remove_empties_it(cx: &mut TestA
     };
     let fitted = crop.is_some_and(|crop| near(crop, square));
     assert!(fitted && heard == 1, "{crop:?} after {heard}");
-    cx.update(|window, _| {
+    cx.update(|window, cx| {
         for _ in 0..2 {
-            window.focus_next();
+            window.focus_next(cx);
         }
     });
     press("enter", cx);

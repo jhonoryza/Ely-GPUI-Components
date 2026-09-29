@@ -144,8 +144,7 @@ pub fn tree(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                                     items.push(item("logo", "logo.svg", Some(&key), false));
                                     items.push(item("inter", "Inter.ttf", Some(&key), false));
                                 })
-                            })
-                            .ok();
+                            });
                         })
                         .detach();
                     })

@@ -153,7 +153,7 @@ impl Palette {
         let takeover = take_focus((self.id.clone(), "takeover"), window, cx);
         let scope = takeover.read(cx).focus.clone();
         if scope.is_focused(window) {
-            window.focus(&self.input.read(cx).focus().clone());
+            window.focus(&self.input.read(cx).focus().clone(), cx);
         }
         let close = self.on_close.clone();
         let close: Run = Rc::new(move |window, cx| {

@@ -190,7 +190,7 @@ impl RenderOnce for Poll {
                         let ix = picked.expect("Vote waits for a pick");
                         log::info!("poll: voted for option {ix}");
                         on_vote(Some(ix), window, cx);
-                        window.focus(&focus);
+                        window.focus(&focus, cx);
                     })
             }
             Some(_) => Button::new((id.clone(), "change"), "Change vote")

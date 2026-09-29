@@ -1,8 +1,8 @@
 use std::{ops::Range, rc::Rc};
 
 use gpui::{
-    App, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
-    StatefulInteractiveElement, Styled, Window, div, prelude::*, uniform_list,
+    App, ElementId, HoverListenerMode, InteractiveElement, IntoElement, MouseButton, ParentElement,
+    RenderOnce, StatefulInteractiveElement, Styled, Window, div, prelude::*, uniform_list,
 };
 
 use super::OnIndex;
@@ -126,6 +126,7 @@ impl RenderOnce for HexViewer {
                             .id((id.clone(), format!("{key}-{at}")))
                             .px_0p5()
                             .when_some(wash(at), |cell, wash| cell.bg(wash))
+                            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
                             .on_hover(move |on, _, cx| {
                                 hover.update(cx, |hovered, cx| {
                                     let next = if *on { Some(at) } else { None };

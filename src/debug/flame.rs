@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use gpui::{
     App, Bounds, ElementId, Hsla, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
-    MouseMoveEvent, ParentElement, Pixels, RenderOnce, SharedString, Styled, Window, canvas, div,
-    fill, point, size,
+    MouseMoveEvent, ParentElement, Pixels, RenderOnce, SharedString, Styled, TextAlign, Window,
+    canvas, div, fill, point, size,
 };
 
 use crate::{
@@ -297,6 +297,8 @@ impl RenderOnce for Flamegraph {
                                                         (row - pixels * 1.2) / 2.0,
                                                     ),
                                                 pixels * 1.2,
+                                                TextAlign::Left,
+                                                None,
                                                 window,
                                                 cx,
                                             )

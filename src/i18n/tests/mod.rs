@@ -206,14 +206,7 @@ mod shown {
 
     #[test]
     fn text_sits_against_the_reading_side() {
-        let side = |direction: Direction| {
-            direction
-                .align(div())
-                .style()
-                .text
-                .as_ref()
-                .and_then(|text| text.text_align)
-        };
+        let side = |direction: Direction| direction.align(div()).style().text.text_align;
         assert_eq!(side(Direction::Ltr), Some(gpui::TextAlign::Left));
         assert_eq!(side(Direction::Rtl), Some(gpui::TextAlign::Right));
     }

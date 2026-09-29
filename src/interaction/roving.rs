@@ -137,7 +137,7 @@ impl RenderOnce for RovingFocus {
                     *stop = to;
                     cx.notify();
                 });
-                window.focus(&handles[to]);
+                window.focus(&handles[to], cx);
             })
             .children(items)
     }

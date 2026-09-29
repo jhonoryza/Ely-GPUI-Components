@@ -185,7 +185,7 @@ pub fn realtime(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 cx.background_executor()
                     .timer(Duration::from_millis(900))
                     .await;
-                let pushed = cx.update(|cx| {
+                cx.update(|cx| {
                     stream.update(cx, |(values, pushed), cx| {
                         let last = values.last().copied().unwrap_or(60.0);
                         values.push((last + (rng() - 0.5) * 10.0).clamp(20.0, 100.0));
@@ -194,9 +194,6 @@ pub fn realtime(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                         cx.notify();
                     })
                 });
-                if pushed.is_err() {
-                    return;
-                }
             }
         })
         .detach();

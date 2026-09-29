@@ -105,7 +105,7 @@ impl RenderOnce for LinkEditor {
             log::info!("link editor: open over {:?}", linking.range);
             let written = linking.address.clone().unwrap_or_default();
             address.update(cx, |field, cx| field.set_text(written, cx));
-            window.focus(&address.focus_handle(cx));
+            window.focus(&address.focus_handle(cx), cx);
             editing.update(cx, |editing, _| editing.seeded = true);
         }
         let focus = takeover.read(cx).focus.clone();

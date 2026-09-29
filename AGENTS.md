@@ -5,7 +5,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 ## Stack
 
 - Rust 1.95, edition 2024. One crate: `ely-gpui-component`.
-- gpui 0.2.2 from crates.io. Feature `runtime_shaders` is on by default: machines without Xcode lack the Metal compiler.
+- gpui and gpui_platform from Zed's repo by git at 1a28cff, the code gpui-pre 0.3.7 republishes. gpui takes `stacker`, which keeps deep layouts off the stack's end; gpui_platform takes `font-kit`, without which macOS draws no text. Feature `runtime_shaders`, on by default, turns on gpui_platform's: machines without Xcode lack the Metal compiler.
 - Assets, embedded with `rust-embed`: Lucide 1.48.0 icons (ISC), Inter 4.1 (regular, medium, semibold, italic) and JetBrains Mono 2.304 (OFL).
 - Catalog data: `emojis` (Unicode emoji), `isolang` (ISO 639, native names), `isocountry` (ISO 3166), `iso_currency` (ISO 4217, also minor units for money).
 - Codes: `qrcode` (QR) and `barcoders` (Code 128, EAN-13), both MIT OR Apache-2.0, default features off. `rqrr` 0.11 ((MIT OR Apache-2.0) AND ISC, default features off) reads QR codes from the host's frames.
@@ -53,6 +53,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - `hover()` needs an element id.
 - gpui applies hover and group-hover styles once an element has a hitbox, in prepaint and paint, but text takes its color at layout, so a hover cannot recolor text. What shows on hover rests `invisible()` and turns `visible()` through `group_hover` (`chat::ConversationItem`, `messaging::ChatMessage`).
 - gpui 0.2.2 panics on a deferred draw inside another. Whatever draws over the page goes through `primitives::raise`: at the top it defers; inside something raised it lays out on its own and draws last there, so a list opened in a dialog lies over the dialog. A raise takes its owner's id and draws under it, so its keyed state and focus hold while other raises come and go. `scripts/check.sh` refuses gpui's `deferred` anywhere else.
+- gpui hides hover after a key press until the mouse moves. A hover that holds or shows something (the toast stack, a carousel, tooltips, hover cards, charts, scroll activity) sets `HoverListenerMode::InputModalityIndependent`, so typing under a resting pointer keeps it. A hover preview the keyboard also moves keeps the default, and its leave ignores a key press through `last_input_was_keyboard` (`forms::Calendar`).
 - `occlude()` blocks the pointer for everything painted before it, its own ancestors too. Put it on the outermost box that should stop the pointer, as the toast stack does, or the ancestors' hover never fires.
 - A drag that pans, turns or slides goes through gpui's drag, whose moves reach the owner in or out of its box; `on_mouse_move` stops at the box's edge. gpui sends a drag's moves to every listener of its type, so each payload carries its owner's `EntityId` and handlers check it.
 - gpui 0.2.2 paints pictures without a transform, so a picture turns by its pixels: `media::turn` turns decoded frames by quarter turns off the main thread, an asset keyed by the picture and the turn. An svg turns to any angle through its `Transformation`, so a control that turns shows one (`interaction::Rotatable`).
@@ -80,7 +81,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - gpui focuses the nearest focusable ancestor on mouse down, and apps wrap everything in a `FocusScope`. A press that must leave focus alone calls `prevent_default`, as buttons and context regions do.
 - gpui runs the click of every pressed element under the pointer, a row's with its button's. A pressable row that holds buttons stops their press at their box on mouse down (`files::transfer`), as `overlays::media_button` stops its own.
 - gpui draws a window's first frame inside `open_window`. State the first frame reads, such as `cx.set_menus`, is set before it opens.
-- gpui clicks a focused element when Enter or Space is released. An overlay that hands focus back picks on release too; a pick on press returns focus first, and the release clicks the opener again. An edit in place that hands focus back keeps its text on Enter's release (`forms::InlineEdit`). The press itself bubbles, so a container that takes Space leaves a focused button its own: `overlays::media_button` stops it, and a button in a `SelectableList` row stops Space and Enter at its box (`mail::MailItem`'s star, `messaging::PinnedMessages`' Unpin).
+- gpui clicks a focused element when Enter or Space is released, and only if the press reached it and focus stayed there. An overlay that hands focus back picks on release too. An edit in place that hands focus back keeps its text on Enter's release (`forms::InlineEdit`). The press itself bubbles, so a container that takes Space leaves a focused button its own: `overlays::media_button` stops it, and a button in a `SelectableList` row stops Space and Enter at its box (`mail::MailItem`'s star, `messaging::PinnedMessages`' Unpin). A key context that binds a key its children use acts only while its own handle is focused and propagates otherwise, or a focused child never arms (`editor::CodeEditor`'s Newline).
 - A focus handle a component hands back lives across all its modes: take it with `tab_stop` before any early return, or keyed state drops it while the other mode draws and the handed-back focus lands nowhere. A thread's message keeps one handle folded and open, a Tab stop only while folded (`mail::MailThreadView`).
 - A button whose words and action change with a mode keeps one handle through `Button::focus_handle`, and the component moves focus to it or back to its field as the mode turns (`project::TimeTracker`).
 - A button that waits on the owner shows it with `loading`, which takes no press and stays a Tab stop, so focus holds through the wait; `disabled` is for what is not ready, and a disabled button is no stop (`onboarding::ContactSupport`).
@@ -136,6 +137,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A picture drawn in code reaches gpui as a `RenderImage`. A host that replaces one frees the old through `App::drop_image`, or every frame stays in the sprite atlas (the gallery's model).
 - `img()` keeps loading state, and moves an animated picture's frames, only with an id. Content masks are rectangles, so rounded corners survive only when the image fills its box without cropping.
 - gpui reads a `&str` picture source as a web address. A file goes through `Path` (`documents::source` in the crate, `Path::new` in the gallery).
+- Taffy 0.13 sizes a flex column by a ratio box's width before its cap, so chat's `shaped` pictures sit in a block inside such a column (`chat::ImageMessage`, `VideoMessage`, `ImageGrid`).
 - Taffy 0.9's grid rows overgrow tiles that keep a ratio. Tiles in a picture's shape sit in flex rows of `flex_1` cells (`generative::GenerationGrid`). A cell's padding counts in its flex base, so a row of fewer cells gives each more width; cells that match across rows keep their inset on a box inside (`messaging::VideoCallGrid`).
 - Rise reads green and fall red unless a component's `red_up` swaps them, as markets in East Asia read. `finance::quotes::moves` picks the pair.
 - Charts lay out in `f32` pixels of their own box, tested without gpui, and paint through `charts::paint::at`: a canvas's paint gets window coordinates, and `with_element_offset` works only in prepaint. Their sizes come from `theme.chart()`.
@@ -164,7 +166,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A component built on `lists::Tree` fills its box; the host gives it a height. A fixed-width column beside a `flex_1` one takes `flex_none`, or it shrinks.
 - Editor rows read their text through `CodeEditor::row_text`: a multi-line ghost cuts its line, and the rest follows the ghost's last line.
 - gpui styles a drag-over only on an element with its own hitbox. A veil that shows while files hover takes the drop itself (`chat::DragDropOverlay`).
-- gpui 0.2.2 never clears `debug_bounds`: a test sees an element appear, not leave.
+- gpui clears `debug_bounds` each frame: a test sees an element leave as well as appear.
 - The system time zone comes from `typography::format::system_zone`, which fails loud; jiff's `TimeZone::system()` falls back to UTC in silence.
 - A Select with nothing to pick stays shut: disabled, it shows its placeholder; open, it fails (`media::DeviceSelector` says no device was found).
 - A list opens with its cursor on the current choice: Select on the chosen row, Combobox on its value, MultiSelect on the first one ticked, SelectableList on its first selected row. A selection the owner makes, not the echo of the list's own pick, moves SelectableList's cursor there.
@@ -207,7 +209,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 
 - gpui's inspector (debug builds) runs no mouse listener while picking and holds a pick on a press without a redraw, so Ely's panel requests a frame each render while picking (`tooling::install_inspector`). Its panel scrolls, so the box model it draws over the page goes through `primitives::raise`, which paints unclipped. The panel is a second root, out of the app's scope, so it owns Tab through a `FocusScope` of its own.
 - A tool that measures redraws cannot move: any animation redraws the view it counts (`tooling::RenderCounter`). `AnyView::cached` renders again only on its own notify or a window refresh. A meter that counts frames keeps its view drawing while shown (`tooling::FpsMeter`).
-- A logger of input lays its canvas before what it holds, so its capture listeners run first and see what a child stops. Key downs come through `App::intercept_keystrokes`, which runs before bindings, and a key context on its box tells it focus is inside (`tooling::EventLogger`).
+- A logger of input lays its canvas before what it holds, so its capture listeners run first and see what a child stops. Key downs come through `App::intercept_keystrokes`, which runs before bindings, and a key context on its box tells it focus is inside (`tooling::EventLogger`). It also hears a lone modifier's release as a keystroke, which the logger skips.
 
 ## Decisions
 

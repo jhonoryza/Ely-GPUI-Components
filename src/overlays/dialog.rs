@@ -107,7 +107,7 @@ impl RenderOnce for Dialog {
         if let Some(first) = &self.first
             && focus.is_focused(window)
         {
-            window.focus(first);
+            window.focus(first, cx);
         }
         let close: Run = {
             let (id, on_close) = (self.id.clone(), self.on_close);

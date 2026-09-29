@@ -183,7 +183,7 @@ impl RenderOnce for MapView {
                     .any(|pin| pin.is_focused(window));
                 if zoomed && held {
                     log::info!("map: a zoom regroups the pins; focus goes to the map");
-                    window.focus(&map);
+                    window.focus(&map, cx);
                 }
                 local.update(cx, |local, cx| {
                     local.value = next;

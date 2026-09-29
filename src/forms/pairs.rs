@@ -184,7 +184,7 @@ fn render_rows(id: &ElementId, state: Entity<Rows>, add: &'static str, cx: &App)
             grow.update(cx, |rows, cx| {
                 rows.push(&[], window, cx);
                 let last = rows.rows.last().expect("just pushed");
-                window.focus(&last[0].0.read(cx).focus().clone());
+                window.focus(&last[0].0.read(cx).focus().clone(), cx);
                 rows.report(window, cx);
                 cx.notify();
             })

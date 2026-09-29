@@ -123,7 +123,7 @@ impl RenderOnce for Stopwatch {
                     cx.notify();
                 });
                 if let Some(then) = &then {
-                    window.focus(then);
+                    window.focus(then, cx);
                 }
             }
         };

@@ -2,9 +2,9 @@ use std::{rc::Rc, time::Duration};
 
 use gpui::{
     Animation, AnimationExt, AnyElement, AnyView, App, AppContext, Context, Div, ElementId,
-    InteractiveElement, IntoElement, ParentElement, Pixels, Point, Render, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Task, Window, anchored, div, point,
-    prelude::*,
+    HoverListenerMode, InteractiveElement, IntoElement, ParentElement, Pixels, Point, Render,
+    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Task, Window, anchored, div,
+    point, prelude::*,
 };
 
 use super::{Icon, IconName, raise};
@@ -143,6 +143,7 @@ impl RenderOnce for TooltipTrigger {
         div()
             .id(self.id)
             .child(self.child)
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |hovered, window, cx| {
                 if !*hovered {
                     hover.update(cx, hide);

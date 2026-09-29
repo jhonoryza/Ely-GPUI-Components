@@ -136,7 +136,7 @@ fn click(x: f32, y: f32, cx: &mut VisualTestContext) {
 #[gpui::test]
 fn the_keyboard_opens_walks_past_disabled_rows_and_runs(cx: &mut TestAppContext) {
     let (view, cx) = desk(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     press("down", cx);
     press("enter", cx);
@@ -149,7 +149,7 @@ fn the_keyboard_opens_walks_past_disabled_rows_and_runs(cx: &mut TestAppContext)
 #[gpui::test]
 fn submenus_open_right_and_close_left(cx: &mut TestAppContext) {
     let (view, cx) = desk(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     press("up", cx);
     press("right", cx);
@@ -164,7 +164,7 @@ fn submenus_open_right_and_close_left(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_check_row_reports_to_its_owner(cx: &mut TestAppContext) {
     let (view, cx) = desk(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     press("up", cx);
     press("up", cx);
@@ -175,7 +175,7 @@ fn a_check_row_reports_to_its_owner(cx: &mut TestAppContext) {
 #[gpui::test]
 fn escape_backs_out_one_level_then_closes(cx: &mut TestAppContext) {
     let (view, cx) = desk(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     press("up", cx);
     press("right", cx);
@@ -230,7 +230,7 @@ fn the_trigger_toggles_and_a_press_outside_closes(cx: &mut TestAppContext) {
 #[gpui::test]
 fn rows_the_owner_removes_leave_the_menu_usable(cx: &mut TestAppContext) {
     let (view, cx) = desk(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     press("up", cx);
     view.update(cx, |desk, cx| {
@@ -248,7 +248,7 @@ fn rows_the_owner_removes_leave_the_menu_usable(cx: &mut TestAppContext) {
 #[gpui::test]
 fn closing_from_the_trigger_hands_focus_back(cx: &mut TestAppContext) {
     let (view, cx) = desk(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     click(12.0, 12.0, cx);
     press("enter", cx);
@@ -269,7 +269,7 @@ fn confirm_keys_stay_inside_the_menu(cx: &mut TestAppContext) {
 #[gpui::test]
 fn modified_confirm_keys_do_not_pick(cx: &mut TestAppContext) {
     let (view, cx) = desk(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     press("enter", cx);
     press("ctrl-enter", cx);
     press("shift-space", cx);
@@ -281,7 +281,7 @@ fn modified_confirm_keys_do_not_pick(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_second_right_click_moves_the_context_menu(cx: &mut TestAppContext) {
     let (view, cx) = desk(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     for at in [point(px(150.0), px(120.0)), point(px(20.0), px(40.0))] {
         cx.simulate_mouse_move(at, None, Modifiers::none());
         cx.simulate_mouse_down(at, MouseButton::Right, Modifiers::none());
@@ -312,9 +312,9 @@ fn a_left_press_in_the_region_closes_the_context_menu(cx: &mut TestAppContext) {
 }
 
 fn open_find(cx: &mut VisualTestContext) {
-    cx.update(|window, _| {
-        window.focus_next();
-        window.focus_next();
+    cx.update(|window, cx| {
+        window.focus_next(cx);
+        window.focus_next(cx);
     });
     press("enter", cx);
 }

@@ -137,9 +137,9 @@ fn zoom(_: &Stage, owner: Entity<Stage>) -> AnyElement {
 fn the_zoom_buttons_step_and_the_percent_resets(cx: &mut TestAppContext) {
     let (host, cx) = stage(zoom, cx);
     for nth in [1, 2, 3] {
-        cx.update(|window, _| {
-            window.blur();
-            (0..nth).for_each(|_| window.focus_next());
+        cx.update(|window, cx| {
+            window.blur(cx);
+            (0..nth).for_each(|_| window.focus_next(cx));
         });
         cx.simulate_keystrokes("space");
         cx.simulate_event(gpui::KeyUpEvent {

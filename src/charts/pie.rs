@@ -4,9 +4,9 @@ use std::{
 };
 
 use gpui::{
-    App, Bounds, Div, ElementId, Entity, Hsla, InteractiveElement, IntoElement, MouseMoveEvent,
-    ParentElement, PathBuilder, Pixels, Point, Refineable, RenderOnce, SharedString,
-    StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, point,
+    App, Bounds, Div, ElementId, Entity, HoverListenerMode, Hsla, InteractiveElement, IntoElement,
+    MouseMoveEvent, ParentElement, PathBuilder, Pixels, Point, Refineable, RenderOnce,
+    SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, point,
 };
 
 use super::{
@@ -326,6 +326,7 @@ impl RenderOnce for PieChart {
                         }
                     })
                 })
+                .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
                 .on_hover(move |inside, _, cx| {
                     if !*inside {
                         left.update(cx, |ring, cx| {

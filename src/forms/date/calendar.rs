@@ -329,7 +329,7 @@ impl RenderOnce for Calendar {
             .grid_cols(7)
             .gap_0p5()
             .on_hover(move |over, window, cx| {
-                if !*over {
+                if !*over && !window.last_input_was_keyboard() {
                     leave.update(cx, |hover, cx| {
                         *hover = None;
                         cx.notify();

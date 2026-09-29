@@ -148,7 +148,7 @@ impl RenderOnce for NavigationMenu {
                 .hover(|style| style.text_color(colors.fg))
                 .on_mouse_down(MouseButton::Left, move |_, window, cx| {
                     window.prevent_default();
-                    window.focus(&into);
+                    window.focus(&into, cx);
                     show(&press, if on { None } else { Some(ix) }, cx);
                 })
                 .on_hover(move |hovered, _, cx| {

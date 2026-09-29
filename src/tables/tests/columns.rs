@@ -103,7 +103,7 @@ fn tab_reaches_a_header_and_enter_sorts_by_it(cx: &mut TestAppContext) {
     let (_, cx) = cx.add_window_view(|_, _| Sorting(seen));
     cx.update(|window, _| window.activate_window());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_keystrokes("enter");
     settle(cx);
     cx.simulate_event(KeyUpEvent {
@@ -141,7 +141,7 @@ fn a_focused_header_past_the_edge_scrolls_into_view(cx: &mut TestAppContext) {
     cx.update(|window, _| window.activate_window());
     settle(cx);
     for _ in 0..5 {
-        cx.update(|window, _| window.focus_next());
+        cx.update(|window, cx| window.focus_next(cx));
     }
     settle(cx);
     edit_at(point(px(270.0), px(54.0)), "x", cx);

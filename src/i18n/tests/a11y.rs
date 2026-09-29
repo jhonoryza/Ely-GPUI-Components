@@ -209,7 +209,7 @@ fn focused(
 fn a_skip_link_leads_past_the_nav(cx: &mut TestAppContext) {
     let (view, cx) = page(cx);
     let root = view.read_with(cx, |page, _| page.root.clone());
-    cx.update(|window, _| window.focus(&root));
+    cx.update(|window, cx| window.focus(&root, cx));
     press("tab", cx);
     assert!(
         !focused(&view, |page| &page.nav[0], cx),
@@ -237,7 +237,7 @@ fn a_skip_link_shows_only_while_focused(cx: &mut TestAppContext) {
         "at rest the nav takes it"
     );
     let root = view.read_with(cx, |page, _| page.root.clone());
-    cx.update(|window, _| window.focus(&root));
+    cx.update(|window, cx| window.focus(&root, cx));
     press("tab", cx);
     cx.simulate_click(spot, Modifiers::none());
     cx.run_until_parked();

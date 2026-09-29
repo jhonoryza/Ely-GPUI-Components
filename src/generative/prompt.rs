@@ -134,7 +134,7 @@ impl RenderOnce for PromptEnhancer {
                     "prompt enhancer: suggestion {}",
                     if taken { "taken" } else { "kept out" }
                 );
-                window.focus(&field.focus_handle(cx));
+                window.focus(&field.focus_handle(cx), cx);
                 if let Some(resolve) = &resolve {
                     resolve(taken, window, cx);
                 }

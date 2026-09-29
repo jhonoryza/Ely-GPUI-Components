@@ -397,9 +397,9 @@ impl CodeEditor {
         self.marks.chat = line;
         if line.is_some() {
             let focus = self.chat_field.read(cx).focus().clone();
-            window.focus(&focus);
+            window.focus(&focus, cx);
         } else {
-            window.focus(&self.focus);
+            window.focus(&self.focus, cx);
             cx.emit(EditorEvent::ChatClosed);
         }
         cx.notify();

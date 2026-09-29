@@ -67,9 +67,9 @@ fn a_rows_actions_open_from_the_keyboard(cx: &mut TestAppContext) {
     let (row, cx) = row(cx);
     cx.simulate_mouse_move(point(px(10.0), px(200.0)), None, Modifiers::none());
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
-    cx.update(|window, _| window.focus_next());
+    cx.update(|window, cx| window.focus_next(cx));
     settle(cx);
     press("enter", cx);
     press("enter", cx);
