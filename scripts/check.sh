@@ -4,6 +4,13 @@ set -eu
 cargo fmt --check
 cargo clippy --all-targets --features test-support -- -D warnings
 cargo test --lib --features test-support --quiet
+rustup target list --installed | grep -qx wasm32-unknown-unknown || {
+  echo "the web lint needs wasm32: rustup target add wasm32-unknown-unknown" >&2
+  exit 1
+}
+# gpui_web's wasm_thread asks for an unstable feature, as in scripts/web.sh.
+RUSTC_BOOTSTRAP=1 ELY_GALLERY_ASSETS=https://example.invalid/ \
+  cargo clippy --example gallery --target wasm32-unknown-unknown -- -D warnings
 python3 scripts/stories.py --check
 fail=0
 files=$(git ls-files -co --exclude-standard '*.rs')

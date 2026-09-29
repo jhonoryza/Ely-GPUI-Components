@@ -193,7 +193,7 @@ pub fn shapes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .child(*name),
             )
         });
-    section(
+    let moves = section(
         "Resizable · Rotatable · Selectable / SelectionArea · RubberBandSelection · Sortable",
         "A box resized from its edges or its grip; a picture turned by its knob, as gpui turns svgs alone; tiles taken by a band drawn on empty space; rows sorted by drag through motion::Reorder.",
         cx,
@@ -254,73 +254,72 @@ pub fn shapes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 })),
                 cx,
             )),
+    );
+    let presses = section(
+        "LongPress · DoubleClick · Gesture · PanZoom",
+        "A long press is primitives::Pressable; a double press is gpui's click_count. The wheel pans and, with Command, zooms layout::Viewport; two fingers swipe lists::SwipeableListItem.",
+        cx,
     )
     .child(
-        section(
-            "LongPress · DoubleClick · Gesture · PanZoom",
-            "A long press is primitives::Pressable; a double press is gpui's click_count. The wheel pans and, with Command, zooms layout::Viewport; two fingers swipe lists::SwipeableListItem.",
-            cx,
-        )
-        .child(
-            specimens()
-                .child(specimen(
-                    "LongPress → primitives::Pressable",
-                    Pressable::new("interaction-press", move |down, _, cx| {
-                        let theme = cx.theme();
-                        div()
-                            .px_4()
-                            .py_3()
-                            .rounded_lg()
-                            .border_1()
-                            .border_color(theme.colors.border)
-                            .bg(if down { theme.colors.active } else { theme.colors.surface })
-                            .text_size(theme.text_size(TextSize::Sm))
-                            .child(format!("Pressed {presses} · held {held}"))
-                            .into_any_element()
-                    })
-                    .on_press(move |_, cx| change(&press, cx, |shapes| shapes.presses += 1))
-                    .on_long_press(move |_, cx| change(&long, cx, |shapes| shapes.held += 1)),
-                    cx,
-                ))
-                .child(specimen(
-                    "DoubleClick",
+        specimens()
+            .child(specimen(
+                "LongPress → primitives::Pressable",
+                Pressable::new("interaction-press", move |down, _, cx| {
+                    let theme = cx.theme();
                     div()
-                        .id("interaction-double")
                         .px_4()
                         .py_3()
                         .rounded_lg()
                         .border_1()
                         .border_color(theme.colors.border)
-                        .tab_index(0)
-                        .focus_ring(cx)
+                        .bg(if down { theme.colors.active } else { theme.colors.surface })
                         .text_size(theme.text_size(TextSize::Sm))
-                        .on_click(move |event, _, cx| {
-                            if event.click_count() == 2 {
-                                change(&double, cx, |shapes| shapes.doubles += 1)
-                            }
-                        })
-                        .child(format!("Opened {}", plural(doubles as u64, "time", "times"))),
-                    cx,
-                ))
-                .child(specimen(
-                    "PanZoom → layout::Viewport",
-                    div().w(px(240.)).h(px(140.)).rounded_lg().border_1().border_color(theme.colors.border).overflow_hidden().child(
-                        Viewport::new("interaction-viewport", |view: Transform, _, cx| {
-                            let theme = cx.theme();
-                            let corner = view.apply(point(px(80.), px(30.)));
-                            div()
-                                .absolute()
-                                .left(corner.x)
-                                .top(corner.y)
-                                .size(px(80.) * view.scale)
-                                .rounded_lg()
-                                .bg(theme.colors.sunken)
-                                .into_any_element()
-                        }),
-                    ),
-                    cx,
-                )),
-        )
-        .child(blocked("Pinch: gpui hands a trackpad pinch to on_pinch, and the viewport does not zoom on it yet.", cx)),
+                        .child(format!("Pressed {presses} · held {held}"))
+                        .into_any_element()
+                })
+                .on_press(move |_, cx| change(&press, cx, |shapes| shapes.presses += 1))
+                .on_long_press(move |_, cx| change(&long, cx, |shapes| shapes.held += 1)),
+                cx,
+            ))
+            .child(specimen(
+                "DoubleClick",
+                div()
+                    .id("interaction-double")
+                    .px_4()
+                    .py_3()
+                    .rounded_lg()
+                    .border_1()
+                    .border_color(theme.colors.border)
+                    .tab_index(0)
+                    .focus_ring(cx)
+                    .text_size(theme.text_size(TextSize::Sm))
+                    .on_click(move |event, _, cx| {
+                        if event.click_count() == 2 {
+                            change(&double, cx, |shapes| shapes.doubles += 1)
+                        }
+                    })
+                    .child(format!("Opened {}", plural(doubles as u64, "time", "times"))),
+                cx,
+            ))
+            .child(specimen(
+                "PanZoom → layout::Viewport",
+                div().w(px(240.)).h(px(140.)).rounded_lg().border_1().border_color(theme.colors.border).overflow_hidden().child(
+                    Viewport::new("interaction-viewport", |view: Transform, _, cx| {
+                        let theme = cx.theme();
+                        let corner = view.apply(point(px(80.), px(30.)));
+                        div()
+                            .absolute()
+                            .left(corner.x)
+                            .top(corner.y)
+                            .size(px(80.) * view.scale)
+                            .rounded_lg()
+                            .bg(theme.colors.sunken)
+                            .into_any_element()
+                    }),
+                ),
+                cx,
+            )),
     )
+    .child(blocked("Pinch: gpui hands a trackpad pinch to on_pinch, and the viewport does not zoom on it yet.", cx));
+    div().child(moves).child(presses)
 }

@@ -10,7 +10,7 @@ use gpui::{
 };
 
 use crate::probe::probe;
-use crate::ui::{blocked, section, specimen, specimens};
+use crate::ui::{UNREAD, blocked, section, specimen, specimens};
 
 const NAV: [&str; 5] = ["Home", "Docs", "Pricing", "Blog", "About"];
 
@@ -65,7 +65,7 @@ pub fn skip_link(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
         ),
     )
     .child(blocked(
-        "LiveRegion / Announcer, AccessibleIcon, AriaLabel, ScreenReaderOnly: not yet shown: gpui builds an AccessKit tree from elements with an id and a role, and no screen reader here reads it.",
+        format!("LiveRegion / Announcer, AccessibleIcon, AriaLabel, ScreenReaderOnly: not yet shown: {UNREAD}."),
         cx,
     ))
 }

@@ -382,13 +382,10 @@ impl CodeEditor {
     }
 
     /// Pastes one line at each cursor when the counts match, else the whole text at every one.
-    pub(crate) fn paste(&mut self, cx: &mut Context<Self>) {
+    pub(crate) fn paste(&mut self, text: &str, cx: &mut Context<Self>) {
         if !self.editable() {
             return;
         }
-        let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) else {
-            return;
-        };
         let lines: Vec<&str> = text.split('\n').collect();
         let edits = if lines.len() == self.selections.len() && lines.len() > 1 {
             self.in_order()
@@ -399,7 +396,7 @@ impl CodeEditor {
         } else {
             self.selections
                 .iter()
-                .map(|selection| (selection.range(), text.clone()))
+                .map(|selection| (selection.range(), text.to_string()))
                 .collect()
         };
         self.apply(edits, false, cx);

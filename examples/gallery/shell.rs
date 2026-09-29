@@ -288,9 +288,10 @@ impl Render for Gallery {
             return self.root(cx).child(
                 on_axis(div().id(("story", self.pass)))
                     .size_full()
-                    .overflow_y_scroll()
+                    .overflow_scroll()
                     .track_scroll(&self.scroll)
-                    .child(div().p_6().child(body)),
+                    // The page column's 848 plus padding; narrower, the story scrolls sideways.
+                    .child(div().min_w(px(896.0)).p_6().child(body)),
             );
         }
         let sidebar = self.sidebar(cx);

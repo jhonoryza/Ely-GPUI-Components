@@ -50,7 +50,7 @@ fn live(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     {
         let _ = window;
         section.child(crate::ui::blocked(
-            "A browser starts no processes and has no pseudo-terminal, so no shell runs here, and alacritty's grid, which draws the build's output, does not build for the web. The blocks, colored output, logs and processes below draw without one.",
+            "A browser starts no processes and has no pseudo-terminal, so no shell runs here, and alacritty's grid, which draws the build's output, does not build for the web. The page's other stories, command blocks, colored output, logs and processes, draw without one.",
             cx,
         ))
     }

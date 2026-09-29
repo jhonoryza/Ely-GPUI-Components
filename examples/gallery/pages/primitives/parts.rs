@@ -15,7 +15,7 @@ use gpui::{
 
 use crate::{
     probe::probe,
-    ui::{blocked, code, picture, row, section, specimen, specimens},
+    ui::{UNREAD, blocked, code, picture, row, section, specimen, specimens},
 };
 
 const ATRIUM: &str = asset!("atrium.jpg");
@@ -193,10 +193,8 @@ pub fn backdrop(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
 }
 
 pub fn visually_hidden(cx: &App) -> impl IntoElement + use<> {
-    section("VisuallyHidden", "Text for screen readers only.", cx).child(blocked(
-        "Not yet shown: gpui builds an AccessKit tree from elements with an id and a role, and no screen reader here reads it.",
-        cx,
-    ))
+    section("VisuallyHidden", "Text for screen readers only.", cx)
+        .child(blocked(format!("Not yet shown: {UNREAD}."), cx))
 }
 
 fn chip(id: &'static str, label: &'static str, cx: &App) -> impl IntoElement + use<> {

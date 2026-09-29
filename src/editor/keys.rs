@@ -91,13 +91,16 @@ pub(crate) fn bind_keys(cx: &mut App) {
         KeyBinding::new("secondary-a", SelectAll, context),
         KeyBinding::new("secondary-c", Copy, context),
         KeyBinding::new("secondary-x", Cut, context),
-        KeyBinding::new("secondary-v", Paste, context),
         KeyBinding::new("secondary-d", SelectNext, context),
         KeyBinding::new("escape", SingleCursor, context),
         KeyBinding::new("secondary-/", ToggleComment, context),
         KeyBinding::new("secondary-alt-[", Fold, context),
         KeyBinding::new("secondary-alt-]", Unfold, context),
     ];
+    // The browser's paste event carries the clipboard to the input handler.
+    if !cfg!(target_family = "wasm") {
+        bindings.push(KeyBinding::new("secondary-v", Paste, context));
+    }
     if cfg!(target_os = "macos") {
         bindings.extend([
             KeyBinding::new("cmd-left", LineStart, context),
@@ -261,7 +264,11 @@ pub(crate) fn listen<E: InteractiveElement>(root: E, cx: &mut Context<CodeEditor
     let root = on!(root, SelectAll, |e, _, cx| e.select_all(cx));
     let root = on!(root, Copy, |e, _, cx| e.copy(cx));
     let root = on!(root, Cut, |e, _, cx| e.cut(cx));
-    let root = on!(root, Paste, |e, _, cx| e.paste(cx));
+    let root = on!(root, Paste, |e, _, cx| {
+        if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
+            e.paste(&text, cx)
+        }
+    });
     let root = on!(root, AddCursorAbove, |e, _, cx| e.add_cursor(false, cx));
     let root = on!(root, AddCursorBelow, |e, _, cx| e.add_cursor(true, cx));
     let root = on!(root, SelectNext, |e, _, cx| e.select_next(cx));

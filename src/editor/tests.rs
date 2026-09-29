@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-use gpui::{Entity, EntityInputHandler, KeyUpEvent, Keystroke, TestAppContext, VisualTestContext};
+use gpui::{
+    ClipboardItem, Entity, EntityInputHandler, KeyUpEvent, Keystroke, TestAppContext,
+    VisualTestContext,
+};
 
 use super::{CodeEditor, GhostText, InlayHint, LineNumbers, layout::Row};
 use crate::theme::Theme;
@@ -239,4 +242,17 @@ impl CodeEditor {
         );
         super::layout::rows(&self.buffer, &hide, &self.marks).contains(&Row::Line(line))
     }
+}
+
+#[gpui::test]
+fn a_browser_paste_gives_each_cursor_its_line(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("a\nb", cx);
+    cx.update(|window, cx| {
+        editor.update(cx, |editor, cx| {
+            let (first, second) = (1..1, 3..3);
+            editor.select([first, second], cx);
+            EntityInputHandler::paste(editor, ClipboardItem::new_string("1\n2".into()), window, cx);
+            assert_eq!(editor.text(), "a1\nb2");
+        })
+    });
 }

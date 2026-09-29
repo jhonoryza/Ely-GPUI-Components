@@ -1,6 +1,8 @@
 use std::ops::Range;
 
-use gpui::{Bounds, Context, EntityInputHandler, Pixels, Point, UTF16Selection, Window};
+use gpui::{
+    Bounds, ClipboardItem, Context, EntityInputHandler, Pixels, Point, UTF16Selection, Window,
+};
 
 use super::{
     TextInput,
@@ -18,6 +20,12 @@ impl TextInput {
 }
 
 impl EntityInputHandler for TextInput {
+    fn paste(&mut self, item: ClipboardItem, _: &mut Window, cx: &mut Context<Self>) {
+        if let Some(text) = item.text() {
+            self.replace(self.selection.clone(), &text, false, cx);
+        }
+    }
+
     fn text_for_range(
         &mut self,
         range_utf16: Range<usize>,

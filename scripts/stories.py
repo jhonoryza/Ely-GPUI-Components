@@ -1,9 +1,4 @@
-"""Writes examples/gallery/stories.json: every gallery page and its sections, in the order they draw.
-
-A section is a story the web gallery shows alone at ?page=<page slug>&story=<story slug>. Its
-components are the names in its title that are entries in tasks/*.md, so "Sizes" names none.
-`--check` fails if the committed file differs.
-"""
+"""Writes examples/gallery/stories.json: each page's stories and the components they show."""
 
 import json
 import re
@@ -13,10 +8,34 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PAGES = ROOT / "examples/gallery/pages"
 OUT = ROOT / "examples/gallery/stories.json"
+CALL = re.compile(r"(?<![\w.])(?:(\w+)::)?(\w+)\s*\(")
+CHAIN = re.compile(r"\s*\.\s*\w+\s*(?:::<[^>]*>\s*)?\(")
+
+# Components a story draws beyond its title's, by page and the title's first name.
+SHOWN = {
+    ("forms", "Form"): ["FormLabel", "FormError"],
+    ("tables", "DataTable"): ["Sparkline"],
+    ("chat", "PromptInput"): ["VoiceInputButton", "VoiceWaveform"],
+    ("shell", "MiniWindow"): ["AlwaysOnTop"],
+    ("settings", "SettingsLayout"): [
+        "ThemeSelector", "AccentColorPicker", "FontSizeControl", "DensitySelector",
+        "KeyboardShortcutsList", "ProxySettings", "PrivacySettings", "NotificationSettings",
+        "StartupSettings", "StorageSettings", "ResetToDefault", "ImportExportSettings",
+        "AdvancedSettings", "DeveloperMode Toggle",
+    ],
+    ("theme", "Surfaces"): ["ColorTokens"],
+    ("theme", "Ink"): ["ColorTokens"],
+    ("theme", "Signals"): ["ColorTokens"],
+    ("theme", "Series"): ["ColorTokens"],
+    ("theme", "Syntax"): ["ColorTokens"],
+    ("theme", "Shape"): ["Elevation"],
+    ("theme", "Motion"): ["Spring"],
+    ("theme", "ThemeEditor"): ["ThemeProvider"],
+}
 
 
 def strip(text):
-    """Blanks comments and literals' insides, keeping offsets, so braces and calls parse."""
+    """Blanks comments and literals' insides, keeping every offset."""
     out, i, n = list(text), 0, len(text)
 
     def blank(a, b):
@@ -60,7 +79,7 @@ def literal(text, at):
 
 
 def functions(folder):
-    """Every `fn` in a page's folder: (module, name) -> (source, stripped, body start, body end)."""
+    """Every `fn` in a page's folder, by module and name, with its body's span."""
     found = {}
     for file in sorted(folder.rglob("*.rs")):
         module = file.stem
@@ -80,26 +99,52 @@ def functions(folder):
     return found
 
 
+def close(bare, at):
+    """The offset past the bracket that closes the one at `at`."""
+    depth = 0
+    for k in range(at, len(bare)):
+        depth += {"(": 1, "[": 1, "{": 1, ")": -1, "]": -1, "}": -1}.get(bare[k], 0)
+        if depth == 0:
+            return k + 1
+
+
 def sections(folder):
-    """Section titles in the order the page's render reaches them; fails on any it never reaches."""
+    """Section titles in drawing order; fails on one never drawn or drawn inside another."""
     fns = functions(folder)
-    order, seen = [], set()
+    order, seen, opens = [], set(), {}
+
+    def calls(module, name):
+        text, bare, start, end = fns[(module, name)]
+        for m in CALL.finditer(bare, start, end):
+            owner = m.group(1) or module
+            yield m, (owner, m.group(2)), m.group(2) == "section" and m.group(1) is None
+
+    def draws(fn):
+        """Whether the fn opens a section, itself or through what it calls."""
+        if fn not in opens:
+            opens[fn] = False
+            opens[fn] = any(own or (callee in fns and draws(callee)) for _, callee, own in calls(*fn))
+        return opens[fn]
 
     def walk(module, name):
         if (module, name) in seen:
             return
         seen.add((module, name))
-        text, bare, start, end = fns[(module, name)]
-        call = re.compile(r"(?<![\w.])(?:(\w+)::)?(\w+)\s*\(")
-        for m in call.finditer(bare, start, end):
-            owner, callee = m.group(1) or module, m.group(2)
-            if callee == "section" and m.group(1) is None:
+        text, bare, _, _ = fns[(module, name)]
+        inside = 0
+        for m, callee, own in calls(module, name):
+            if m.start() < inside and (own or (callee in fns and draws(callee))):
+                sys.exit(f"{folder.name}/{module}.rs: a section opens inside {order[-1][0]!r}")
+            if own:
                 at = m.end() + len(bare[m.end():]) - len(bare[m.end():].lstrip())
                 if text[at] != '"':
                     sys.exit(f"{folder.name}/{module}.rs: a section whose title is not a literal")
                 order.append((literal(text, at), module))
-            elif (owner, callee) in fns:
-                walk(owner, callee)
+                inside = close(bare, m.end() - 1)
+                while chained := CHAIN.match(bare, inside):
+                    inside = close(bare, chained.end() - 1)
+            elif callee in fns:
+                walk(*callee)
 
     walk("mod", "render")
     reached = {title for title, _ in order}
@@ -112,31 +157,42 @@ def sections(folder):
 
 
 def slug(title):
-    """As the gallery's ui::slug: ASCII letters and digits, lowercased, dashes between."""
+    """As the gallery's ui::slug: lowercase letters and digits, dashes between."""
     out = re.sub(r"[^a-z0-9]+", "-", "".join(c.lower() if c.isascii() else " " for c in title))
     return out.strip("-")
 
 
 def entries():
-    """Names the task lists give components, keyed by letters alone."""
-    names = {}
+    """The task lists' component names by key, and the ticked entries with a home."""
+    names, homed = {}, []
     for file in sorted((ROOT / "tasks").glob("*.md")):
         for line in file.read_text().splitlines():
-            if m := re.match(r"- \[[ x]\] (.+?)(?: — | → | \(T\d|$)", line):
-                for name in m.group(1).split(" / "):
-                    names[key(name)] = re.sub(r"\s*\([^)]*\)", "", name).strip()
-    return names
+            if m := re.match(r"- \[([ x])\] (.+?)(?: — | → | \(T\d|$)", line):
+                aliases = [re.sub(r"\s*\([^)]*\)", "", name).strip() for name in m.group(2).split(" / ")]
+                for name in aliases:
+                    names[key(name)] = name
+                if m.group(1) == "x" and home(line, aliases):
+                    homed.append(aliases)
+    return names, homed
+
+
+def home(line, aliases):
+    """False for a pointer: `A → b::B` lives at B, another entry."""
+    if " → " not in line:
+        return True
+    target = re.search(r" → `([\w:]+)", line)
+    return bool(target) and any(key(part) in map(key, aliases) for part in target.group(1).split("::"))
 
 
 def key(name):
     return re.sub(r"[^a-z0-9]", "", re.sub(r"\([^)]*\)", "", name).lower())
 
 
-def components(title, known):
-    """The task lists' names for what the title names: "Icon button" is IconButton."""
+def components(title, extra, known):
+    """The task lists' names for what the title and `extra` name."""
     names = []
     for part in re.sub(r"\s*\([^)]*\)", "", title).split(" · "):
-        for name in part.split(" → ")[0].split(" / "):
+        for name in part.split(" → ")[0].split(" / ") + extra:
             if key(name) in known and known[key(name)] not in names:
                 names.append(known[key(name)])
     return names
@@ -145,28 +201,40 @@ def components(title, known):
 def pages():
     listing = (PAGES / "mod.rs").read_text()
     order = re.findall(r"^\s+(\w+)::PAGE,$", listing, re.M)
-    known = entries()
-    out = []
+    known, homed = entries()
+    for (page, lead), extra in SHOWN.items():
+        for name in extra:
+            if key(name) not in known:
+                sys.exit(f"stories.py: {name} in {page}/{lead} is no entry in tasks/*.md")
+    out, shown = [], dict(SHOWN)
     for module in order:
         folder = PAGES / module
         head = (folder / "mod.rs").read_text()
         field = lambda name: re.search(rf"^\s+{name}: (.+),$", head, re.M).group(1)
+        page = json.loads(field("slug"))
         titles = sections(folder)
         slugs = [slug(title) for title in titles]
         for twice in {s for s in slugs if slugs.count(s) > 1}:
             sys.exit(f"{module}: two stories answer to {twice}")
+        stories = []
+        for t, s in zip(titles, slugs):
+            extra = shown.pop((page, re.split(r" · | / ", t)[0]), [])
+            stories.append({"title": t, "slug": s, "components": components(t, extra, known)})
         out.append(
             {
                 "number": int(field("number")),
-                "slug": json.loads(field("slug")),
+                "slug": page,
                 "title": json.loads(field("title")),
                 "summary": json.loads(field("summary")),
-                "stories": [
-                    {"title": t, "slug": s, "components": components(t, known)}
-                    for t, s in zip(titles, slugs)
-                ],
+                "stories": stories,
             }
         )
+    if shown:
+        sys.exit(f"stories.py: SHOWN names no story for {sorted(shown)}")
+    named = {key(name) for page in out for story in page["stories"] for name in story["components"]}
+    for aliases in homed:
+        if not any(key(name) in named for name in aliases):
+            sys.exit(f"no story shows {' / '.join(aliases)}: name it in a title or in SHOWN")
     return out
 
 

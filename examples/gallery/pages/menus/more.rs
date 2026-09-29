@@ -27,7 +27,7 @@ pub fn menu_bar(cx: &mut App) -> impl IntoElement + use<> {
         cx,
     )
     .children(web_note(
-        "A browser page has no menu bar, and gpui on the web keeps no cx.set_menus: this bar draws the gallery's own list of the same menus.",
+        "A browser page has no menu bar, and gpui on the web keeps no cx.set_menus: this bar draws the gallery's own list of the same menus. About Ely would open a second window and Quit would end the app, neither of which a page can, so both only log.",
         cx,
     ))
     .child(specimen(

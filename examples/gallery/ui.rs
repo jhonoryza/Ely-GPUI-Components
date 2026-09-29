@@ -55,7 +55,7 @@ pub fn slug(title: &str) -> String {
 }
 
 /// Titled block of demos. Under a story, only the one asked for draws, without its title.
-pub fn section(title: impl Into<SharedString>, note: impl Into<SharedString>, cx: &App) -> Div {
+pub fn section(title: impl Into<SharedString>, note: impl Into<SharedString>, cx: &App) -> Section {
     let title = title.into();
     let theme = cx.theme();
     let story = cx.try_global::<Story>();
@@ -63,33 +63,58 @@ pub fn section(title: impl Into<SharedString>, note: impl Into<SharedString>, cx
         story.met.borrow_mut().push(title.clone());
         story.answers(&title)
     });
-    div()
-        .flex()
-        .flex_col()
-        .gap_4()
-        .when(story.is_none(), |section| section.pt_10())
-        .when(!shown, |section| section.hidden())
-        .child(
-            div()
-                .flex()
-                .flex_col()
-                .gap_1()
-                .when(story.is_none(), |header| {
-                    header.child(
-                        div()
-                            .text_size(theme.text_size(TextSize::Md))
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .text_color(theme.colors.fg)
-                            .child(title),
-                    )
-                })
-                .child(
+    Section {
+        div: div()
+            .flex()
+            .flex_col()
+            .gap_4()
+            .when(story.is_none(), |section| section.pt_10())
+            .when(!shown, |section| section.hidden()),
+        shown,
+    }
+    .child(
+        div()
+            .flex()
+            .flex_col()
+            .gap_1()
+            .when(story.is_none(), |header| {
+                header.child(
                     div()
-                        .text_size(theme.text_size(TextSize::Sm))
-                        .text_color(theme.colors.fg_muted)
-                        .child(note.into()),
-                ),
-        )
+                        .text_size(theme.text_size(TextSize::Md))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(theme.colors.fg)
+                        .child(title),
+                )
+            })
+            .child(
+                div()
+                    .text_size(theme.text_size(TextSize::Sm))
+                    .text_color(theme.colors.fg_muted)
+                    .child(note.into()),
+            ),
+    )
+}
+
+/// A section's box. One a story passes over drops its demos, so none lays out, loads or moves.
+pub struct Section {
+    div: Div,
+    shown: bool,
+}
+
+impl ParentElement for Section {
+    fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
+        if self.shown {
+            self.div.extend(elements);
+        }
+    }
+}
+
+impl IntoElement for Section {
+    type Element = Div;
+
+    fn into_element(self) -> Div {
+        self.div
+    }
 }
 
 /// A picture under the gallery's assets: a file natively, an address on the web.
@@ -162,6 +187,13 @@ pub fn blocked(text: impl Into<SharedString>, cx: &App) -> impl IntoElement {
         )
         .child(div().flex_1().min_w_0().child(text.into()))
 }
+
+/// Why no screen reader reads a demo here.
+pub const UNREAD: &str = if cfg!(target_family = "wasm") {
+    "gpui builds no AccessKit tree on the web, so no screen reader reads it here"
+} else {
+    "gpui builds an AccessKit tree from elements with an id and a role, and no screen reader here reads it"
+};
 
 /// Why a demo that takes files takes none on the web.
 pub const NO_FILES: &str = "A browser hands gpui no files: on the web the file dialog fails and dropped files never arrive, so nothing is taken here.";

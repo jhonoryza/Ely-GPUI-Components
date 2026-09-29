@@ -1,8 +1,8 @@
 use std::ops::Range;
 
 use gpui::{
-    App, Bounds, Context, EntityInputHandler, FontStyle, HighlightStyle, Pixels, Point,
-    UTF16Selection, Window, point,
+    App, Bounds, ClipboardItem, Context, EntityInputHandler, FontStyle, HighlightStyle, Pixels,
+    Point, UTF16Selection, Window, point,
 };
 
 use super::{
@@ -107,6 +107,12 @@ impl CodeEditor {
 }
 
 impl EntityInputHandler for CodeEditor {
+    fn paste(&mut self, item: ClipboardItem, _: &mut Window, cx: &mut Context<Self>) {
+        if let Some(text) = item.text() {
+            self.paste(&text, cx);
+        }
+    }
+
     fn text_for_range(
         &mut self,
         range_utf16: Range<usize>,

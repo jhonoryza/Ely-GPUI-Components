@@ -284,6 +284,7 @@ pub(crate) fn keys(
             ))),
             ("v", true) => {
                 let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) else {
+                    log::info!("grid: the clipboard holds no text to paste");
                     return;
                 };
                 let edits = pasted(&text, (row, col), (rows, cols));

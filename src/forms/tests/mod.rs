@@ -7,8 +7,8 @@ mod tags;
 mod upload;
 
 use gpui::{
-    AppContext as _, Context, Entity, EntityInputHandler, IntoElement, KeyUpEvent, Keystroke,
-    ParentElement, Render, TestAppContext, VisualTestContext, Window, div, px,
+    AppContext as _, ClipboardItem, Context, Entity, EntityInputHandler, IntoElement, KeyUpEvent,
+    Keystroke, ParentElement, Render, TestAppContext, VisualTestContext, Window, div, px,
 };
 
 use super::{Input, MaskedInput, NumberInput, PinInput, TextInput, bind_keys};
@@ -144,6 +144,22 @@ fn a_committed_composition_obeys_the_filter_and_length(cx: &mut TestAppContext) 
     assert_eq!(text(field, cx), "1");
     cx.simulate_keystrokes("cmd-z");
     assert_eq!(text(field, cx), "");
+}
+
+#[gpui::test]
+fn a_browser_paste_undoes_apart_from_the_typing(cx: &mut TestAppContext) {
+    let (fields, cx) = open(1, false, cx);
+    let field = &fields[0];
+    focus(field, cx);
+    cx.simulate_input("ab");
+    cx.update(|window, cx| {
+        field.update(cx, |input, cx| {
+            EntityInputHandler::paste(input, ClipboardItem::new_string("cd".into()), window, cx)
+        })
+    });
+    assert_eq!(text(field, cx), "abcd");
+    cx.simulate_keystrokes("cmd-z");
+    assert_eq!(text(field, cx), "ab");
 }
 
 #[gpui::test]

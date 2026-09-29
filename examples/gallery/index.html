@@ -16,16 +16,22 @@
     </script>
     <script type="module">
       import init, { set_theme } from "./gallery.js";
-      await init();
-      // The host switches the mode later: gallery.setTheme("dark"), or a message { ely: "theme", theme }.
+      // The host sets the mode with gallery.setTheme(mode) or a message { ely: "theme", theme }, early or late.
+      let early = null;
+      let apply = (theme) => { early = theme; };
       const setTheme = (theme) => {
-        set_theme(theme);
+        apply(theme);
         document.documentElement.classList.toggle("dark", theme === "dark");
       };
       window.gallery = { setTheme };
       addEventListener("message", ({ data }) => {
         if (data && data.ely === "theme") setTheme(data.theme);
       });
+      await init();
+      apply = set_theme;
+      if (early) set_theme(early);
+      // A host that waits for this knows the mode it sends lands.
+      window.parent.postMessage({ ely: "ready" }, "*");
     </script>
   </head>
   <body></body>

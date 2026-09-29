@@ -82,7 +82,6 @@ pub(crate) fn bind_keys(cx: &mut App) {
         KeyBinding::new("secondary-a", SelectAll, Some(CONTEXT)),
         KeyBinding::new("secondary-c", Copy, Some(CONTEXT)),
         KeyBinding::new("secondary-x", Cut, Some(CONTEXT)),
-        KeyBinding::new("secondary-v", Paste, Some(CONTEXT)),
         KeyBinding::new("secondary-z", Undo, Some(CONTEXT)),
         KeyBinding::new("secondary-shift-z", Redo, Some(CONTEXT)),
         KeyBinding::new("enter", Enter, Some(CONTEXT)),
@@ -90,6 +89,10 @@ pub(crate) fn bind_keys(cx: &mut App) {
         KeyBinding::new("secondary-enter", Submit, Some(CONTEXT)),
         KeyBinding::new("secondary-enter", Submit, Some(FORM_CONTEXT)),
     ];
+    // The browser's paste event carries the clipboard to the input handler.
+    if !cfg!(target_family = "wasm") {
+        bindings.push(KeyBinding::new("secondary-v", Paste, Some(CONTEXT)));
+    }
     if cfg!(target_os = "macos") {
         bindings.extend([
             KeyBinding::new("cmd-left", Home, Some(CONTEXT)),

@@ -1,4 +1,9 @@
-use std::{borrow::Cow, cell::RefCell, rc::Rc, sync::Arc};
+use std::{
+    borrow::Cow,
+    cell::{Cell, RefCell},
+    rc::Rc,
+    sync::Arc,
+};
 
 use anyhow::{Context as _, Result, anyhow, bail};
 use ely_gpui_component::Assets;
@@ -18,6 +23,8 @@ const HEBREW: &[u8] = include_bytes!("fonts/NotoSansHebrew-Regular.ttf");
 thread_local! {
     /// The running app and its window, for the host page's calls.
     static HOST: RefCell<Option<(AsyncApp, WindowHandle<Gallery>)>> = const { RefCell::new(None) };
+    /// A mode the host page chose before the window opened, which it opens in.
+    static EARLY: Cell<Option<Choice>> = const { Cell::new(None) };
 }
 
 fn js(error: JsValue) -> anyhow::Error {
@@ -74,7 +81,7 @@ pub fn start() {
         .location()
         .search()
         .expect("the page's address");
-    let start = read(&search).unwrap_or_else(|error| {
+    let mut start = read(&search).unwrap_or_else(|error| {
         log::error!("gallery: {search} -> {error:#}");
         Start {
             failure: Some(SharedString::from(format!("{search}: {error:#}"))),
@@ -95,21 +102,24 @@ pub fn start() {
             cx.text_system()
                 .add_fonts(vec![Cow::Borrowed(HEBREW)])
                 .expect("the gallery's Hebrew face registers");
+            if let Some(choice) = EARLY.take() {
+                start.choice = choice;
+            }
             let window = launch(start, cx);
             HOST.with(|host| *host.borrow_mut() = Some((cx.to_async(), window)));
         });
 }
 
-/// Switches Ely's mode from the host page: `light` or `dark`.
+/// Switches Ely's mode from the host page: `light` or `dark`, kept until the window opens.
 #[wasm_bindgen]
 pub fn set_theme(theme: &str) -> Result<(), JsError> {
     let choice = choice(theme).map_err(|error| JsError::new(&format!("{error:#}")))?;
-    HOST.with(|host| {
-        let host = host.borrow();
-        let (app, window) = host
-            .as_ref()
-            .ok_or_else(|| JsError::new("the gallery's window is not open yet"))?;
-        app.update(|cx| choose(*window, choice, cx));
-        Ok(())
-    })
+    HOST.with(|host| match host.borrow().as_ref() {
+        Some((app, window)) => app.update(|cx| choose(*window, choice, cx)),
+        None => {
+            log::info!("gallery: theme {theme} waits for the window");
+            EARLY.set(Some(choice));
+        }
+    });
+    Ok(())
 }
