@@ -156,8 +156,8 @@ Per-component lines live in `tasks/`. Tags there:
 - [ ] T44d Web · Stories: the gallery builds for wasm32 through gpui_web; one story per component, chosen by URL, themed by the host page; what cannot run in a browser says why
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark: a home page in motion (three.js, smooth scroll), and a components page with every component live from its story, categories on the left and the chosen one's detail on the right, after astryx.atmeta.com and gpui-kit.com; no screenshots
 - [ ] T46 E2E: Playwright against the built site
-- [ ] T47 Ship: GitHub repo (public), CI, Dokploy deploy
-- [ ] T48 Acceptance: Dokploy URL and MVP checklist
+- [ ] T47 Ship: GitHub repo (public), CI, Cloudflare deploy through `npx wrangler`
+- [ ] T48 Acceptance: live URL and MVP checklist
 
 ## T00 detail
 
