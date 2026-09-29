@@ -36,7 +36,7 @@ const SCRIPT: &[Step] = &[
     Step::Wait(300),
     Step::DownAt("status", 249.0, 11.0),
     Step::UpAt("status", 249.0, 11.0),
-    Step::Wait(300),
+    Step::Wait(900),
     Step::Shot("status"),
     Step::Rest,
 ];

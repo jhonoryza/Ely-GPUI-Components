@@ -54,7 +54,7 @@ pub enum Step {
 }
 
 const FRAME: Duration = Duration::from_millis(120);
-/// How long a shot waits for each frame of the window it shoots.
+/// How long a shot waits for each frame.
 const SHOWN: Duration = Duration::from_secs(5);
 /// How long an out-of-process file panel may take to open.
 const PANEL: Duration = Duration::from_secs(10);
@@ -151,7 +151,7 @@ pub async fn play(
                         last.x + (goal.x - last.x) * t,
                         last.y + (goal.y - last.y) * t,
                     );
-                    // Each move twice, as gpui 0.2.2 replayed a held drag; gpui_macos replays only under a real button.
+                    // Each move twice: gpui_macos replays no posted drag.
                     for _ in 0..2 {
                         send(window, Mouse::Drag, at, cx)?;
                         cx.background_executor()
@@ -255,7 +255,7 @@ pub async fn play(
     Ok(())
 }
 
-/// Waits three frames: the first draws what the steps left, and AppKit shows it by the third, since gpui presents without waiting on the GPU.
+/// Waits three frames, until AppKit shows what the steps left.
 pub async fn shown(window: gpui::AnyWindowHandle, cx: &mut AsyncApp) -> Result<()> {
     for _ in 0..3 {
         let (drawn, frame) = futures::channel::oneshot::channel();

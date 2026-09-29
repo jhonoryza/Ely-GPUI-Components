@@ -237,7 +237,7 @@ impl RenderOnce for Dialog {
             })
             .into_any_element()
         } else {
-            // Padding grows the box the scrim centers, as a margin taffy kept would.
+            // Padding grows the box the scrim centers.
             div()
                 .child(card)
                 .with_animation((self.id.clone(), "in"), arrive, |card, t| {

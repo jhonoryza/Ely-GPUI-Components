@@ -63,7 +63,7 @@ pub(super) fn arrive<E: Styled>(element: E, entrance: Entrance, t: f32) -> E {
     let t = ease_out_cubic(t);
     match entrance {
         Entrance::Fade => element.opacity(t),
-        // Padding, as taffy's size cache drops a margin that collapses through a block.
+        // Padding: taffy's size cache drops a collapsed margin.
         Entrance::Rise => element.opacity(t).pt(NUDGE * 2.0 * (1.0 - t)),
         Entrance::Slide => element.opacity(t).ml(NUDGE * -4.0 * (1.0 - t)),
     }

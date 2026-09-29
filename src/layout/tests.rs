@@ -68,7 +68,7 @@ fn opened(cx: &mut TestAppContext, reduced: bool) -> &mut VisualTestContext {
     cx
 }
 
-/// Presses on the grab and drags it down by `dy`, past gpui's drag threshold.
+/// Presses the grab and drags it down by `dy`.
 fn pull(cx: &mut VisualTestContext, dy: f32) -> Point<Pixels> {
     let rest = body(cx).origin;
     let grab = point(rest.x + px(10.0), rest.y - px(28.0));

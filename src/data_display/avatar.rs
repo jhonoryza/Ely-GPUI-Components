@@ -86,7 +86,7 @@ impl Avatar {
         }
     }
 
-    /// A square picture: gpui clips pictures to rectangles, so a cropped one keeps square corners.
+    /// A picture, cropped to fill the avatar.
     pub fn image(mut self, source: impl Into<ImageSource>) -> Self {
         self.image = Some(source.into());
         self

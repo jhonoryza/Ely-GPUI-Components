@@ -28,7 +28,7 @@ fn angle_at(bounds: Bounds<Pixels>, at: Point<Pixels>, snap: bool) -> f32 {
 
 type OnTurn = Rc<dyn Fn(f32, &mut Window, &mut App)>;
 
-/// An svg turned to its angle, in degrees clockwise from straight up, inside a ring with a knob at that angle. A drag on the knob turns it, Shift snapping to 15°; with focus, Left and Right turn it by 15°. gpui turns svgs alone, so the picture is an svg path.
+/// An svg turned clockwise by degrees, with a knob to drag.
 #[derive(IntoElement)]
 pub struct Rotatable {
     id: ElementId,

@@ -148,7 +148,7 @@ fn every_chart_fills_a_column_its_block_measures_by_content(cx: &mut TestAppCont
     );
 }
 
-/// A converter in a 460px box beside a card 260 wide, in a 280px row.
+/// A converter squeezed beside a card in a 280px row.
 struct Squeezed;
 
 impl Render for Squeezed {

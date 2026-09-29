@@ -177,7 +177,7 @@ fn units_rest_on_the_bottom_of_a_statistics_number(cx: &mut TestAppContext) {
     }
 }
 
-/// A lone digit in extra-small text, whose line is no whole number of device pixels.
+/// A lone digit whose line is no whole device pixel.
 struct Nine;
 
 impl Render for Nine {

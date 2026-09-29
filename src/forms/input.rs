@@ -125,7 +125,7 @@ impl RenderOnce for Input {
                     .flex_1()
                     .min_w_0()
                     .child(self.state)
-                    // An empty strut keeps the frame's inset to type in; squeezed, it spills unseen.
+                    // An empty strut keeps the frame's inset to type in.
                     .child(div().px(theme.control_padding(self.size)).border_x_1()),
             )
             .when(self.clearable && !empty && !disabled, |frame| {

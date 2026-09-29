@@ -383,7 +383,7 @@ impl Palette {
                         )
                     }),
             );
-        // Padding grows the box a scrim centers, as a margin taffy kept would.
+        // Padding grows the box the scrim centers.
         div().child(card).with_animation(
             (self.id, "in"),
             Animation::new(motion::duration(motion::BASE, cx)).with_easing(motion::ease_out_cubic),

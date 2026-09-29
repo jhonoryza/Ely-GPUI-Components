@@ -433,7 +433,7 @@ fn a_popover_opened_by_its_owner_takes_no_icon() {
     let _ = Popover::with_opener("own", |_| div(), |_, _, _| div()).icon(IconName::Clock);
 }
 
-/// A dialog open from the first frame, with a body the test can find.
+/// A dialog open from the first frame.
 struct Rising;
 
 impl Render for Rising {

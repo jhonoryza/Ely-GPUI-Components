@@ -403,7 +403,7 @@ fn effects_keep_their_content_and_let_presses_through(cx: &mut TestAppContext) {
     assert_eq!(view.read_with(cx, |effects, _| effects.presses), 1);
 }
 
-/// Rows rising in, in a sized box down a column that fills a row.
+/// Rows rising in a sized box.
 struct Rising;
 
 impl Render for Rising {
