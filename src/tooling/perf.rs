@@ -1,12 +1,10 @@
-use std::{
-    collections::VecDeque,
-    time::{Duration, Instant},
-};
+use std::{collections::VecDeque, time::Duration};
 
 use gpui::{
     App, Bounds, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement, RenderOnce,
     Styled, Window, canvas, div, fill, point, size,
 };
+use web_time::Instant;
 
 use crate::{
     theme::{ActiveTheme, Radius, TextSize},
@@ -183,7 +181,9 @@ impl RenderOnce for FpsMeter {
 
 #[cfg(test)]
 mod tests {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
+
+    use web_time::Instant;
 
     use super::{Frames, missed};
 

@@ -1,9 +1,7 @@
-use std::{
-    ops::Range,
-    time::{Duration, Instant},
-};
+use std::{ops::Range, time::Duration};
 
 use unicode_segmentation::UnicodeSegmentation;
+use web_time::Instant;
 
 pub(crate) fn prev_grapheme(text: &str, offset: usize) -> usize {
     text.grapheme_indices(true)

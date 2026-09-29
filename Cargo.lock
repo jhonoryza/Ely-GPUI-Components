@@ -1678,6 +1678,8 @@ dependencies = [
  "similar",
  "smallvec",
  "unicode-segmentation",
+ "vte",
+ "web-time",
  "wry",
 ]
 
@@ -3119,10 +3121,12 @@ dependencies = [
  "jiff-core",
  "jiff-static",
  "jiff-tzdb-platform",
+ "js-sys",
  "log",
  "portable-atomic",
  "portable-atomic-util",
  "serde_core",
+ "wasm-bindgen",
  "windows-link 0.2.1",
 ]
 
@@ -5649,6 +5653,7 @@ checksum = "4f66ca1f7aca2474dc10c942eb22feffc897735f54cd1db90138c2fddb490987"
 dependencies = [
  "bstr",
  "unicode-segmentation",
+ "web-time",
 ]
 
 [[package]]

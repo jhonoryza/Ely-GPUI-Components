@@ -1,9 +1,4 @@
-use std::{
-    collections::VecDeque,
-    fmt,
-    rc::Rc,
-    time::{Duration, Instant},
-};
+use std::{collections::VecDeque, fmt, rc::Rc, time::Duration};
 
 use gpui::{
     AnyElement, App, DispatchPhase, ElementId, InteractiveElement, IntoElement, KeyContext,
@@ -12,6 +7,7 @@ use gpui::{
     Window, canvas, div, prelude::FluentBuilder,
 };
 use smallvec::SmallVec;
+use web_time::Instant;
 
 use crate::{
     layout::on_axis,
@@ -264,9 +260,10 @@ impl RenderOnce for EventLogger {
 
 #[cfg(test)]
 mod tests {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     use gpui::{Modifiers, MouseButton, point, px};
+    use web_time::Instant;
 
     use super::{KEPT, Log, Seen};
 

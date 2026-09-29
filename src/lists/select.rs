@@ -1,12 +1,10 @@
-use std::{
-    rc::Rc,
-    time::{Duration, Instant},
-};
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
     App, Div, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
     ScrollHandle, SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
 };
+use web_time::Instant;
 
 use super::ListItem;
 use crate::primitives::tab_stop;

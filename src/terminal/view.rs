@@ -1,4 +1,4 @@
-use std::{borrow::Cow, process::ExitStatus, rc::Rc, sync::Arc, time::Instant};
+use std::{borrow::Cow, process::ExitStatus, rc::Rc, sync::Arc};
 
 use alacritty_terminal::{
     event::{Event, Notify, OnResize},
@@ -13,6 +13,7 @@ use gpui::{
     App, ClipboardItem, Context, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
     Pixels, Point, Render, SharedString, Size, Styled, Task, Window, div, font, prelude::*, size,
 };
+use web_time::Instant;
 
 use super::{
     colors::Ink,

@@ -1,6 +1,6 @@
 use std::{
     f32::consts::{PI, TAU},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use gpui::{
@@ -9,6 +9,7 @@ use gpui::{
     prelude::*,
 };
 use smallvec::SmallVec;
+use web_time::Instant;
 
 use super::{NUDGE, SLOW, duration, ease_out_cubic};
 use crate::theme::ActiveTheme;

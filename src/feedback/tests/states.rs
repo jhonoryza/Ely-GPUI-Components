@@ -1,10 +1,11 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::anyhow;
 use gpui::{
     Context, Entity, FocusHandle, IntoElement, ParentElement, Pixels, Render, Styled,
     TestAppContext, VisualTestContext, Window, div, px,
 };
+use web_time::Instant;
 
 use super::{press, settle, setup, wait};
 use crate::{

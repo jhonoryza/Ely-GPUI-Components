@@ -1,10 +1,11 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use gpui::{
     App, ElementId, HighlightStyle, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
     StyledText, Window, div,
 };
 use unicode_segmentation::UnicodeSegmentation;
+use web_time::Instant;
 
 use super::code::CodeBlock;
 use crate::{

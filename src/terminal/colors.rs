@@ -1,8 +1,7 @@
-use alacritty_terminal::{
-    term::color::Colors,
-    vte::ansi::{Color, NamedColor, Rgb},
-};
+use std::ops::Index;
+
 use gpui::{Hsla, Rgba};
+use vte::ansi::{Color, NamedColor, Rgb};
 
 use crate::theme::Palette;
 
@@ -24,7 +23,7 @@ impl Ink {
     }
 
     /// A color as painted, after any the program set with OSC 4, 10 or 11.
-    pub(crate) fn resolve(&self, color: Color, set: &Colors) -> Hsla {
+    pub(crate) fn resolve(&self, color: Color, set: &impl Set) -> Hsla {
         match color {
             Color::Spec(spec) => hsla(spec),
             Color::Indexed(index) => self.indexed(index as usize, set),
@@ -32,8 +31,8 @@ impl Ink {
         }
     }
 
-    fn named(&self, name: NamedColor, set: &Colors) -> Hsla {
-        if let Some(spec) = set[name] {
+    fn named(&self, name: NamedColor, set: &impl Set) -> Hsla {
+        if let Some(spec) = set[name as usize] {
             return hsla(spec);
         }
         match name {
@@ -49,7 +48,7 @@ impl Ink {
         }
     }
 
-    fn indexed(&self, index: usize, set: &Colors) -> Hsla {
+    fn indexed(&self, index: usize, set: &impl Set) -> Hsla {
         if let Some(spec) = set[index] {
             return hsla(spec);
         }
@@ -76,7 +75,8 @@ impl Ink {
     }
 
     /// Color `index` as an answer to a program's query.
-    pub(crate) fn query(&self, index: usize, set: &Colors) -> Rgb {
+    #[cfg(not(target_family = "wasm"))]
+    pub(crate) fn query(&self, index: usize, set: &impl Set) -> Rgb {
         let color = match index {
             256 => self.named(NamedColor::Foreground, set),
             257 => self.named(NamedColor::Background, set),
@@ -93,6 +93,11 @@ impl Ink {
     }
 }
 
+/// Colors a program set with OSC 4, 10 or 11, by index.
+pub(crate) trait Set: Index<usize, Output = Option<Rgb>> {}
+
+impl<T: Index<usize, Output = Option<Rgb>>> Set for T {}
+
 fn hsla(spec: Rgb) -> Hsla {
     let channel = |value: u8| f32::from(value) / 255.0;
     Rgba {
@@ -106,6 +111,7 @@ fn hsla(spec: Rgb) -> Hsla {
 
 #[cfg(test)]
 mod tests {
+    use alacritty_terminal::term::color::Colors;
     use gpui::{black, white};
 
     use super::*;

@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, time::Instant};
+use std::f32::consts::PI;
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Div, ElementId, InteractiveElement, IntoElement,
@@ -6,6 +6,7 @@ use gpui::{
     prelude::*, radians,
 };
 use smallvec::SmallVec;
+use web_time::Instant;
 
 use super::{BASE, FAST, NUDGE, Skeleton, Spinner, changes, duration, ease_out_cubic};
 use crate::{

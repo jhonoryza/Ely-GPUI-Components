@@ -1,9 +1,10 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, IntoElement, ParentElement, RenderOnce,
     Styled, Task, Window, div, prelude::*,
 };
+use web_time::Instant;
 
 use crate::{
     buttons::{ButtonVariant, IconButton},

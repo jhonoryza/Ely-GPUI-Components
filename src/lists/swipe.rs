@@ -1,10 +1,11 @@
-use std::{rc::Rc, time::Instant};
+use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement,
     Pixels, RenderOnce, ScrollDelta, SharedString, StatefulInteractiveElement, Styled, TouchPhase,
     Window, div, prelude::*,
 };
+use web_time::Instant;
 
 use crate::{
     data_display::Tone,

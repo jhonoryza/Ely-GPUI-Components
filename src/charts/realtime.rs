@@ -1,10 +1,9 @@
-use std::time::Instant;
-
 use gpui::{
     App, Bounds, ContentMask, Div, ElementId, Entity, InteractiveElement, IntoElement,
     ParentElement, PathBuilder, Pixels, Refineable, RenderOnce, StyleRefinement, Styled, Window,
     canvas, div, fill, size,
 };
+use web_time::Instant;
 
 use super::{
     axes::beside,

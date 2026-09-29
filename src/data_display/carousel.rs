@@ -1,13 +1,11 @@
-use std::{
-    rc::Rc,
-    time::{Duration, Instant},
-};
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
     AnyElement, App, Div, ElementId, HoverListenerMode, InteractiveElement, IntoElement,
     MouseButton, ParentElement, RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled,
     Task, Window, div, prelude::*, relative,
 };
+use web_time::Instant;
 
 use crate::{
     motion,

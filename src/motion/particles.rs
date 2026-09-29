@@ -1,7 +1,4 @@
-use std::{
-    f32::consts::TAU,
-    time::{Duration, Instant},
-};
+use std::{f32::consts::TAU, time::Duration};
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Bounds, Div, ElementId, Hsla, InteractiveElement,
@@ -10,6 +7,7 @@ use gpui::{
     px, size,
 };
 use smallvec::SmallVec;
+use web_time::Instant;
 
 use super::{
     duration,

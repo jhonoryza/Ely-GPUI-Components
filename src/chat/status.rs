@@ -1,13 +1,11 @@
-use std::{
-    rc::Rc,
-    time::{Duration, Instant},
-};
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
     App, ElementId, Entity, FontWeight, InteractiveElement, IntoElement, MouseButton,
     ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div,
     prelude::*, relative, transparent_black,
 };
+use web_time::Instant;
 
 use super::stream::StreamingText;
 use crate::{

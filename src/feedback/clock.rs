@@ -1,11 +1,9 @@
-use std::{
-    rc::Rc,
-    time::{Duration, Instant},
-};
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
     App, ElementId, IntoElement, ParentElement, RenderOnce, Styled, Task, Window, div, prelude::*,
 };
+use web_time::Instant;
 
 use crate::{
     forms::Run,

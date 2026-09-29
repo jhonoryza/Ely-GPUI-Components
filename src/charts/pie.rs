@@ -1,6 +1,6 @@
 use std::{
     f32::consts::{FRAC_PI_2, PI, TAU},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use gpui::{
@@ -8,6 +8,7 @@ use gpui::{
     MouseMoveEvent, ParentElement, PathBuilder, Pixels, Point, Refineable, RenderOnce,
     SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, point,
 };
+use web_time::Instant;
 
 use super::{
     axes::anchored,

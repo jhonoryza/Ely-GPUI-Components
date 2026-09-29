@@ -1,11 +1,10 @@
-use std::time::Instant;
-
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, Entity, FontWeight, InteractiveElement,
     IntoElement, ParentElement, Pixels, RenderOnce, SharedString, StatefulInteractiveElement,
     Styled, Window, canvas, div,
 };
 use smallvec::SmallVec;
+use web_time::Instant;
 
 use crate::{
     motion,

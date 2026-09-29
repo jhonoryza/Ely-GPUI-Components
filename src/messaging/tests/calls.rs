@@ -1,9 +1,8 @@
-use std::time::Instant;
-
 use gpui::{
     App, Context, Entity, InteractiveElement, IntoElement, Modifiers, ParentElement, Render,
     Styled, TestAppContext, Window, div, px,
 };
+use web_time::Instant;
 
 use super::{press, settle, setup, tab_to};
 use crate::{

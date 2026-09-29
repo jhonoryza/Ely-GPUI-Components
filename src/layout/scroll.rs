@@ -1,8 +1,4 @@
-use std::{
-    cell::Cell,
-    rc::Rc,
-    time::{Duration, Instant},
-};
+use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
     AnyElement, App, Axis, Bounds, Canvas, Div, ElementId, EmptyView, Entity, EntityId,
@@ -11,6 +7,7 @@ use gpui::{
     div, point, prelude::*,
 };
 use smallvec::SmallVec;
+use web_time::Instant;
 
 use super::ScrollShadow;
 use crate::{motion, theme::ActiveTheme};

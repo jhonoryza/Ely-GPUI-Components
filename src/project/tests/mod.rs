@@ -2,10 +2,10 @@ use gpui::{
     AnyElement, Context, Entity, IntoElement, KeyBinding, KeyUpEvent, Keystroke, Modifiers,
     ParentElement, Render, Styled, TestAppContext, VisualTestContext, Window, div, px,
 };
-use std::time::Instant;
 
 use gpui::SharedString;
 use jiff::civil::date;
+use web_time::Instant;
 
 use super::{AssigneePicker, IssueId, Person, Priority, Status, StatusSelect, Task, TaskList};
 use crate::{documents::Checklist, forms::bind_keys, primitives::FocusNext, theme::Theme};

@@ -1,9 +1,10 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use gpui::{
     App, ElementId, FocusHandle, InteractiveElement, IntoElement, ParentElement, RenderOnce,
     Styled, Task, Window, div,
 };
+use web_time::Instant;
 
 use crate::{
     buttons::{Button, ButtonVariant},
@@ -202,7 +203,9 @@ impl RenderOnce for Stopwatch {
 
 #[cfg(test)]
 mod tests {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
+
+    use web_time::Instant;
 
     use super::{Run, tenths};
 

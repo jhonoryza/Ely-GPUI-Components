@@ -1,7 +1,4 @@
-use std::{
-    rc::Rc,
-    time::{Duration, Instant},
-};
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
     Anchor, Animation, AnimationExt, AnyElement, App, ClickEvent, Context, ElementId, Entity,
@@ -9,6 +6,7 @@ use gpui::{
     RenderOnce, SharedString, StatefulInteractiveElement, Styled, Task, Window, anchored, canvas,
     div, point, prelude::*, relative,
 };
+use web_time::Instant;
 
 use crate::{
     buttons::{Button, ButtonVariant, IconButton},

@@ -1,11 +1,9 @@
-use std::{
-    rc::Rc,
-    time::{Duration, Instant},
-};
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
     App, ElementId, Entity, IntoElement, ParentElement, RenderOnce, Styled, Task, Window, div,
 };
+use web_time::Instant;
 
 use crate::{
     buttons::{Button, ButtonVariant, IconButton},
@@ -298,7 +296,9 @@ impl RenderOnce for PomodoroTimer {
 
 #[cfg(test)]
 mod tests {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
+
+    use web_time::Instant;
 
     use super::{Cycle, Lengths, Phase};
 

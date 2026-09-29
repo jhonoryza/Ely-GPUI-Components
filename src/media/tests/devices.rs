@@ -1,10 +1,11 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use gpui::{
     Context, Entity, IntoElement, Modifiers, MouseButton, ParentElement, Render, ScrollDelta,
     ScrollWheelEvent, SharedString, Styled, TestAppContext, TouchPhase, VisualTestContext, Window,
     div, point, px,
 };
+use web_time::Instant;
 
 use super::{picture, press, settle, setup, tab_to};
 use crate::media::{

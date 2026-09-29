@@ -1,10 +1,11 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, IntoElement, ParentElement, RenderOnce,
     Styled, Window, div,
 };
 use smallvec::SmallVec;
+use web_time::Instant;
 
 use super::{BASE, NUDGE, duration, ease_out_cubic};
 use crate::theme::ActiveTheme;

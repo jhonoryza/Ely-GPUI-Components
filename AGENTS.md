@@ -11,11 +11,12 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Codes: `qrcode` (QR) and `barcoders` (Code 128, EAN-13), both MIT OR Apache-2.0, default features off. `rqrr` 0.11 ((MIT OR Apache-2.0) AND ISC, default features off) reads QR codes from the host's frames.
 - macOS extras (tray icon, Dock badge) call AppKit through `cocoa` 0.26 and `objc` 0.2, the crates gpui already links.
 - Web views: `wry` 0.57 (Apache-2.0 OR MIT, default features off, macOS only) lays a child WKWebView over the window.
-- Terminal: `alacritty_terminal` 0.26 (Apache-2.0, default features off) for the grid, its parser and the pseudo-terminal; `futures` carries its events.
+- Terminal: `alacritty_terminal` 0.26 (Apache-2.0, default features off, native only) for the grid, its parser and the pseudo-terminal; `futures` carries its events. `vte` 0.15 (Apache-2.0 OR MIT), the parser it re-exports, reads `AnsiText`'s codes alone, so colored output builds for wasm32.
 - Diffs: `similar` 3.2 (Apache-2.0) for line and word diffs and three-way merges; its `unicode` feature splits words at punctuation.
 - Markdown: `pulldown-cmark` 0.13 (MIT, default features off) for CommonMark with tables, tasks, strikethrough, footnotes and math.
 - Pictures: `image` 0.25 (MIT OR Apache-2.0), the crate gpui decodes with, default features off; it turns decoded frames and rims map tiles.
 - Maps: Natural Earth's 110m countries (public domain). `assets/maps/countries.geojson`, trimmed by `scripts/countries.py` to an ISO code, a name and positions to 0.01°, backs `maps::WorldMap`; the gallery's tiles are cut from the same file, z0 to z3, by `scripts/tiles.py` with Pillow.
+- Web: on wasm32, `web-time` 1.1 (MIT OR Apache-2.0) gives the `Instant` gpui's executor returns, std's own natively; jiff takes `js`, rust-embed `debug-embed`, similar `wasm32_web_time`.
 - Gallery: `examples/gallery`. Website: `frontend/` (Vite 8, pnpm), built after the components: a home page in motion with three.js and smooth scroll, and a components page with categories on the left and the chosen component on the right, after astryx.atmeta.com and gpui-kit.com. Each component runs live from the gallery built for wasm32 through gpui_web, in an iframe, never as a screenshot. It deploys to Cloudflare through `npx wrangler`.
 
 ## Commands
@@ -23,6 +24,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - `cargo run --example gallery` opens the gallery. `-- --page <slug>` starts on a page.
 - `cargo run --example gallery -- --capture <dir>` writes PNGs of every page, light and dark, top to bottom, then each page's scripted states, including windows the demos open. macOS only.
 - `cargo run --example gallery -- --narrow 280 --capture <dir>` lays each page, header and body, at that width in a padded card and shoots it without its script, whose aims are measured at full width. Demos that set their own width run past the card.
+- `RUSTC_BOOTSTRAP=1 cargo check --lib --target wasm32-unknown-unknown` checks the web build; gpui_web's `wasm_thread` needs the bootstrap, as Zed's web examples do.
 - `cargo test --lib --features test-support`, `cargo clippy --all-targets --features test-support -- -D warnings`, `cargo fmt --check`. `scripts/check.sh` runs them with the house rules.
 - `rm -rf target/debug/incremental` and `cargo clean -p ely-gpui-component` after each task item keep the disk lean. Cargo keeps every old build of the crate and its tests under a new hash; by T25 they had filled the disk.
 - `scripts/icons.sh <lucide-name>...` adds icons. Then add a line to `IconName` in `src/primitives/icon.rs`.
@@ -173,6 +175,8 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A component built on `lists::Tree` fills its box; the host gives it a height. A fixed-width column beside a `flex_1` one takes `flex_none`, or it shrinks.
 - Editor rows read their text through `CodeEditor::row_text`: a multi-line ghost cuts its line, and the rest follows the ghost's last line.
 - gpui clears `debug_bounds` each frame: a test sees an element leave as well as appear.
+- Time reads `web_time::Instant`: std's compiles for wasm32 and panics in the browser. `scripts/check.sh` refuses std's in `src`.
+- What cannot build for wasm32 is absent there through `cfg(not(target_family = "wasm"))`, never faked: the live terminal, `Terminal` and `Launch` with their grid, keys and search.
 - The system time zone comes from `typography::format::system_zone`, which fails loud; jiff's `TimeZone::system()` falls back to UTC in silence.
 - A Select with nothing to pick stays shut: disabled, it shows its placeholder; open, it fails (`media::DeviceSelector` says no device was found).
 - A list opens with its cursor on the current choice: Select on the chosen row, Combobox on its value, MultiSelect on the first one ticked, SelectableList on its first selected row. A selection the owner makes, not the echo of the list's own pick, moves SelectableList's cursor there.

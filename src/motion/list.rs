@@ -1,9 +1,10 @@
-use std::{collections::HashMap, rc::Rc, time::Instant};
+use std::{collections::HashMap, rc::Rc};
 
 use gpui::{
     AnyElement, App, ElementId, Entity, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window, canvas, div,
 };
+use web_time::Instant;
 
 use super::{BASE, duration, ease_in_out_cubic, ease_out_cubic};
 use crate::theme::{ActiveTheme, Elevation};

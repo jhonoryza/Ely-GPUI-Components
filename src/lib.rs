@@ -65,6 +65,7 @@ pub fn init(cx: &mut App) {
     ]);
     forms::bind_keys(cx);
     editor::bind_keys(cx);
+    #[cfg(not(target_family = "wasm"))]
     terminal::bind_keys(cx);
     documents::bind_keys(cx);
 }

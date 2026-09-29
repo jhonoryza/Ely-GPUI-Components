@@ -20,9 +20,10 @@ mod tooling;
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use gpui::{App, Global, SharedString, WindowAppearance};
+use web_time::Instant;
 
 use crate::motion;
 pub use calendar::CalendarSizes;

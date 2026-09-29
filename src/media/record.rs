@@ -1,9 +1,10 @@
-use std::{rc::Rc, time::Instant};
+use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, IntoElement, ParentElement, RenderOnce, Styled, Window, div,
     prelude::*,
 };
+use web_time::Instant;
 
 use crate::{
     buttons::{Button, ButtonVariant, IconButton, ToggleButton, ToggleItem},

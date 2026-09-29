@@ -1,13 +1,10 @@
-use std::ops::Range;
+use std::ops::{Index, Range};
 
-use alacritty_terminal::{
-    term::color::Colors,
-    vte::ansi::{Attr, Color, Handler, Processor},
-};
 use gpui::{
     App, FontStyle, FontWeight, HighlightStyle, IntoElement, ParentElement, RenderOnce,
     SharedString, StrikethroughStyle, Styled, StyledText, UnderlineStyle, Window, div,
 };
+use vte::ansi::{Attr, Color, Handler, Processor, Rgb};
 
 use super::colors::Ink;
 use crate::theme::{ActiveTheme, TextSize};
@@ -93,9 +90,20 @@ pub(crate) fn printed(source: &str) -> (String, Vec<(Range<usize>, Pen)>) {
     (printed.text, printed.spans)
 }
 
+/// Plain text sets no colors with OSC 4, 10 or 11.
+struct Unset;
+
+impl Index<usize> for Unset {
+    type Output = Option<Rgb>;
+
+    fn index(&self, _: usize) -> &Option<Rgb> {
+        &None
+    }
+}
+
 impl Pen {
     fn style(&self, ink: &Ink, rule: gpui::Pixels) -> HighlightStyle {
-        let set = Colors::default();
+        let set = Unset;
         let paint =
             |color: Option<Color>, plain| color.map_or(plain, |color| ink.resolve(color, &set));
         let (mut fg, mut bg) = (paint(self.fg, ink.fg), paint(self.bg, ink.bg));
@@ -158,7 +166,7 @@ impl RenderOnce for AnsiText {
 
 #[cfg(test)]
 mod tests {
-    use alacritty_terminal::vte::ansi::NamedColor;
+    use vte::ansi::NamedColor;
 
     use super::*;
 

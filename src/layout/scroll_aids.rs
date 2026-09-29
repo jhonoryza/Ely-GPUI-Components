@@ -1,12 +1,10 @@
-use std::{
-    rc::Rc,
-    time::{Duration, Instant},
-};
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
     AnyElement, App, ElementId, IntoElement, ParentElement, Pixels, RenderOnce, ScrollHandle,
     Styled, Window, canvas, div, point, prelude::*,
 };
+use web_time::Instant;
 
 use crate::{
     buttons::{ButtonVariant, IconButton},

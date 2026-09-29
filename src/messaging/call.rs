@@ -1,9 +1,10 @@
-use std::{rc::Rc, time::Instant};
+use std::rc::Rc;
 
 use gpui::{
     App, ElementId, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString, Styled,
     Window, div, prelude::*,
 };
+use web_time::Instant;
 
 use crate::{
     buttons::{Button, ButtonVariant},

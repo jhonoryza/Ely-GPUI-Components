@@ -26,7 +26,7 @@ const JUMP: f64 = 10.0;
 
 /// When the pointer last moved over the player, and whether a wake is set to hide the controls.
 struct Watch {
-    moved: std::time::Instant,
+    moved: web_time::Instant,
     waking: bool,
 }
 
