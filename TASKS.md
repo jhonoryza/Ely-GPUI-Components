@@ -150,7 +150,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T43a Tooling · Workbench — `tasks/ch31-43.md`
 - [x] T43b Tooling · Inspection — `tasks/ch31-43.md`
 - [x] T43c Tooling · Catalogs — `tasks/ch31-43.md`
-- [ ] T44a Capture · Roots: roots still on `w_full` drop it, checked at 280px and in padded cards
+- [x] T44a Capture · Roots: roots still on `w_full` drop it, checked at 280px and in padded cards
 - [ ] T44b Capture · Sections: every component's section shot on its own, light and dark, with a manifest the site reads
 - [ ] T44c Capture · Motion: clips of each page's scripted states in motion, for the site
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark: a home page in motion (three.js, smooth scroll), and a components page with every component, categories on the left and the chosen one's detail on the right, after astryx.atmeta.com
@@ -474,3 +474,4 @@ Per-component lines live in `tasks/`. Tags there:
 | T43c | 2 | PASS | the AGENTS.md decision narrowed to the pairs the audit holds, in the pass commit |
 | T44a | 1 | FAIL | twelve roots in nine components still said w_full: a root held in a variable, a match arm or an animation passed the sweep |
 | T44a | 2 | FAIL | roots built in render(mut self), returned by shared helpers or passed through them still said w_full: fields, charts, state views, Steps, previews; five measured at content width in a padded card |
+| T44a | 3 | PASS | the brief counted 43 components in the new tests; they hold 41 |
