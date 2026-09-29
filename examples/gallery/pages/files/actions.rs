@@ -10,7 +10,7 @@ use jiff::Timestamp;
 
 use crate::{
     probe::probe,
-    ui::{change, keep, section},
+    ui::{NO_FILES, change, keep, section, web_note},
 };
 
 pub fn context_menu(cx: &mut App) -> impl IntoElement + use<> {
@@ -84,6 +84,7 @@ pub fn drop_files(window: &mut Window, cx: &mut App) -> impl IntoElement + use<>
         "Files dropped in, as forms::DropZone takes them; each lands in the list below.",
         cx,
     )
+    .children(web_note(NO_FILES, cx))
     .child(probe(
         "files-drop",
         div()

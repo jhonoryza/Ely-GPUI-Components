@@ -14,7 +14,7 @@ use gpui::{
 
 use crate::{
     probe::{Opened, probe},
-    ui::{change, keep, section, specimen, specimens},
+    ui::{change, keep, native_only, section, specimen, specimens},
 };
 
 const PLATFORMS: [(Platform, &str); 3] = [
@@ -38,10 +38,14 @@ pub fn platform(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .child(specimen("IconTheme", icons(window, cx), cx))
             .child(specimen(
                 "Vibrancy",
-                probe(
-                    "frosted-open",
-                    Button::new("frosted-open", "Open a frosted window")
-                        .on_click(|_, _, cx| frosted(cx)),
+                native_only(
+                    probe(
+                        "frosted-open",
+                        Button::new("frosted-open", "Open a frosted window")
+                            .on_click(|_, _, cx| frosted(cx)),
+                    ),
+                    "A browser page is a single window, and gpui leaves what lies behind it to the browser, so no frosted window opens and nothing blurs through.",
+                    cx,
                 ),
                 cx,
             )),
@@ -141,10 +145,10 @@ fn frosted(cx: &mut App) {
         window_background: WindowBackgroundAppearance::Blurred,
         ..Default::default()
     };
-    let handle = cx
-        .open_window(options, |_, cx| cx.new(|_| Frosted))
-        .expect("the frosted window opens");
-    Opened::insert("frosted", handle.into(), cx);
+    match cx.open_window(options, |_, cx| cx.new(|_| Frosted)) {
+        Ok(handle) => Opened::insert("frosted", handle.into(), cx),
+        Err(error) => log::error!("gallery: frosted window failed: {error:#}"),
+    }
 }
 
 /// A window whose sidebar lets the desktop through.

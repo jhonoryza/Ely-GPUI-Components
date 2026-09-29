@@ -163,20 +163,29 @@ pub fn blocked(text: impl Into<SharedString>, cx: &App) -> impl IntoElement {
         .child(div().flex_1().min_w_0().child(text.into()))
 }
 
+/// Why a demo that takes files takes none on the web.
+pub const NO_FILES: &str = "A browser hands gpui no files: on the web the file dialog fails and dropped files never arrive, so nothing is taken here.";
+
 /// What a browser cannot do here, and why: a note on the web, nothing natively.
 pub fn web_note(text: &'static str, cx: &App) -> Option<AnyElement> {
     cfg!(target_family = "wasm").then(|| blocked(text, cx).into_any_element())
 }
 
-/// A button that opens a window of its own; a browser page is one window, so there a note stands in.
+/// A demo a browser cannot run: on the web its note stands in.
+pub fn native_only(element: impl IntoElement, note: &'static str, cx: &App) -> AnyElement {
+    match web_note(note, cx) {
+        Some(note) => note,
+        None => element.into_any_element(),
+    }
+}
+
+/// A button that opens a window of its own, which a browser page cannot.
 pub fn own_window(button: impl IntoElement, cx: &App) -> AnyElement {
-    match web_note(
+    native_only(
+        button,
         "A browser page is a single window: gpui opens no second window or popup on the web, so this one cannot open here.",
         cx,
-    ) {
-        Some(note) => note,
-        None => button.into_any_element(),
-    }
+    )
 }
 
 /// A demo's state, kept across frames under `key`.

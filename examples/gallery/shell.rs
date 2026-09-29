@@ -227,6 +227,19 @@ impl Gallery {
         }
     }
 
+    /// The window's root: the focus scope, over Ely's ground, ink and type.
+    fn root(&self, cx: &App) -> FocusScope {
+        let theme = cx.theme();
+        FocusScope::new(&self.focus)
+            .root()
+            .size_full()
+            .flex()
+            .bg(theme.colors.bg)
+            .text_color(theme.colors.fg)
+            .font_family(theme.font_family.clone())
+            .text_size(theme.text_size(TextSize::Base))
+    }
+
     /// The page's demos, or the story's alone; why not, once the start or the story failed.
     fn body(
         &mut self,
@@ -259,24 +272,10 @@ impl Gallery {
 impl Render for Gallery {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let page = &pages::ALL[self.page];
-        let body = self.body(page, window, cx);
-        let sidebar = self.sidebar(cx);
-        let switcher = self.switcher(cx);
-        let theme = cx.theme();
-        let colors = &theme.colors;
-
-        let root = FocusScope::new(&self.focus)
-            .root()
-            .size_full()
-            .flex()
-            .bg(colors.bg)
-            .text_color(colors.fg)
-            .font_family(theme.font_family.clone())
-            .text_size(theme.text_size(TextSize::Base));
-        let body = match body {
+        let body = match self.body(page, window, cx) {
             Ok(body) => body,
             Err(failure) => {
-                return root.child(
+                return self.root(cx).child(
                     div().w_full().p_6().child(
                         Alert::new("gallery-failure", Severity::Danger, "Nothing to show")
                             .body(failure),
@@ -285,7 +284,7 @@ impl Render for Gallery {
             }
         };
         if self.story.is_some() {
-            return root.child(
+            return self.root(cx).child(
                 on_axis(div().id(("story", self.pass)))
                     .size_full()
                     .overflow_y_scroll()
@@ -293,7 +292,12 @@ impl Render for Gallery {
                     .child(div().p_6().child(body)),
             );
         }
-        root.child(sidebar).child(
+        let sidebar = self.sidebar(cx);
+        let switcher = self.switcher(cx);
+        let theme = cx.theme();
+        let colors = &theme.colors;
+
+        self.root(cx).child(sidebar).child(
             on_axis(div().id(("page", self.pass)))
                 .flex_1()
                 .h_full()

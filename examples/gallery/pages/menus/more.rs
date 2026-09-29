@@ -9,16 +9,27 @@ use gpui::{App, IntoElement, ParentElement, Styled, Window, div, px};
 use super::rows::{ran, run};
 use crate::{
     probe::probe,
-    ui::{section, specimen},
+    ui::{section, specimen, web_note},
 };
 
 pub fn menu_bar(cx: &mut App) -> impl IntoElement + use<> {
-    let menus = cx.get_menus().expect("the gallery sets its menus in main");
+    let menus = match cx.get_menus() {
+        Some(menus) => menus,
+        None if cfg!(target_family = "wasm") => crate::app_menus()
+            .into_iter()
+            .map(gpui::Menu::owned)
+            .collect(),
+        None => panic!("the gallery sets its menus in main"),
+    };
     section(
         "MenuBar Menu",
         "The app's own menus, the ones cx.set_menus gave the system, drawn in the window. Picking a row dispatches its action.",
         cx,
     )
+    .children(web_note(
+        "A browser page has no menu bar, and gpui on the web keeps no cx.set_menus: this bar draws the gallery's own list of the same menus.",
+        cx,
+    ))
     .child(specimen(
         "hover moves between menus while one is open",
         probe("menubar", MenuBar::new("app-bar", menus)),

@@ -13,7 +13,7 @@ use gpui::{
 
 use crate::{
     probe::probe,
-    ui::{code, row, section},
+    ui::{code, row, section, web_note},
 };
 
 pub fn boxes(cx: &App) -> impl IntoElement + use<> {
@@ -445,6 +445,10 @@ pub fn clipboard(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
         "write_to_clipboard and read_from_clipboard on App.",
         cx,
     )
+    .children(web_note(
+        "A browser reads its clipboard only as it pastes, into a field: on the web gpui's read_from_clipboard finds nothing, so Paste reports no text. Copy works.",
+        cx,
+    ))
     .child(
         row()
             .gap_3()

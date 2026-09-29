@@ -9,7 +9,7 @@ use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div, p
 
 use crate::{
     probe::probe,
-    ui::{keep, picture, section, set},
+    ui::{keep, picture, section, set, web_note},
 };
 
 const ATRIUM: &str = asset!("atrium.jpg");
@@ -106,6 +106,10 @@ pub fn upload(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         "A picture to send: drop one or browse for it, then crop it. Replace picks another; Remove empties it.",
         cx,
     )
+    .children(web_note(
+        "A browser hands gpui no files: on the web the file dialog fails, drops never arrive, and the picture this starts with, a file on disk, cannot be read.",
+        cx,
+    ))
     .child(probe(
         "media-upload",
         div().w(px(420.)).child(

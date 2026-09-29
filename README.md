@@ -34,7 +34,10 @@ fn main() {
 cargo run --example gallery
 cargo run --example gallery -- --page buttons
 cargo run --example gallery -- --capture shots   # macOS: PNG of every page, light and dark
+ELY_GALLERY_ASSETS=https://example.com/gallery/assets/ scripts/web.sh dist   # for the browser
 ```
+
+In a browser, `?page=buttons&story=icon-button&theme=dark` draws one section alone; `examples/gallery/stories.json` lists them all.
 
 ## Build notes
 
@@ -43,5 +46,5 @@ cargo run --example gallery -- --capture shots   # macOS: PNG of every page, lig
 
 ## License
 
-MIT or Apache-2.0, at your option. Lucide icons: ISC. Inter and JetBrains Mono: SIL Open Font License 1.1.
+MIT or Apache-2.0, at your option. Lucide icons: ISC. Inter, JetBrains Mono, IBM Plex Sans and the gallery's Noto Sans Hebrew: SIL Open Font License 1.1.
 The gallery photos in `examples/gallery/assets` were generated for this project with gpt-image-2.

@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{borrow::Cow, cell::RefCell, rc::Rc, sync::Arc};
 
 use anyhow::{Context as _, Result, anyhow, bail};
 use ely_gpui_component::Assets;
@@ -8,6 +8,9 @@ use wasm_bindgen::prelude::*;
 use web_sys::UrlSearchParams;
 
 use crate::{Start, choose, launch, pages, shell::Choice, shell::Gallery};
+
+/// The i18n page's Hebrew: gpui_web asks the browser for emoji and CJK alone.
+const HEBREW: &[u8] = include_bytes!("fonts/NotoSansHebrew-Regular.ttf");
 
 thread_local! {
     /// The running app and its window, for the host page's calls.
@@ -95,6 +98,9 @@ pub fn start() {
         .with_http_client(http)
         .with_assets(Assets)
         .run(move |cx| {
+            cx.text_system()
+                .add_fonts(vec![Cow::Borrowed(HEBREW)])
+                .expect("the gallery's Hebrew face registers");
             let window = launch(start, cx);
             HOST.with(|host| *host.borrow_mut() = Some((cx.to_async(), window)));
         });

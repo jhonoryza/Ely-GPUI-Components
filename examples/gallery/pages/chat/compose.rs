@@ -15,7 +15,7 @@ use web_time::Instant;
 
 use crate::{
     probe::probe,
-    ui::{keep, noise, section, set},
+    ui::{NO_FILES, keep, noise, section, set, web_note},
 };
 
 const SYSTEM: &str = "You answer about color in plain words. Cite sources.";
@@ -160,6 +160,7 @@ pub fn composer(
         "Where a message is written: attachments and context above the field, tools below, send at the end; Enter sends and Shift-Enter breaks the line. A slash at the start offers commands, an at sign offers context, and files dropped on it attach.",
         cx,
     )
+    .children(web_note(NO_FILES, cx))
     .child(probe(
         "chat-composer",
         div()
