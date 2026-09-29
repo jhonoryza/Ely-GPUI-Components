@@ -7,7 +7,10 @@ use gpui_web::{CanvasFontFallback, WebBackendPreference, WebPlatform};
 use wasm_bindgen::prelude::*;
 use web_sys::UrlSearchParams;
 
-use crate::{Start, choose, launch, pages, shell::Choice, shell::Gallery};
+use crate::{
+    Start, choose, launch, pages,
+    shell::{Choice, Gallery},
+};
 
 /// The i18n page's Hebrew: gpui_web asks the browser for emoji and CJK alone.
 const HEBREW: &[u8] = include_bytes!("fonts/NotoSansHebrew-Regular.ttf");
@@ -36,13 +39,7 @@ fn read(search: &str) -> Result<Start> {
     {
         bail!("ELY_GALLERY_ASSETS is an address ending in /, not {assets}");
     }
-    let mut start = Start {
-        page: 0,
-        story: None,
-        choice: Choice::Light,
-        narrow: None,
-        failure: None,
-    };
+    let mut start = Start::default();
     let params = UrlSearchParams::new_with_str(search).map_err(js)?;
     for key in js_sys::try_iter(&params.keys())
         .map_err(js)?
@@ -80,11 +77,8 @@ pub fn start() {
     let start = read(&search).unwrap_or_else(|error| {
         log::error!("gallery: {search} -> {error:#}");
         Start {
-            page: 0,
-            story: None,
-            choice: Choice::Light,
-            narrow: None,
             failure: Some(SharedString::from(format!("{search}: {error:#}"))),
+            ..Start::default()
         }
     });
     // One thread: a static site sends no cross-origin isolation, so there is no shared memory.

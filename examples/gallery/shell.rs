@@ -13,8 +13,9 @@ use gpui::{
 
 use crate::{Start, pages, ui::Story};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
 pub enum Choice {
+    #[default]
     Light,
     Dark,
     System,

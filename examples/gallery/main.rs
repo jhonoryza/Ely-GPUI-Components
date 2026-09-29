@@ -96,6 +96,7 @@ fn choose(window: WindowHandle<shell::Gallery>, choice: shell::Choice, cx: &mut 
 }
 
 /// What the gallery opens on.
+#[derive(Default)]
 pub struct Start {
     pub page: usize,
     /// One section, by title or slug, drawn alone.
@@ -154,13 +155,7 @@ struct Args {
 #[cfg(not(target_family = "wasm"))]
 fn parse_args() -> Result<Args> {
     let mut args = Args {
-        start: Start {
-            page: 0,
-            story: None,
-            choice: shell::Choice::Light,
-            narrow: None,
-            failure: None,
-        },
+        start: Start::default(),
         page: None,
         capture: None,
     };
