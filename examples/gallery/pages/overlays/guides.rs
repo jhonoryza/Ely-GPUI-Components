@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use ely_gpui_component::{
     buttons::{Button, ButtonVariant, IconButton},
     forms::{Input, TextInput},
@@ -14,24 +12,12 @@ use gpui::{
 
 use crate::{
     probe::probe,
-    ui::{keep, row, section, set, specimen},
+    ui::{keep, picture, row, section, set, specimen},
 };
 
 const PHOTOS: [(&str, &str); 2] = [
-    (
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/examples/gallery/assets/dunes.jpg"
-        ),
-        "Dunes at first light",
-    ),
-    (
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/examples/gallery/assets/atrium.jpg"
-        ),
-        "An atrium, noon",
-    ),
+    (asset!("dunes.jpg"), "Dunes at first light"),
+    (asset!("atrium.jpg"), "An atrium, noon"),
 ];
 
 pub fn lightbox(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
@@ -46,7 +32,7 @@ pub fn lightbox(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 .h_32()
                 .cursor_pointer()
                 .child(
-                    Image::new(("thumb-image", ix), Path::new(*path))
+                    Image::new(("thumb-image", ix), picture(*path))
                         .fit(ObjectFit::Cover)
                         .size_full(),
                 )
@@ -57,7 +43,7 @@ pub fn lightbox(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         let (step, close) = (shown.clone(), shown.clone());
         Lightbox::new(
             "lightbox",
-            PHOTOS.map(|(path, caption)| Slide::new(Path::new(path), caption)),
+            PHOTOS.map(|(path, caption)| Slide::new(picture(path), caption)),
             at,
             move |_, cx| set(&close, None, cx),
         )

@@ -7,7 +7,7 @@ mod windows;
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
 
 use super::Page;
-use crate::script::Step;
+use crate::step::Step;
 pub use windows::{open_about, open_managed};
 
 pub const PAGE: Page = Page {

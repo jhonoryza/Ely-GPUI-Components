@@ -20,18 +20,9 @@ use crate::{
 };
 
 const COVERS: [&str; 3] = [
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/examples/gallery/assets/atrium.jpg"
-    ),
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/examples/gallery/assets/dunes.jpg"
-    ),
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/examples/gallery/assets/atrium-olive.jpg"
-    ),
+    asset!("atrium.jpg"),
+    asset!("dunes.jpg"),
+    asset!("atrium-olive.jpg"),
 ];
 
 fn favorite(key: &str, icon: &str, title: &str) -> Favorite {

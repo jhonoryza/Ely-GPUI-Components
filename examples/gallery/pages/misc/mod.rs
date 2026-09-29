@@ -4,7 +4,7 @@ use jiff::tz::TimeZone;
 
 use super::Page;
 use crate::probe::probe;
-use crate::script::Step;
+use crate::step::Step;
 use crate::ui::{section, specimen, specimens};
 
 mod asking;

@@ -1,5 +1,3 @@
-use std::{path::Path, time::Instant};
-
 use ely_gpui_component::{
     buttons::Button,
     data_display::Avatar,
@@ -10,10 +8,11 @@ use ely_gpui_component::{
     theme::{ActiveTheme, TextSize},
 };
 use gpui::{App, Entity, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
+use web_time::Instant;
 
 use crate::{
     probe::probe,
-    ui::{change, keep, section},
+    ui::{change, keep, picture, section},
 };
 
 const ROOM: &str = asset!("atrium-olive.jpg");
@@ -126,7 +125,7 @@ pub fn grid(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let tile = |key: &'static str, name: &'static str| ParticipantTile::new(key, name, CAMERA);
     let you = tile("messaging-tile-you", "You").muted(!now.mic);
     let you = match now.camera {
-        true => you.frame(Path::new(ROOM)),
+        true => you.frame(picture(ROOM)),
         false => you,
     };
     section(
@@ -138,7 +137,7 @@ pub fn grid(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         "messaging-grid",
         div().w(px(640.)).child(
             VideoCallGrid::new("messaging-grid")
-                .child(tile("messaging-tile-ana", "Ana Lima").frame(Path::new(STAIR)).speaking(true))
+                .child(tile("messaging-tile-ana", "Ana Lima").frame(picture(STAIR)).speaking(true))
                 .child(tile("messaging-tile-ben", "Ben Ito").muted(true))
                 .child(you)
                 .child(tile("messaging-tile-chloe", "Chloé Martin"))
@@ -152,7 +151,7 @@ pub fn share(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let sharing = state.read(cx).share;
     let tile = |key: &'static str, name: &'static str| ParticipantTile::new(key, name, CAMERA);
     let view = ScreenShareView::new("messaging-share", "Ana Lima", 16.0 / 10.0)
-        .frame(Path::new(SCREEN))
+        .frame(picture(SCREEN))
         .child(tile("messaging-strip-ben", "Ben Ito").muted(true))
         .child(tile("messaging-strip-chloe", "Chloé Martin").speaking(true));
     let view = match sharing {

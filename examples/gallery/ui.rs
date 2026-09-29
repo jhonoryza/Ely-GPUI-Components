@@ -1,30 +1,109 @@
+use std::cell::RefCell;
+
 use ely_gpui_component::theme::{ActiveTheme, TextSize};
 use gpui::{
-    App, Div, Entity, FontWeight, IntoElement, ParentElement, SharedString, Styled, Window, div,
+    AnyElement, App, Div, Entity, FontWeight, Global, ImageSource, IntoElement, ParentElement,
+    Resource, SharedString, Styled, Window, div, prelude::*,
 };
 
-/// Titled block of demos.
+/// The one section a story draws, while a page renders; the rest draw nothing.
+pub struct Story {
+    wanted: SharedString,
+    met: RefCell<Vec<SharedString>>,
+}
+
+impl Global for Story {}
+
+impl Story {
+    pub fn new(wanted: SharedString) -> Self {
+        Self {
+            wanted,
+            met: RefCell::default(),
+        }
+    }
+
+    fn answers(&self, title: &str) -> bool {
+        *self.wanted == *title || *self.wanted == slug(title)
+    }
+
+    /// Why the page drew no single section by this name, if it did not.
+    pub fn missing(&self, page: &str) -> Option<String> {
+        let met = self.met.borrow();
+        match met.iter().filter(|title| self.answers(title)).count() {
+            1 => None,
+            0 => Some(format!(
+                "The page {page} has no story {}. Its stories: {}.",
+                self.wanted,
+                met.join(", ")
+            )),
+            n => Some(format!("{n} stories on {page} answer to {}.", self.wanted)),
+        }
+    }
+}
+
+/// A title as a story's address: lowercase letters and digits, dashes between.
+pub fn slug(title: &str) -> String {
+    let mut slug = String::new();
+    for c in title.chars() {
+        if c.is_ascii_alphanumeric() {
+            slug.push(c.to_ascii_lowercase());
+        } else if !slug.is_empty() && !slug.ends_with('-') {
+            slug.push('-');
+        }
+    }
+    slug.trim_end_matches('-').to_string()
+}
+
+/// Titled block of demos. Under a story, only the one asked for draws, without its title.
 pub fn section(title: impl Into<SharedString>, note: impl Into<SharedString>, cx: &App) -> Div {
+    let title = title.into();
     let theme = cx.theme();
-    div().flex().flex_col().gap_4().pt_10().child(
-        div()
-            .flex()
-            .flex_col()
-            .gap_1()
-            .child(
-                div()
-                    .text_size(theme.text_size(TextSize::Md))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(theme.colors.fg)
-                    .child(title.into()),
-            )
-            .child(
-                div()
-                    .text_size(theme.text_size(TextSize::Sm))
-                    .text_color(theme.colors.fg_muted)
-                    .child(note.into()),
-            ),
-    )
+    let story = cx.try_global::<Story>();
+    let shown = story.is_none_or(|story| {
+        story.met.borrow_mut().push(title.clone());
+        story.answers(&title)
+    });
+    div()
+        .flex()
+        .flex_col()
+        .gap_4()
+        .when(story.is_none(), |section| section.pt_10())
+        .when(!shown, |section| section.hidden())
+        .child(
+            div()
+                .flex()
+                .flex_col()
+                .gap_1()
+                .when(story.is_none(), |header| {
+                    header.child(
+                        div()
+                            .text_size(theme.text_size(TextSize::Md))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .text_color(theme.colors.fg)
+                            .child(title),
+                    )
+                })
+                .child(
+                    div()
+                        .text_size(theme.text_size(TextSize::Sm))
+                        .text_color(theme.colors.fg_muted)
+                        .child(note.into()),
+                ),
+        )
+}
+
+/// A picture under the gallery's assets: a file natively, an address on the web.
+pub fn resource(path: impl Into<SharedString>) -> Resource {
+    let path = path.into();
+    if cfg!(target_family = "wasm") {
+        Resource::Uri(path.into())
+    } else {
+        Resource::Path(std::path::Path::new(path.as_ref()).into())
+    }
+}
+
+pub fn picture(path: impl Into<SharedString>) -> ImageSource {
+    ImageSource::Resource(resource(path))
 }
 
 pub fn row() -> Div {
@@ -82,6 +161,22 @@ pub fn blocked(text: impl Into<SharedString>, cx: &App) -> impl IntoElement {
                 .bg(theme.colors.warning),
         )
         .child(div().flex_1().min_w_0().child(text.into()))
+}
+
+/// What a browser cannot do here, and why: a note on the web, nothing natively.
+pub fn web_note(text: &'static str, cx: &App) -> Option<AnyElement> {
+    cfg!(target_family = "wasm").then(|| blocked(text, cx).into_any_element())
+}
+
+/// A button that opens a window of its own; a browser page is one window, so there a note stands in.
+pub fn own_window(button: impl IntoElement, cx: &App) -> AnyElement {
+    match web_note(
+        "A browser page is a single window: gpui opens no second window or popup on the web, so this one cannot open here.",
+        cx,
+    ) {
+        Some(note) => note,
+        None => button.into_any_element(),
+    }
 }
 
 /// A demo's state, kept across frames under `key`.

@@ -1,16 +1,17 @@
 use ely_gpui_component::{
     buttons::{ButtonVariant, IconButton},
+    feedback::Alert,
     layout::on_axis,
-    primitives::{FocusScope, IconName},
+    primitives::{FocusScope, IconName, Severity},
     theme::{ActiveTheme, ControlSize, Mode, Radius, TextSize, Theme},
 };
 use gpui::{
-    AnyElement, App, Bounds, Context, FocusHandle, FontWeight, InteractiveElement, IntoElement,
+    AnyElement, App, Context, FocusHandle, FontWeight, InteractiveElement, IntoElement,
     ParentElement, Pixels, Render, ScrollHandle, SharedString, StatefulInteractiveElement, Styled,
     Subscription, Window, div, point, prelude::*, px,
 };
 
-use crate::pages;
+use crate::{Start, pages, ui::Story};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Choice {
@@ -21,6 +22,10 @@ pub enum Choice {
 
 pub struct Gallery {
     page: usize,
+    /// The one section drawn alone, full-bleed, if any.
+    story: Option<SharedString>,
+    /// Why nothing can be shown, in place of the page.
+    failure: Option<SharedString>,
     /// Counts fresh starts; the page's state lives under it.
     pass: usize,
     choice: Choice,
@@ -32,12 +37,7 @@ pub struct Gallery {
 }
 
 impl Gallery {
-    pub fn new(
-        page: usize,
-        narrow: Option<f32>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Self {
+    pub fn new(start: Start, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let appearance = cx.observe_window_appearance(window, |gallery, window, cx| {
             if gallery.choice == Choice::System {
                 Theme::set_mode(window.appearance().into(), cx);
@@ -46,12 +46,14 @@ impl Gallery {
         let focus = cx.focus_handle();
         window.focus(&focus, cx);
         Self {
-            page,
+            page: start.page,
+            story: start.story,
+            failure: start.failure,
             pass: 0,
-            choice: Choice::Light,
+            choice: start.choice,
             focus,
             scroll: ScrollHandle::new(),
-            narrow: narrow.map(px),
+            narrow: start.narrow.map(px),
             _appearance: appearance,
         }
     }
@@ -64,18 +66,21 @@ impl Gallery {
     }
 
     /// Drops the page's state, so it draws as new.
+    #[cfg(not(target_family = "wasm"))]
     pub fn fresh(&mut self, cx: &mut Context<Self>) {
         self.pass += 1;
         cx.notify();
     }
 
     /// Viewport height and furthest scroll, in pixels.
+    #[cfg(not(target_family = "wasm"))]
     pub fn scroll_extent(&self) -> (Pixels, Pixels) {
         (self.scroll.bounds().size.height, self.scroll.max_offset().y)
     }
 
     /// Scrolls until `target` sits inside the page. True if it moved.
-    pub fn reveal(&mut self, target: Bounds<Pixels>, cx: &mut Context<Self>) -> bool {
+    #[cfg(not(target_family = "wasm"))]
+    pub fn reveal(&mut self, target: gpui::Bounds<Pixels>, cx: &mut Context<Self>) -> bool {
         let (view, margin) = (self.scroll.bounds(), px(96.0));
         let shift = if target.top() < view.top() + margin {
             target.top() - view.top() - margin
@@ -89,6 +94,7 @@ impl Gallery {
         true
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn scroll_to(&mut self, y: Pixels, cx: &mut Context<Self>) {
         self.scroll.set_offset(point(px(0.0), -y));
         cx.notify();
@@ -220,72 +226,119 @@ impl Gallery {
             None => content.into_any_element(),
         }
     }
+
+    /// The page's demos, or the story's alone; why not, once the start or the story failed.
+    fn body(
+        &mut self,
+        page: &pages::Page,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Result<AnyElement, SharedString> {
+        if let Some(failure) = &self.failure {
+            return Err(failure.clone());
+        }
+        if let Some(story) = &self.story {
+            cx.set_global(Story::new(story.clone()));
+        }
+        let body = window.with_id(("pass", self.pass), |window| (page.render)(window, cx));
+        if self.story.is_none() {
+            return Ok(body);
+        }
+        match cx.remove_global::<Story>().missing(page.slug) {
+            None => Ok(body),
+            Some(missing) => {
+                log::error!("gallery: {missing}");
+                let failure = SharedString::from(missing);
+                self.failure = Some(failure.clone());
+                Err(failure)
+            }
+        }
+    }
 }
 
 impl Render for Gallery {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let page = &pages::ALL[self.page];
-        let body = window.with_id(("pass", self.pass), |window| (page.render)(window, cx));
+        let body = self.body(page, window, cx);
         let sidebar = self.sidebar(cx);
         let switcher = self.switcher(cx);
         let theme = cx.theme();
         let colors = &theme.colors;
 
-        FocusScope::new(&self.focus)
+        let root = FocusScope::new(&self.focus)
             .root()
             .size_full()
             .flex()
             .bg(colors.bg)
             .text_color(colors.fg)
             .font_family(theme.font_family.clone())
-            .text_size(theme.text_size(TextSize::Base))
-            .child(sidebar)
-            .child(
-                on_axis(div().id(("page", self.pass)))
-                    .flex_1()
-                    .h_full()
+            .text_size(theme.text_size(TextSize::Base));
+        let body = match body {
+            Ok(body) => body,
+            Err(failure) => {
+                return root.child(
+                    div().w_full().p_6().child(
+                        Alert::new("gallery-failure", Severity::Danger, "Nothing to show")
+                            .body(failure),
+                    ),
+                );
+            }
+        };
+        if self.story.is_some() {
+            return root.child(
+                on_axis(div().id(("story", self.pass)))
+                    .size_full()
                     .overflow_y_scroll()
                     .track_scroll(&self.scroll)
-                    .child(
-                        div()
-                            .max_w(px(960.0))
-                            .px(px(56.0))
-                            .pt(px(56.0))
-                            .pb(px(96.0))
-                            .child(
-                                self.card(
-                                    div()
-                                        .flex()
-                                        .flex_wrap()
-                                        .items_start()
-                                        .justify_between()
-                                        .gap_6()
-                                        .child(
-                                            div()
-                                                .flex_1()
-                                                .min_w(px(200.0))
-                                                .flex()
-                                                .flex_col()
-                                                .gap_2()
-                                                .child(
-                                                    div()
-                                                        .text_size(theme.text_size(TextSize::Xxl))
-                                                        .font_weight(FontWeight::SEMIBOLD)
-                                                        .child(page.title),
-                                                )
-                                                .child(
-                                                    div()
-                                                        .text_size(theme.text_size(TextSize::Md))
-                                                        .text_color(colors.fg_muted)
-                                                        .child(page.summary),
-                                                ),
-                                        )
-                                        .child(switcher),
-                                    body,
-                                    cx,
-                                ),
+                    .child(div().p_6().child(body)),
+            );
+        }
+        root.child(sidebar).child(
+            on_axis(div().id(("page", self.pass)))
+                .flex_1()
+                .h_full()
+                .overflow_y_scroll()
+                .track_scroll(&self.scroll)
+                .child(
+                    div()
+                        .max_w(px(960.0))
+                        .px(px(56.0))
+                        .pt(px(56.0))
+                        .pb(px(96.0))
+                        .child(
+                            self.card(
+                                div()
+                                    .flex()
+                                    .flex_wrap()
+                                    .items_start()
+                                    .justify_between()
+                                    .gap_6()
+                                    .child(
+                                        div()
+                                            .flex_1()
+                                            .min_w(px(200.0))
+                                            .flex()
+                                            .flex_col()
+                                            .gap_2()
+                                            .child(
+                                                div()
+                                                    .text_size(theme.text_size(TextSize::Xxl))
+                                                    .font_weight(FontWeight::SEMIBOLD)
+                                                    .child(page.title),
+                                            )
+                                            .child(
+                                                div()
+                                                    .text_size(theme.text_size(TextSize::Md))
+                                                    .text_color(colors.fg_muted)
+                                                    .child(page.summary),
+                                            ),
+                                    )
+                                    .child(switcher),
+                                body,
+                                cx,
                             ),
-                    ),
-            )
+                        ),
+                ),
+        )
     }
 }

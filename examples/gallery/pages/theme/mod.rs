@@ -14,7 +14,7 @@ mod importing;
 mod platform;
 
 use super::Page;
-use crate::script::Step;
+use crate::step::Step;
 use crate::ui::{section, specimen, specimens};
 
 pub const PAGE: Page = Page {

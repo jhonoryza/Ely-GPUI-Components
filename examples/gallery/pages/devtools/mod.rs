@@ -7,7 +7,7 @@ mod formats;
 mod tools;
 
 use super::Page;
-use crate::script::Step;
+use crate::step::Step;
 
 pub const PAGE: Page = Page {
     number: 33,

@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use ely_gpui_component::{
     buttons::{Button, ButtonVariant},
@@ -15,13 +15,10 @@ use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div};
 
 use crate::{
     probe::probe,
-    ui::{keep, row, section, set, specimen, specimens},
+    ui::{keep, picture, row, section, set, specimen, specimens},
 };
 
-const DUNES: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/dunes-square.jpg"
-);
+const DUNES: &str = asset!("dunes-square.jpg");
 
 pub fn badges(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let unread = keep("badge-unread", || 3usize, window, cx);
@@ -127,7 +124,7 @@ pub fn avatars(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     })))
     .child(
         specimens()
-            .child(specimen("picture", Avatar::new("avatar-photo", "Dunes").image(Path::new(DUNES)).size(AvatarSize::Lg), cx))
+            .child(specimen("picture", Avatar::new("avatar-photo", "Dunes").image(picture(DUNES)).size(AvatarSize::Lg), cx))
             .child(specimen("online", Avatar::new("avatar-online", "Aiko Tanaka").size(AvatarSize::Lg).presence(Presence::Online), cx))
             .child(specimen("away", Avatar::new("avatar-away", "Lucía Romero").size(AvatarSize::Lg).presence(Presence::Away), cx))
             .child(specimen("busy", Avatar::new("avatar-busy", "Ben Carter").size(AvatarSize::Lg).presence(Presence::Busy), cx))
@@ -182,7 +179,7 @@ pub fn groups(cx: &mut App) -> impl IntoElement + use<> {
             .child("Assigned to")
             .child(UserChip::new("chip-grace", "Grace Hopper"))
             .child("and")
-            .child(UserChip::new("chip-dunes", "Dune Studio").image(Path::new(DUNES)))
+            .child(UserChip::new("chip-dunes", "Dune Studio").image(picture(DUNES)))
             .child("for review."),
     )
 }

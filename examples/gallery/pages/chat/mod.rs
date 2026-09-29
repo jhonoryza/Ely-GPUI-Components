@@ -10,7 +10,7 @@ use ely_gpui_component::feedback::{ToastViewport, Toaster};
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
 
 use super::Page;
-use crate::{script::Step, ui::keep};
+use crate::{step::Step, ui::keep};
 
 pub const PAGE: Page = Page {
     number: 23,

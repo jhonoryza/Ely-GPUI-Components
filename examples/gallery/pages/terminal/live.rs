@@ -16,7 +16,7 @@ use gpui::{
 
 use crate::{
     probe::probe,
-    ui::{keep, section, set},
+    ui::{keep, set},
 };
 
 /// A build's output as a terminal printed it, colors and all.
@@ -84,7 +84,8 @@ fn field(key: &'static str, text: &str, window: &mut Window, cx: &mut App) -> En
     })
 }
 
-pub fn live(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
+/// The shell and the build's output, in tabs.
+pub fn shell(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let tab = keep("terminal-tab", || SharedString::from("shell"), window, cx);
     let shell = keep("terminal-shell-choice", || (0usize, 0usize), window, cx);
     let (now_tab, (now_shell, start)) = (tab.read(cx).clone(), *shell.read(cx));
@@ -155,12 +156,7 @@ pub fn live(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         None => find,
     };
     let theme = cx.theme();
-    section(
-        "Terminal / TerminalTabs / TerminalSplit / TerminalToolbar / ShellSelector / TerminalSearch / TerminalLink",
-        "A real shell on a pseudo-terminal, drawn cell by cell in the theme's sixteen colors. Tabs hold shells and output; split for another shell beside it. Find lights every match through the scrollback. Cmd-press a link or a path:line.",
-        cx,
-    )
-    .child(
+    div().child(
         div()
             .w(px(840.))
             .rounded(theme.radius(Radius::Md))

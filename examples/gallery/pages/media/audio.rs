@@ -1,4 +1,4 @@
-use std::{path::Path, time::Duration};
+use std::time::Duration;
 
 use ely_gpui_component::media::{
     AudioPlayer, AudioSpectrum, AudioWaveform, MediaControls, PlaybackSpeedControl, Playlist,
@@ -10,13 +10,10 @@ use gpui::{
 
 use crate::{
     probe::probe,
-    ui::{change, keep, noise, section},
+    ui::{change, keep, noise, picture, section},
 };
 
-const COVER: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/dunes-square.jpg"
-);
+const COVER: &str = asset!("dunes-square.jpg");
 /// How often the demo's clock moves while a song plays.
 const TICK: Duration = Duration::from_millis(100);
 const SONGS: [(&str, &str, &str, u64); 5] = [
@@ -181,7 +178,7 @@ pub fn player(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let (title, artist) = (SONGS[now.song].1, SONGS[now.song].2);
     let seek = state.clone();
     let player = AudioPlayer::new("media-audio", title, artist, now.length(), now.at)
-        .artwork(Path::new(COVER))
+        .artwork(picture(COVER))
         .controls(controls("media-audio-transport", &state, &now))
         .volume(volume("media-audio-volume", &state, &now))
         .on_seek(move |at, _, cx| change(&seek, cx, |now| now.at = at));

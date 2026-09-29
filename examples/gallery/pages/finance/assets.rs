@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use ely_gpui_component::{
     charts::PieChart,
@@ -13,6 +13,7 @@ use ely_gpui_component::{
 };
 use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
 use jiff::{Timestamp, civil::date, tz::TimeZone};
+use web_time::Instant;
 
 use crate::ui::{keep, noise, row, section, set};
 

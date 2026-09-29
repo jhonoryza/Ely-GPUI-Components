@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::anyhow;
 use ely_gpui_component::{
@@ -13,6 +13,7 @@ use ely_gpui_component::{
     typography::Caption,
 };
 use gpui::{App, Div, IntoElement, ParentElement, Styled, Window, div, prelude::FluentBuilder};
+use web_time::Instant;
 
 use crate::{
     probe::probe,

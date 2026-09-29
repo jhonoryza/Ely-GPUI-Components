@@ -1,4 +1,4 @@
-use std::{path::Path, time::Duration};
+use std::time::Duration;
 
 use ely_gpui_component::media::{Cue, Scrubber, SubtitleEditor, VideoPlayer, VideoThumbnailStrip};
 use gpui::{
@@ -7,22 +7,13 @@ use gpui::{
 
 use crate::{
     probe::probe,
-    ui::{keep, section, set},
+    ui::{keep, picture, section, set},
 };
 
 const FRAMES: [&str; 3] = [
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/examples/gallery/assets/atrium.jpg"
-    ),
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/examples/gallery/assets/atrium-stair.jpg"
-    ),
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/examples/gallery/assets/atrium-olive.jpg"
-    ),
+    asset!("atrium.jpg"),
+    asset!("atrium-stair.jpg"),
+    asset!("atrium-olive.jpg"),
 ];
 const LENGTH: Duration = Duration::from_secs(90);
 /// How often the demo's clock moves while it plays.
@@ -115,7 +106,7 @@ pub fn video(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         (state.clone(), state.clone(), state.clone(), state.clone());
     let player = VideoPlayer::new(
         "media-player",
-        Some(Path::new(frame(now.at)).into()),
+        Some(picture(frame(now.at))),
         1.5,
         LENGTH,
         now.at,
@@ -190,7 +181,7 @@ pub fn strip(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let state = state(window, cx);
     let now = state.read(cx).clone();
     let (seek, cut) = (state.clone(), state.clone());
-    let frames = (0..8).map(|ix| Path::new(FRAMES[ix * 3 / 8]));
+    let frames = (0..8).map(|ix| picture(FRAMES[ix * 3 / 8]));
     section(
         "VideoThumbnailStrip",
         "Frames along the video under its playhead, and the part kept between two handles. A press seeks; a handle trims; I and O set the ends at the playhead.",

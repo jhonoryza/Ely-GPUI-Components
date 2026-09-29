@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use ely_gpui_component::{
     buttons::SegmentedControl,
     chat::{
@@ -13,6 +11,7 @@ use ely_gpui_component::{
     primitives::IconName,
 };
 use gpui::{App, Entity, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
+use web_time::Instant;
 
 use crate::{
     probe::probe,

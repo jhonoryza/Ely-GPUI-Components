@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use ely_gpui_component::{
     maps::{
         CoordFormat, CoordinateDisplay, LatLon, LocationPicker, MapMarker, MapPopup, MapView,
@@ -16,8 +14,8 @@ mod world;
 
 use super::Page;
 use crate::probe::probe;
-use crate::script::Step;
-use crate::ui::{keep, section, set, specimen, specimens};
+use crate::step::Step;
+use crate::ui::{keep, picture, section, set, specimen, specimens};
 
 pub const PAGE: Page = Page {
     number: 41,
@@ -48,7 +46,7 @@ pub const PAGE: Page = Page {
     ],
 };
 
-const TILES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/gallery/assets/tiles");
+const TILES: &str = asset!("tiles");
 pub(super) const ATTRIBUTION: &str = "Land: Natural Earth";
 
 const CITIES: [(&str, &str, f64, f64, usize); 6] = [
@@ -62,7 +60,7 @@ const CITIES: [(&str, &str, f64, f64, usize); 6] = [
 
 /// The gallery's tiles, cut from Natural Earth by `scripts/tiles.py`.
 pub(super) fn tile(tile: Tile) -> ImageSource {
-    PathBuf::from(format!("{TILES}/{}/{}/{}.png", tile.z, tile.x, tile.y)).into()
+    picture(format!("{TILES}/{}/{}/{}.png", tile.z, tile.x, tile.y))
 }
 
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {

@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use ely_gpui_component::{
     buttons::SegmentedControl,
@@ -9,21 +9,12 @@ use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div, p
 
 use crate::{
     probe::probe,
-    ui::{keep, section, set},
+    ui::{keep, picture, section, set},
 };
 
-const ATRIUM: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/atrium.jpg"
-);
-const STAIR: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/atrium-stair.jpg"
-);
-const DUNES: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/dunes.jpg"
-);
+const ATRIUM: &str = asset!("atrium.jpg");
+const STAIR: &str = asset!("atrium-stair.jpg");
+const DUNES: &str = asset!("dunes.jpg");
 
 /// Crop shapes to pick from, width over height; none is free.
 const ASPECTS: [(&str, Option<f32>); 4] = [
@@ -89,7 +80,7 @@ pub fn cropper(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .child(probe(
                 "media-cropper",
                 div().w(px(560.)).child(
-                    ImageCropper::new("media-cropper", Path::new(ATRIUM), 1.5, crop)
+                    ImageCropper::new("media-cropper", picture(ATRIUM), 1.5, crop)
                         .aspect(aspect)
                         .on_change(move |crop, _, cx| {
                             let shape = moved.read(cx).1;
@@ -165,7 +156,7 @@ pub fn annotator(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
     .child(probe(
         "media-annotator",
         div().w(px(560.)).child(
-            ImageAnnotator::new("media-annotator", Path::new(STAIR), 1.5, marks)
+            ImageAnnotator::new("media-annotator", picture(STAIR), 1.5, marks)
                 .on_change(move |marks, _, cx| set(&changed, marks.to_vec(), cx)),
         ),
     ))

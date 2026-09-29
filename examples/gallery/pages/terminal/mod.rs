@@ -1,11 +1,12 @@
 mod blocks;
+#[cfg(not(target_family = "wasm"))]
 mod live;
 mod panels;
 
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
 
 use super::Page;
-use crate::script::Step;
+use crate::{step::Step, ui::section};
 
 pub const PAGE: Page = Page {
     number: 18,
@@ -36,9 +37,28 @@ const SCRIPT: &[Step] = &[
     Step::Rest,
 ];
 
+/// A live shell natively; a browser runs no processes, so there it says so.
+fn live(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
+    let section = section(
+        "Terminal / TerminalTabs / TerminalSplit / TerminalToolbar / ShellSelector / TerminalSearch / TerminalLink",
+        "A real shell on a pseudo-terminal, drawn cell by cell in the theme's sixteen colors. Tabs hold shells and output; split for another shell beside it. Find lights every match through the scrollback. Cmd-press a link or a path:line.",
+        cx,
+    );
+    #[cfg(not(target_family = "wasm"))]
+    return section.child(live::shell(window, cx));
+    #[cfg(target_family = "wasm")]
+    {
+        let _ = window;
+        section.child(crate::ui::blocked(
+            "A browser starts no processes and has no pseudo-terminal, so no shell runs here, and alacritty's grid, which draws the build's output, does not build for the web. The blocks, colored output, logs and processes below draw without one.",
+            cx,
+        ))
+    }
+}
+
 fn render(window: &mut Window, cx: &mut App) -> AnyElement {
     div()
-        .child(live::live(window, cx))
+        .child(live(window, cx))
         .child(blocks::blocks(window, cx))
         .child(blocks::ansi(cx))
         .child(panels::logs(window, cx))

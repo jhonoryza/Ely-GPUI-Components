@@ -5,7 +5,7 @@ mod reading;
 use gpui::{AnyElement, App, IntoElement, ParentElement, Window, div};
 
 use super::Page;
-use crate::script::Step;
+use crate::step::Step;
 
 pub const PAGE: Page = Page {
     number: 21,

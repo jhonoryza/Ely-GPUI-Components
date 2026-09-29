@@ -16,7 +16,7 @@ mod write;
 use super::Page;
 use crate::{
     probe::probe,
-    script::Step,
+    step::Step,
     ui::{change, keep, section},
 };
 

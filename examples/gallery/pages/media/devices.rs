@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
 use ely_gpui_component::{
     media::{
@@ -15,13 +15,10 @@ use gpui::{
 use super::sculpt;
 use crate::{
     probe::probe,
-    ui::{change, keep, section},
+    ui::{change, keep, picture, section},
 };
 
-const OLIVE: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/atrium-olive.jpg"
-);
+const OLIVE: &str = asset!("atrium-olive.jpg");
 /// The model's frame, in pixels: twice the viewer's points.
 const FRAME: (u32, u32) = (960, 640);
 
@@ -105,7 +102,7 @@ pub fn camera(cx: &mut App) -> impl IntoElement + use<> {
             .child(
                 div().w(px(300.)).child(
                     CameraPreview::new("media-camera-on", 1.5)
-                        .frame(Path::new(OLIVE))
+                        .frame(picture(OLIVE))
                         .name("Studio camera"),
                 ),
             )

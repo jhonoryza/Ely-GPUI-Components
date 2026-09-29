@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use ely_gpui_component::{
     buttons::{Button, ButtonVariant, IconButton},
     primitives::{IconName, Image},
@@ -17,17 +15,11 @@ use gpui::{
 use super::chrome::window_frame;
 use crate::{
     probe::{Opened, probe},
-    ui::{code, row, section, specimen},
+    ui::{code, own_window, picture, row, section, specimen},
 };
 
-const DUNES: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/dunes.jpg"
-);
-const ATRIUM: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/atrium.jpg"
-);
+const DUNES: &str = asset!("dunes.jpg");
+const ATRIUM: &str = asset!("atrium.jpg");
 
 fn about() -> AboutDialog {
     AboutDialog::new("Ely", "0.1.0 (2026.09)")
@@ -88,10 +80,13 @@ pub fn splash_screen(cx: &App) -> impl IntoElement + use<> {
             .child(splash().progress(Some(0.62))),
         cx,
     ))
-    .child(trigger("splash-open", "Show splash window", |cx| {
-        let result = splash().open(cx);
-        opened("splash", result, cx)
-    }))
+    .child(own_window(
+        trigger("splash-open", "Show splash window", |cx| {
+            let result = splash().open(cx);
+            opened("splash", result, cx)
+        }),
+        cx,
+    ))
 }
 
 pub fn open_about(cx: &mut App) {
@@ -113,7 +108,10 @@ pub fn about_dialog(cx: &App) -> impl IntoElement + use<> {
             .child(about()),
         cx,
     ))
-    .child(trigger("about-open", "Open About window", open_about))
+    .child(own_window(
+        trigger("about-open", "Open About window", open_about),
+        cx,
+    ))
 }
 
 struct Managed {
@@ -194,7 +192,10 @@ pub fn window_manager(cx: &mut App) -> impl IntoElement + use<> {
         "Each new window cascades from the last; the manager knows them by name.",
         cx,
     )
-    .child(trigger("managed-open", "New window", open_managed))
+    .child(own_window(
+        trigger("managed-open", "New window", open_managed),
+        cx,
+    ))
     .child(
         row().children(open.into_iter().enumerate().map(|(ix, (handle, title))| {
             Button::new(("managed-focus", ix), title)
@@ -270,7 +271,7 @@ impl Render for Player {
                     .rounded(theme.radius(Radius::Md))
                     .overflow_hidden()
                     .child(
-                        Image::new("player-art", Path::new(DUNES))
+                        Image::new("player-art", picture(DUNES))
                             .fit(ObjectFit::Cover)
                             .size_full(),
                     ),
@@ -309,7 +310,7 @@ impl Render for Picture {
             .relative()
             .size_full()
             .child(
-                Image::new("pip-frame", Path::new(ATRIUM))
+                Image::new("pip-frame", picture(ATRIUM))
                     .fit(ObjectFit::Cover)
                     .size_full(),
             )
@@ -334,7 +335,7 @@ pub fn mini_windows(cx: &App) -> impl IntoElement + use<> {
         "Small windows above the rest. Hover for the bar; expand returns to the app.",
         cx,
     )
-    .child(
+    .child(own_window(
         row()
             .child(trigger("mini-open", "Mini player", |cx| {
                 let view = cx.new(|_| Player { playing: true });
@@ -358,7 +359,8 @@ pub fn mini_windows(cx: &App) -> impl IntoElement + use<> {
                 );
                 opened("pip", result, cx)
             })),
-    )
+        cx,
+    ))
     .child(code(
         "AlwaysOnTop is gpui's WindowOptions { kind: WindowKind::PopUp, .. }",
         cx,

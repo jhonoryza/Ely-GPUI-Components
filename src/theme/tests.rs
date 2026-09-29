@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use gpui::{TestAppContext, hsla};
 
 use super::{ActiveTheme, Mode, Palette, Syntax, Theme};
@@ -17,6 +19,29 @@ fn an_owners_palette_serves_its_mode_alone(cx: &mut TestAppContext) {
         Theme::set_palette(Mode::Light, None, cx);
     });
     assert_eq!(cx.read(|cx| cx.theme().palette()), Palette::light(false));
+}
+
+/// A mode set at once wears its palette at once, and a fade under way cannot pull it back.
+#[gpui::test]
+fn a_mode_set_at_once_skips_the_fade(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        Theme::init(cx);
+        Theme::update(cx, |theme| theme.reduced_motion = true);
+        Theme::set_mode(Mode::Dark, cx);
+        Theme::set_mode_now(Mode::Light, cx);
+    });
+    assert_eq!(
+        cx.read(|cx| cx.theme().colors.clone()),
+        Palette::light(false)
+    );
+    std::thread::sleep(Duration::from_millis(2));
+    cx.executor().advance_clock(Duration::from_millis(100));
+    cx.run_until_parked();
+    assert!(!cx.read(|cx| cx.theme().is_dark()));
+    assert_eq!(
+        cx.read(|cx| cx.theme().colors.clone()),
+        Palette::light(false)
+    );
 }
 
 /// Every color of the palette and of code answers to its field's name, the quiet fills too.

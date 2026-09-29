@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ely Gallery</title>
+    <style>
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #fcfaf7; }
+      html.dark, html.dark body { background: #131110; }
+    </style>
+    <script>
+      // Ely's own background under the canvas until the first frame, in the mode asked for.
+      if (new URLSearchParams(location.search).get("theme") === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+    </script>
+    <script type="module">
+      import init, { set_theme } from "./gallery.js";
+      await init();
+      // The host switches the mode later: gallery.setTheme("dark"), or a message { ely: "theme", theme }.
+      const setTheme = (theme) => {
+        set_theme(theme);
+        document.documentElement.classList.toggle("dark", theme === "dark");
+      };
+      window.gallery = { setTheme };
+      addEventListener("message", ({ data }) => {
+        if (data && data.ely === "theme") setTheme(data.theme);
+      });
+    </script>
+  </head>
+  <body></body>
+</html>

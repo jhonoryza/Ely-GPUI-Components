@@ -12,7 +12,7 @@ mod a11y;
 
 use super::Page;
 use crate::probe::probe;
-use crate::script::Step;
+use crate::step::Step;
 use crate::ui::{section, specimen, specimens};
 
 pub const PAGE: Page = Page {

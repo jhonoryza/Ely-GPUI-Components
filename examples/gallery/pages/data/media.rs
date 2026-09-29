@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use ely_gpui_component::{
     buttons::{Button, ButtonVariant},
     data_display::{BeforeAfter, Carousel, Gallery, Watermark},
@@ -12,7 +10,7 @@ use gpui::{App, IntoElement, ObjectFit, ParentElement, Styled, Window, div, px};
 
 use crate::{
     probe::probe,
-    ui::{keep, section, set},
+    ui::{keep, picture, section, set},
 };
 
 const PICTURES: [(&str, &str); 6] = [
@@ -35,7 +33,7 @@ pub fn carousel(cx: &mut App) -> impl IntoElement + use<> {
                 .relative()
                 .size_full()
                 .child(
-                    Image::new(("carousel-picture", ix), Path::new(*path))
+                    Image::new(("carousel-picture", ix), picture(*path))
                         .fit(ObjectFit::Cover)
                         .size_full(),
                 )
@@ -74,14 +72,14 @@ pub fn gallery(cx: &mut App) -> impl IntoElement + use<> {
         "gallery",
         div().w(px(420.)).child(Gallery::new(
             "gallery",
-            PICTURES.map(|(path, caption)| Slide::new(Path::new(path), caption)),
+            PICTURES.map(|(path, caption)| Slide::new(picture(path), caption)),
         )),
     )))
 }
 
 pub fn before_after(cx: &mut App) -> impl IntoElement + use<> {
     let picture = |id: &'static str, path: &'static str| {
-        Image::new(id, Path::new(path))
+        Image::new(id, picture(path))
             .fit(ObjectFit::Cover)
             .size_full()
     };

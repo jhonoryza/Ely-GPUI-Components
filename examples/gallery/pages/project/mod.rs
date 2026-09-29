@@ -14,7 +14,7 @@ mod tasks;
 mod time;
 
 use super::Page;
-use crate::{script::Step, ui::keep};
+use crate::{step::Step, ui::keep};
 
 pub const PAGE: Page = Page {
     number: 31,

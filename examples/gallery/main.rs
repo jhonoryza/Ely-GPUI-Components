@@ -1,4 +1,7 @@
+#![cfg_attr(target_family = "wasm", no_main)]
+
 /// A file under the gallery's assets, by name.
+#[cfg(not(target_family = "wasm"))]
 macro_rules! asset {
     ($name:literal) => {
         concat!(
@@ -9,28 +12,48 @@ macro_rules! asset {
     };
 }
 
+/// On the web, the address the site serves it at: the build names the folder.
+#[cfg(target_family = "wasm")]
+macro_rules! asset {
+    ($name:literal) => {
+        concat!(env!("ELY_GALLERY_ASSETS"), $name)
+    };
+}
+
+#[cfg(not(target_family = "wasm"))]
 mod capture;
 mod pages;
 mod probe;
+#[cfg(not(target_family = "wasm"))]
 mod script;
 mod shell;
+// Native capture alone plays the scripts.
+#[cfg_attr(target_family = "wasm", allow(dead_code))]
+mod step;
+#[cfg(not(target_family = "wasm"))]
 mod swipe;
 mod ui;
+#[cfg(target_family = "wasm")]
+mod web;
 
+#[cfg(not(target_family = "wasm"))]
 use std::path::PathBuf;
 
+#[cfg(not(target_family = "wasm"))]
 use anyhow::{Context as _, Result, bail};
+#[cfg(not(target_family = "wasm"))]
 use ely_gpui_component::Assets;
+use ely_gpui_component::theme::{Mode, Theme};
 use gpui::{
-    App, AppContext, Bounds, KeyBinding, Menu, MenuItem, TitlebarOptions, WindowBounds,
-    WindowHandle, WindowOptions, actions, point, px, size,
+    App, AppContext, Bounds, KeyBinding, Menu, MenuItem, SharedString, TitlebarOptions,
+    WindowBounds, WindowHandle, WindowOptions, actions, point, px, size,
 };
 
 actions!(gallery, [Quit, About, LightMode, DarkMode, NewWindow]);
 
-/// The gallery's menu bar and Dock menu: NativeMenu and JumpList at work. Set before the window opens, whose first frame may draw them.
-fn menus(cx: &mut App) {
-    cx.set_menus(vec![
+/// The gallery's menu bar: NativeMenu at work, and what MenuBar draws.
+pub fn app_menus() -> Vec<Menu> {
+    vec![
         Menu {
             name: "Ely".into(),
             items: vec![
@@ -48,7 +71,12 @@ fn menus(cx: &mut App) {
             ],
             disabled: false,
         },
-    ]);
+    ]
+}
+
+/// The menu bar and Dock menu (JumpList). Set before the window opens, whose first frame may draw them.
+fn menus(cx: &mut App) {
+    cx.set_menus(app_menus());
     cx.set_dock_menu(vec![MenuItem::action("New Window", NewWindow)]);
 }
 
@@ -67,17 +95,74 @@ fn choose(window: WindowHandle<shell::Gallery>, choice: shell::Choice, cx: &mut 
     }
 }
 
-struct Args {
-    page: Option<usize>,
-    capture: Option<PathBuf>,
-    narrow: Option<f32>,
+/// What the gallery opens on.
+pub struct Start {
+    pub page: usize,
+    /// One section, by title or slug, drawn alone.
+    pub story: Option<SharedString>,
+    pub choice: shell::Choice,
+    /// Narrow check width, if any.
+    pub narrow: Option<f32>,
+    /// Why the start could not be read, shown in place of a page.
+    pub failure: Option<SharedString>,
 }
 
+/// Sets Ely up and opens the gallery's window.
+fn launch(start: Start, cx: &mut App) -> WindowHandle<shell::Gallery> {
+    ely_gpui_component::init(cx);
+    #[cfg(debug_assertions)]
+    ely_gpui_component::tooling::install_inspector(cx);
+    pages::bind_keys(cx);
+    pages::install_i18n(cx);
+    cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
+    cx.on_action(|_: &Quit, cx| cx.quit());
+    menus(cx);
+    if start.choice == shell::Choice::Dark {
+        Theme::set_mode_now(Mode::Dark, cx);
+    }
+    let bounds = Bounds::centered(None, size(px(1280.0), px(820.0)), cx);
+    let options = WindowOptions {
+        window_bounds: Some(WindowBounds::Windowed(bounds)),
+        titlebar: Some(TitlebarOptions {
+            title: Some("Ely".into()),
+            appears_transparent: true,
+            traffic_light_position: Some(point(px(16.0), px(18.0))),
+        }),
+        window_min_size: Some(size(px(880.0), px(560.0))),
+        // Keeps drawing while a demo window is key.
+        inactive_frame_interval: None,
+        ..Default::default()
+    };
+    let window = cx
+        .open_window(options, |window, cx| {
+            cx.new(|cx| shell::Gallery::new(start, window, cx))
+        })
+        .expect("gallery window failed to open");
+    menu_actions(window, cx);
+    cx.activate(true);
+    window
+}
+
+#[cfg(not(target_family = "wasm"))]
+struct Args {
+    start: Start,
+    /// The page asked for, which a capture shoots alone.
+    page: Option<usize>,
+    capture: Option<PathBuf>,
+}
+
+#[cfg(not(target_family = "wasm"))]
 fn parse_args() -> Result<Args> {
     let mut args = Args {
+        start: Start {
+            page: 0,
+            story: None,
+            choice: shell::Choice::Light,
+            narrow: None,
+            failure: None,
+        },
         page: None,
         capture: None,
-        narrow: None,
     };
     let mut iter = std::env::args().skip(1);
     while let Some(flag) = iter.next() {
@@ -88,9 +173,10 @@ fn parse_args() -> Result<Args> {
             "--page" => {
                 args.page = Some(pages::find(&value).with_context(|| format!("no page {value}"))?)
             }
+            "--story" => args.start.story = Some(value.into()),
             "--capture" => args.capture = Some(PathBuf::from(value)),
             "--narrow" => {
-                args.narrow = Some(
+                args.start.narrow = Some(
                     value
                         .parse()
                         .with_context(|| format!("bad width {value}"))?,
@@ -99,47 +185,28 @@ fn parse_args() -> Result<Args> {
             other => bail!("unknown flag {other}"),
         }
     }
+    if args.start.story.is_some() && args.page.is_none() {
+        bail!("--story needs --page");
+    }
+    args.start.page = args.page.unwrap_or(0);
     Ok(args)
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn main() -> Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    let args = parse_args()?;
+    let Args {
+        start,
+        page,
+        capture,
+    } = parse_args()?;
+    let scripted = start.narrow.is_none();
     gpui_platform::application()
         .with_assets(Assets)
         .run(move |cx: &mut App| {
-            ely_gpui_component::init(cx);
-            #[cfg(debug_assertions)]
-            ely_gpui_component::tooling::install_inspector(cx);
-            pages::bind_keys(cx);
-            pages::install_i18n(cx);
-            cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
-            cx.on_action(|_: &Quit, cx| cx.quit());
-            menus(cx);
-            let bounds = Bounds::centered(None, size(px(1280.0), px(820.0)), cx);
-            let options = WindowOptions {
-                window_bounds: Some(WindowBounds::Windowed(bounds)),
-                titlebar: Some(TitlebarOptions {
-                    title: Some("Ely".into()),
-                    appears_transparent: true,
-                    traffic_light_position: Some(point(px(16.0), px(18.0))),
-                }),
-                window_min_size: Some(size(px(880.0), px(560.0))),
-                // Keeps drawing while a demo window is key.
-                inactive_frame_interval: None,
-                ..Default::default()
-            };
-            let window = cx
-                .open_window(options, |window, cx| {
-                    cx.new(|cx| {
-                        shell::Gallery::new(args.page.unwrap_or(0), args.narrow, window, cx)
-                    })
-                })
-                .expect("gallery window failed to open");
-            menu_actions(window, cx);
-            cx.activate(true);
-            if let Some(dir) = args.capture {
-                capture::run(window, dir, args.page, args.narrow.is_none(), cx);
+            let window = launch(start, cx);
+            if let Some(dir) = capture {
+                capture::run(window, dir, page, scripted, cx);
             }
         });
     Ok(())

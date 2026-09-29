@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use ely_gpui_component::{
     debug::HexViewer,
     documents::{Favorite, Favorites},
@@ -18,13 +16,10 @@ use jiff::{SignedDuration, Timestamp, ToSpan};
 
 use crate::{
     probe::probe,
-    ui::{change, keep, section},
+    ui::{change, keep, picture, section},
 };
 
-const ATRIUM: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/atrium.jpg"
-);
+const ATRIUM: &str = asset!("atrium.jpg");
 const BRIEF: &str = "# Atrium\n\nA quiet hall for the new library.\n\n- Light from above, all day\n- One stair, curved, in plaster\n- Olive trees by the windows\n\nNext: the model walkthrough on Friday.";
 
 fn entry(name: &str, bytes: u64, hours: i64) -> DirEntry {
@@ -38,7 +33,7 @@ pub fn previews(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let chosen = picked.read(cx).clone();
     let preview = |name: &SharedString| match name.as_ref() {
         "Atrium.jpg" => FilePreview::new("files-look", entry("Atrium.jpg", 2_140_000, 50))
-            .picture(Path::new(ATRIUM), 1.5),
+            .picture(picture(ATRIUM), 1.5),
         "Brief.md" => FilePreview::new("files-look", entry("Brief.md", 4_800, 2)).text(BRIEF),
         other => FilePreview::new("files-look", entry(other, 48_000_000, 700)),
     };
@@ -289,7 +284,7 @@ pub fn archive(cx: &mut App) -> impl IntoElement + use<> {
 pub fn hex(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let bytes = keep(
         "files-hex",
-        || std::fs::read(ATRIUM).expect("the gallery's picture reads")[..512].to_vec(),
+        || include_bytes!("../../assets/atrium.jpg")[..512].to_vec(),
         window,
         cx,
     );

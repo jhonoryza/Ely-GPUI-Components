@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use ely_gpui_component::{
     buttons::{Button, ButtonVariant},
@@ -11,6 +11,7 @@ use ely_gpui_component::{
     primitives::IconName,
 };
 use gpui::{App, Entity, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
+use web_time::Instant;
 
 use crate::{
     probe::probe,

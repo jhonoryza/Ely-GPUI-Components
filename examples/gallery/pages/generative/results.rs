@@ -1,4 +1,4 @@
-use std::{path::Path, time::Duration};
+use std::time::Duration;
 
 use ely_gpui_component::{
     data_display::BeforeAfter,
@@ -12,7 +12,7 @@ use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div, p
 
 use crate::{
     probe::probe,
-    ui::{keep, section, set},
+    ui::{keep, picture, section, set},
 };
 
 fn jobs() -> Vec<Job> {
@@ -137,8 +137,8 @@ pub fn results(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .child(
                 BeforeAfter::new(
                     "gen-compare",
-                    Image::new("gen-compare-before", Path::new(asset!("atrium-before.jpg"))).size_full(),
-                    Image::new("gen-compare-after", Path::new(asset!("atrium.jpg"))).size_full(),
+                    Image::new("gen-compare-before", picture(asset!("atrium-before.jpg"))).size_full(),
+                    Image::new("gen-compare-after", picture(asset!("atrium.jpg"))).size_full(),
                 )
                 .w(px(420.))
                 .h(px(280.)),

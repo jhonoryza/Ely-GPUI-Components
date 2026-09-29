@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use ely_gpui_component::{
     messaging::{ChatMessage, Gif, GifPicker, Gifs, Sticker, StickerPack, StickerPicker},
     primitives::Image,
@@ -12,7 +10,7 @@ use jiff::{civil::date, tz::TimeZone};
 
 use crate::{
     probe::probe,
-    ui::{keep, section, set, specimen, specimens},
+    ui::{keep, picture, section, set, specimen, specimens},
 };
 
 const ATRIUM: [(&str, &str, &str); 4] = [
@@ -60,7 +58,7 @@ const GIFS: [(&str, &str, &str, f32); 4] = [
 fn pack(name: &str, stickers: [(&'static str, &'static str, &'static str); 4]) -> StickerPack {
     StickerPack::new(
         name.to_string(),
-        stickers.map(|(key, title, file)| Sticker::new(key, title, Path::new(file))),
+        stickers.map(|(key, title, file)| Sticker::new(key, title, picture(file))),
     )
 }
 
@@ -101,7 +99,7 @@ pub fn stickers(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                         ElementId::from("messaging-sticker-picture"),
                         key.to_string(),
                     ),
-                    Path::new(*file),
+                    picture(*file),
                 )
                 .fit(ObjectFit::Contain)
                 .size_full(),
@@ -146,7 +144,7 @@ fn found(words: &str) -> Vec<Gif> {
     let words = words.to_lowercase();
     GIFS.iter()
         .filter(|(_, title, _, _)| title.to_lowercase().contains(&words))
-        .map(|(key, title, file, ratio)| Gif::new(*key, *title, Path::new(*file), *ratio))
+        .map(|(key, title, file, ratio)| Gif::new(*key, *title, picture(*file), *ratio))
         .collect()
 }
 
@@ -163,7 +161,7 @@ pub fn gifs(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             div().w(px(200.)).h(px(200. / ratio)).child(
                 Image::new(
                     (ElementId::from("messaging-gif-picture"), key.to_string()),
-                    Path::new(*file),
+                    picture(*file),
                 )
                 .size_full()
                 .rounded(round),

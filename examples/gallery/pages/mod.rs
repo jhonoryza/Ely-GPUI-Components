@@ -44,7 +44,7 @@ mod typography;
 
 use gpui::{AnyElement, App, Window};
 
-use crate::script::Step;
+use crate::step::Step;
 
 pub struct Page {
     pub number: u8,
@@ -53,6 +53,7 @@ pub struct Page {
     pub summary: &'static str,
     pub render: fn(&mut Window, &mut App) -> AnyElement,
     /// Interactions shot after the static pages.
+    #[cfg_attr(target_family = "wasm", allow(dead_code))]
     pub script: &'static [Step],
 }
 

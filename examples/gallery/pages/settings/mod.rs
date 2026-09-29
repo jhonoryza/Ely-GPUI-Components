@@ -4,7 +4,7 @@ mod pages;
 mod window;
 
 use super::Page;
-use crate::script::Step;
+use crate::step::Step;
 
 pub const PAGE: Page = Page {
     number: 35,

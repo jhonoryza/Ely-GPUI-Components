@@ -1,16 +1,13 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use ely_gpui_component::misc::{Captcha, CaptchaState, QrCodeScanner};
 use gpui::{App, IntoElement, ParentElement, RenderImage, Styled, Window, div, px};
 
 use crate::probe::probe;
-use crate::ui::section;
+use crate::ui::{picture, section};
 
 const ANSWERS: [&str; 2] = ["W7XK", "Q3NP"];
-const PICTURES: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/captcha"
-);
+const PICTURES: &str = asset!("captcha");
 
 /// The frame a camera would hand in: a QR code on a card over a dim scene, in gpui's BGRA pixels.
 fn scene() -> Arc<RenderImage> {
@@ -46,7 +43,7 @@ pub fn render(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let (ix, state) = *desk.read(cx);
     let answer = ANSWERS[ix];
     let (checked, refreshed) = (desk.clone(), desk);
-    let picture = PathBuf::from(format!("{PICTURES}/{}.png", answer.to_lowercase()));
+    let picture = picture(format!("{PICTURES}/{}.png", answer.to_lowercase()));
     div()
         .child(
             section(

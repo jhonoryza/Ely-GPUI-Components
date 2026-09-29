@@ -5,7 +5,7 @@ mod billing;
 mod sign_in;
 
 use super::Page;
-use crate::script::Step;
+use crate::step::Step;
 
 pub const PAGE: Page = Page {
     number: 36,

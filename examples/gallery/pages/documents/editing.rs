@@ -12,10 +12,7 @@ use crate::{
     ui::{keep, section, set},
 };
 
-const ATRIUM: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/atrium.jpg"
-);
+const ATRIUM: &str = asset!("atrium.jpg");
 
 const PEOPLE: [&str; 4] = ["ada", "grace", "linus", "margaret"];
 

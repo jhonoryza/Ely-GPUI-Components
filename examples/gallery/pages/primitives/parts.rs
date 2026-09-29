@@ -15,13 +15,10 @@ use gpui::{
 
 use crate::{
     probe::probe,
-    ui::{blocked, code, row, section, specimen, specimens},
+    ui::{blocked, code, picture, row, section, specimen, specimens},
 };
 
-const ATRIUM: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/gallery/assets/atrium.jpg"
-);
+const ATRIUM: &str = asset!("atrium.jpg");
 
 fn counter(window: &mut Window, cx: &mut App, key: &'static str) -> gpui::Entity<u32> {
     window.use_keyed_state(key, cx, |_, _| 0u32)
@@ -104,7 +101,7 @@ pub fn image(cx: &App) -> impl IntoElement + use<> {
         specimens()
             .child(specimen(
                 "loaded",
-                tile(Image::new("img-atrium", Path::new(ATRIUM)), cx),
+                tile(Image::new("img-atrium", picture(ATRIUM)), cx),
                 cx,
             ))
             .child(specimen(

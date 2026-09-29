@@ -136,6 +136,16 @@ impl Theme {
         Self::fade_to_target(cx);
     }
 
+    /// Sets `mode` without the fade, as before a window's first frame; a fade under way stops.
+    pub fn set_mode_now(mode: Mode, cx: &mut App) {
+        log::info!("theme: mode -> {mode:?}, at once");
+        let theme = cx.global_mut::<Theme>();
+        theme.mode = mode;
+        theme.transition += 1;
+        theme.colors = theme.target();
+        cx.refresh_windows();
+    }
+
     pub fn set_high_contrast(on: bool, cx: &mut App) {
         log::info!("theme: high contrast -> {on}");
         cx.global_mut::<Theme>().high_contrast = on;
