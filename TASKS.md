@@ -152,7 +152,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T43c Tooling · Catalogs — `tasks/ch31-43.md`
 - [x] T44a Capture · Roots: roots still on `w_full` drop it, checked at 280px and in padded cards
 - [x] T44b Port · Build: gpui and gpui_platform from Zed's repo by git at 1a28cff; the crate, its tests and the gallery build, and check.sh passes
-- [ ] T44c Port · Parity: every page and scripted state captured light and dark and matched against T44a's shots; AGENTS.md's gpui 0.2.2 and taffy 0.9 rules re-tested at 1a28cff and rewritten
+- [x] T44c Port · Parity: every page and scripted state captured light and dark and matched against T44a's shots; AGENTS.md's gpui 0.2.2 and taffy 0.9 rules re-tested at 1a28cff and rewritten
 - [ ] T44d Web · Stories: the gallery builds for wasm32 through gpui_web; one story per component, chosen by URL, themed by the host page; what cannot run in a browser says why
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark: a home page in motion (three.js, smooth scroll), and a components page with every component live from its story, categories on the left and the chosen one's detail on the right, after astryx.atmeta.com and gpui-kit.com; no screenshots
 - [ ] T46 E2E: Playwright against the built site
@@ -478,3 +478,6 @@ Per-component lines live in `tasks/`. Tags there:
 | T44a | 3 | PASS | the brief counted 43 components in the new tests; they hold 41 |
 | T44b | 1 | FAIL | after a key, leaving the calendar grid kept a stale preview, since the guard swallowed the exit gpui records for the key; the shaped() doc grew to 40 words |
 | T44b | 2 | PASS | |
+| T44c | 1 | FAIL | 940 dark shots had no recorded verdict; AGENTS.md still said avatars take square pictures; two new harness comments ran long |
+| T44c | 2 | FAIL | the comment at typography/fit.rs:114 ran 19 words |
+| T44c | 3 | PASS | |
