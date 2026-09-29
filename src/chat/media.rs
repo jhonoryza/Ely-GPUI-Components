@@ -15,7 +15,7 @@ use crate::{
     typography::{Ellipsis, format::file_size},
 };
 
-/// A box in a picture's own shape: as wide as the picture, but no wider than `widest` or its container. Hand it to a flex column inside a block: taffy 0.13 sizes the column by its width before its cap.
+/// A box in a picture's own shape: as wide as the picture, but no wider than `widest` or its container.
 pub(crate) fn shaped(width: f32, height: f32, widest: Pixels) -> Div {
     assert!(
         width > 0.0 && height > 0.0,

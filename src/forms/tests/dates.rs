@@ -236,3 +236,24 @@ fn keys_keep_the_preview_under_a_resting_pointer(cx: &mut TestAppContext) {
         "the keyboard's day stays the preview"
     );
 }
+
+#[gpui::test]
+fn leaving_the_grid_after_a_key_clears_the_preview(cx: &mut TestAppContext) {
+    setup(cx);
+    for key in ["right", "a", "pagedown"] {
+        let (view, cx) = cx.add_window_view(|_, _| Watched { seen: Vec::new() });
+        cx.update(|window, cx| window.focus_next(cx));
+        cx.simulate_mouse_move(point(px(120.0), px(200.0)), None, Modifiers::none());
+        cx.simulate_keystrokes(key);
+        cx.update(|window, _| window.refresh());
+        cx.run_until_parked();
+        cx.simulate_mouse_move(point(px(700.0), px(480.0)), None, Modifiers::none());
+        cx.update(|window, _| window.refresh());
+        cx.run_until_parked();
+        assert_eq!(
+            view.read_with(cx, |view, _| view.seen.last().copied().flatten()),
+            None,
+            "after {key}, leaving the grid clears its preview"
+        );
+    }
+}

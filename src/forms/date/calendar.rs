@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    Animation, AnimationExt, App, ElementId, FocusHandle, FontWeight, InteractiveElement,
-    IntoElement, ParentElement, RenderOnce, StatefulInteractiveElement, Styled, Window, div,
-    prelude::*, transparent_black,
+    Animation, AnimationExt, App, ElementId, FocusHandle, FontWeight, HoverListenerMode,
+    InteractiveElement, IntoElement, ParentElement, RenderOnce, StatefulInteractiveElement, Styled,
+    Window, div, prelude::*, transparent_black,
 };
 use jiff::{ToSpan, civil::Date};
 
@@ -328,6 +328,7 @@ impl RenderOnce for Calendar {
             .grid()
             .grid_cols(7)
             .gap_0p5()
+            .hover_listener_mode(HoverListenerMode::InputModalityIndependent)
             .on_hover(move |over, window, cx| {
                 if !*over && !window.last_input_was_keyboard() {
                     leave.update(cx, |hover, cx| {
