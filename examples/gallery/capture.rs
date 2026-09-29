@@ -114,7 +114,7 @@ pub fn number(window: &Window) -> Result<u32> {
     u32::try_from(number).context("window number out of range")
 }
 
-/// Takes posted mouse moves; gpui's tracking area takes only real ones.
+/// Takes posted mouse moves; a tracking area takes real ones.
 #[cfg(target_os = "macos")]
 fn take_posted_moves(window: &Window) -> Result<()> {
     use cocoa::{appkit::NSWindow, base::YES};

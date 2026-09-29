@@ -28,7 +28,7 @@ fn angle_at(bounds: Bounds<Pixels>, at: Point<Pixels>, snap: bool) -> f32 {
 
 type OnTurn = Rc<dyn Fn(f32, &mut Window, &mut App)>;
 
-/// An svg turned clockwise by degrees, with a knob to drag.
+/// An svg turned clockwise by degrees, with a knob.
 #[derive(IntoElement)]
 pub struct Rotatable {
     id: ElementId,

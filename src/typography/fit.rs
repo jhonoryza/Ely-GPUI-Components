@@ -111,7 +111,7 @@ fn offset(align: TextAlign, free: Pixels) -> Pixels {
     }
 }
 
-/// One line in the text style around it, cut by `fit` to its box and set by its alignment.
+/// One line, cut by `fit` to its box and aligned.
 fn cut_line(text: SharedString, fit: fn(&str, Pixels, &mut Window) -> String) -> Div {
     let line = text.clone();
     div()

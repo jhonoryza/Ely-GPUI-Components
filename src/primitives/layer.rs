@@ -16,7 +16,7 @@ fn nested() -> bool {
     LAYERS.with_borrow(|layers| !layers.is_empty())
 }
 
-/// Draws `child` over the page; inside a raise, last within it.
+/// Draws `child` over the page, last inside a raise.
 pub fn raise(id: impl Into<ElementId>, child: impl IntoElement) -> Raised {
     let layer = Layer {
         child: child.into_any_element(),
