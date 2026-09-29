@@ -60,7 +60,7 @@ impl RenderOnce for DescriptionList {
                             .flex()
                             .when(stacked, |row| row.flex_col().gap_0p5())
                             .when(!stacked, |row| {
-                                row.flex_wrap().items_baseline().gap_x_4().gap_y_0p5()
+                                row.flex_wrap().items_end().gap_x_4().gap_y_0p5()
                             })
                             .py_2()
                             .when(lined && ix < last, |row| {

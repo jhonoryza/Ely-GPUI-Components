@@ -321,6 +321,6 @@ pub fn shapes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     cx,
                 )),
         )
-        .child(blocked("Pinch: gpui 0.2.2 forwards no magnify event, so a trackpad pinch never reaches a view.", cx)),
+        .child(blocked("Pinch: gpui hands a trackpad pinch to on_pinch, and the viewport does not zoom on it yet.", cx)),
     )
 }

@@ -126,8 +126,10 @@ impl Statistic {
 impl RenderOnce for Statistic {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
-        let unit = |text: SharedString| {
+        let id = &self.id;
+        let unit = |part: &str, text: SharedString| {
             div()
+                .debug_selector(|| format!("statistic-{part} {id}"))
                 .text_size(theme.text_size(TextSize::Md))
                 .text_color(theme.colors.fg_muted)
                 .child(text)
@@ -147,13 +149,13 @@ impl RenderOnce for Statistic {
                     .flex()
                     .items_baseline()
                     .gap_1()
-                    .children(self.prefix.map(unit))
+                    .children(self.prefix.map(|text| unit("prefix", text)))
                     .child(
-                        AnimatedNumber::new(self.id, self.value)
+                        AnimatedNumber::new(self.id.clone(), self.value)
                             .decimals(self.decimals)
                             .size(self.size),
                     )
-                    .children(self.suffix.map(unit)),
+                    .children(self.suffix.map(|text| unit("suffix", text))),
             )
             .children(self.trend)
     }

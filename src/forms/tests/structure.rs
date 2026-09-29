@@ -7,8 +7,8 @@ use super::setup;
 use crate::{
     buttons::Button,
     forms::{
-        Choice, DatePicker, EmailInput, FieldArray, Form, FormField, Input, InputEvent,
-        MentionInput, NumberInput, Select, Slider, TextInput,
+        Choice, DatePicker, EmailInput, FieldArray, Form, FormField, Input, InputEvent, InputGroup,
+        MentionInput, NumberInput, Select, Slider, TagInput, TextInput,
     },
     layout::tests::narrow_width,
 };
@@ -224,10 +224,19 @@ fn fields_fill_a_column_their_block_measures_by_content(cx: &mut TestAppContext)
         narrow_width(cx, "number-root", |_, _| {
             NumberInput::new("number", 42.0).into_any_element()
         }),
+        narrow_width(cx, "input-root", move |window, cx| {
+            Input::new(&field(window, cx)).into_any_element()
+        }),
+        narrow_width(cx, "group-root", move |window, cx| {
+            InputGroup::new(&field(window, cx)).into_any_element()
+        }),
+        narrow_width(cx, "tag-input tags", |_, _| {
+            TagInput::new("tags", ["a"]).into_any_element()
+        }),
     ];
     assert_eq!(
         widths,
-        [px(240.0); 6],
+        [px(240.0); 9],
         "each field spans the card inside its padding"
     );
 }

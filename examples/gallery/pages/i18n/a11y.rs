@@ -65,7 +65,7 @@ pub fn skip_link(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
         ),
     )
     .child(blocked(
-        "LiveRegion / Announcer, AccessibleIcon, AriaLabel, ScreenReaderOnly: gpui 0.2.2 exposes no accessibility tree, so no label or live region reaches a screen reader.",
+        "LiveRegion / Announcer, AccessibleIcon, AriaLabel, ScreenReaderOnly: not yet shown: gpui builds an AccessKit tree from elements with an id and a role, and no screen reader here reads it.",
         cx,
     ))
 }

@@ -33,7 +33,7 @@ pub(crate) fn framed(ratio: f32, cx: &App) -> Div {
     frame
 }
 
-/// Themed `img()` that fills the box it is given; a `Cover` crop keeps square corners.
+/// Themed `img()` that fills the box it is given; a `Cover` crop keeps its rounded corners.
 #[derive(IntoElement)]
 pub struct Image {
     id: ElementId,

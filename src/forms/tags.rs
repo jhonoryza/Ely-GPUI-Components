@@ -215,7 +215,6 @@ impl RenderOnce for TagInput {
             .flex_wrap()
             .items_center()
             .gap_1()
-            .w_full()
             .min_h(theme.control_height(ControlSize::Md))
             .px_1()
             .py_0p5()

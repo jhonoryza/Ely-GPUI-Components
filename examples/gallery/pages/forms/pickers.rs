@@ -69,7 +69,7 @@ pub fn select(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             )),
     )
     .child(blocked(
-        "NativeSelect: gpui 0.2.2 has no native popup menu, so Select draws its own.",
+        "NativeSelect: gpui has no native popup menu, so Select draws its own.",
         cx,
     ))
 }

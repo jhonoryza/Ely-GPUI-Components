@@ -5,12 +5,16 @@ use std::{
 };
 
 use gpui::{
-    Bounds, Context, IntoElement, Modifiers, ParentElement, Pixels, Render, Styled, TestAppContext,
-    VisualTestContext, Window, div, point, px,
+    AnyElement, Bounds, Context, IntoElement, Modifiers, ParentElement, Pixels, Render, Styled,
+    TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
-use super::{Carousel, DescriptionList, PropertyGrid, PropertyGroup};
-use crate::{primitives::Measure, theme::Theme};
+use super::{Badge, Carousel, DescriptionList, PropertyGrid, PropertyGroup, Statistic, Tone};
+use crate::{
+    primitives::Measure,
+    theme::{TextSize, Theme},
+    typography::AnimatedNumber,
+};
 
 /// A property grid whose drawn height the test reads.
 struct Inspector(Rc<Cell<Pixels>>);
@@ -69,15 +73,19 @@ fn a_property_group_folds_from_its_header_and_stays_folded(cx: &mut TestAppConte
 }
 
 /// A one-row description list, this wide, that reports where the list and its value sit.
-struct Facts(Pixels, Rc<Cell<[Bounds<Pixels>; 2]>>);
+struct Facts(Pixels, fn() -> AnyElement, Rc<Cell<[Bounds<Pixels>; 2]>>);
+
+fn license() -> AnyElement {
+    "Apache-2.0".into_any_element()
+}
 
 impl Render for Facts {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-        let (list, value) = (self.1.clone(), self.1.clone());
+        let (list, value) = (self.2.clone(), self.2.clone());
         let value = Measure::new("value", move |bounds, _, _| {
             value.set([value.get()[0], bounds])
         })
-        .child("Apache-2.0");
+        .child((self.1)());
         div().w(self.0).child(
             Measure::new("list", move |bounds, _, _| {
                 list.set([bounds, list.get()[1]])
@@ -93,7 +101,7 @@ fn a_value_drops_below_its_label_when_the_row_runs_short(cx: &mut TestAppContext
     let mut place = |width: f32| {
         let seen = Rc::new(Cell::new([Bounds::default(); 2]));
         let shared = seen.clone();
-        let (_, cx) = cx.add_window_view(move |_, _| Facts(px(width), shared));
+        let (_, cx) = cx.add_window_view(move |_, _| Facts(px(width), license, shared));
         settle(cx);
         let [list, value] = seen.get();
         (value.left() - list.left(), value.top() - list.top())
@@ -114,6 +122,81 @@ fn a_value_drops_below_its_label_when_the_row_runs_short(cx: &mut TestAppContext
         narrow_top > wide_top,
         "and a line lower: {wide_top:?} to {narrow_top:?}"
     );
+}
+
+#[gpui::test]
+fn a_badge_value_rests_on_its_labels_line(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let mut foot = |value: fn() -> AnyElement| {
+        let seen = Rc::new(Cell::new([Bounds::default(); 2]));
+        let shared = seen.clone();
+        let (_, cx) = cx.add_window_view(move |_, _| Facts(px(400.0), value, shared));
+        settle(cx);
+        let [list, value] = seen.get();
+        value.bottom() - list.top()
+    };
+    let text = foot(license);
+    let badge = foot(|| {
+        Badge::new("Paid")
+            .tone(Tone::Success)
+            .dot()
+            .into_any_element()
+    });
+    assert_eq!(badge, text, "a badge ends where its label's line does");
+}
+
+/// A statistic with units on both sides.
+struct Revenue;
+
+impl Render for Revenue {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        Statistic::new("revenue", "Revenue", 48_210.0)
+            .prefix("$")
+            .suffix("ms")
+    }
+}
+
+#[gpui::test]
+fn units_rest_on_the_bottom_of_a_statistics_number(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        Theme::init(cx);
+        Theme::update(cx, |theme| theme.reduced_motion = true);
+    });
+    let (_, cx) = cx.add_window_view(|_, _| Revenue);
+    settle(cx);
+    let number = cx
+        .debug_bounds("animated-number revenue")
+        .expect("the number");
+    for unit in ["statistic-prefix revenue", "statistic-suffix revenue"] {
+        let bounds = cx.debug_bounds(unit).expect("a unit");
+        assert_eq!(
+            bounds.bottom(),
+            number.bottom(),
+            "{unit} rests on the number's bottom"
+        );
+    }
+}
+
+/// A lone digit in extra-small text, whose line is no whole number of device pixels.
+struct Nine;
+
+impl Render for Nine {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        AnimatedNumber::new("nine", 9.0).size(TextSize::Xs)
+    }
+}
+
+#[gpui::test]
+fn a_rolled_digit_sits_square_in_its_cell(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        Theme::init(cx);
+        Theme::update(cx, |theme| theme.reduced_motion = true);
+    });
+    let (_, cx) = cx.add_window_view(|_, _| Nine);
+    settle(cx);
+    let cell = cx.debug_bounds("rolling-cell").expect("the cell");
+    let nine = cx.debug_bounds("rolling-9").expect("the nine");
+    assert_eq!(nine.top(), cell.top(), "the nine fills its cell");
 }
 
 /// A three-slide carousel, 200 wide, that turns every five seconds; each slide reports where it sits.

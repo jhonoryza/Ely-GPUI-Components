@@ -125,7 +125,7 @@ fn main() -> Result<()> {
                     traffic_light_position: Some(point(px(16.0), px(18.0))),
                 }),
                 window_min_size: Some(size(px(880.0), px(560.0))),
-                // Draws every frame while a demo window is key, as gpui 0.2.2 did.
+                // Keeps drawing while a demo window is key.
                 inactive_frame_interval: None,
                 ..Default::default()
             };

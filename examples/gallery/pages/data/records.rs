@@ -45,7 +45,7 @@ pub fn descriptions(cx: &mut App) -> impl IntoElement + use<> {
                 ),
             )
             .child(
-                div().w_64().child(
+                div().w_64().min_w_0().child(
                     DescriptionList::new()
                         .stacked()
                         .item("Ship to", "12 Harbour Street, Wellington 6011, New Zealand")

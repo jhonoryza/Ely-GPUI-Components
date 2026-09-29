@@ -229,16 +229,22 @@ impl RenderOnce for Dialog {
                 .children(body)
                 .children(actions)
         };
-        let rise = if fullscreen {
-            motion::NUDGE * 4.0
+        let arrive =
+            Animation::new(motion::duration(motion::BASE, cx)).with_easing(motion::ease_out_cubic);
+        let card = if fullscreen {
+            card.with_animation((self.id.clone(), "in"), arrive, |card, t| {
+                card.opacity(t).top(motion::NUDGE * 4.0 * (1.0 - t))
+            })
+            .into_any_element()
         } else {
-            motion::NUDGE
+            // Padding grows the box the scrim centers, as a margin taffy kept would.
+            div()
+                .child(card)
+                .with_animation((self.id.clone(), "in"), arrive, |card, t| {
+                    card.opacity(t).pt(motion::NUDGE * (1.0 - t))
+                })
+                .into_any_element()
         };
-        let card = card.with_animation(
-            (self.id.clone(), "in"),
-            Animation::new(motion::duration(motion::BASE, cx)).with_easing(motion::ease_out_cubic),
-            move |card, t| card.opacity(t).mt(rise * (1.0 - t)),
-        );
         let layer = div()
             .when(fullscreen, |layer| layer.size_full())
             .on_key_down(move |event, window, cx| {

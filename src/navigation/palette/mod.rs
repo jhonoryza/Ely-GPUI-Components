@@ -306,8 +306,9 @@ impl Palette {
         }
         let (up, down, escape) = (go.clone(), go, self.on_close);
         let (enter, chosen) = (pick, cursor.clone());
-        div()
+        let card = div()
             .id(self.id.clone())
+            .debug_selector(|| "palette-card".into())
             .flex()
             .flex_col()
             .w(theme.palette_size().width)
@@ -381,12 +382,12 @@ impl Palette {
                                 .child(self.empty),
                         )
                     }),
-            )
-            .with_animation(
-                (self.id, "in"),
-                Animation::new(motion::duration(motion::BASE, cx))
-                    .with_easing(motion::ease_out_cubic),
-                |card, t| card.opacity(t).mt(motion::NUDGE * (1.0 - t)),
-            )
+            );
+        // Padding grows the box a scrim centers, as a margin taffy kept would.
+        div().child(card).with_animation(
+            (self.id, "in"),
+            Animation::new(motion::duration(motion::BASE, cx)).with_easing(motion::ease_out_cubic),
+            |card, t| card.opacity(t).pt(motion::NUDGE * (1.0 - t)),
+        )
     }
 }

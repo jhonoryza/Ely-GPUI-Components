@@ -47,6 +47,7 @@ async fn shoot_all(
         .enumerate()
         .filter(|(ix, _)| only.is_none_or(|only| only == *ix));
     let gallery = window.update(cx, |_, window, _| number(window))??;
+    window.update(cx, |_, window, _| take_posted_moves(window))??;
     for (ix, page) in chosen {
         for (choice, name) in [(Choice::Light, "light"), (Choice::Dark, "dark")] {
             window.update(cx, |gallery, window, cx| {
@@ -68,6 +69,7 @@ async fn shoot_all(
                     format!("-{segment}")
                 };
                 let path = dir.join(format!("{}-{name}{suffix}.png", page.slug));
+                script::shown(window.into(), cx).await?;
                 snapshot(gallery, &path)?;
                 log::info!("capture: wrote {}", path.display());
                 if offset >= max {
@@ -88,9 +90,9 @@ async fn shoot_all(
     Ok(())
 }
 
-/// A gpui window's number, as AppKit and CoreGraphics know it.
+/// A gpui window's AppKit window.
 #[cfg(target_os = "macos")]
-pub fn number(window: &Window) -> Result<u32> {
+fn native(window: &Window) -> Result<cocoa::base::id> {
     use cocoa::base::id;
     use objc::{msg_send, sel, sel_impl};
     use raw_window_handle::{HasWindowHandle, RawWindowHandle};
@@ -100,12 +102,31 @@ pub fn number(window: &Window) -> Result<u32> {
     let RawWindowHandle::AppKit(appkit) = handle.as_raw() else {
         bail!("window is not an AppKit window");
     };
-    let number: i64 = unsafe {
-        let view = appkit.ns_view.as_ptr() as id;
-        let ns_window: id = msg_send![view, window];
-        msg_send![ns_window, windowNumber]
-    };
+    Ok(unsafe { msg_send![appkit.ns_view.as_ptr() as id, window] })
+}
+
+/// A gpui window's number, as AppKit and CoreGraphics know it.
+#[cfg(target_os = "macos")]
+pub fn number(window: &Window) -> Result<u32> {
+    use objc::{msg_send, sel, sel_impl};
+
+    let number: i64 = unsafe { msg_send![native(window)?, windowNumber] };
     u32::try_from(number).context("window number out of range")
+}
+
+/// Takes posted mouse moves; gpui's tracking area takes only real ones.
+#[cfg(target_os = "macos")]
+fn take_posted_moves(window: &Window) -> Result<()> {
+    use cocoa::{appkit::NSWindow, base::YES};
+
+    unsafe { native(window)?.setAcceptsMouseMovedEvents_(YES) };
+    log::info!("capture: the window takes posted mouse moves");
+    Ok(())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn take_posted_moves(_: &Window) -> Result<()> {
+    bail!("capture needs macOS window APIs")
 }
 
 /// This process's frontmost window above the normal level: a popover or menu.

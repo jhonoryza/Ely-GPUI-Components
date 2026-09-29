@@ -111,7 +111,7 @@ fn offset(align: TextAlign, free: Pixels) -> Pixels {
     }
 }
 
-/// One line in the text style around it, cut by `fit` to its box and set by its alignment. gpui 0.2.2 keeps a line's first measure, so its own `truncate` clips instead in flex boxes.
+/// One line in the text style around it, cut by `fit` to its box and set by its alignment.
 fn cut_line(text: SharedString, fit: fn(&str, Pixels, &mut Window) -> String) -> Div {
     let line = text.clone();
     div()

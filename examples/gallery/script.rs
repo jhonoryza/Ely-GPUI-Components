@@ -1,6 +1,7 @@
 use std::{path::PathBuf, time::Duration};
 
 use anyhow::{Context as _, Result};
+use futures::future::{Either, select};
 use gpui::{AsyncApp, Bounds, Keystroke, Pixels, Point, WindowHandle, point, px};
 
 use crate::{
@@ -53,6 +54,8 @@ pub enum Step {
 }
 
 const FRAME: Duration = Duration::from_millis(120);
+/// How long a shot waits for each frame of the window it shoots.
+const SHOWN: Duration = Duration::from_secs(5);
 /// How long an out-of-process file panel may take to open.
 const PANEL: Duration = Duration::from_secs(10);
 const DRAG_STEPS: u32 = 10;
@@ -148,10 +151,13 @@ pub async fn play(
                         last.x + (goal.x - last.x) * t,
                         last.y + (goal.y - last.y) * t,
                     );
-                    send(window, Mouse::Drag, at, cx)?;
-                    cx.background_executor()
-                        .timer(Duration::from_millis(16))
-                        .await;
+                    // Each move twice, as gpui 0.2.2 replayed a held drag; gpui_macos replays only under a real button.
+                    for _ in 0..2 {
+                        send(window, Mouse::Drag, at, cx)?;
+                        cx.background_executor()
+                            .timer(Duration::from_millis(16))
+                            .await;
+                    }
                 }
                 last = goal;
             }
@@ -188,12 +194,14 @@ pub async fn play(
             }
             Step::Shot(name) => {
                 let file = path(name);
+                shown(window.into(), cx).await?;
                 snapshot(window.update(cx, |_, window, _| number(window))??, &file)?;
                 log::info!("script: wrote {}", file.display());
             }
             Step::ShotWindow(key, name) => {
                 let file = path(name);
                 let handle = opened(key, cx)?;
+                shown(handle, cx).await?;
                 snapshot(handle.update(cx, |_, window, _| number(window))??, &file)?;
                 log::info!("script: wrote {}", file.display());
             }
@@ -243,6 +251,24 @@ pub async fn play(
             }
         }
         cx.background_executor().timer(FRAME).await;
+    }
+    Ok(())
+}
+
+/// Waits three frames: the first draws what the steps left, and AppKit shows it by the third, since gpui presents without waiting on the GPU.
+pub async fn shown(window: gpui::AnyWindowHandle, cx: &mut AsyncApp) -> Result<()> {
+    for _ in 0..3 {
+        let (drawn, frame) = futures::channel::oneshot::channel();
+        window.update(cx, |_, window, _| {
+            window.on_next_frame(move |_, _| drawn.send(()).unwrap_or_default())
+        })?;
+        match select(frame, cx.background_executor().timer(SHOWN)).await {
+            Either::Left((Ok(()), _)) => {}
+            Either::Left((Err(_), _)) => anyhow::bail!("the window dropped its frame callback"),
+            Either::Right(_) => {
+                anyhow::bail!("the window drew no frame in {SHOWN:?}; is it hidden?")
+            }
+        }
     }
     Ok(())
 }

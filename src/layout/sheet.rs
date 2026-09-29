@@ -187,6 +187,7 @@ impl RenderOnce for Drawer {
         let (close_up, close_out) = (close.clone(), close);
         let panel = div()
             .id("drawer-panel")
+            .debug_selector(|| "drawer-panel".into())
             .relative()
             .w_full()
             .max_h(relative(0.85))
@@ -198,7 +199,7 @@ impl RenderOnce for Drawer {
             .rounded_t(theme.radius(Radius::Xl))
             .bg(theme.colors.overlay)
             .shadow(theme.elevation(Elevation::Modal))
-            .mb(-offset)
+            .top(offset)
             .on_drag_move(move |event: &DragMoveEvent<DrawerPull>, _, cx| {
                 let pull = event.drag(cx);
                 if pull.owner != owner {
@@ -282,7 +283,7 @@ impl RenderOnce for Drawer {
                 .with_animation(
                     ("drawer-snap", snaps),
                     Animation::new(quick).with_easing(motion::ease_out_cubic),
-                    move |wrap, t| wrap.mb(-(released * (1.0 - t))),
+                    move |wrap, t| wrap.top(released * (1.0 - t)),
                 )
                 .into_any_element()
         } else {

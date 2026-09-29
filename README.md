@@ -10,15 +10,16 @@ Status: early. `TASKS.md` tracks every component, chapter by chapter.
 ```toml
 [dependencies]
 ely-gpui-component = { git = "https://github.com/ZacharyZhang-NY/Ely-GPUI-Components" }
-gpui = "0.2.2"
+gpui = { git = "https://github.com/zed-industries/zed", rev = "1a28cff4b409169bac058bca40dfbfeb7621d19b" }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1a28cff4b409169bac058bca40dfbfeb7621d19b", features = ["font-kit"] }
 ```
 
 ```rust
 use ely_gpui_component::{Assets, theme::{Mode, Theme}};
-use gpui::{App, Application};
+use gpui::App;
 
 fn main() {
-    Application::new().with_assets(Assets).run(|cx: &mut App| {
+    gpui_platform::application().with_assets(Assets).run(|cx: &mut App| {
         ely_gpui_component::init(cx);
         Theme::set_mode(Mode::Dark, cx);
     });
@@ -37,7 +38,7 @@ cargo run --example gallery -- --capture shots   # macOS: PNG of every page, lig
 
 ## Build notes
 
-- gpui 0.2.2 compiles its Metal shaders at runtime here (`runtime_shaders`, on by default), so a full Xcode install is not required.
+- gpui compiles its Metal shaders at runtime here (`runtime_shaders`, on by default), so a full Xcode install is not required. gpui_platform needs `font-kit`, or macOS draws no text.
 - Tested on macOS only. The capture tool needs macOS.
 
 ## License

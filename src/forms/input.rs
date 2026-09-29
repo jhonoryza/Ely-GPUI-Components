@@ -90,9 +90,9 @@ impl RenderOnce for Input {
         };
         let (state, clear_id) = (self.state.clone(), self.state.entity_id());
         div()
+            .debug_selector(|| "input-root".into())
             .flex()
             .gap_2()
-            .w_full()
             .px(theme.control_padding(self.size))
             .map(|frame| {
                 if multi {
@@ -119,7 +119,15 @@ impl RenderOnce for Input {
                 window.focus(&focus, cx)
             })
             .children(self.prefix)
-            .child(div().flex_1().min_w_0().child(self.state))
+            .child(
+                div()
+                    .debug_selector(|| "input-text".into())
+                    .flex_1()
+                    .min_w_0()
+                    .child(self.state)
+                    // An empty strut keeps the frame's inset to type in; squeezed, it spills unseen.
+                    .child(div().px(theme.control_padding(self.size)).border_x_1()),
+            )
             .when(self.clearable && !empty && !disabled, |frame| {
                 frame.child(
                     IconButton::new(("input-clear", clear_id), IconName::CircleX)

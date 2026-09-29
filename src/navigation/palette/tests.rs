@@ -269,3 +269,17 @@ fn enter_picks_on_release_so_the_opener_stays_shut(cx: &mut TestAppContext) {
     press("enter", cx);
     assert_eq!(got(&view, cx), (false, Some("zoom".into())));
 }
+
+#[gpui::test]
+fn an_opening_palette_rises_in_the_box_its_scrim_centers(cx: &mut TestAppContext) {
+    let (_, cx) = host(Kind::Commands, cx);
+    let top = |cx: &mut VisualTestContext| cx.debug_bounds("palette-card").expect("the card").top();
+    let first = top(cx);
+    std::thread::sleep(std::time::Duration::from_millis(250));
+    settle(cx);
+    let lift = first - top(cx);
+    assert!(
+        lift > gpui::px(0.0) && lift < crate::motion::NUDGE * 0.75,
+        "the box grows with the rise, so the card starts half a nudge low: {lift:?}"
+    );
+}

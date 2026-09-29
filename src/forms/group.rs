@@ -95,9 +95,9 @@ impl RenderOnce for InputGroup {
                 .child(addon)
         };
         div()
+            .debug_selector(|| "group-root".into())
             .flex()
             .items_center()
-            .w_full()
             .h(theme.control_height(self.size))
             .overflow_hidden()
             .rounded(theme.radius(Radius::Md))

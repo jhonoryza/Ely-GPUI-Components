@@ -29,7 +29,7 @@ struct Owned(bool);
 pub fn platform(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     section(
         "Platform Style · IconThemeProvider · VibrancyBackground",
-        "The theme's platform decides window buttons and key caps, and starts as the system's. An icon theme lays an owner's rules over Ely's file icons. A frosted pane lets a blurred window's backdrop through; gpui 0.2.2 blurs as vibrancy on macOS and acrylic on Windows, and has no Mica.",
+        "The theme's platform decides window buttons and key caps, and starts as the system's. An icon theme lays an owner's rules over Ely's file icons. A frosted pane lets a blurred window's backdrop through; gpui blurs as vibrancy on macOS and acrylic on Windows, and sets Mica on Windows 11.",
         cx,
     )
     .child(

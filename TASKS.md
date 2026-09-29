@@ -8,10 +8,10 @@ Per-component lines live in `tasks/`. Tags there:
 | Tag | Meaning |
 |-----|---------|
 | `→ path` | Alias or duplicate. One home, at `path`. |
-| `native` | gpui 0.2.2 ships it. The gallery shows the native call. |
+| `native` | gpui ships it. The gallery shows the native call. |
 | `host` | Ely draws the UI. The host app supplies the engine data. |
-| `prove` | Needs a crate or platform API not yet proven with gpui 0.2.2. |
-| `blocked` | Cannot be real on gpui 0.2.2. Reason given. |
+| `prove` | Needs a crate or platform API not yet proven with gpui. |
+| `blocked` | Cannot be real on gpui. Reason given. |
 | `(Txx)` | Built early in task `Txx` as a dependency. |
 
 ## Items

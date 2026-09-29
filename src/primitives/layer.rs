@@ -16,7 +16,7 @@ fn nested() -> bool {
     LAYERS.with_borrow(|layers| !layers.is_empty())
 }
 
-/// Draws `child` over the page, as gpui's `deferred` does. gpui cannot defer a draw inside a deferred one, so what is raised inside something raised is laid out and drawn last within it, under `id`: a list opened in a dialog lies over the dialog and keeps its state.
+/// Draws `child` over the page, as gpui's `deferred` does. gpui paints deferred draws by priority alone, so what is raised inside something raised is laid out and drawn last within it, under `id`: a list opened in a dialog lies over the dialog and keeps its state.
 pub fn raise(id: impl Into<ElementId>, child: impl IntoElement) -> Raised {
     let layer = Layer {
         child: child.into_any_element(),

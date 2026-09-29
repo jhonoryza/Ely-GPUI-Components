@@ -7,8 +7,8 @@ use gpui::{
 use jiff::Timestamp;
 
 use crate::finance::{
-    CandlestickChart, ChartSync, DepthChart, Leg, MarketHeatmap, PayoffDiagram, PointFigureChart,
-    RenkoChart, candles::Candle, stage::Visible,
+    CandlestickChart, ChartSync, CurrencyConverter, DepthChart, Leg, MarketHeatmap, PayoffDiagram,
+    PointFigureChart, RenkoChart, candles::Candle, stage::Visible,
 };
 use crate::{layout::tests::narrow_width, theme::Theme};
 
@@ -146,4 +146,31 @@ fn every_chart_fills_a_column_its_block_measures_by_content(cx: &mut TestAppCont
         [px(240.0); 6],
         "each chart spans the card inside its padding"
     );
+}
+
+/// A converter in a 460px box beside a card 260 wide, in a 280px row.
+struct Squeezed;
+
+impl Render for Squeezed {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let converter = CurrencyConverter::new("converter", 1000.0, ("USD", "EUR"), 0.9174);
+        div().w(px(280.)).child(
+            div()
+                .flex()
+                .gap_8()
+                .child(div().w(px(460.)).child(converter))
+                .child(div().flex_1().child(div().w(px(260.)).h(px(100.)))),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_squeezed_converter_keeps_room_for_its_currencies(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Squeezed);
+    cx.run_until_parked();
+    let text = cx
+        .debug_bounds("input-text")
+        .expect("the second currency's text");
+    assert_eq!(text.size.width, px(26.), "the frame's inset for its name");
 }

@@ -197,7 +197,7 @@ pub fn backdrop(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
 
 pub fn visually_hidden(cx: &App) -> impl IntoElement + use<> {
     section("VisuallyHidden", "Text for screen readers only.", cx).child(blocked(
-        "Blocked: gpui 0.2.2 has no accessibility tree to speak to.",
+        "Not yet shown: gpui builds an AccessKit tree from elements with an id and a role, and no screen reader here reads it.",
         cx,
     ))
 }

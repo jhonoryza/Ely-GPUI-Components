@@ -402,3 +402,39 @@ fn effects_keep_their_content_and_let_presses_through(cx: &mut TestAppContext) {
     settle(cx);
     assert_eq!(view.read_with(cx, |effects, _| effects.presses), 1);
 }
+
+/// Rows rising in, in a sized box down a column that fills a row.
+struct Rising;
+
+impl Render for Rising {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let rows = ["Inbox", "Drafts", "Sent"].map(|name| {
+            div()
+                .debug_selector(move || name.into())
+                .px_4()
+                .py_2()
+                .child(name)
+        });
+        let column = div().flex().flex_col().child(
+            div()
+                .debug_selector(|| "risen".into())
+                .w(px(300.0))
+                .child(super::Stagger::new("rise").children(rows)),
+        );
+        div().size_full().flex().child(div().flex_1().child(column))
+    }
+}
+
+#[gpui::test]
+fn a_stagger_box_takes_in_its_first_row_rise(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Rising);
+    cx.run_until_parked();
+    let bounds = |cx: &mut VisualTestContext, name| cx.debug_bounds(name).expect(name);
+    let (held, first, last) = (bounds(cx, "risen"), bounds(cx, "Inbox"), bounds(cx, "Sent"));
+    assert!(
+        first.top() - held.top() > super::NUDGE,
+        "the first row starts risen"
+    );
+    assert_eq!(last.bottom(), held.bottom(), "the box ends with its rows");
+}

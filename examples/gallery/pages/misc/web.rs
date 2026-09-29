@@ -53,7 +53,7 @@ pub fn render(cx: &App) -> impl IntoElement + use<> {
                 cx,
             )
             .child(blocked(
-                "PrintButton: gpui 0.2.2 has no print API.",
+                "PrintButton: gpui has no print API.",
                 cx,
             )),
         )

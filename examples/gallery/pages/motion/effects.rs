@@ -234,7 +234,7 @@ pub fn backdrops(cx: &mut App) -> impl IntoElement + use<> {
             ),
     )
     .child(blocked(
-        "Lottie Player is blocked: gpui 0.2.2 paints paths without the clip masks, mattes, blend modes and radial gradients Lottie files lean on, so frames would come out wrong.",
+        "Lottie Player is blocked: gpui paints paths without the clip masks, mattes, blend modes and radial gradients Lottie files lean on, so frames would come out wrong.",
         cx,
     ))
 }

@@ -150,7 +150,7 @@ fn narrow(cx: &App) -> gpui::Div {
 pub fn truncate(cx: &App) -> impl IntoElement + use<> {
     section(
         "Truncate / Ellipsis",
-        "One line, an ellipsis at the end, in the text style around it. It holds in flex boxes, where gpui's own .truncate() clips.",
+        "One line, an ellipsis at the end, in the text style around it, cut by the shaped line at the width its box gets.",
         cx,
     )
     .child(

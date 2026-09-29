@@ -246,6 +246,6 @@ pub fn reorder(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     )
     .child(div().w_96().child(list))
     .child(Caption::new(
-        "Motion is gpui's with_animation, timed by motion::duration and eased by the curves in motion. Spring is motion::spring. CountUp is typography::AnimatedNumber::count_up. A collapse is layout::Collapsible. A scale entrance is blocked: gpui 0.2.2 transforms only icons.",
+        "Motion is gpui's with_animation, timed by motion::duration and eased by the curves in motion. Spring is motion::spring. CountUp is typography::AnimatedNumber::count_up. A collapse is layout::Collapsible. A scale entrance is blocked: gpui transforms only svgs.",
     ))
 }

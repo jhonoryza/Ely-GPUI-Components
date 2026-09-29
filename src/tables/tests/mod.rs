@@ -314,6 +314,31 @@ fn removing_the_rule_being_typed_leaves_the_next_rule_its_own_value(cx: &mut Tes
     );
 }
 
+/// One rule, Change is above, in a 280px column.
+struct NarrowRule;
+
+impl Render for NarrowRule {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let rule = FilterRule {
+            column: "change".into(),
+            test: super::Test::Above,
+            value: "".into(),
+        };
+        div()
+            .w(px(280.0))
+            .child(FilterBuilder::new("narrow", [("change", "Change")]).rules([rule], false))
+    }
+}
+
+#[gpui::test]
+fn a_rule_keeps_room_for_its_value_in_a_narrow_column(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| NarrowRule);
+    settle(cx);
+    let text = cx.debug_bounds("input-text").expect("the value's text");
+    assert_eq!(text.size.width, px(18.0), "the frame's inset to type in");
+}
+
 /// A two-column grid whose row count the test sets.
 struct Shrinking(Rc<Count<usize>>);
 

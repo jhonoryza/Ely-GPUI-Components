@@ -138,7 +138,7 @@ pub fn notification(cx: &App) -> impl IntoElement + use<> {
         cx,
     )
     .child(blocked(
-        "Blocked: an unbundled app has no notification center, and gpui 0.2.2 has no notification API.",
+        "Not yet shown: gpui posts a system notification only from an app bundle, and the gallery runs unbundled.",
         cx,
     ))
 }

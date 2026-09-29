@@ -432,3 +432,31 @@ fn a_tall_dialog_body_keeps_its_height_and_scrolls(cx: &mut TestAppContext) {
 fn a_popover_opened_by_its_owner_takes_no_icon() {
     let _ = Popover::with_opener("own", |_| div(), |_, _, _| div()).icon(IconName::Clock);
 }
+
+/// A dialog open from the first frame, with a body the test can find.
+struct Rising;
+
+impl Render for Rising {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div().size_full().child(
+            Dialog::new("rising", "Rising", |_, _| {})
+                .child(div().debug_selector(|| "rising-body".into()).h(px(40.0))),
+        )
+    }
+}
+
+#[gpui::test]
+fn an_opening_dialog_rises_in_the_box_its_scrim_centers(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Rising);
+    cx.run_until_parked();
+    let top = |cx: &mut VisualTestContext| cx.debug_bounds("rising-body").expect("the body").top();
+    let first = top(cx);
+    std::thread::sleep(Duration::from_millis(250));
+    settle(cx);
+    let lift = first - top(cx);
+    assert!(
+        lift > px(0.0) && lift < crate::motion::NUDGE * 0.75,
+        "the box grows with the rise, so the card starts half a nudge low: {lift:?}"
+    );
+}

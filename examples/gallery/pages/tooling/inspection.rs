@@ -75,7 +75,7 @@ pub fn sections(window: &mut Window, cx: &mut App) -> Vec<AnyElement> {
                 .child(inspect())
                 .child(probe(
                     "inspect-sample",
-                    div().child(boxed(div().m_3().p_4()).child("A box to pick")),
+                    boxed(div().m_3().p_4()).child("A box to pick"),
                 )),
         )
         .into_any_element(),

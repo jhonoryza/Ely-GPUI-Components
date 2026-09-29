@@ -124,8 +124,11 @@ impl RenderOnce for AnimatedNumber {
         let duration = motion::duration(motion::SLOW * 2, cx);
         let theme = cx.theme();
         let size = theme.text_size(self.size);
-        let line = size.to_pixels(window.rem_size()) * LEADING;
+        let scale = window.scale_factor();
+        // gpui snaps rows and margin apart; keep whole device pixels.
+        let line = (size.to_pixels(window.rem_size()) * LEADING * scale).round() / scale;
         let row = tabular(div())
+            .debug_selector(|| format!("animated-number {}", self.id))
             .id(self.id)
             .flex()
             .h(line)
@@ -157,11 +160,15 @@ impl RenderOnce for AnimatedNumber {
                             .into_any_element();
                     };
                     let start = old.to_digit(10).unwrap_or(0);
-                    let stack =
-                        div().flex().flex_col().children((0..10).map(|digit| {
-                            div().h(line).child(SharedString::from(digit.to_string()))
-                        }));
+                    // A block column lends the cell no baseline.
+                    let stack = div().children((0..10).map(|digit| {
+                        div()
+                            .debug_selector(move || format!("rolling-{digit}"))
+                            .h(line)
+                            .child(SharedString::from(digit.to_string()))
+                    }));
                     div()
+                        .debug_selector(|| "rolling-cell".into())
                         .h(line)
                         .overflow_hidden()
                         .child(stack.with_animation(
