@@ -7,7 +7,7 @@ use ely_gpui_component::{
 };
 use gpui::{App, IntoElement, ParentElement, Styled, Task, Window, div};
 
-use crate::ui::{row, section, specimen, specimens};
+use crate::ui::{live, row, section, specimen, specimens};
 
 const STEP: Duration = Duration::from_millis(1600);
 const VALUES: [f64; 5] = [1_284.0, 1_917.0, 12_406.0, 9_998.0, 10_031.0];
@@ -18,24 +18,12 @@ struct Ticker {
 }
 
 pub fn animated_number(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
-    let ticker = window.use_keyed_state("type-ticker", cx, |window, cx| Ticker {
-        index: 0,
-        _task: cx.spawn_in(window, async move |ticker, cx| {
-            loop {
-                cx.background_executor().timer(STEP).await;
-                let advanced = cx.update(|_, cx| {
-                    ticker.update(cx, |ticker: &mut Ticker, cx| {
-                        ticker.index = (ticker.index + 1) % VALUES.len();
-                        cx.notify();
-                    })
-                });
-                if advanced.and_then(|inner| inner).is_err() {
-                    return;
-                }
-            }
-        }),
-    });
-    let value = VALUES[ticker.read(cx).index];
+    let index = if live("AnimatedNumber", cx) {
+        ticker(window, cx).read(cx).index
+    } else {
+        0
+    };
+    let value = VALUES[index];
     section(
         "AnimatedNumber",
         "Digits roll by place; or the value counts up.",
@@ -53,6 +41,27 @@ pub fn animated_number(window: &mut Window, cx: &mut App) -> impl IntoElement + 
                 cx,
             )),
     )
+}
+
+/// Steps through the values on a clock of its own.
+fn ticker(window: &mut Window, cx: &mut App) -> gpui::Entity<Ticker> {
+    window.use_keyed_state("type-ticker", cx, |window, cx| Ticker {
+        index: 0,
+        _task: cx.spawn_in(window, async move |ticker, cx| {
+            loop {
+                cx.background_executor().timer(STEP).await;
+                let advanced = cx.update(|_, cx| {
+                    ticker.update(cx, |ticker: &mut Ticker, cx| {
+                        ticker.index = (ticker.index + 1) % VALUES.len();
+                        cx.notify();
+                    })
+                });
+                if advanced.and_then(|inner| inner).is_err() {
+                    return;
+                }
+            }
+        }),
+    })
 }
 
 pub fn typewriter(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {

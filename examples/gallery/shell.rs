@@ -228,7 +228,7 @@ impl Gallery {
         }
     }
 
-    /// The window's root: the focus scope, over Ely's ground, ink and type.
+    /// The window's root: the focus scope over Ely's ground.
     fn root(&self, cx: &App) -> FocusScope {
         let theme = cx.theme();
         FocusScope::new(&self.focus)
@@ -241,7 +241,7 @@ impl Gallery {
             .text_size(theme.text_size(TextSize::Base))
     }
 
-    /// The page's demos, or the story's alone; why not, once the start or the story failed.
+    /// The page's demos, the story's alone, or why not.
     fn body(
         &mut self,
         page: &pages::Page,
@@ -290,8 +290,17 @@ impl Render for Gallery {
                     .size_full()
                     .overflow_scroll()
                     .track_scroll(&self.scroll)
-                    // The page column's 848 plus padding; narrower, the story scrolls sideways.
-                    .child(div().min_w(px(896.0)).p_6().child(body)),
+                    // The widest demo, 900, plus padding; narrower, it scrolls sideways.
+                    .child(
+                        div()
+                            .min_w(px(948.0))
+                            .p_6()
+                            // Natively the traffic lights take the top 56.
+                            .when(cfg!(not(target_family = "wasm")), |story| {
+                                story.pt(px(56.0))
+                            })
+                            .child(body),
+                    ),
             );
         }
         let sidebar = self.sidebar(cx);

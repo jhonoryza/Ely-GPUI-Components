@@ -9,14 +9,14 @@
       html.dark, html.dark body { background: #131110; }
     </style>
     <script>
-      // Ely's own background under the canvas until the first frame, in the mode asked for.
+      // Ely's ground under the canvas until the first frame.
       if (new URLSearchParams(location.search).get("theme") === "dark") {
         document.documentElement.classList.add("dark");
       }
     </script>
     <script type="module">
       import init, { set_theme } from "./gallery.js";
-      // The host sets the mode with gallery.setTheme(mode) or a message { ely: "theme", theme }, early or late.
+      // The host sets the mode by setTheme or a message.
       let early = null;
       let apply = (theme) => { early = theme; };
       const setTheme = (theme) => {
@@ -30,7 +30,7 @@
       await init();
       apply = set_theme;
       if (early) set_theme(early);
-      // A host that waits for this knows the mode it sends lands.
+      // Tells the host that a mode it sends now lands.
       window.parent.postMessage({ ely: "ready" }, "*");
     </script>
   </head>

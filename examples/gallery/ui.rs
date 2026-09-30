@@ -6,10 +6,11 @@ use gpui::{
     Resource, SharedString, Styled, Window, div, prelude::*,
 };
 
-/// The one section a story draws, while a page renders; the rest draw nothing.
+/// The one section a story draws while its page renders.
 pub struct Story {
     wanted: SharedString,
     met: RefCell<Vec<SharedString>>,
+    live: RefCell<Vec<SharedString>>,
 }
 
 impl Global for Story {}
@@ -19,6 +20,7 @@ impl Story {
         Self {
             wanted,
             met: RefCell::default(),
+            live: RefCell::default(),
         }
     }
 
@@ -26,9 +28,12 @@ impl Story {
         *self.wanted == *title || *self.wanted == slug(title)
     }
 
-    /// Why the page drew no single section by this name, if it did not.
+    /// Why no single section answered this story, if none did.
     pub fn missing(&self, page: &str) -> Option<String> {
         let met = self.met.borrow();
+        if let Some(stray) = self.live.borrow().iter().find(|title| !met.contains(title)) {
+            return Some(format!("ui::live names {stray}, no section on {page}."));
+        }
         match met.iter().filter(|title| self.answers(title)).count() {
             1 => None,
             0 => Some(format!(
@@ -41,7 +46,15 @@ impl Story {
     }
 }
 
-/// A title as a story's address: lowercase letters and digits, dashes between.
+/// Whether a demo's clock runs: on its page or story.
+pub fn live(title: &str, cx: &App) -> bool {
+    cx.try_global::<Story>().is_none_or(|story| {
+        story.live.borrow_mut().push(title.to_string().into());
+        story.answers(title)
+    })
+}
+
+/// A title as a story's address: lowercase, dashes between.
 pub fn slug(title: &str) -> String {
     let mut slug = String::new();
     for c in title.chars() {
@@ -54,7 +67,7 @@ pub fn slug(title: &str) -> String {
     slug.trim_end_matches('-').to_string()
 }
 
-/// Titled block of demos. Under a story, only the one asked for draws, without its title.
+/// Titled block of demos; a story draws one, untitled.
 pub fn section(title: impl Into<SharedString>, note: impl Into<SharedString>, cx: &App) -> Section {
     let title = title.into();
     let theme = cx.theme();
@@ -95,7 +108,7 @@ pub fn section(title: impl Into<SharedString>, note: impl Into<SharedString>, cx
     )
 }
 
-/// A section's box. One a story passes over drops its demos, so none lays out, loads or moves.
+/// A section's box; one a story passes drops its demos.
 pub struct Section {
     div: Div,
     shown: bool,
@@ -117,7 +130,7 @@ impl IntoElement for Section {
     }
 }
 
-/// A picture under the gallery's assets: a file natively, an address on the web.
+/// A gallery picture: a file, or a web address.
 pub fn resource(path: impl Into<SharedString>) -> Resource {
     let path = path.into();
     if cfg!(target_family = "wasm") {
@@ -195,15 +208,15 @@ pub const UNREAD: &str = if cfg!(target_family = "wasm") {
     "gpui builds an AccessKit tree from elements with an id and a role, and no screen reader here reads it"
 };
 
-/// Why a demo that takes files takes none on the web.
+/// Why a demo takes no files on the web.
 pub const NO_FILES: &str = "A browser hands gpui no files: on the web the file dialog fails and dropped files never arrive, so nothing is taken here.";
 
-/// What a browser cannot do here, and why: a note on the web, nothing natively.
+/// On the web, what a browser cannot do.
 pub fn web_note(text: &'static str, cx: &App) -> Option<AnyElement> {
     cfg!(target_family = "wasm").then(|| blocked(text, cx).into_any_element())
 }
 
-/// A demo a browser cannot run: on the web its note stands in.
+/// A demo browsers cannot run; there, its note instead.
 pub fn native_only(element: impl IntoElement, note: &'static str, cx: &App) -> AnyElement {
     match web_note(note, cx) {
         Some(note) => note,
@@ -211,7 +224,7 @@ pub fn native_only(element: impl IntoElement, note: &'static str, cx: &App) -> A
     }
 }
 
-/// A button that opens a window of its own, which a browser page cannot.
+/// A button opening its own window, which browsers cannot.
 pub fn own_window(button: impl IntoElement, cx: &App) -> AnyElement {
     native_only(
         button,

@@ -1,6 +1,9 @@
 use std::rc::Rc;
 
-use gpui::{App, ClipboardItem, Entity, KeyDownEvent, Pixels, Point, SharedString, Window, point};
+use anyhow::anyhow;
+use gpui::{
+    App, ClipboardItem, Entity, KeyDownEvent, Pixels, Point, SharedString, TaskExt, Window, point,
+};
 
 use super::{
     formula::filled,
@@ -283,15 +286,24 @@ pub(crate) fn keys(
                 sheet.read(cx),
             ))),
             ("v", true) => {
-                let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) else {
-                    log::info!("grid: the clipboard holds no text to paste");
-                    return;
-                };
-                let edits = pasted(&text, (row, col), (rows, cols));
-                log::info!("grid: pasted {} cells", edits.len());
-                if let Some(on_change) = &face.on_change {
-                    on_change(&edits, window, cx);
-                }
+                // The web reads its clipboard only through the async reader.
+                let read = cx.read_from_clipboard_async();
+                let on_change = face.on_change.clone();
+                window
+                    .spawn(cx, async move |cx| {
+                        let item = read.await.map_err(|error| anyhow!("{error:?}"))?;
+                        let Some(text) = item.and_then(|item| item.text()) else {
+                            log::info!("grid: the clipboard holds no text to paste");
+                            return Ok(());
+                        };
+                        let edits = pasted(&text, (row, col), (rows, cols));
+                        log::info!("grid: pasted {} cells", edits.len());
+                        if let Some(on_change) = on_change {
+                            cx.update(|window, cx| on_change(&edits, window, cx))?;
+                        }
+                        anyhow::Ok(())
+                    })
+                    .detach_and_log_err(cx);
             }
             _ => {
                 let typed = stroke.key_char.clone().filter(|typed| {

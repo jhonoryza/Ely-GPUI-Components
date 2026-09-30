@@ -11,7 +11,7 @@ OUT = ROOT / "examples/gallery/stories.json"
 CALL = re.compile(r"(?<![\w.])(?:(\w+)::)?(\w+)\s*\(")
 CHAIN = re.compile(r"\s*\.\s*\w+\s*(?:::<[^>]*>\s*)?\(")
 
-# Components a story draws beyond its title's, by page and the title's first name.
+# What a story draws beyond its title's names.
 SHOWN = {
     ("forms", "Form"): ["FormLabel", "FormError"],
     ("tables", "DataTable"): ["Sparkline"],

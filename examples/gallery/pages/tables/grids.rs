@@ -8,7 +8,7 @@ use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div, p
 
 use crate::{
     probe::probe,
-    ui::{keep, section, set, web_note},
+    ui::{keep, section, set},
 };
 
 type Cells = HashMap<(usize, usize), SharedString>;
@@ -35,10 +35,6 @@ pub fn data_grid(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
         "Cells to edit like a spreadsheet's. Arrows walk, Shift stretches a range, typing or a double press edits, Delete clears, and Cmd-C and Cmd-V copy and paste.",
         cx,
     )
-    .children(web_note(
-        "A browser reads its clipboard only as it pastes into a text field, so Cmd-V pastes no cells here.",
-        cx,
-    ))
     .child(probe(
         "grid",
         div().child(

@@ -97,7 +97,7 @@ pub(crate) fn bind_keys(cx: &mut App) {
         KeyBinding::new("secondary-alt-[", Fold, context),
         KeyBinding::new("secondary-alt-]", Unfold, context),
     ];
-    // The browser's paste event carries the clipboard to the input handler.
+    // The browser's paste event reaches the input handler.
     if !cfg!(target_family = "wasm") {
         bindings.push(KeyBinding::new("secondary-v", Paste, context));
     }

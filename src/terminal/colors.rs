@@ -93,7 +93,7 @@ impl Ink {
     }
 }
 
-/// Colors a program set with OSC 4, 10 or 11, by index.
+/// Colors a program set through OSC 4, 10, 11.
 pub(crate) trait Set: Index<usize, Output = Option<Rgb>> {}
 
 impl<T: Index<usize, Output = Option<Rgb>>> Set for T {}

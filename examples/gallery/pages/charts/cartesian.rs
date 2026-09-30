@@ -12,7 +12,7 @@ use gpui::{App, ClipboardItem, IntoElement, ParentElement, SharedString, Styled,
 
 use crate::{
     probe::probe,
-    ui::{keep, noise, row, section, set},
+    ui::{keep, live, noise, row, section, set},
 };
 
 const MONTHS: [&str; 12] = [
@@ -176,7 +176,7 @@ pub fn realtime(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         cx,
     );
     let ticking = keep("stream-tick", || false, window, cx);
-    if !*ticking.read(cx) && !cx.theme().reduced_motion {
+    if !*ticking.read(cx) && !cx.theme().reduced_motion && live("RealtimeChart", cx) {
         set(&ticking, true, cx);
         let stream = stream.clone();
         cx.spawn(async move |cx| {

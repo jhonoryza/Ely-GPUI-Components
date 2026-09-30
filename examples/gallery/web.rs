@@ -17,13 +17,13 @@ use crate::{
     shell::{Choice, Gallery},
 };
 
-/// The i18n page's Hebrew: gpui_web asks the browser for emoji and CJK alone.
+/// Hebrew for i18n; browsers lend only emoji and CJK.
 const HEBREW: &[u8] = include_bytes!("fonts/NotoSansHebrew-Regular.ttf");
 
 thread_local! {
-    /// The running app and its window, for the host page's calls.
+    /// The running app and its window, for the host's calls.
     static HOST: RefCell<Option<(AsyncApp, WindowHandle<Gallery>)>> = const { RefCell::new(None) };
-    /// A mode the host page chose before the window opened, which it opens in.
+    /// A mode the host chose before the window opened.
     static EARLY: Cell<Option<Choice>> = const { Cell::new(None) };
 }
 
@@ -72,7 +72,7 @@ fn read(search: &str) -> Result<Start> {
     Ok(start)
 }
 
-/// The gallery in a browser: one window over the page's canvas.
+/// The gallery in a browser: one window on a canvas.
 #[wasm_bindgen(start)]
 pub fn start() {
     gpui_platform::web_init();
@@ -88,7 +88,7 @@ pub fn start() {
             ..Start::default()
         }
     });
-    // One thread: a static site sends no cross-origin isolation, so there is no shared memory.
+    // One thread: a static site gets no shared memory.
     let platform = Rc::new(WebPlatform::new_with_backend_and_font_fallback(
         false,
         WebBackendPreference::Auto,
@@ -110,7 +110,7 @@ pub fn start() {
         });
 }
 
-/// Switches Ely's mode from the host page: `light` or `dark`, kept until the window opens.
+/// Sets Ely's mode from the host, even before opening.
 #[wasm_bindgen]
 pub fn set_theme(theme: &str) -> Result<(), JsError> {
     let choice = choice(theme).map_err(|error| JsError::new(&format!("{error:#}")))?;

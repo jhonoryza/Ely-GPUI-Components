@@ -21,7 +21,7 @@ fn an_owners_palette_serves_its_mode_alone(cx: &mut TestAppContext) {
     assert_eq!(cx.read(|cx| cx.theme().palette()), Palette::light(false));
 }
 
-/// A mode set at once wears its palette at once, and a fade under way cannot pull it back.
+/// A mode set at once keeps its palette through fades.
 #[gpui::test]
 fn a_mode_set_at_once_skips_the_fade(cx: &mut TestAppContext) {
     cx.update(|cx| {

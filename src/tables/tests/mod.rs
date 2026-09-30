@@ -9,6 +9,7 @@ use gpui::{
     Styled, TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
+mod clipboard;
 mod columns;
 
 use super::{Column, DataTable, FilterBuilder, FilterRule, Row};

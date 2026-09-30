@@ -21,7 +21,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 
 ## Commands
 
-- `cargo run --example gallery` opens the gallery. `-- --page <slug>` starts on a page; `--story <title or slug>` with it draws that section alone.
+- `cargo run --example gallery` opens the gallery. `-- --page <slug>` starts on a page; `--story <title or slug>` with it draws that section alone, and `--capture` then shoots it without the page's script.
 - `cargo run --example gallery -- --capture <dir>` writes PNGs of every page, light and dark, top to bottom, then each page's scripted states, including windows the demos open. macOS only.
 - `cargo run --example gallery -- --narrow 280 --capture <dir>` lays each page, header and body, at that width in a padded card and shoots it without its script, whose aims are measured at full width. Demos that set their own width run past the card.
 - `RUSTC_BOOTSTRAP=1 cargo check --lib --target wasm32-unknown-unknown` checks the web build; gpui_web's `wasm_thread` needs the bootstrap, as Zed's web examples do.
@@ -180,9 +180,9 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Time reads `web_time::Instant`: std's compiles for wasm32 and panics in the browser. `scripts/check.sh` refuses std's in `src` and the gallery.
 - What cannot build for wasm32 is absent there through `cfg(not(target_family = "wasm"))`, never faked: the live terminal, `Terminal` and `Launch` with their grid, keys and search, and the gallery's capture harness.
 - A gallery demo a browser cannot run says why on the web through `ui::web_note`, in the blocked style: a second window (`own_window`), files from the dialog or a drop (`NO_FILES`), the menu bar, window moves, a clipboard read.
-- A story is a gallery section: its title is a literal, one per page. Under `ui::Story` the one asked for draws without its title; the rest drop their demos (`ui::Section`), so nothing of theirs lays out, loads or moves. A story the page lacks fails in the page.
+- A story is a gallery section: its title is a literal, one per page. Under `ui::Story` the one asked for draws without its title; the rest drop their demos (`ui::Section`), so nothing of theirs lays out, loads or moves. Their builders still run, so a demo that keeps its own clock starts it through `ui::live`, which a story grants its own section alone and fails on a title no section has. A story the page lacks fails in the page.
 - The gallery's pictures go through `asset!` and `ui::picture` or `ui::resource`: a file natively, on the web an address under `ELY_GALLERY_ASSETS`, since gpui reads no files there.
-- On the web a paste reaches the focused field as the browser's paste event, through `EntityInputHandler::paste`: gpui_web reads no clipboard on demand, so Paste stays unbound there (`TextInput`, `CodeEditor`).
+- On the web a paste reaches the focused field as the browser's paste event, through `EntityInputHandler::paste`, so Paste stays unbound there (`TextInput`, `CodeEditor`). Code that reads the clipboard itself awaits `read_from_clipboard_async`: gpui_web's `read_from_clipboard` answers at once and finds nothing (`tables::DataGrid`'s Cmd-V).
 - The first frame wears the host's mode through `Theme::set_mode_now`, a mode sent before the window opens included; `set_mode` fades from the colors on screen.
 - The system time zone comes from `typography::format::system_zone`, which fails loud; jiff's `TimeZone::system()` falls back to UTC in silence.
 - A Select with nothing to pick stays shut: disabled, it shows its placeholder; open, it fails (`media::DeviceSelector` says no device was found).

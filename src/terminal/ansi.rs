@@ -90,7 +90,7 @@ pub(crate) fn printed(source: &str) -> (String, Vec<(Range<usize>, Pen)>) {
     (printed.text, printed.spans)
 }
 
-/// Plain text sets no colors with OSC 4, 10 or 11.
+/// Plain text sets no colors through OSC 4, 10, 11.
 struct Unset;
 
 impl Index<usize> for Unset {

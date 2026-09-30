@@ -89,7 +89,7 @@ pub(crate) fn bind_keys(cx: &mut App) {
         KeyBinding::new("secondary-enter", Submit, Some(CONTEXT)),
         KeyBinding::new("secondary-enter", Submit, Some(FORM_CONTEXT)),
     ];
-    // The browser's paste event carries the clipboard to the input handler.
+    // The browser's paste event reaches the input handler.
     if !cfg!(target_family = "wasm") {
         bindings.push(KeyBinding::new("secondary-v", Paste, Some(CONTEXT)));
     }

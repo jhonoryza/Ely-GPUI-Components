@@ -37,7 +37,7 @@ const SCRIPT: &[Step] = &[
     Step::Rest,
 ];
 
-/// A live shell natively; a browser runs no processes, so there it says so.
+/// A live shell natively; on the web, why not.
 fn live(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let section = section(
         "Terminal / TerminalTabs / TerminalSplit / TerminalToolbar / ShellSelector / TerminalSearch / TerminalLink",

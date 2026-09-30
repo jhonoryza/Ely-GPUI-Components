@@ -161,6 +161,8 @@ impl CodeEditor {
                 div()
                     .w(advance * digits as f32)
                     .text_right()
+                    // Snapped to device pixels, the box can run short.
+                    .whitespace_nowrap()
                     .when(current, |number| number.text_color(colors.fg))
                     .child(number),
             )

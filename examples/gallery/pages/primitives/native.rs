@@ -13,7 +13,7 @@ use gpui::{
 
 use crate::{
     probe::probe,
-    ui::{code, row, section, web_note},
+    ui::{code, row, section, set},
 };
 
 pub fn boxes(cx: &App) -> impl IntoElement + use<> {
@@ -442,13 +442,9 @@ pub fn clipboard(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
     let muted = cx.theme().colors.fg_muted;
     section(
         "Clipboard",
-        "write_to_clipboard and read_from_clipboard on App.",
+        "write_to_clipboard and read_from_clipboard_async on App; a browser asks before it hands the clipboard over.",
         cx,
     )
-    .children(web_note(
-        "A browser reads its clipboard only as it pastes, into a field: on the web gpui's read_from_clipboard finds nothing, so Paste reports no text. Copy works.",
-        cx,
-    ))
     .child(
         row()
             .gap_3()
@@ -464,14 +460,18 @@ pub fn clipboard(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
                     .variant(ButtonVariant::Ghost)
                     .icon(IconName::Clipboard)
                     .on_click(move |_, _, cx| {
-                        let text = cx.read_from_clipboard().and_then(|item| item.text());
-                        pasted.update(cx, |pasted, cx| {
-                            *pasted = Some(match text {
-                                Some(text) => text.into(),
-                                None => "The clipboard holds no text.".into(),
-                            });
-                            cx.notify();
+                        let (read, pasted) = (cx.read_from_clipboard_async(), pasted.clone());
+                        cx.spawn(async move |cx| {
+                            let said: SharedString = match read.await {
+                                Ok(item) => match item.and_then(|item| item.text()) {
+                                    Some(text) => text.into(),
+                                    None => "The clipboard holds no text.".into(),
+                                },
+                                Err(error) => format!("The clipboard stayed shut: {error:?}").into(),
+                            };
+                            cx.update(|cx| set(&pasted, Some(said), cx));
                         })
+                        .detach();
                     }),
             )
             .when_some(shown, |row, text| {

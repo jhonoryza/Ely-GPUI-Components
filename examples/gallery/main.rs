@@ -12,7 +12,7 @@ macro_rules! asset {
     };
 }
 
-/// On the web, the address the site serves it at: the build names the folder.
+/// On the web, the build names the pictures' address.
 #[cfg(target_family = "wasm")]
 macro_rules! asset {
     ($name:literal) => {
@@ -51,7 +51,7 @@ use gpui::{
 
 actions!(gallery, [Quit, About, LightMode, DarkMode, NewWindow]);
 
-/// The gallery's menu bar: NativeMenu at work, and what MenuBar draws.
+/// The gallery's menu bar, drawn natively and by MenuBar.
 pub fn app_menus() -> Vec<Menu> {
     vec![
         Menu {
@@ -74,7 +74,7 @@ pub fn app_menus() -> Vec<Menu> {
     ]
 }
 
-/// The menu bar and Dock menu (JumpList). Set before the window opens, whose first frame may draw them.
+/// Menu bar and Dock menu, set before the window opens.
 fn menus(cx: &mut App) {
     cx.set_menus(app_menus());
     cx.set_dock_menu(vec![MenuItem::action("New Window", NewWindow)]);
@@ -104,7 +104,7 @@ pub struct Start {
     pub choice: shell::Choice,
     /// Narrow check width, if any.
     pub narrow: Option<f32>,
-    /// Why the start could not be read, shown in place of a page.
+    /// Why the start could not be read, shown instead.
     pub failure: Option<SharedString>,
 }
 
@@ -195,7 +195,8 @@ fn main() -> Result<()> {
         page,
         capture,
     } = parse_args()?;
-    let scripted = start.narrow.is_none();
+    // A script aims across its page; cards and stories hold part.
+    let scripted = start.narrow.is_none() && start.story.is_none();
     gpui_platform::application()
         .with_assets(Assets)
         .run(move |cx: &mut App| {

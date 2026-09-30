@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
     ClipboardItem, Entity, EntityInputHandler, KeyUpEvent, Keystroke, TestAppContext,
@@ -255,4 +255,31 @@ fn a_browser_paste_gives_each_cursor_its_line(cx: &mut TestAppContext) {
             assert_eq!(editor.text(), "a1\nb2");
         })
     });
+}
+
+#[gpui::test]
+fn only_a_focused_editor_blinks(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("a\nb", cx);
+    let redraws = Rc::new(Cell::new(0));
+    let counted = redraws.clone();
+    let _count = cx.update(|_, cx| cx.observe(&editor, move |_, _| counted.set(counted.get() + 1)));
+    editor.update(cx, |editor, cx| {
+        let second = 2..2;
+        editor.select([second], cx);
+    });
+    cx.run_until_parked();
+    redraws.set(0);
+    cx.executor().advance_clock(Duration::from_secs(3));
+    cx.run_until_parked();
+    assert_eq!(redraws.get(), 0, "an unfocused editor keeps still");
+    cx.update(|window, cx| {
+        window.activate_window();
+        let focus = editor.read(cx).focus.clone();
+        focus.focus(window, cx);
+    });
+    cx.run_until_parked();
+    redraws.set(0);
+    cx.executor().advance_clock(Duration::from_secs(3));
+    cx.run_until_parked();
+    assert!(redraws.get() > 2, "a focused one blinks");
 }

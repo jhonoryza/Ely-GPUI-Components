@@ -136,7 +136,7 @@ impl Theme {
         Self::fade_to_target(cx);
     }
 
-    /// Sets `mode` without the fade, as before a window's first frame; a fade under way stops.
+    /// Sets `mode` at once, stopping any fade under way.
     pub fn set_mode_now(mode: Mode, cx: &mut App) {
         log::info!("theme: mode -> {mode:?}, at once");
         let theme = cx.global_mut::<Theme>();

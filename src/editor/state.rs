@@ -112,6 +112,8 @@ pub struct CodeEditor {
     pub(crate) metrics: Metrics,
     pub(crate) dragging: bool,
     pub(crate) caret_on: bool,
+    /// Blink runs only while focused, or unseen cursors redraw forever.
+    focused: bool,
     pub(crate) chat_field: gpui::Entity<TextInput>,
     pub(crate) frame: Frame,
     blink_epoch: u64,
@@ -133,8 +135,12 @@ impl CodeEditor {
         let chat_field =
             cx.new(|cx| TextInput::new(window, cx).placeholder("Ask to change this code"));
         let subscriptions = vec![
-            cx.on_focus(&focus, window, |editor, _, cx| editor.restart_blink(cx)),
+            cx.on_focus(&focus, window, |editor, _, cx| {
+                editor.focused = true;
+                editor.restart_blink(cx);
+            }),
             cx.on_blur(&focus, window, |editor, _, cx| {
+                editor.focused = false;
                 editor.dragging = false;
                 editor._blink = None;
                 cx.notify();
@@ -178,6 +184,7 @@ impl CodeEditor {
             metrics: Metrics::default(),
             dragging: false,
             caret_on: true,
+            focused: false,
             chat_field,
             frame: Frame::default(),
             blink_epoch: 0,
@@ -462,7 +469,7 @@ impl CodeEditor {
         self.blink_epoch += 1;
         let epoch = self.blink_epoch;
         let still = cx.theme().reduced_motion;
-        self._blink = (!still).then(|| {
+        self._blink = (!still && self.focused).then(|| {
             cx.spawn(async move |editor, cx| {
                 loop {
                     cx.background_executor().timer(BLINK).await;
