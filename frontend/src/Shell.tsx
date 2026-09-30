@@ -1,0 +1,63 @@
+import { Link, Outlet } from "@tanstack/react-router";
+import { REPO } from "./data";
+import { Icon } from "./icons";
+import { setMode, useMode } from "./theme";
+
+function Header() {
+  const theme = useMode();
+  const dark = theme === "dark";
+  return (
+    <header className="bar">
+      <Link to="/" className="brand">
+        Ely
+      </Link>
+      <nav aria-label="Site">
+        <Link to="/components/" className="link" activeProps={{ "aria-current": "page" }}>
+          Components
+        </Link>
+      </nav>
+      <div className="end">
+        <button className="tool" aria-label={dark ? "Light mode" : "Dark mode"} onClick={() => setMode(dark ? "light" : "dark")}>
+          <Icon name={dark ? "Sun" : "Moon"} />
+        </button>
+        <a className="tool" href={REPO} rel="noopener" aria-label="Ely on GitHub">
+          <Icon name="GitHub" />
+        </a>
+      </div>
+    </header>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="foot">
+      <span>MIT or Apache-2.0</span>
+      <a href={REPO} rel="noopener">
+        Source
+      </a>
+      <span>
+        Built on <a href="https://github.com/zed-industries/zed/tree/main/crates/gpui" rel="noopener">GPUI</a>
+      </span>
+      <span>Geist and Geist Mono, OFL</span>
+      <span>
+        Icons: <a href="https://reicon.dev" rel="noopener">Reicon</a>, MIT, after Solar Icons by 480 Design,{" "}
+        <a href="https://creativecommons.org/licenses/by/4.0/" rel="noopener">CC BY 4.0</a>
+      </span>
+    </footer>
+  );
+}
+
+export function Shell() {
+  return (
+    <>
+      <a className="skip" href="#main">
+        Skip to content
+      </a>
+      <Header />
+      <main id="main">
+        <Outlet />
+      </main>
+      <Footer />
+    </>
+  );
+}

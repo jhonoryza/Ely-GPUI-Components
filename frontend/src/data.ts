@@ -20,19 +20,9 @@ export const storyCount = chapters.reduce((sum, chapter) => sum + chapter.storie
 
 export const componentCount = new Set(chapters.flatMap((c) => c.stories.flatMap((s) => s.components))).size;
 
-export function chapter(slug: string): Chapter | undefined {
-  return chapters.find((c) => c.slug === slug);
-}
-
-export function href(chapter: Chapter, story?: Story): string {
-  return story ? `/components/${chapter.slug}/${story.slug}/` : `/components/${chapter.slug}/`;
-}
-
 /** Every story in reading order, for paging and search. */
-export const all = chapters.flatMap((c) => c.stories.map((s) => ({ chapter: c, story: s })));
-
-export function esc(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-}
+export const all = chapters.flatMap((chapter) => chapter.stories.map((story) => ({ chapter, story })));
 
 export const REPO = "https://github.com/ZacharyZhang-NY/Ely-GPUI-Components";
+
+export const pad = (n: number) => String(n).padStart(2, "0");
