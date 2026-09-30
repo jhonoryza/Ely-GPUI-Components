@@ -64,7 +64,7 @@ function detail(current: Chapter, story: Story): string {
   return `<article class="detail">
     <div class="crumb"><a href="/components/">Components</a> / <a href="${href(current)}">${esc(current.title)}</a></div>
     <h1>${esc(story.title)}</h1>
-    ${story.components.length ? `<div class="chips">${story.components.map((c) => `<span>${esc(c)}</span>`).join("")}</div>` : `<div class="chips"></div>`}
+    <p class="names">${story.components.map(esc).join(" · ")}</p>
     <div class="live"></div>
     <nav class="pager" aria-label="More stories">${pager(prev, "prev", "Previous", icon("ArrowLeft"))}${pager(next, "next", "Next", icon("ArrowRight"))}</nav>
   </article>`;

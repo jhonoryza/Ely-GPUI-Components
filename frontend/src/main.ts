@@ -5,6 +5,7 @@ import { components } from "./components";
 import { REPO } from "./data";
 import { home } from "./home";
 import { icon } from "./icons";
+import { onSound, setSound, soundOn } from "./iso/marimba";
 import { menu } from "./menu";
 import { search } from "./search";
 import { mode, setMode } from "./theme";
@@ -43,6 +44,7 @@ bar.innerHTML = `
   </nav>
   <div class="end">
     <button class="find" data-find aria-label="Search components">${icon("Search")}<span>Search</span><kbd>⌘K</kbd></button>
+    <button class="tool" data-sound></button>
     <button class="tool" data-mode></button>
     <a class="tool" href="${REPO}" rel="noopener" aria-label="Ely on GitHub">${icon("GitHub")}</a>
   </div>`;
@@ -65,6 +67,16 @@ modeButton.addEventListener("click", () => {
   drawMode();
 });
 drawMode();
+
+const soundButton = bar.querySelector<HTMLButtonElement>("[data-sound]")!;
+const drawSound = (on: boolean) => {
+  soundButton.innerHTML = icon(on ? "Sound" : "VolumeCross");
+  soundButton.setAttribute("aria-label", on ? "Sound off" : "Sound on");
+  soundButton.setAttribute("aria-pressed", String(on));
+};
+soundButton.addEventListener("click", () => setSound(!soundOn()));
+onSound(drawSound);
+drawSound(false);
 
 bar.querySelector("[data-find]")!.addEventListener("click", search(go));
 menu(bar.querySelector<HTMLButtonElement>("[data-menu]")!, go);

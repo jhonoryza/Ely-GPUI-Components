@@ -7,9 +7,11 @@ import Minimize from "reicon/icons/Minimize";
 import Moon from "reicon/icons/Moon";
 import Refresh from "reicon/icons/Refresh";
 import Search from "reicon/icons/Search";
+import Sound from "reicon/icons/Sound";
 import Sun from "reicon/icons/Sun";
+import VolumeCross from "reicon/icons/VolumeCross";
 
-const set = { ArrowLeft, ArrowRight, ArrowRightUp, ChevronRight, Maximize, Minimize, Moon, Refresh, Search, Sun };
+const set = { ArrowLeft, ArrowRight, ArrowRightUp, ChevronRight, Maximize, Minimize, Moon, Refresh, Search, Sound, Sun, VolumeCross };
 
 // simple-icons' GitHub mark (CC0), since Reicon has none.
 const GITHUB =
