@@ -45,7 +45,14 @@ fn live(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         cx,
     );
     #[cfg(not(target_family = "wasm"))]
-    return section.child(live::shell(window, cx));
+    return if crate::ui::live(
+        "Terminal / TerminalTabs / TerminalSplit / TerminalToolbar / ShellSelector / TerminalSearch / TerminalLink",
+        cx,
+    ) {
+        section.child(live::shell(window, cx))
+    } else {
+        section
+    };
     #[cfg(target_family = "wasm")]
     {
         let _ = window;

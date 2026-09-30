@@ -69,6 +69,8 @@ pub struct TextInput {
     pub(crate) scroll: Point<Pixels>,
     selecting: bool,
     caret_on: bool,
+    /// Blink runs only while focused, or unseen carets redraw forever.
+    focused: bool,
     blink_epoch: u64,
     _blink: Option<Task<()>>,
     _subscriptions: Vec<Subscription>,
@@ -87,10 +89,12 @@ impl TextInput {
         let focus = cx.focus_handle().tab_stop(true);
         let subscriptions = vec![
             cx.on_focus(&focus, window, |input, _, cx| {
+                input.focused = true;
                 input.restart_blink(cx);
                 cx.emit(InputEvent::Focus);
             }),
             cx.on_blur(&focus, window, |input, _, cx| {
+                input.focused = false;
                 input.selecting = false;
                 input._blink = None;
                 cx.emit(InputEvent::Blur);
@@ -118,6 +122,7 @@ impl TextInput {
             scroll: Point::default(),
             selecting: false,
             caret_on: true,
+            focused: false,
             blink_epoch: 0,
             _blink: None,
             _subscriptions: subscriptions,
@@ -367,7 +372,7 @@ impl TextInput {
         self.blink_epoch += 1;
         let epoch = self.blink_epoch;
         let still = cx.theme().reduced_motion;
-        self._blink = (!still).then(|| {
+        self._blink = (!still && self.focused).then(|| {
             cx.spawn(async move |input, cx| {
                 loop {
                     cx.background_executor().timer(BLINK).await;

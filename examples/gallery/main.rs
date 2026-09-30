@@ -195,7 +195,7 @@ fn main() -> Result<()> {
         page,
         capture,
     } = parse_args()?;
-    // A script aims across its page; cards and stories hold part.
+    // A script aims across its page; stories hold part.
     let scripted = start.narrow.is_none() && start.story.is_none();
     gpui_platform::application()
         .with_assets(Assets)

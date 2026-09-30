@@ -26,7 +26,7 @@ use gpui::{
 use super::loading::later;
 use crate::{
     probe::probe,
-    ui::{keep, row, section, set, specimen, specimens},
+    ui::{keep, live, row, section, set, specimen, specimens},
 };
 
 const STEPS: [f32; 5] = [0.0, 0.35, 0.72, 1.0, 0.5];
@@ -137,6 +137,56 @@ struct Report {
 }
 
 pub fn suspense(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
+    let section = section(
+        "Suspense / AsyncView",
+        "A spinner while a value loads off the main thread, then the value as it fades in, or the error with Try again.",
+        cx,
+    );
+    if !live("Suspense / AsyncView", cx) {
+        return section;
+    }
+    let (view, breaker) = report(window, cx);
+    let theme = cx.theme();
+    section
+        .child(
+            div()
+                .w_128()
+                .min_h_40()
+                .flex()
+                .items_center()
+                .justify_center()
+                .px_4()
+                .rounded(theme.radius(Radius::Lg))
+                .border_1()
+                .border_color(theme.colors.border)
+                .child(view.clone()),
+        )
+        .child(
+            row()
+                .child(
+                    Button::new("report-reload", "Reload")
+                        .variant(ButtonVariant::Ghost)
+                        .on_click({
+                            let view = view.clone();
+                            move |_, _, cx| view.update(cx, |view, cx| view.reload(cx))
+                        }),
+                )
+                .child(
+                    Button::new("report-fail", "Reload and fail")
+                        .variant(ButtonVariant::Ghost)
+                        .on_click({
+                            let view = view.clone();
+                            move |_, _, cx| {
+                                breaker.store(true, Ordering::Relaxed);
+                                view.update(cx, |view, cx| view.reload(cx))
+                            }
+                        }),
+                ),
+        )
+}
+
+/// The report's view and its fail switch.
+fn report(window: &mut Window, cx: &mut App) -> (Entity<AsyncView<String>>, Arc<AtomicBool>) {
     let report = keep(
         "report",
         || Report {
@@ -171,47 +221,7 @@ pub fn suspense(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             )
         });
     let breaker = report.read(cx).fail.clone();
-    let theme = cx.theme();
-    section(
-        "Suspense / AsyncView",
-        "A spinner while a value loads off the main thread, then the value as it fades in, or the error with Try again.",
-        cx,
-    )
-    .child(
-        div()
-            .w_128()
-            .min_h_40()
-            .flex()
-            .items_center()
-            .justify_center()
-            .px_4()
-            .rounded(theme.radius(Radius::Lg))
-            .border_1()
-            .border_color(theme.colors.border)
-            .child(view.clone()),
-    )
-    .child(
-        row()
-            .child(
-                Button::new("report-reload", "Reload")
-                    .variant(ButtonVariant::Ghost)
-                    .on_click({
-                        let view = view.clone();
-                        move |_, _, cx| view.update(cx, |view, cx| view.reload(cx))
-                    }),
-            )
-            .child(
-                Button::new("report-fail", "Reload and fail")
-                    .variant(ButtonVariant::Ghost)
-                    .on_click({
-                        let view = view.clone();
-                        move |_, _, cx| {
-                            breaker.store(true, Ordering::Relaxed);
-                            view.update(cx, |view, cx| view.reload(cx))
-                        }
-                    }),
-            ),
-    )
+    (view, breaker)
 }
 
 pub fn refresh(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {

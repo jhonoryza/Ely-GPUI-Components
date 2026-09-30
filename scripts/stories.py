@@ -79,7 +79,7 @@ def literal(text, at):
 
 
 def functions(folder):
-    """Every `fn` in a page's folder, by module and name, with its body's span."""
+    """Every `fn` in a page's folder, with its body's span."""
     found = {}
     for file in sorted(folder.rglob("*.rs")):
         module = file.stem
@@ -100,7 +100,7 @@ def functions(folder):
 
 
 def close(bare, at):
-    """The offset past the bracket that closes the one at `at`."""
+    """The offset past the bracket that closes `at`."""
     depth = 0
     for k in range(at, len(bare)):
         depth += {"(": 1, "[": 1, "{": 1, ")": -1, "]": -1, "}": -1}.get(bare[k], 0)
@@ -109,7 +109,7 @@ def close(bare, at):
 
 
 def sections(folder):
-    """Section titles in drawing order; fails on one never drawn or drawn inside another."""
+    """Section titles in drawing order; stray or nested ones fail."""
     fns = functions(folder)
     order, seen, opens = [], set(), {}
 
@@ -120,7 +120,7 @@ def sections(folder):
             yield m, (owner, m.group(2)), m.group(2) == "section" and m.group(1) is None
 
     def draws(fn):
-        """Whether the fn opens a section, itself or through what it calls."""
+        """Whether the fn opens a section, itself or deeper."""
         if fn not in opens:
             opens[fn] = False
             opens[fn] = any(own or (callee in fns and draws(callee)) for _, callee, own in calls(*fn))
@@ -163,7 +163,7 @@ def slug(title):
 
 
 def entries():
-    """The task lists' component names by key, and the ticked entries with a home."""
+    """Component names by key, and ticked entries with a home."""
     names, homed = {}, []
     for file in sorted((ROOT / "tasks").glob("*.md")):
         for line in file.read_text().splitlines():
@@ -177,7 +177,7 @@ def entries():
 
 
 def home(line, aliases):
-    """False for a pointer: `A → b::B` lives at B, another entry."""
+    """False for a pointer: `A → b::B` lives at B."""
     if " → " not in line:
         return True
     target = re.search(r" → `([\w:]+)", line)
@@ -189,7 +189,7 @@ def key(name):
 
 
 def components(title, extra, known):
-    """The task lists' names for what the title and `extra` name."""
+    """The task lists' names for the title's and `extra`'s names."""
     names = []
     for part in re.sub(r"\s*\([^)]*\)", "", title).split(" · "):
         for name in part.split(" → ")[0].split(" / ") + extra:

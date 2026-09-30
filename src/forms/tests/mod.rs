@@ -330,3 +330,31 @@ fn shift_enter_breaks_only_a_field_of_many_lines(cx: &mut TestAppContext) {
         "a single line stays single"
     );
 }
+
+#[gpui::test]
+fn only_a_focused_field_blinks(cx: &mut TestAppContext) {
+    let (fields, cx) = open(1, false, cx);
+    let field = fields[0].clone();
+    let redraws = std::rc::Rc::new(std::cell::Cell::new(0));
+    let counted = redraws.clone();
+    let _count = cx.update(|_, cx| cx.observe(&field, move |_, _| counted.set(counted.get() + 1)));
+    field.update(cx, |input, cx| {
+        input.set_text("seeded", cx);
+        let word = 0..4;
+        input.select(word, cx);
+    });
+    cx.run_until_parked();
+    redraws.set(0);
+    cx.executor()
+        .advance_clock(std::time::Duration::from_secs(3));
+    cx.run_until_parked();
+    assert_eq!(redraws.get(), 0, "an unfocused field keeps still");
+    cx.update(|window, _| window.activate_window());
+    focus(&field, cx);
+    cx.run_until_parked();
+    redraws.set(0);
+    cx.executor()
+        .advance_clock(std::time::Duration::from_secs(3));
+    cx.run_until_parked();
+    assert!(redraws.get() > 2, "a focused one blinks");
+}
