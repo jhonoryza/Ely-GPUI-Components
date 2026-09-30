@@ -153,7 +153,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T44a Capture · Roots: roots still on `w_full` drop it, checked at 280px and in padded cards
 - [x] T44b Port · Build: gpui and gpui_platform from Zed's repo by git at 1a28cff; the crate, its tests and the gallery build, and check.sh passes
 - [x] T44c Port · Parity: every page and scripted state captured light and dark and matched against T44a's shots; AGENTS.md's gpui 0.2.2 and taffy 0.9 rules re-tested at 1a28cff and rewritten
-- [ ] T44d Web · Stories: the gallery builds for wasm32 through gpui_web; one story per component, chosen by URL, themed by the host page; what cannot run in a browser says why
+- [x] T44d Web · Stories: the gallery builds for wasm32 through gpui_web; one story per component, chosen by URL, themed by the host page; what cannot run in a browser says why
 - [ ] T45 Website: `frontend/`, Vite 8, pnpm, light and dark: a home page in motion (three.js, smooth scroll), and a components page with every component live from its story, categories on the left and the chosen one's detail on the right, after astryx.atmeta.com and gpui-kit.com; no screenshots
 - [ ] T46 E2E: Playwright against the built site
 - [ ] T47 Ship: GitHub repo (public), CI, Cloudflare deploy through `npx wrangler`
@@ -481,3 +481,6 @@ Per-component lines live in `tasks/`. Tags there:
 | T44c | 1 | FAIL | 940 dark shots had no recorded verdict; AGENTS.md still said avatars take square pictures; two new harness comments ran long |
 | T44c | 2 | FAIL | the comment at typography/fit.rs:114 ran 19 words |
 | T44c | 3 | PASS | |
+| T44d | 1 | FAIL | hidden sections kept their clocks; wide demos clipped in a narrow story; gutter numbers wrapped at DPR 1; native captions under the traffic lights; clipboard notes blamed the browser; long comments |
+| T44d | 2 | FAIL | the hidden report and the terminal shell still started; browser grids ignored Ctrl+V; long docstrings |
+| T44d | 3 | PASS | |
