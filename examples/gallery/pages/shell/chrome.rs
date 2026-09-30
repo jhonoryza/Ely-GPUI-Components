@@ -7,7 +7,7 @@ use ely_gpui_component::{
 };
 use gpui::{App, Div, IntoElement, ParentElement, Styled, Window, div, px};
 
-use crate::ui::{code, row, section, specimen, specimens, web_note};
+use crate::ui::{code, row, section, specimen, specimens};
 
 /// A window drawn inside the page.
 pub fn window_frame(width: f32, height: f32, cx: &App) -> Div {
@@ -116,10 +116,6 @@ pub fn window_controls(cx: &App) -> impl IntoElement + use<> {
         "Minimize and zoom act on this window. Close here only logs.",
         cx,
     ))
-    .children(web_note(
-        "A browser owns the page's window: gpui on the web only logs minimize and zoom.",
-        cx,
-    ))
 }
 
 pub fn drag_area(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
@@ -146,10 +142,6 @@ pub fn drag_area(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
             .child("Double-click to zoom this window"),
     )
     .child(code("drag_region(id, window, cx)", cx))
-    .children(web_note(
-        "A browser owns the page's window: gpui on the web neither moves nor zooms it.",
-        cx,
-    ))
 }
 
 pub fn resize_border(cx: &App) -> impl IntoElement + use<> {
@@ -162,10 +154,6 @@ pub fn resize_border(cx: &App) -> impl IntoElement + use<> {
         "Linux draws its own edges. This macOS window keeps the system's, so the border lays out only.",
     ))
     .child(code("ResizeBorder::new().child(app)", cx))
-    .children(web_note(
-        "A browser sizes the page's canvas itself: gpui on the web resizes no window from its edges.",
-        cx,
-    ))
 }
 
 pub fn menus(cx: &App) -> impl IntoElement + use<> {
@@ -188,9 +176,5 @@ pub fn menus(cx: &App) -> impl IntoElement + use<> {
     )
     .child(Caption::new(
         "MenuBar draws the same menus inside the window. It lands with Menus, chapter 8.",
-    ))
-    .children(web_note(
-        "A browser page has no menu bar and no Dock: gpui on the web keeps neither cx.set_menus nor cx.set_dock_menu.",
-        cx,
     ))
 }

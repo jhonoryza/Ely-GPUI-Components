@@ -1,5 +1,6 @@
 import { all, chapter, chapters, esc, href, storyCount, type Chapter, type Story } from "./data";
 import { icon } from "./icons";
+import { isCaptured, native } from "./native";
 import { preview } from "./preview";
 
 /** Chapters on the left, a story or the index beside. */
@@ -22,7 +23,11 @@ export function components(main: HTMLElement, path: string[]): () => void {
   }
   document.title = `${story.title} · ${current.title} · Ely`;
   body.innerHTML = detail(current, story);
-  return preview(body.querySelector<HTMLElement>(".live")!, current.slug, story.slug, story.title);
+  const live = body.querySelector<HTMLElement>(".live")!;
+  const shots = body.querySelector<HTMLElement>(".native")!;
+  if (isCaptured(current.slug, story.slug)) return native(live, current.slug, story.slug, story.title);
+  const [stopLive, stopShots] = [preview(live, current.slug, story.slug, story.title), native(shots, current.slug, story.slug, story.title)];
+  return () => (stopLive(), stopShots());
 }
 
 function sidebar(side: HTMLElement, current?: Chapter, story?: Story): void {
@@ -66,6 +71,7 @@ function detail(current: Chapter, story: Story): string {
     <h1>${esc(story.title)}</h1>
     <p class="names">${story.components.map(esc).join(" · ")}</p>
     <div class="live"></div>
+    <div class="native"></div>
     <nav class="pager" aria-label="More stories">${pager(prev, "prev", "Previous", icon("ArrowLeft"))}${pager(next, "next", "Next", icon("ArrowRight"))}</nav>
   </article>`;
 }

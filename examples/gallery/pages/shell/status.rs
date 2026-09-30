@@ -11,7 +11,7 @@ use gpui::{App, IntoElement, ParentElement, Styled, Window, div};
 use super::chrome::window_frame;
 use crate::{
     probe::{Opened, probe},
-    ui::{own_window, row, section, specimen},
+    ui::{native_only, row, section, specimen},
 };
 
 fn log_action(name: &'static str) -> impl Fn(&mut Window, &mut App) + 'static {
@@ -59,18 +59,15 @@ pub fn update_window(cx: &App) -> impl IntoElement + use<> {
                 .child(update_dialog().on_later(log_action("later"))),
             cx,
         ))
-        .child(own_window(
-            probe(
-                "update-open",
-                Button::new("update-open", "Open update window")
-                    .variant(ButtonVariant::Outline)
-                    .on_click(|_, _, cx| match update_dialog().open(cx) {
-                        Ok(handle) => Opened::insert("update", handle.into(), cx),
-                        Err(error) => log::error!("gallery: update window failed: {error:#}"),
-                    }),
-            ),
-            cx,
-        ))
+        .child(native_only(probe(
+            "update-open",
+            Button::new("update-open", "Open update window")
+                .variant(ButtonVariant::Outline)
+                .on_click(|_, _, cx| match update_dialog().open(cx) {
+                    Ok(handle) => Opened::insert("update", handle.into(), cx),
+                    Err(error) => log::error!("gallery: update window failed: {error:#}"),
+                }),
+        )))
 }
 
 const REPORT: &str = "Exception Type:  EXC_BAD_ACCESS (SIGSEGV)
@@ -104,18 +101,15 @@ pub fn crash_reporter(cx: &App) -> impl IntoElement + use<> {
             .child(reporter(true)),
         cx,
     ))
-    .child(own_window(
-        probe(
-            "crash-open",
-            Button::new("crash-open", "Open crash window")
-                .variant(ButtonVariant::Outline)
-                .on_click(move |_, _, cx| match reporter(false).open(cx) {
-                    Ok(handle) => Opened::insert("crash", handle.into(), cx),
-                    Err(error) => log::error!("gallery: crash window failed: {error:#}"),
-                }),
-        ),
-        cx,
-    ))
+    .child(native_only(probe(
+        "crash-open",
+        Button::new("crash-open", "Open crash window")
+            .variant(ButtonVariant::Outline)
+            .on_click(move |_, _, cx| match reporter(false).open(cx) {
+                Ok(handle) => Opened::insert("crash", handle.into(), cx),
+                Err(error) => log::error!("gallery: crash window failed: {error:#}"),
+            }),
+    )))
 }
 
 pub fn offline(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {

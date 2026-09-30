@@ -11,7 +11,7 @@ use ely_gpui_component::{
 use gpui::{AnyElement, App, Entity, IntoElement, ParentElement, Styled, div, px};
 
 use super::window::{Fields, Prefs, SIZE};
-use crate::ui::{NO_FILES, change, web_note};
+use crate::ui::change;
 
 /// The open section's page.
 pub(super) fn page(prefs: &Entity<Prefs>, fields: &Fields, section: &str, cx: &App) -> AnyElement {
@@ -198,7 +198,6 @@ fn storage(prefs: &Entity<Prefs>, cx: &App) -> AnyElement {
                     }),
             ),
         )
-        .children(web_note(NO_FILES, cx))
         .child(
             SettingsSection::new("Defaults")
                 .description("A larger font size shows here.")

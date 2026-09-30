@@ -7,7 +7,7 @@ use gpui::{App, IntoElement, ParentElement, SharedString, Window};
 
 use crate::{
     probe::probe,
-    ui::{blocked, row, section, web_note},
+    ui::{blocked, row, section},
 };
 
 const ITEMS: [&str; 3] = ["Open gallery", "Toggle theme", "Quit"];
@@ -23,10 +23,6 @@ pub fn tray(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         "An SF Symbol in the menu bar with a menu. macOS only.",
         cx,
     )
-    .children(web_note(
-        "A browser page has no menu bar to hold an icon, so showing one fails and logs why.",
-        cx,
-    ))
     .child(
         row()
             .child(probe(
@@ -117,10 +113,6 @@ pub fn dock(cx: &mut App) -> impl IntoElement + use<> {
         "A count on the app's Dock icon. macOS only.",
         cx,
     )
-    .children(web_note(
-        "A browser page has no Dock icon to badge, so setting one fails and logs why.",
-        cx,
-    ))
     .child(
         row()
             .child(probe(

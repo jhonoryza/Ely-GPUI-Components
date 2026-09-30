@@ -15,7 +15,7 @@ use gpui::{
 use super::chrome::window_frame;
 use crate::{
     probe::{Opened, probe},
-    ui::{code, own_window, picture, row, section, specimen},
+    ui::{code, native_only, picture, row, section, specimen},
 };
 
 const DUNES: &str = asset!("dunes.jpg");
@@ -80,13 +80,14 @@ pub fn splash_screen(cx: &App) -> impl IntoElement + use<> {
             .child(splash().progress(Some(0.62))),
         cx,
     ))
-    .child(own_window(
-        trigger("splash-open", "Show splash window", |cx| {
+    .child(native_only(trigger(
+        "splash-open",
+        "Show splash window",
+        |cx| {
             let result = splash().open(cx);
             opened("splash", result, cx)
-        }),
-        cx,
-    ))
+        },
+    )))
 }
 
 pub fn open_about(cx: &mut App) {
@@ -108,10 +109,11 @@ pub fn about_dialog(cx: &App) -> impl IntoElement + use<> {
             .child(about()),
         cx,
     ))
-    .child(own_window(
-        trigger("about-open", "Open About window", open_about),
-        cx,
-    ))
+    .child(native_only(trigger(
+        "about-open",
+        "Open About window",
+        open_about,
+    )))
 }
 
 struct Managed {
@@ -192,10 +194,11 @@ pub fn window_manager(cx: &mut App) -> impl IntoElement + use<> {
         "Each new window cascades from the last; the manager knows them by name.",
         cx,
     )
-    .child(own_window(
-        trigger("managed-open", "New window", open_managed),
-        cx,
-    ))
+    .child(native_only(trigger(
+        "managed-open",
+        "New window",
+        open_managed,
+    )))
     .child(
         row().children(open.into_iter().enumerate().map(|(ix, (handle, title))| {
             Button::new(("managed-focus", ix), title)
@@ -335,7 +338,7 @@ pub fn mini_windows(cx: &App) -> impl IntoElement + use<> {
         "Small windows above the rest. Hover for the bar; expand returns to the app.",
         cx,
     )
-    .child(own_window(
+    .child(native_only(
         row()
             .child(trigger("mini-open", "Mini player", |cx| {
                 let view = cx.new(|_| Player { playing: true });
@@ -359,7 +362,6 @@ pub fn mini_windows(cx: &App) -> impl IntoElement + use<> {
                 );
                 opened("pip", result, cx)
             })),
-        cx,
     ))
     .child(code(
         "AlwaysOnTop is gpui's WindowOptions { kind: WindowKind::PopUp, .. }",

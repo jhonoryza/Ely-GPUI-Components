@@ -37,7 +37,7 @@ const SCRIPT: &[Step] = &[
     Step::Rest,
 ];
 
-/// A live shell natively; on the web, why not.
+/// A live shell natively; on the web, its header alone.
 fn live(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let section = section(
         "Terminal / TerminalTabs / TerminalSplit / TerminalToolbar / ShellSelector / TerminalSearch / TerminalLink",
@@ -56,10 +56,7 @@ fn live(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     #[cfg(target_family = "wasm")]
     {
         let _ = window;
-        section.child(crate::ui::blocked(
-            "A browser starts no processes and has no pseudo-terminal, so no shell runs here, and alacritty's grid, which draws the build's output, does not build for the web. The page's other stories, command blocks, colored output, logs and processes, draw without one.",
-            cx,
-        ))
+        section
     }
 }
 

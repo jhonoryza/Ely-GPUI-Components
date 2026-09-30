@@ -12,7 +12,7 @@ use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div, p
 
 use crate::{
     probe::probe,
-    ui::{NO_FILES, change, keep, section, web_note},
+    ui::{change, keep, section},
 };
 
 /// The switchers' demo: the account and workspace in use.
@@ -115,7 +115,6 @@ pub fn profile(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         "Someone at a glance, and their profile to edit: Save waits for a change, a name and an email that reads; Discard puts the saved profile back.",
         cx,
     )
-    .children(web_note(NO_FILES, cx))
     .child(
         div()
             .flex()

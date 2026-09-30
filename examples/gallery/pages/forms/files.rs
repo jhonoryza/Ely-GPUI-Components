@@ -5,7 +5,7 @@ use gpui::{App, IntoElement, ParentElement, Styled, Window, div, px};
 
 use crate::{
     probe::probe,
-    ui::{NO_FILES, keep, section, set, specimen, specimens, web_note},
+    ui::{keep, section, set, specimen, specimens},
 };
 
 fn names(paths: &[PathBuf]) -> String {
@@ -44,7 +44,6 @@ pub fn files(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         "Click a field or Browse for the system's dialog, or drop files from Finder. A folder, or two files on a one-file target, turns it red.",
         cx,
     )
-    .children(web_note(NO_FILES, cx))
     .child(
         specimens()
             .child(specimen(

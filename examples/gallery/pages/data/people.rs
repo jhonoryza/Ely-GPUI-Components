@@ -15,7 +15,7 @@ use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div};
 
 use crate::{
     probe::probe,
-    ui::{NO_FILES, keep, picture, row, section, set, specimen, specimens, web_note},
+    ui::{keep, picture, row, section, set, specimen, specimens},
 };
 
 const DUNES: &str = asset!("dunes-square.jpg");
@@ -119,7 +119,6 @@ pub fn avatars(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         "A picture, or initials on a tone the name keeps, or an icon. Presence sits on the corner. Hover the last one, then press it to choose a picture, or drop one on it.",
         cx,
     )
-    .children(web_note(NO_FILES, cx))
     .child(specimens().children(sizes.map(|(size, name)| {
         specimen(name, Avatar::new(SharedString::from(format!("avatar-{name}")), "Kofi Mensah").size(size), cx)
     })))

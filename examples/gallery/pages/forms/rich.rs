@@ -10,7 +10,7 @@ use gpui::{App, IntoElement, Keystroke, ParentElement, SharedString, Styled, Win
 use super::text::field;
 use crate::{
     probe::probe,
-    ui::{NO_FILES, code, section, web_note},
+    ui::{code, section},
 };
 
 pub fn mention(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
@@ -99,7 +99,6 @@ pub fn path(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         "Type a path, or Browse with the system's dialog.",
         cx,
     )
-    .children(web_note(NO_FILES, cx))
     .child(probe(
         "path",
         div()

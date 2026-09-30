@@ -36,19 +36,15 @@ pub fn platform(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         specimens()
             .child(specimen("Platform", platforms(cx), cx))
             .child(specimen("IconTheme", icons(window, cx), cx))
-            .child(specimen(
+            .child(native_only(specimen(
                 "Vibrancy",
-                native_only(
-                    probe(
+                probe(
                         "frosted-open",
                         Button::new("frosted-open", "Open a frosted window")
                             .on_click(|_, _, cx| frosted(cx)),
                     ),
-                    "A browser page is a single window, and gpui leaves what lies behind it to the browser, so no frosted window opens and nothing blurs through.",
-                    cx,
-                ),
                 cx,
-            )),
+            ))),
     )
 }
 

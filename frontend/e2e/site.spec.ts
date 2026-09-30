@@ -13,7 +13,8 @@ test("the home page shows the pitch, the scene and the credits", async ({ page }
   const errors = watch(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("component library for GPUI");
-  await expect(page.locator(".hero canvas")).toBeVisible();
+  await expect(page.locator("canvas.iso")).toBeAttached();
+  await expect(page.locator(".hero-iso")).toBeVisible();
   await expect(page.locator("#foot")).toContainText("Solar Icons by 480 Design");
   expect(errors).toEqual([]);
 });
@@ -82,4 +83,21 @@ test("an unknown chapter says so", async ({ page }) => {
   await page.goto("/components/nowhere/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Not found");
   expect(errors.join()).toContain("No chapter");
+});
+
+test("a story the web cannot run shows its native capture, in the site's mode", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/components/forms/pathinput/");
+  const shot = page.locator("img.shot");
+  await expect(shot).toHaveAttribute("srcset", /pathinput-light\.jpg/);
+  await expect(page.locator(".stage iframe")).toHaveCount(0);
+  await page.locator("[data-mode]").click();
+  await expect(shot).toHaveAttribute("srcset", /pathinput-dark\.jpg/);
+  await expect.poll(() => shot.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+});
+
+test("a live story that opens a window shows that window natively", async ({ page }) => {
+  await page.goto("/components/shell/aboutdialog/");
+  await expect(page.locator(".stage iframe")).toHaveCount(1);
+  await expect(page.locator(".native img.shot")).toHaveAttribute("srcset", /shell-about-window/);
 });

@@ -3,6 +3,8 @@
 A component library for [GPUI](https://www.gpui.rs), the Rust UI framework behind Zed.
 Every component ships in light and dark. The palette is warm and quiet. Color carries meaning, not decoration.
 
+Every component runs live at https://ely-site.zhangyanghaha0407.workers.dev, compiled to WebAssembly.
+
 Status: early. `TASKS.md` tracks every component, chapter by chapter.
 
 ## Use
@@ -46,6 +48,7 @@ cd frontend
 pnpm install
 ELY_GALLERY_ASSETS=https://<site>/gallery/assets/ pnpm gallery   # the wasm gallery, into public/gallery
 pnpm dev        # or: pnpm build && pnpm preview
+node scripts/og.mjs   # with pnpm preview up: public/og.png from the hero
 pnpm deploy     # Cloudflare, through wrangler
 ```
 

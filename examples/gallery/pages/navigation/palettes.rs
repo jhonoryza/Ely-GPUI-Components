@@ -8,7 +8,7 @@ use gpui::{App, Entity, IntoElement, ParentElement, SharedString, Window};
 
 use crate::{
     probe::{Opened, probe},
-    ui::{keep, own_window, row, section, set, specimen},
+    ui::{keep, native_only, row, section, set, specimen},
 };
 
 /// Moves `value` to the front of a recent list, keeping `size` entries.
@@ -396,9 +396,9 @@ pub fn search_palette(window: &mut Window, cx: &mut App) -> impl IntoElement + u
                 ),
                 cx,
             ))
-            .child(specimen(
+            .child(native_only(specimen(
                 "a window above all others",
-                own_window(probe(
+                probe(
                     "launcher",
                     Button::new("launcher-button", "Open the launcher")
                         .variant(ButtonVariant::Ghost)
@@ -415,9 +415,9 @@ pub fn search_palette(window: &mut Window, cx: &mut App) -> impl IntoElement + u
                                 Err(error) => log::error!("gallery: launcher: {error:#}"),
                             }
                         }),
-                ), cx),
+                ),
                 cx,
-            )),
+            ))),
     )
     .children(palette)
 }

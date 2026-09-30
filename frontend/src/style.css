@@ -126,6 +126,10 @@ canvas.iso { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-eve
 .stage-skip { position: absolute; left: -9999px; }
 .stage-skip:focus { position: static; display: inline-block; margin-bottom: 8px; font-size: 14px; color: var(--accent); }
 
+img.shot { display: block; max-width: 100%; height: auto; margin-top: 12px; }
+.native .label { margin-top: 48px; }
+.shots { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; }
+.shots img.shot { max-width: min(100%, 560px); }
 .pager { display: flex; justify-content: space-between; gap: 16px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line); }
 .pager a { display: flex; flex-direction: column; gap: 4px; max-width: 48%; font-size: 14px; line-height: 20px; }
 .pager a:hover { color: var(--accent); }

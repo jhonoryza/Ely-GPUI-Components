@@ -53,25 +53,28 @@ actions!(gallery, [Quit, About, LightMode, DarkMode, NewWindow]);
 
 /// The gallery's menu bar, drawn natively and by MenuBar.
 pub fn app_menus() -> Vec<Menu> {
-    vec![
-        Menu {
-            name: "Ely".into(),
-            items: vec![
-                MenuItem::action("About Ely", About),
-                MenuItem::separator(),
-                MenuItem::action("Quit Ely", Quit),
-            ],
-            disabled: false,
-        },
-        Menu {
-            name: "View".into(),
-            items: vec![
-                MenuItem::action("Light", LightMode),
-                MenuItem::action("Dark", DarkMode),
-            ],
-            disabled: false,
-        },
-    ]
+    let view = Menu {
+        name: "View".into(),
+        items: vec![
+            MenuItem::action("Light", LightMode),
+            MenuItem::action("Dark", DarkMode),
+        ],
+        disabled: false,
+    };
+    // A page opens no second window and cannot quit.
+    if cfg!(target_family = "wasm") {
+        return vec![view];
+    }
+    let ely = Menu {
+        name: "Ely".into(),
+        items: vec![
+            MenuItem::action("About Ely", About),
+            MenuItem::separator(),
+            MenuItem::action("Quit Ely", Quit),
+        ],
+        disabled: false,
+    };
+    vec![ely, view]
 }
 
 /// Menu bar and Dock menu, set before the window opens.

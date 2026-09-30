@@ -9,7 +9,7 @@ use gpui::{App, IntoElement, ParentElement, Styled, Window, div, px};
 use super::rows::{ran, run};
 use crate::{
     probe::probe,
-    ui::{section, specimen, web_note},
+    ui::{section, specimen},
 };
 
 pub fn menu_bar(cx: &mut App) -> impl IntoElement + use<> {
@@ -26,10 +26,6 @@ pub fn menu_bar(cx: &mut App) -> impl IntoElement + use<> {
         "The app's own menus, the ones cx.set_menus gave the system, drawn in the window. Picking a row dispatches its action.",
         cx,
     )
-    .children(web_note(
-        "A browser page has no menu bar, and gpui on the web keeps no cx.set_menus: this bar draws the gallery's own list of the same menus. About Ely would open a second window and Quit would end the app, neither of which a page can, so both only log.",
-        cx,
-    ))
     .child(specimen(
         "hover moves between menus while one is open",
         probe("menubar", MenuBar::new("app-bar", menus)),

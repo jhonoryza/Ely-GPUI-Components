@@ -4,7 +4,7 @@ use ely_gpui_component::{
 };
 use gpui::{App, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
 
-use crate::ui::{NO_FILES, change, keep, section, specimen, specimens, web_note};
+use crate::ui::{change, keep, section, specimen, specimens};
 
 /// Which code palette the demo last chose.
 struct Chosen(SharedString);
@@ -17,7 +17,6 @@ pub fn importing(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
         "A VS Code color theme dropped here reads into Ely's palette, the colors it leaves out kept from Ely's; Apply sets it on the whole gallery. Code palettes choose the colors of code for the mode shown.",
         cx,
     )
-    .children(web_note(NO_FILES, cx))
     .child(
         specimens()
             .child(specimen(

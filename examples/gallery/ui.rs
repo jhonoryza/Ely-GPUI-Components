@@ -208,29 +208,13 @@ pub const UNREAD: &str = if cfg!(target_family = "wasm") {
     "gpui builds an AccessKit tree from elements with an id and a role, and no screen reader here reads it"
 };
 
-/// Why a demo takes no files on the web.
-pub const NO_FILES: &str = "A browser hands gpui no files: on the web the file dialog fails and dropped files never arrive, so nothing is taken here.";
-
-/// On the web, what a browser cannot do.
-pub fn web_note(text: &'static str, cx: &App) -> Option<AnyElement> {
-    cfg!(target_family = "wasm").then(|| blocked(text, cx).into_any_element())
-}
-
-/// A demo browsers cannot run; there, its note instead.
-pub fn native_only(element: impl IntoElement, note: &'static str, cx: &App) -> AnyElement {
-    match web_note(note, cx) {
-        Some(note) => note,
-        None => element.into_any_element(),
+/// A demo browsers cannot run draws natively alone; the site shows its capture.
+pub fn native_only(element: impl IntoElement) -> AnyElement {
+    if cfg!(target_family = "wasm") {
+        div().into_any_element()
+    } else {
+        element.into_any_element()
     }
-}
-
-/// A button opening its own window, which browsers cannot.
-pub fn own_window(button: impl IntoElement, cx: &App) -> AnyElement {
-    native_only(
-        button,
-        "A browser page is a single window: gpui opens no second window or popup on the web, so this one cannot open here.",
-        cx,
-    )
 }
 
 /// A demo's state, kept across frames under `key`.
