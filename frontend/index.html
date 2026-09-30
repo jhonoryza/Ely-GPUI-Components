@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ely · GPUI components</title>
+    <meta name="description" content="A component library for GPUI, in light and dark. Every component runs live in the browser." />
+    <script>
+      // The saved mode, or the system's, before first paint.
+      try {
+        const saved = localStorage.getItem("ely-theme");
+        const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.classList.toggle("dark", dark);
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="bar" id="bar"></header>
+    <main id="main"></main>
+    <footer class="foot" id="foot"></footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

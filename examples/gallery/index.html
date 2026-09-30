@@ -14,6 +14,24 @@
         document.documentElement.classList.add("dark");
       }
     </script>
+    <script>
+      // Embedded, gpui's hidden field waits for a press or key.
+      if (window.parent !== window) {
+        let touched = false;
+        const touch = () => {
+          if (touched) return;
+          touched = true;
+          document.querySelector("textarea")?.focus({ preventScroll: true });
+        };
+        addEventListener("pointerdown", touch, true);
+        addEventListener("keydown", touch, true);
+        document.addEventListener("focusin", (event) => {
+          if (touched) return;
+          event.target.blur();
+          window.parent.focus();
+        }, true);
+      }
+    </script>
     <script type="module">
       import init, { set_theme } from "./gallery.js";
       // The host sets the mode by setTheme or a message.

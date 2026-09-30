@@ -39,6 +39,16 @@ ELY_GALLERY_ASSETS=https://example.com/gallery/assets/ scripts/web.sh dist   # f
 
 In a browser, `?page=buttons&story=icon-button&theme=dark` draws one section alone; `examples/gallery/stories.json` lists them all.
 
+## Website
+
+```sh
+cd frontend
+pnpm install
+ELY_GALLERY_ASSETS=https://<site>/gallery/assets/ pnpm gallery   # the wasm gallery, into public/gallery
+pnpm dev        # or: pnpm build && pnpm preview
+pnpm deploy     # Cloudflare, through wrangler
+```
+
 ## Build notes
 
 - gpui compiles its Metal shaders at runtime here (`runtime_shaders`, on by default), so a full Xcode install is not required. gpui_platform needs `font-kit`, or macOS draws no text.
