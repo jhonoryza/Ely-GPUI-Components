@@ -7,7 +7,7 @@ const windows: Record<string, string[]> = shots.windows;
 /** Whether the site shows this story as a native capture. */
 export const isCaptured = (page: string, story: string) => captured.has(`${page}/${story}`);
 
-/** Captures are at twice the pixels, drawn at their size, in the site's mode. */
+/** A capture at twice its pixels, in the site's mode. */
 function Shot({ name, alt }: { name: string; alt: string }) {
   const theme = useMode();
   return <img className="shot" srcSet={`/shots/${name}-${theme}.jpg 2x`} alt={alt} loading="lazy" />;

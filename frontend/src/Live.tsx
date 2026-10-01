@@ -7,14 +7,14 @@ const GIVE_UP = 20000;
 
 type State = "starting" | "slow" | "ready" | "failed";
 
-/** One story live from the gallery, themed with the site, no frame around it. */
+/** One story live from the gallery, in the site's mode. */
 export function Live({ page, story, title }: { page: string; story: string; title: string }) {
   const theme = useMode();
   const frame = useRef<HTMLIFrameElement>(null);
   const [state, setState] = useState<State>("starting");
   const [full, setFull] = useState(false);
   const [run, setRun] = useState(0);
-  // Each new frame opens in the mode the site has then.
+  // Each new frame opens in the current mode.
   const start = useMemo(() => mode(), [run]);
   const src = (t: string) => `/gallery/?page=${page}&story=${story}&theme=${t}`;
 
