@@ -174,7 +174,7 @@ img.shot { display: block; max-width: 100%; height: auto; }
 .docs-rail a:hover, .doc-toc a:hover, .docs-rail a[aria-current="page"] { color: var(--fg); }
 .docs-rail a[aria-current="page"] { font-weight: 500; }
 .doc { padding: 96px 0 128px; min-width: 0; }
-.doc h1 { font-size: clamp(36px, 4vw, 56px); line-height: 1.05; font-weight: 800; letter-spacing: -0.035em; margin-bottom: 40px; }
+.doc h1 { font-size: clamp(36px, 4vw, 56px); line-height: 1.05; font-weight: 800; letter-spacing: -0.035em; margin-bottom: 40px; hyphens: auto; overflow-wrap: break-word; }
 .prose { font-size: 17px; line-height: 30px; overflow-wrap: anywhere; }
 .prose p, .prose li { color: color-mix(in srgb, var(--fg) 82%, var(--bg)); }
 .prose p { margin: 0 0 20px; }
@@ -188,6 +188,8 @@ img.shot { display: block; max-width: 100%; height: auto; }
 .prose th, .prose td { text-align: left; vertical-align: top; padding: 12px 16px 12px 0; border-top: 1px solid var(--line); }
 .prose th { font-weight: 600; }
 .prose td { color: color-mix(in srgb, var(--fg) 82%, var(--bg)); }
+.prose th, .prose td { overflow-wrap: break-word; }
+.prose td code { overflow-wrap: anywhere; }
 .code { position: relative; margin: 28px 0; background: var(--code); border-radius: 12px; }
 .code figcaption { padding: 14px 88px 0 20px; font: 400 12px/18px var(--mono); color: var(--faint); overflow-wrap: anywhere; }
 .code pre { margin: 0; padding: 16px 20px 20px; overflow-x: auto; }

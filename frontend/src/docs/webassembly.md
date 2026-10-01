@@ -20,11 +20,11 @@ The gallery's [web entry](https://github.com/ZacharyZhang-NY/Ely-GPUI-Components
 | `#[wasm_bindgen(start)]` on the entry | The browser runs it when the module loads. |
 | `gpui_platform::web_init()` | Sends panics and logs to the browser console. |
 | `WebPlatform::new_with_backend_and_font_fallback(false, WebBackendPreference::Auto, CanvasFontFallback::EmojiAndCjk)` | One thread, since a static site gets no cross-origin isolation; WebGPU where the browser has it, WebGL2 where it does not; the browser lends fonts for emoji and CJK alone. |
-| `Application::with_platform(platform)` | Then `with_http_client(Arc::new(platform.fetch_http_client()))`, `with_assets(Assets)` and `run`, as on the desktop. |
+| `Application::with_platform(platform)` | Then `with_http_client(Arc::new(platform.fetch_http_client()))`, which fetches pictures by address, and `with_assets(Assets)` and `run`, as on the desktop. |
 
 ## Build the gallery
 
-`ELY_GALLERY_ASSETS=<address>/ scripts/web.sh <out>` builds the gallery with the `web` profile, runs `wasm-bindgen` and `wasm-opt -Oz`, and copies its page and pictures beside it. It needs the `wasm-bindgen` CLI at the version in `Cargo.lock` and binaryen's `wasm-opt`, and it fails when the wasm passes Cloudflare's 25 MiB. `ELY_GALLERY_ASSETS` is the address the pictures are served from, ending in `/`: GPUI reads no files in a browser.
+`ELY_GALLERY_ASSETS=<address>/ scripts/web.sh <out>` builds the gallery with the `web` profile, runs `wasm-bindgen` and `wasm-opt -Oz`, and copies its page beside it and its pictures into `<out>/assets/`. It needs the `wasm-bindgen` CLI at the version in `Cargo.lock` and binaryen's `wasm-opt`, and it fails when the wasm passes Cloudflare's 25 MiB. `ELY_GALLERY_ASSETS` is the address `<out>/assets/` is served from, ending in `/`: GPUI reads no files in a browser.
 
 The gallery opens at `?page=<slug>&story=<title or slug>&theme=light|dark`. A story needs its page.
 
