@@ -19,8 +19,8 @@ function ink(): Ink {
   return { ground: v("--bg"), line: v("--iso-line"), accent: v("--accent"), side: v("--iso-side"), shade: v("--iso-shade") };
 }
 
-/** Grows cell by cell; a block under the pointer lifts and sounds. */
-export function miniature(canvas: HTMLCanvasElement, model: Block[], still: boolean) {
+/** Grows cell by cell; a pointed block lifts and sounds. */
+export function miniature(canvas: HTMLCanvasElement, model: Block[], still: boolean, onHover?: (index: number | null) => void) {
   const blocks = painted(model);
   const ctx = canvas.getContext("2d")!;
   let colors = ink();
@@ -75,10 +75,10 @@ export function miniature(canvas: HTMLCanvasElement, model: Block[], still: bool
       const drawn = Math.min(1, since / DRAW);
       const grown = rise((since - DRAW) / GROW);
       const bump = bumps.get(b);
-      const lift = bump === undefined ? 0 : Math.max(0, 1 - (now - bump) / BUMP);
-      if (bump !== undefined && lift === 0) bumps.delete(b);
-      moving ||= drawn < 1 || since - DRAW < GROW || lift > 0;
-      const h = Math.max(b.h * grown * (1 + 0.35 * Math.sin(lift * Math.PI)), 0.0001);
+      const bounce = bump === undefined ? 0 : Math.max(0, 1 - (now - bump) / BUMP);
+      if (bump !== undefined && bounce === 0) bumps.delete(b);
+      moving ||= drawn < 1 || since - DRAW < GROW || bounce > 0;
+      const h = Math.max(b.h * grown * (1 + 0.35 * Math.sin(bounce * Math.PI)), 0.0001);
       const f = faces(b, h);
       if (drawn === 1) shown.set(b, h);
       const stroke = b.accent ? colors.accent : colors.line;
@@ -112,35 +112,48 @@ export function miniature(canvas: HTMLCanvasElement, model: Block[], still: bool
     if (!frame) frame = requestAnimationFrame(draw);
   };
 
-  const pointer = (e: PointerEvent) => {
-    if (still) return;
+  /** Model index of the grown block at a point, not the table. */
+  const pick = (x: number, y: number): number | null => {
     const r = canvas.getBoundingClientRect();
     const dpr = canvas.width / r.width;
-    const p: Point = [((e.clientX - r.left) * dpr - view.dx) / view.scale, ((e.clientY - r.top) * dpr - view.dy) / view.scale];
+    const p: Point = [((x - r.left) * dpr - view.dx) / view.scale, ((y - r.top) * dpr - view.dy) / view.scale];
     for (let i = blocks.length - 1; i >= 0; i--) {
       const b = blocks[i];
       const h = shown.get(b);
       if (h === undefined) continue;
       const f = faces(b, h);
-      if (inside(p, f.top) || inside(p, f.front) || inside(p, f.right)) {
-        // The table itself stays put.
-        if (b.y === 0) return;
-        if (!bumps.has(b)) {
-          bumps.set(b, performance.now());
-          strike(Math.round(b.x + b.z + b.h * 2), 0.5);
-          request();
-        }
-        return;
-      }
+      if (inside(p, f.top) || inside(p, f.front) || inside(p, f.right)) return b.y === 0 ? null : model.indexOf(b);
     }
+    return null;
   };
+
+  const lift = (index: number) => {
+    const b = model[index];
+    if (still || bumps.has(b)) return;
+    bumps.set(b, performance.now());
+    strike(Math.round(b.x + b.z + b.h * 2), 0.5);
+    request();
+  };
+
+  let hovered: number | null = null;
+  const hover = (at: number | null) => {
+    if (at === hovered) return;
+    hovered = at;
+    if (at !== null) lift(at);
+    onHover?.(at);
+  };
+  const pointer = (e: PointerEvent) => hover(pick(e.clientX, e.clientY));
+  const leave = () => hover(null);
 
   const resized = new ResizeObserver(() => (fit(), request()));
   resized.observe(canvas);
   canvas.addEventListener("pointermove", pointer);
+  canvas.addEventListener("pointerleave", leave);
   fit();
   request();
   return {
+    pick,
+    lift,
     start() {
       // Still, it stands grown from the first frame.
       if (started !== null) return;
@@ -163,6 +176,7 @@ export function miniature(canvas: HTMLCanvasElement, model: Block[], still: bool
       cancelAnimationFrame(frame);
       resized.disconnect();
       canvas.removeEventListener("pointermove", pointer);
+      canvas.removeEventListener("pointerleave", leave);
     },
   };
 }

@@ -1,6 +1,10 @@
 import { Link, Outlet } from "@tanstack/react-router";
+import Lenis from "lenis";
+import "lenis/dist/lenis.css";
+import { useEffect } from "react";
 import { REPO } from "./data";
 import { Icon } from "./icons";
+import { useStill } from "./iso/Iso";
 import { setSound, useSound } from "./iso/marimba";
 import { setMode, useMode } from "./theme";
 
@@ -53,6 +57,12 @@ function Footer() {
 }
 
 export function Shell() {
+  const still = useStill();
+  useEffect(() => {
+    if (still) return;
+    const lenis = new Lenis({ autoRaf: true });
+    return () => lenis.destroy();
+  }, [still]);
   return (
     <>
       <a className="skip" href="#main">

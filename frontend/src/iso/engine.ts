@@ -27,7 +27,7 @@ function under(a: Block, b: Block): boolean {
   const apartZ = a.z + a.d <= b.z + EPS || b.z + b.d <= a.z + EPS;
   if (!apartX && !apartZ) return a.y < b.y || (a.y === b.y && a.h < b.h);
   const [behindX, behindZ] = [a.x + a.w <= b.x + EPS, a.z + a.d <= b.z + EPS];
-  // Behind on one axis, before on the other: side by side.
+  // Behind on one axis, before on the other: apart.
   if (apartX && apartZ) return behindX && behindZ;
   return apartX ? behindX : behindZ;
 }
