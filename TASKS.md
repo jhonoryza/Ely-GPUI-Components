@@ -159,7 +159,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T45b Site · Iso: isometric line miniatures on a canvas, no perspective, hidden lines removed, cells growing on a sixteenth-note marimba beat, playable under the pointer, light and dark, still under reduced motion
 - [x] T45c Site · Home: a full-screen hero and full-screen sections, each a miniature beside its live component, counts, the chapters as a city of plinths, a closing call; motion from scroll and route changes
 - [x] T45d Site · Components: the chapter index and the story page redesigned; live stories without frames, native captures for what a browser cannot run, search, keys
-- [ ] T45e Site · Local: the gallery bundle built for localhost and the site served for the owner to see; not published
+- [x] T45e Site · Local: the gallery bundle built for localhost and the site served for the owner to see; not published
 - [ ] T46 E2E: Playwright against the built site
 - [ ] T47 Ship: GitHub repo (public), CI, Cloudflare deploy through `npx wrangler`
 - [ ] T48 Acceptance: live URL and MVP checklist

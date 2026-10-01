@@ -323,3 +323,4 @@
 | T45c | fix | — | after the cap: full screen stops Lenis at once, the gallery frame no longer takes host focus at start, a focused frame stays mounted; round 3's own repro passes 20 of 20 at Enter delays 0 to 250 ms |
 | T45d | 1 | FAIL | the rail revealed the chapter link, not the story; Shift arrows paged |
 | T45d | 2 | PASS | reviewer now Claude Code, Fable 5.1 high; its note fixed after: Slash leaves a hidden field alone |
+| T45e | 1 | PASS | |
