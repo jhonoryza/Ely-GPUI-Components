@@ -50,6 +50,7 @@ function read(file: string, files: string[]): Guide {
         }
         const html = this.parser.parseInline(tokens);
         const id = slugify(words);
+        if (!id) throw new Error(`docs: ${file}.md has a heading with no id: ${words}`);
         if (ids.has(id)) throw new Error(`docs: ${file}.md repeats heading ${id}`);
         ids.add(id);
         if (depth === 2) toc.push({ id, text: words });

@@ -35,7 +35,7 @@ export function Docs() {
     const target = e.target as HTMLElement;
     const button = target.closest<HTMLButtonElement>("button.copy");
     if (button) return void copy(button);
-    const link = target.closest<HTMLAnchorElement>("a[href^='/']");
+    const link = target.closest<HTMLAnchorElement>("a[href^='/']:not([href^='//'])");
     if (!link || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
     const url = new URL(link.href);

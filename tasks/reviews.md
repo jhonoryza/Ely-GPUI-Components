@@ -327,3 +327,6 @@
 | T46 | 1 | FAIL | the typing test passed without typing; two home tests passed with no frame mounted; full screen and window captures checked by class and srcset only |
 | T46 | 2 | PASS | |
 | T46a | 1 | PASS | notes fixed after: the hero title fits its column at every width, the icon comment, AGENTS.md's wording |
+| T48a | 1 | FAIL | escaped entities in titles and the list; section links broke under the trailing slash; long inline code widened 280px; no guide list under 1024px |
+| T48a | 2 | FAIL | the rail and list clipped the focus ring's left side |
+| T48a | 3 | PASS | rendering moved to build time first: a bad guide fails the build; notes fixed after (an id-less heading fails, protocol-relative links stay native, dead padding rule gone) |
