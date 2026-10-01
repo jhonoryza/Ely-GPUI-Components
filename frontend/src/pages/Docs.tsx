@@ -48,7 +48,7 @@ export function Docs() {
         <ol>
           {guides.map((g) => (
             <li key={g.slug}>
-              <Link to={to(g)} aria-current={g === guide ? "page" : undefined}>
+              <Link to={to(g)} activeOptions={{ exact: true }}>
                 {g.title}
               </Link>
             </li>
