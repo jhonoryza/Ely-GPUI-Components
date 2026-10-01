@@ -14,6 +14,7 @@ export function Live({ page, story, title }: { page: string; story: string; titl
   const [state, setState] = useState<State>("starting");
   const [full, setFull] = useState(false);
   const [run, setRun] = useState(0);
+  const after = useRef<HTMLSpanElement>(null);
   // Each new frame opens in the current mode.
   const start = useMemo(() => mode(), [run]);
   const src = (t: string) => `/gallery/?page=${page}&story=${story}&theme=${t}`;
@@ -57,10 +58,10 @@ export function Live({ page, story, title }: { page: string; story: string; titl
 
   return (
     <>
-      <a className="skip-live" href="#after-live">
+      <button className="skip-live" onClick={() => after.current?.focus()}>
         Skip the live example
-      </a>
-      <div className={full ? "live full" : "live"}>
+      </button>
+      <div className={full ? "live full" : "live"} data-lenis-prevent={full || undefined}>
         <iframe key={run} ref={frame} title={`${title}, live`} src={src(start)} />
         {state !== "ready" && (
           <div className="live-state" role="status">
@@ -89,7 +90,7 @@ export function Live({ page, story, title }: { page: string; story: string; titl
           </button>
         </div>
       </div>
-      <span id="after-live" tabIndex={-1} />
+      <span ref={after} tabIndex={-1} />
     </>
   );
 }

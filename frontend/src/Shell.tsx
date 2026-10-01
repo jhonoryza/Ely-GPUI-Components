@@ -1,4 +1,4 @@
-import { Link, Outlet } from "@tanstack/react-router";
+import { Link, Outlet, useRouter } from "@tanstack/react-router";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
 import { useEffect } from "react";
@@ -58,11 +58,17 @@ function Footer() {
 
 export function Shell() {
   const still = useStill();
+  const router = useRouter();
   useEffect(() => {
     if (still) return;
     const lenis = new Lenis({ autoRaf: true });
-    return () => lenis.destroy();
-  }, [still]);
+    // A glide in flight must not outlive its page.
+    const off = router.subscribe("onBeforeNavigate", () => lenis.scrollTo(lenis.animatedScroll, { immediate: true, force: true }));
+    return () => {
+      off();
+      lenis.destroy();
+    };
+  }, [still, router]);
   return (
     <>
       <a className="skip" href="#main">
