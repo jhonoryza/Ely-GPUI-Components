@@ -1,8 +1,20 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
-/** The guides in reading order, as `src/docs/guides.ts` lists them. */
-const GUIDES = ["", "installation", "getting-started", "theme", "focus", "motion", "icons", "overlays", "i18n", "webassembly", "testing"];
+/** The guides in reading order, as `src/docs/guides.ts` lists them, with their titles. */
+const GUIDES: [string, string][] = [
+  ["", "Introduction"],
+  ["installation", "Installation"],
+  ["getting-started", "Getting started"],
+  ["theme", "Theme"],
+  ["focus", "Focus and keyboard"],
+  ["motion", "Motion"],
+  ["icons", "Icons, fonts and assets"],
+  ["overlays", "Overlays"],
+  ["i18n", "Internationalization"],
+  ["webassembly", "WebAssembly"],
+  ["testing", "Testing"],
+];
 
 const path = (slug: string) => (slug ? `/docs/${slug}/` : "/docs/");
 
@@ -23,9 +35,10 @@ test("the header's Docs link opens the introduction", async ({ page }) => {
 
 test("every guide loads with its title, list and no errors", async ({ page }) => {
   const errors = watch(page);
-  for (const slug of GUIDES) {
+  for (const [slug, title] of GUIDES) {
     await page.goto(path(slug));
-    await expect(page.locator(".doc h1")).not.toBeEmpty();
+    await expect(page.locator(".doc h1")).toHaveText(title);
+    await expect(page).toHaveTitle(`${title} · Docs · Ely`);
     await expect(page.locator(".prose h2").first()).toBeVisible();
   }
   expect(errors).toEqual([]);
@@ -35,7 +48,10 @@ test("the rail lists the guides in order and marks the open one", async ({ page 
   await page.goto("/docs/theme/");
   const links = page.locator(".docs-rail a");
   await expect(links).toHaveCount(GUIDES.length);
-  for (const [i, slug] of GUIDES.entries()) await expect(links.nth(i)).toHaveAttribute("href", path(slug));
+  for (const [i, [slug, title]] of GUIDES.entries()) {
+    await expect(links.nth(i)).toHaveAttribute("href", path(slug));
+    await expect(links.nth(i)).toHaveText(title);
+  }
   await expect(page.locator('.docs-rail a[aria-current="page"]')).toHaveText("Theme");
 });
 
@@ -44,7 +60,7 @@ test("previous and next walk the guides", async ({ page }) => {
   await expect(page.locator(".pager a")).toHaveCount(1);
   await page.locator(".pager a.next").click();
   await expect(page).toHaveURL("/docs/installation/");
-  await page.goto(path(GUIDES[GUIDES.length - 1]));
+  await page.goto(path(GUIDES[GUIDES.length - 1][0]));
   await expect(page.locator(".pager a.next")).toHaveCount(0);
 });
 
@@ -54,6 +70,15 @@ test("an on-this-page link moves to its section", async ({ page, isMobile }) => 
   await page.locator(".doc-toc a", { hasText: "When it fails" }).click();
   await expect(page).toHaveURL("/docs/installation/#when-it-fails");
   await expect(page.locator("#when-it-fails")).toBeInViewport();
+});
+
+test("a link in a guide routes in place to its section", async ({ page }) => {
+  await page.goto("/docs/installation/");
+  await page.evaluate(() => ((window as unknown as { kept: boolean }).kept = true));
+  await page.locator(".prose a", { hasText: "first window" }).click();
+  await expect(page).toHaveURL("/docs/#a-first-window");
+  await expect(page.locator("#a-first-window")).toBeInViewport();
+  expect(await page.evaluate(() => (window as unknown as { kept?: boolean }).kept)).toBe(true);
 });
 
 test("a code sample is the compiled example, and Copy copies it", async ({ page, context, browserName, isMobile }) => {
