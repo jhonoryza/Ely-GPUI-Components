@@ -91,3 +91,7 @@ path = "examples/gallery/main.rs"
 [[example]]
 name = "docs_hello"
 path = "examples/docs/hello.rs"
+
+[[example]]
+name = "docs_start"
+path = "examples/docs/start.rs"
