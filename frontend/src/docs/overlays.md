@@ -1,6 +1,6 @@
 # Overlays
 
-Dialogs, popovers, menus, tooltips and toasts draw over the page. Each takes focus while it is open and hands it back when it closes.
+Dialogs, popovers, menus, tooltips and toasts draw over the page. Dialogs, popovers and menus take focus while open and hand it back when they close; tooltips and toasts leave focus alone.
 
 ## Drawing over the page
 
@@ -14,10 +14,10 @@ Dialogs, popovers, menus, tooltips and toasts draw over the page. Each takes foc
 | --- | --- |
 | `.detail(text)` | A line under the title. |
 | `.child(..)` | The owner's content. |
-| `.action(\|close\| ..)` | A button in the row at the bottom, in the order given. `build` gets the dialog's close; a button that ends the dialog calls it. |
-| `.fullscreen()` | Fills the window below its title bar. |
+| `.action(\|close\| ..)` | A button in the row at the bottom, in the order given. The closure gets the dialog's close; a button that ends the dialog calls it. |
+| `.fullscreen()` | Fills the window below its title bar, under a bar with the title and a close button. |
 
-Escape, a press on the scrim and the close button all run `on_close`. Tab stays inside the dialog, and focus returns to what held it before, on every way out. The card fits the window; its body scrolls and its actions stay. `AlertDialog`, `ConfirmDialog` and `PromptDialog` build on `Dialog`.
+Escape, a press on the scrim and a fullscreen dialog's close button all run `on_close`. Tab stays inside the dialog, and focus returns to what held it before, on every way out. The card fits the window; its body scrolls and its actions stay. `AlertDialog`, `ConfirmDialog` and `PromptDialog` build on `Dialog`.
 
 ## Popovers
 
