@@ -25,6 +25,7 @@ test("a starting story leaves focus with the host", async ({ page, isMobile }) =
   await page.goto("/");
   await page.getByRole("link", { name: "Browse" }).first().focus();
   await page.locator(".feature").first().scrollIntoViewIfNeeded();
+  await expect(page.locator(".feature iframe").first()).toBeAttached();
   await expect(page.locator(".feature .live .live-state")).toHaveCount(0, { timeout: STARTS });
   await expect(page.getByRole("link", { name: "Browse" }).first()).toBeFocused();
 });
@@ -39,16 +40,37 @@ test("the skip control passes the live example", async ({ page, isMobile }) => {
   await expect(page.locator(".live + span")).toBeFocused();
 });
 
+/** Pixels darker than placeholder text inside a clip of the page. */
+async function ink(page: Page, clip: { x: number; y: number; width: number; height: number }) {
+  const png = (await page.screenshot({ clip })).toString("base64");
+  return page.evaluate(async (src) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${src}`;
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    [canvas.width, canvas.height] = [img.width, img.height];
+    const g = canvas.getContext("2d")!;
+    g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, img.width, img.height).data;
+    let n = 0;
+    for (let i = 0; i < d.length; i += 4) if (0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2] < 90) n++;
+    return n;
+  }, png);
+}
+
 test("typing reaches a live field after a press", async ({ page, isMobile }) => {
   test.skip(isMobile, "no hardware keyboard");
+  await page.emulateMedia({ colorScheme: "light" });
   const frame = await live(page, "/components/forms/input-textfield-clearableinput/");
   const box = (await page.locator(".live iframe").boundingBox())!;
   // The first field sits under the section's note, as the gallery lays it.
+  const text = { x: box.x + 28, y: box.y + 62, width: 220, height: 20 };
   await page.mouse.click(box.x + 120, box.y + 72);
-  const before = await frame.locator("canvas").screenshot();
-  await page.keyboard.type("Ada");
   await expect(frame.locator("textarea")).toBeFocused();
-  await expect.poll(async () => (await frame.locator("canvas").screenshot()).equals(before)).toBe(false);
+  // Its placeholder and caret are lighter than typed text.
+  expect(await ink(page, text)).toBe(0);
+  await page.keyboard.type("Ada");
+  await expect.poll(() => ink(page, text)).toBeGreaterThan(30);
 });
 
 test("full screen covers the page and Escape leaves it", async ({ page }) => {
@@ -56,12 +78,15 @@ test("full screen covers the page and Escape leaves it", async ({ page }) => {
   await page.locator(".live").hover();
   await page.getByRole("button", { name: "Full screen" }).click();
   await expect(page.locator(".live")).toHaveClass(/full/);
+  const viewport = page.viewportSize()!;
+  expect(await page.locator(".live").boundingBox()).toEqual({ x: 0, y: 0, width: viewport.width, height: viewport.height });
   await page.keyboard.press("Escape");
   await expect(page.locator(".live")).not.toHaveClass(/full/);
 });
 
 test("home frames run only near the view", async ({ page }) => {
   await page.goto("/");
+  await expect(page.locator(".feature").first().locator("iframe")).toBeAttached();
   await page.locator(".close").scrollIntoViewIfNeeded();
   await expect(page.locator(".feature iframe")).toHaveCount(0);
 });

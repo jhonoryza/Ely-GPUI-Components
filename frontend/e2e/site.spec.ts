@@ -109,5 +109,8 @@ test("a story the web cannot run shows its native capture, in the site's mode", 
 test("a live story that opens a window shows that window natively", async ({ page }) => {
   await page.goto("/components/shell/aboutdialog/");
   await expect(page.locator(".live iframe")).toHaveCount(1);
-  await expect(page.locator(".windows img.shot")).toHaveAttribute("srcset", /shell-about-window/);
+  const shot = page.locator(".windows img.shot");
+  await expect(shot).toHaveAttribute("srcset", /shell-about-window/);
+  await shot.scrollIntoViewIfNeeded();
+  await expect.poll(() => shot.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
 });
