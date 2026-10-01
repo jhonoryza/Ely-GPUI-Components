@@ -20,12 +20,12 @@ export function Story() {
   }, [chapter, found]);
 
   useEffect(() => {
-    document.querySelector('.side [aria-current="page"]')?.scrollIntoView({ block: "nearest" });
+    document.querySelector('.side li [aria-current="page"]')?.scrollIntoView({ block: "nearest" });
   }, [page, story]);
 
   useEffect(() => {
     const step = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || typing(e)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || typing(e)) return;
       const to = e.key === "ArrowLeft" ? prev : e.key === "ArrowRight" ? next : undefined;
       if (to) navigate({ to: "/components/$page/$story/", params: { page: to.chapter.slug, story: to.story.slug } });
     };
