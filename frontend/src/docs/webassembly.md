@@ -42,7 +42,7 @@ Until a press or a key reaches it, the embedded gallery keeps GPUI's hidden text
 
 | Area | On the web |
 | --- | --- |
-| Threads | One. |
+| Threads | One in the gallery: more need a page served with cross-origin isolation. |
 | Pictures | Fetched by address, never read from files. |
 | Time | `web_time::Instant`; std's panics in a browser. |
 | Paste | Arrives as the browser's paste event. Code that reads the clipboard itself awaits `read_from_clipboard_async`. |

@@ -341,3 +341,5 @@
 | T48i | 1 | FAIL | said tooltips and toasts take focus; gave a centered dialog a close button |
 | T48i | 2 | PASS | |
 | T48j | 1 | PASS | note taken: the he-IL tag keeps its case |
+| T48k | 1 | FAIL | table words split at phone width (a stylesheet flaw on every page); the assets address missed <out>/assets/; the HTTP client called the desktop's |
+| T48k | 2 | PASS | note taken: one thread is the gallery's choice |
