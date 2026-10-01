@@ -175,7 +175,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T48i Docs · Overlays: what draws over the page, dialogs, popovers, toasts
 - [x] T48j Docs · Internationalization: the `I18n` global, catalogs, right-to-left
 - [x] T48k Docs · WebAssembly: the web gallery build, its URL, the host protocol, what stays native
-- [ ] T48l Docs · Testing: the `test-support` feature, frames, clocks and reduced motion in tests
+- [x] T48l Docs · Testing: the `test-support` feature, frames, clocks and reduced motion in tests
 - [ ] T48m Docs · E2E: the Docs routes, rail, list, previous and next, and code blocks under Playwright
 - [ ] T49 Acceptance: live URL and MVP checklist
 
