@@ -326,3 +326,4 @@
 | T45e | 1 | PASS | |
 | T46 | 1 | FAIL | the typing test passed without typing; two home tests passed with no frame mounted; full screen and window captures checked by class and srcset only |
 | T46 | 2 | PASS | |
+| T46a | 1 | PASS | notes fixed after: the hero title fits its column at every width, the icon comment, AGENTS.md's wording |

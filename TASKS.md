@@ -161,7 +161,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T45d Site · Components: the chapter index and the story page redesigned; live stories without frames, native captures for what a browser cannot run, search, keys
 - [x] T45e Site · Local: the gallery bundle built for localhost and the site served for the owner to see; not published
 - [x] T46 E2E: Playwright against the built site
-- [ ] T46a Site · Owner's notes: the city title whole, header icons on one line, less space above a story, no visible scroll bars, each story named by its first component, every page laid out at phone, tablet and desktop widths
+- [x] T46a Site · Owner's notes: the city title whole, header icons on one line, less space above a story, no visible scroll bars, each story named by its first component, every page laid out at phone, tablet and desktop widths
 - [ ] T47 Ship: GitHub repo (public), CI, Cloudflare deploy through `npx wrangler`
 - [ ] T48 Acceptance: live URL and MVP checklist
 
