@@ -20,6 +20,23 @@ test("a story runs live and follows the site's mode", async ({ page }) => {
   await expect(frame.locator("html")).toHaveClass(/dark/);
 });
 
+test("a frame whose wasm fetch fails once starts on its retry", async ({ page }) => {
+  let aborted = false;
+  await page.route("**/gallery/gallery_bg.wasm", (route) => {
+    if (aborted) return route.continue();
+    aborted = true;
+    return route.abort();
+  });
+  await live(page, "/components/buttons/button/");
+  expect(aborted).toBe(true);
+});
+
+test("a frame that cannot start says so at once", async ({ page }) => {
+  await page.route("**/gallery/gallery_bg.wasm", (route) => route.abort());
+  await page.goto("/components/buttons/button/");
+  await expect(page.locator(".live .live-state")).toContainText("Couldn't start", { timeout: 15_000 });
+});
+
 test("a starting story leaves focus with the host", async ({ page, isMobile }) => {
   test.skip(isMobile, "no hardware keyboard");
   await page.goto("/");

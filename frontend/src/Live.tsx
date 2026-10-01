@@ -4,7 +4,7 @@ import { hold } from "./scroll";
 import { mode, useMode } from "./theme";
 
 const SPIN_AFTER = 400;
-const GIVE_UP = 20000;
+const GIVE_UP = 60000;
 
 type State = "starting" | "slow" | "ready" | "failed";
 
@@ -28,7 +28,15 @@ export function Live({ page, story, title }: { page: string; story: string; titl
       console.error(`live: ${page}/${story} sent no ready in ${GIVE_UP} ms`);
     }, GIVE_UP);
     const ready = (event: MessageEvent) => {
-      if (event.source !== frame.current?.contentWindow || event.data?.ely !== "ready") return;
+      if (event.source !== frame.current?.contentWindow) return;
+      if (event.data?.ely === "failed") {
+        clearTimeout(slow);
+        clearTimeout(failed);
+        setState("failed");
+        console.error(`live: ${page}/${story} failed to start: ${event.data.error}`);
+        return;
+      }
+      if (event.data?.ely !== "ready") return;
       clearTimeout(slow);
       clearTimeout(failed);
       setState("ready");
