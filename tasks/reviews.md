@@ -340,3 +340,4 @@
 | T48h | 1 | PASS | note taken: init checks icons/check.svg |
 | T48i | 1 | FAIL | said tooltips and toasts take focus; gave a centered dialog a close button |
 | T48i | 2 | PASS | |
+| T48j | 1 | PASS | note taken: the he-IL tag keeps its case |
