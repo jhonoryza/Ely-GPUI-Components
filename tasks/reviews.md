@@ -338,3 +338,5 @@
 | T48f | 1 | PASS | note taken: a button's own handle is built with tab_stop(true) |
 | T48g | 1 | PASS | notes taken: NUDGE is the unit an entrance travels by; Shimmer is a sweeping band |
 | T48h | 1 | PASS | note taken: init checks icons/check.svg |
+| T48i | 1 | FAIL | said tooltips and toasts take focus; gave a centered dialog a close button |
+| T48i | 2 | PASS | |
