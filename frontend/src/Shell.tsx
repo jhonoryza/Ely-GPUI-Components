@@ -20,9 +20,12 @@ function Header() {
         <Link to="/components/" className="link" activeProps={{ "aria-current": "page" }}>
           Components
         </Link>
+        <Link to="/docs/" className="link" activeProps={{ "aria-current": "page" }}>
+          Docs
+        </Link>
       </nav>
       <div className="end">
-        <button className="tool" aria-label={sound ? "Sound off" : "Sound on"} aria-pressed={sound} onClick={() => setSound(!sound)}>
+        <button className="tool sound" aria-label={sound ? "Sound off" : "Sound on"} aria-pressed={sound} onClick={() => setSound(!sound)}>
           <Icon name={sound ? "Sound" : "VolumeCross"} />
         </button>
         <button className="tool" aria-label={dark ? "Light mode" : "Dark mode"} onClick={() => setMode(dark ? "light" : "dark")}>

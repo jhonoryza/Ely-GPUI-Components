@@ -162,8 +162,22 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T45e Site · Local: the gallery bundle built for localhost and the site served for the owner to see; not published
 - [x] T46 E2E: Playwright against the built site
 - [x] T46a Site · Owner's notes: the city title whole, header icons on one line, less space above a story, no visible scroll bars, each story named by its first component, every page laid out at phone, tablet and desktop widths
-- [ ] T47 Ship: GitHub repo (public), CI, Cloudflare deploy through `npx wrangler`
-- [ ] T48 Acceptance: live URL and MVP checklist
+- [x] T47 Ship: GitHub repo (public), CI, Cloudflare deploy through `npx wrangler`
+- [ ] T48 Docs: a Docs tab after gpui-kit.com/docs, a rail of guides, an on-this-page list, previous and next; every claim checked against the code, every full Rust sample an example `scripts/check.sh` compiles and the page imports as text
+- [ ] T48a Docs · Frame: the Docs tab, `/docs/` and `/docs/$page/`, Markdown pages, the rail, the on-this-page list, previous and next, code blocks, light and dark, phone to desktop
+- [ ] T48b Docs · Introduction: what Ely is, the order to read, what is stable, a first example, license
+- [ ] T48c Docs · Installation: Rust, the git dependencies, gpui_platform's fonts, runtime shaders, the gallery as a check, what `init` refuses
+- [ ] T48d Docs · Getting started: an app from `init` to a window under a root `FocusScope`, with a Button
+- [ ] T48e Docs · Theme: modes, tokens through `cx.theme()`, high contrast, color-blind safe charts, an owner's palette
+- [ ] T48f Docs · Focus and keyboard: Tab and Shift-Tab, the root scope, tab stops, the focus ring, overlays that take and give back focus
+- [ ] T48g Docs · Motion: durations, reduced motion, springs, motion from a change
+- [ ] T48h Docs · Icons, fonts and assets: `Assets`, `IconName`, adding icons, the embedded fonts, file icons
+- [ ] T48i Docs · Overlays: what draws over the page, dialogs, popovers, toasts
+- [ ] T48j Docs · Internationalization: the `I18n` global, catalogs, right-to-left
+- [ ] T48k Docs · WebAssembly: the web gallery build, its URL, the host protocol, what stays native
+- [ ] T48l Docs · Testing: the `test-support` feature, frames, clocks and reduced motion in tests
+- [ ] T48m Docs · E2E: the Docs routes, rail, list, previous and next, and code blocks under Playwright
+- [ ] T49 Acceptance: live URL and MVP checklist
 
 ## T00 detail
 

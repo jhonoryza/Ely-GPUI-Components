@@ -87,3 +87,7 @@ codegen-units = 1
 [[example]]
 name = "gallery"
 path = "examples/gallery/main.rs"
+
+[[example]]
+name = "docs_hello"
+path = "examples/docs/hello.rs"

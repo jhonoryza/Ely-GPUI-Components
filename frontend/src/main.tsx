@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { Shell } from "./Shell";
 import { chapters } from "./data";
 import { Chapters } from "./pages/Chapters";
+import { Docs } from "./pages/Docs";
 import { Home } from "./pages/Home";
 import { NotFound } from "./pages/NotFound";
 import { Story } from "./pages/Story";
@@ -24,9 +25,11 @@ const chapter = createRoute({
   component: () => <NotFound what="No chapter by that name." />,
 });
 const story = createRoute({ getParentRoute: () => root, path: "/components/$page/$story", component: Story });
+const docs = createRoute({ getParentRoute: () => root, path: "/docs", component: Docs });
+const doc = createRoute({ getParentRoute: () => root, path: "/docs/$page", component: Docs });
 
 const router = createRouter({
-  routeTree: root.addChildren([home, index, chapter, story]),
+  routeTree: root.addChildren([home, index, chapter, story, docs, doc]),
   trailingSlash: "always",
   scrollRestoration: true,
 });
