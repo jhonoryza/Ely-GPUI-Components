@@ -72,13 +72,25 @@ test("an on-this-page link moves to its section", async ({ page, isMobile }) => 
   await expect(page.locator("#when-it-fails")).toBeInViewport();
 });
 
-test("a link in a guide routes in place to its section", async ({ page }) => {
+/** Marks the page, so a reload shows as a lost mark. */
+const mark = (page: Page) => page.evaluate(() => ((window as unknown as { kept: boolean }).kept = true));
+const kept = (page: Page) => page.evaluate(() => (window as unknown as { kept?: boolean }).kept === true);
+
+test("a link in a guide routes in place", async ({ page }) => {
+  await page.goto("/docs/");
+  await mark(page);
+  await page.locator(".prose a", { hasText: "components page" }).click();
+  await expect(page).toHaveURL("/components/");
+  expect(await kept(page)).toBe(true);
+});
+
+test("a link to another guide's section lands on it", async ({ page }) => {
   await page.goto("/docs/installation/");
-  await page.evaluate(() => ((window as unknown as { kept: boolean }).kept = true));
+  await mark(page);
   await page.locator(".prose a", { hasText: "first window" }).click();
   await expect(page).toHaveURL("/docs/#a-first-window");
   await expect(page.locator("#a-first-window")).toBeInViewport();
-  expect(await page.evaluate(() => (window as unknown as { kept?: boolean }).kept)).toBe(true);
+  expect(await kept(page)).toBe(true);
 });
 
 test("a code sample is the compiled example, and Copy copies it", async ({ page, context, browserName, isMobile }) => {
