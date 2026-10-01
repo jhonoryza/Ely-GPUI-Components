@@ -1,11 +1,13 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { REPO } from "./data";
 import { Icon } from "./icons";
+import { setSound, useSound } from "./iso/marimba";
 import { setMode, useMode } from "./theme";
 
 function Header() {
   const theme = useMode();
   const dark = theme === "dark";
+  const sound = useSound();
   return (
     <header className="bar">
       <Link to="/" className="brand">
@@ -17,6 +19,9 @@ function Header() {
         </Link>
       </nav>
       <div className="end">
+        <button className="tool" aria-label={sound ? "Sound off" : "Sound on"} aria-pressed={sound} onClick={() => setSound(!sound)}>
+          <Icon name={sound ? "Sound" : "VolumeCross"} />
+        </button>
         <button className="tool" aria-label={dark ? "Light mode" : "Dark mode"} onClick={() => setMode(dark ? "light" : "dark")}>
           <Icon name={dark ? "Sun" : "Moon"} />
         </button>

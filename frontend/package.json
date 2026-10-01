@@ -8,10 +8,12 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "deploy": "wrangler deploy",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "test": "node --test src/iso/engine.test.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
+    "@types/node": "24.19.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",

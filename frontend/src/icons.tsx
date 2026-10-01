@@ -3,9 +3,11 @@ import Maximize from "reicon/icons/Maximize";
 import Minimize from "reicon/icons/Minimize";
 import Moon from "reicon/icons/Moon";
 import Refresh from "reicon/icons/Refresh";
+import Sound from "reicon/icons/Sound";
 import Sun from "reicon/icons/Sun";
+import VolumeCross from "reicon/icons/VolumeCross";
 
-const set = { ArrowRightUp, Maximize, Minimize, Moon, Refresh, Sun };
+const set = { ArrowRightUp, Maximize, Minimize, Moon, Refresh, Sound, Sun, VolumeCross };
 
 // simple-icons' GitHub mark (CC0); Reicon has none.
 const GITHUB =

@@ -6,6 +6,9 @@
   --line: #e6e3df;
   --accent: #3772bb;
   --overlay: #ffffff;
+  --iso-line: #1a1918;
+  --iso-side: #f3f0ec;
+  --iso-shade: #e9e5df;
   --sans: "Geist Variable", system-ui, sans-serif;
   --mono: "Geist Mono Variable", ui-monospace, monospace;
   color-scheme: light;
@@ -19,6 +22,9 @@
   --line: #262422;
   --accent: #69a1e8;
   --overlay: #1b1917;
+  --iso-line: #d9d5d0;
+  --iso-side: #1a1816;
+  --iso-shade: #201e1c;
   color-scheme: dark;
 }
 
@@ -63,7 +69,9 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 main { min-height: 100vh; }
 
 /* Pages */
-.hero { min-height: 100vh; display: grid; align-content: center; justify-items: start; gap: 24px; padding: 96px 64px; }
+.hero { position: relative; min-height: 100vh; display: grid; align-content: end; justify-items: start; gap: 24px; padding: 96px 64px; }
+.hero-iso { position: absolute; top: 64px; right: 0; width: 64%; height: calc(100% - 64px); cursor: crosshair; }
+.hero > :not(canvas) { position: relative; z-index: 1; max-width: 44%; }
 .hero h1 { font-size: clamp(48px, 8vw, 128px); line-height: 0.95; font-weight: 800; letter-spacing: -0.045em; }
 .hero p { font-size: 20px; line-height: 30px; }
 
@@ -111,6 +119,8 @@ img.shot { display: block; max-width: 100%; height: auto; }
   .hero, .chapters, .story, .missing { padding-left: 20px; padding-right: 20px; }
   .foot { padding: 32px 20px; }
   .chapters .name { font-size: 22px; }
+  .hero-iso { width: 100%; height: 55%; }
+  .hero > :not(canvas) { max-width: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
