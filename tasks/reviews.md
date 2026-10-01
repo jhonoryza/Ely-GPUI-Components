@@ -334,3 +334,4 @@
 | T48c | 1 | FAIL | said Ely compiles the shaders when the app starts; a code span kept a trailing space |
 | T48c | 2 | PASS | |
 | T48d | 1 | PASS | note taken: the lead and the table both count four parts |
+| T48e | 1 | PASS | notes taken: `mode()` in the read table, `platform` among update's fields |

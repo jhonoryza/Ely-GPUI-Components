@@ -13,7 +13,7 @@ Bring `ActiveTheme` into scope and call `cx.theme()` on `App`, or on a `Context`
 | `radius(Radius)` | `Sm` 4px, `Md` 6px, `Lg` 8px, `Xl` 12px, times `radius_scale`. |
 | `elevation(Elevation)` | Shadows for `Raised`, `Floating` and `Modal`; darker in dark mode. |
 | `control_height(ControlSize)` | `Sm` 24px, `Md` 28px, `Lg` 32px; 4px less under `Density::Compact`, 4px more under `Comfortable`. |
-| `is_dark()`, `high_contrast()`, `color_blind_safe()` | The current switches. |
+| `mode()`, `is_dark()`, `high_contrast()`, `color_blind_safe()` | The current mode and switches. |
 
 Sizes come back as `Rems`, so they follow the window's rem size.
 
@@ -26,7 +26,7 @@ Sizes come back as `Rems`, so they follow the window's rem size.
 | `Theme::set_high_contrast(on, cx)` | Muted text and borders move further from the page, and glass turns opaque, in Ely's palettes. |
 | `Theme::set_color_blind_safe(on, cx)` | Chart hues that stay apart under protanopia, deuteranopia and tritanopia. |
 | `Theme::set_palette(mode, palette, cx)` | An owner's palette for one mode; `None` brings Ely's back. |
-| `Theme::update(cx, edit)` | Edits the other fields: `density`, `font_scale`, `radius_scale`, `font_family`, `mono_family`, `reduced_motion`. |
+| `Theme::update(cx, edit)` | Edits the other fields: `density`, `font_scale`, `radius_scale`, `font_family`, `mono_family`, `reduced_motion`, `platform`. |
 
 The color calls log at the `info` level, so a theme change shows in the app's log.
 
