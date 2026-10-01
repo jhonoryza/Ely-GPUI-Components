@@ -27,7 +27,13 @@ test("a block behind another paints first, on either axis", () => {
   assert.deepEqual(painted([nearZ, far]), [far, nearZ]);
 });
 
-test("blocks apart on both axes keep the order they came in", () => {
+test("a block behind on both axes paints first", () => {
+  const far = block(0, 0, 1, 1, 4, 0.5);
+  const near = block(2, 2, 1, 1, 4, 0.5);
+  assert.deepEqual(painted([near, far]), [far, near]);
+});
+
+test("blocks side by side keep the order they came in", () => {
   const left = block(0, 3, 1, 1, 1);
   const right = block(3, 0, 1, 1, 1);
   assert.deepEqual(painted([left, right]), [left, right]);

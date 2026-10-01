@@ -29,6 +29,8 @@ export function miniature(canvas: HTMLCanvasElement, model: Block[], still: bool
   let frame = 0;
   let view = { scale: 1, dx: 0, dy: 0 };
   const bumps = new Map<Block, number>();
+  // Heights as last drawn; only grown blocks answer the pointer.
+  const shown = new Map<Block, number>();
 
   const fit = () => {
     const dpr = Math.min(devicePixelRatio, 2);
@@ -63,6 +65,7 @@ export function miniature(canvas: HTMLCanvasElement, model: Block[], still: bool
     ctx.lineJoin = "round";
     ctx.lineWidth = Math.max(1, view.scale * 0.018);
     let moving = false;
+    shown.clear();
     for (const b of blocks) {
       const since = started === null ? -1 : now - started - b.beat * BEAT;
       if (since < 0) {
@@ -77,6 +80,7 @@ export function miniature(canvas: HTMLCanvasElement, model: Block[], still: bool
       moving ||= drawn < 1 || since - DRAW < GROW || lift > 0;
       const h = Math.max(b.h * grown * (1 + 0.35 * Math.sin(lift * Math.PI)), 0.0001);
       const f = faces(b, h);
+      if (drawn === 1) shown.set(b, h);
       const stroke = b.accent ? colors.accent : colors.line;
       if (drawn < 1) {
         ctx.strokeStyle = stroke;
@@ -115,7 +119,9 @@ export function miniature(canvas: HTMLCanvasElement, model: Block[], still: bool
     const p: Point = [((e.clientX - r.left) * dpr - view.dx) / view.scale, ((e.clientY - r.top) * dpr - view.dy) / view.scale];
     for (let i = blocks.length - 1; i >= 0; i--) {
       const b = blocks[i];
-      const f = faces(b, b.h);
+      const h = shown.get(b);
+      if (h === undefined) continue;
+      const f = faces(b, h);
       if (inside(p, f.top) || inside(p, f.front) || inside(p, f.right)) {
         // The table itself stays put.
         if (b.y === 0) return;
@@ -144,6 +150,7 @@ export function miniature(canvas: HTMLCanvasElement, model: Block[], still: bool
     },
     replay() {
       if (still) return;
+      shown.clear();
       started = performance.now();
       struck = -1;
       request();

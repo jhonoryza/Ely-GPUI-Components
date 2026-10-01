@@ -26,9 +26,10 @@ function under(a: Block, b: Block): boolean {
   const apartX = a.x + a.w <= b.x + EPS || b.x + b.w <= a.x + EPS;
   const apartZ = a.z + a.d <= b.z + EPS || b.z + b.d <= a.z + EPS;
   if (!apartX && !apartZ) return a.y < b.y || (a.y === b.y && a.h < b.h);
-  // Apart on both axes, they stand side by side.
-  if (apartX && apartZ) return false;
-  return apartX ? a.x + a.w <= b.x + EPS : a.z + a.d <= b.z + EPS;
+  const [behindX, behindZ] = [a.x + a.w <= b.x + EPS, a.z + a.d <= b.z + EPS];
+  // Behind on one axis, before on the other: side by side.
+  if (apartX && apartZ) return behindX && behindZ;
+  return apartX ? behindX : behindZ;
 }
 
 /** Back to front: each block after what it covers. */
