@@ -331,3 +331,5 @@
 | T48a | 2 | FAIL | the rail and list clipped the focus ring's left side |
 | T48a | 3 | PASS | rendering moved to build time first: a bad guide fails the build; notes fixed after (an id-less heading fails, protocol-relative links stay native, dead padding rule gone) |
 | T48b | 1 | PASS | note taken: durations shorten to a millisecond |
+| T48c | 1 | FAIL | said Ely compiles the shaders when the app starts; a code span kept a trailing space |
+| T48c | 2 | PASS | |
