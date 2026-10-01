@@ -1,7 +1,9 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { Marked, type Tokens } from "marked";
 
-const sources = import.meta.glob<string>("./*.md", { query: "?raw", import: "default", eager: true });
-const examples = import.meta.glob<string>("../../../examples/docs/*.rs", { query: "?raw", import: "default", eager: true });
+// Runs in Vite's config at build time, never in the browser.
+const at = (relative: string) => fileURLToPath(new URL(relative, import.meta.url));
 
 /** The guides in reading order, by file name. */
 const ORDER = ["introduction"];
@@ -23,14 +25,20 @@ const slugify = (text: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-/** A heading's words: no backticks, links as their text. */
-const plain = (markdown: string) => markdown.replace(/`/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+/** A heading's words: no code, emphasis or link marks. */
+const plain = (markdown: string) =>
+  markdown
+    .replace(/`/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/(\*\*|\*)([^*]+)\1/g, "$2");
 
-function read(file: string): Guide {
-  const source = sources[`./${file}.md`];
-  if (source === undefined) throw new Error(`docs: no ${file}.md`);
+function read(file: string, files: string[]): Guide {
+  const path = at(`./${file}.md`);
+  files.push(path);
+  const source = readFileSync(path, "utf8");
   let title = "";
   const toc: Guide["toc"] = [];
+  const ids = new Set<string>();
   const marked = new Marked({
     renderer: {
       heading({ tokens, depth, text }: Tokens.Heading) {
@@ -42,10 +50,9 @@ function read(file: string): Guide {
         }
         const html = this.parser.parseInline(tokens);
         const id = slugify(words);
-        if (depth === 2) {
-          if (toc.some((h) => h.id === id)) throw new Error(`docs: ${file}.md repeats heading ${id}`);
-          toc.push({ id, text: words });
-        }
+        if (ids.has(id)) throw new Error(`docs: ${file}.md repeats heading ${id}`);
+        ids.add(id);
+        if (depth === 2) toc.push({ id, text: words });
         return `<h${depth} id="${id}">${html}</h${depth}>`;
       },
       code({ text, lang }: Tokens.Code) {
@@ -54,12 +61,14 @@ function read(file: string): Guide {
         let code = text;
         let caption = language;
         if (example) {
-          const body = examples[`../../../examples/docs/${example}.rs`];
-          if (body === undefined) throw new Error(`docs: ${file}.md names a missing example ${example}`);
-          code = body.trimEnd();
+          if (text.trim()) throw new Error(`docs: ${file}.md puts code under example=${example}`);
+          const path = at(`../../../examples/docs/${example}.rs`);
+          files.push(path);
+          code = readFileSync(path, "utf8").trimEnd();
           caption = `examples/docs/${example}.rs · cargo run --example docs_${example}`;
         }
-        return `<figure class="code"><figcaption>${escape(caption)}</figcaption><button class="copy" type="button">Copy</button><pre><code>${escape(code)}</code></pre></figure>`;
+        const head = caption ? `<figcaption>${escape(caption)}</figcaption>` : "";
+        return `<figure class="code">${head}<button class="copy" type="button">Copy</button><pre><code>${escape(code)}</code></pre></figure>`;
       },
     },
   });
@@ -68,4 +77,8 @@ function read(file: string): Guide {
   return { slug: file === "introduction" ? "" : file, title, html, toc };
 }
 
-export const guides: Guide[] = ORDER.map(read);
+/** Every guide, and every file read to make them. */
+export function render(): { guides: Guide[]; files: string[] } {
+  const files: string[] = [];
+  return { guides: ORDER.map((file) => read(file, files)), files };
+}

@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, type MouseEvent } from "react";
-import { guides, type Guide } from "../docs/guides";
+import type { Guide } from "../docs/guides";
+import { guides } from "virtual:guides";
 import { NotFound } from "./NotFound";
 
 const to = (guide: Guide) => (guide.slug ? `/docs/${guide.slug}/` : "/docs/");
