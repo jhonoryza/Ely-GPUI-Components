@@ -2,6 +2,8 @@ import manifest from "../../examples/gallery/stories.json";
 
 export interface Story {
   title: string;
+  /** The first component alone, as pages show it. */
+  name: string;
   slug: string;
   components: string[];
 }
@@ -14,7 +16,10 @@ export interface Chapter {
   stories: Story[];
 }
 
-export const chapters: Chapter[] = manifest.pages;
+export const chapters: Chapter[] = manifest.pages.map((c) => ({
+  ...c,
+  stories: c.stories.map((s) => ({ ...s, name: s.title.split(/ \/ | · | → | \(/)[0].trim() })),
+}));
 
 export const componentCount = new Set(chapters.flatMap((c) => c.stories.flatMap((s) => s.components))).size;
 

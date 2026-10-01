@@ -16,7 +16,7 @@ export function Story() {
   const [prev, next] = at < 0 ? [] : [all[at - 1], all[at + 1]];
 
   useEffect(() => {
-    if (chapter && found) document.title = `${found.title} · ${chapter.title} · Ely`;
+    if (chapter && found) document.title = `${found.name} · ${chapter.title} · Ely`;
   }, [chapter, found]);
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export function Story() {
                   {c.stories.map((s) => (
                     <li key={s.slug}>
                       <Link to="/components/$page/$story/" params={{ page: c.slug, story: s.slug }} activeProps={{ "aria-current": "page" }}>
-                        {s.title}
+                        {s.name}
                       </Link>
                     </li>
                   ))}
@@ -65,24 +65,24 @@ export function Story() {
         <Link to="/components/" className="crumb">
           {chapter.title}
         </Link>
-        <h1>{found.title}</h1>
+        <h1>{found.name}</h1>
         {isCaptured(chapter.slug, found.slug) ? (
-          <Capture page={chapter.slug} story={found.slug} title={found.title} />
+          <Capture page={chapter.slug} story={found.slug} title={found.name} />
         ) : (
           <>
-            <Live key={`${chapter.slug}/${found.slug}`} page={chapter.slug} story={found.slug} title={found.title} />
-            <Windows page={chapter.slug} story={found.slug} title={found.title} />
+            <Live key={`${chapter.slug}/${found.slug}`} page={chapter.slug} story={found.slug} title={found.name} />
+            <Windows page={chapter.slug} story={found.slug} title={found.name} />
           </>
         )}
         <nav className="pager" aria-label="More stories">
           {prev && (
             <Link to="/components/$page/$story/" params={{ page: prev.chapter.slug, story: prev.story.slug }}>
-              ← {prev.story.title}
+              ← {prev.story.name}
             </Link>
           )}
           {next && (
             <Link className="next" to="/components/$page/$story/" params={{ page: next.chapter.slug, story: next.story.slug }}>
-              {next.story.title} →
+              {next.story.name} →
             </Link>
           )}
         </nav>

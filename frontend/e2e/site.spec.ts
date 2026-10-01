@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import manifest from "../../examples/gallery/stories.json" with { type: "json" };
 
+/** A story's short name, as `src/data.ts` derives it. */
+const name = (title: string) => title.split(/ \/ | · | → | \(/)[0].trim();
+
 /** Collects console errors and uncaught exceptions. */
 function watch(page: Page): string[] {
   const errors: string[] = [];
@@ -61,12 +64,12 @@ test("a chapter opens its first story, and the pager and arrows walk on", async 
   const [chapter] = manifest.pages;
   await page.goto(`/components/${chapter.slug}/`);
   await expect(page).toHaveURL(`/components/${chapter.slug}/${chapter.stories[0].slug}/`);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(chapter.stories[0].title);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(name(chapter.stories[0].title));
   await page.locator(".pager a.next").click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(chapter.stories[1].title);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(name(chapter.stories[1].title));
   if (isMobile) return;
   await page.keyboard.press("ArrowLeft");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(chapter.stories[0].title);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(name(chapter.stories[0].title));
 });
 
 test("the rail marks the current story", async ({ page, isMobile }) => {
@@ -74,7 +77,7 @@ test("the rail marks the current story", async ({ page, isMobile }) => {
   const chapter = manifest.pages[manifest.pages.length - 1];
   const story = chapter.stories[chapter.stories.length - 1];
   await page.goto(`/components/${chapter.slug}/${story.slug}/`);
-  await expect(page.locator('.side li [aria-current="page"]')).toHaveText(story.title);
+  await expect(page.locator('.side li [aria-current="page"]')).toHaveText(name(story.title));
   await expect(page.locator('.side li [aria-current="page"]')).toBeInViewport();
 });
 

@@ -18,7 +18,7 @@ const FEATURES = [
 ].map((f) => {
   const story = chapters.find((c) => c.slug === f.page)?.stories.find((s) => s.slug === f.story);
   if (!story) throw new Error(`home: no story ${f.page}/${f.story}`);
-  return { ...f, name: story.title };
+  return { ...f, name: story.name };
 });
 
 /** Mounts its children while near the view or holding focus. */

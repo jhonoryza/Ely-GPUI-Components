@@ -26,7 +26,7 @@ export function Chapters() {
             <span className="titles">
               {c.stories.map((s) => (
                 <Link key={s.slug} to="/components/$page/$story/" params={{ page: c.slug, story: s.slug }}>
-                  {s.title}
+                  {s.name}
                 </Link>
               ))}
             </span>
