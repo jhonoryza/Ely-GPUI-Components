@@ -18,6 +18,11 @@
       // Embedded, gpui's hidden field waits for a press or key.
       if (window.parent !== window) {
         let touched = false;
+        // Until then its focus calls leave the host's focus alone.
+        const focus = HTMLElement.prototype.focus;
+        HTMLElement.prototype.focus = function (options) {
+          if (touched) focus.call(this, options);
+        };
         const touch = () => {
           if (touched) return;
           touched = true;
@@ -25,11 +30,6 @@
         };
         addEventListener("pointerdown", touch, true);
         addEventListener("keydown", touch, true);
-        document.addEventListener("focusin", (event) => {
-          if (touched) return;
-          event.target.blur();
-          window.parent.focus();
-        }, true);
       }
     </script>
     <script type="module">

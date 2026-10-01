@@ -21,14 +21,27 @@ const FEATURES = [
   return { ...f, name: story.title };
 });
 
-/** Mounts its children only while near the view. */
+/** Mounts its children while near the view or holding focus. */
 function Near({ className, children }: { className: string; children: ReactNode }) {
   const box = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
   useEffect(() => {
-    const seen = new IntersectionObserver(([e]) => setNear(e.isIntersecting), { rootMargin: "100% 0px" });
-    seen.observe(box.current!);
-    return () => seen.disconnect();
+    const el = box.current!;
+    let seen = false;
+    const view = new IntersectionObserver(
+      ([e]) => {
+        seen = e.isIntersecting;
+        setNear(seen || el.contains(document.activeElement));
+      },
+      { rootMargin: "100% 0px" },
+    );
+    const left = (e: FocusEvent) => setNear(seen || el.contains(e.relatedTarget as Node | null));
+    view.observe(el);
+    el.addEventListener("focusout", left);
+    return () => {
+      view.disconnect();
+      el.removeEventListener("focusout", left);
+    };
   }, []);
   return (
     <div ref={box} className={className}>

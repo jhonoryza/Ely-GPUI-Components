@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./icons";
+import { hold } from "./scroll";
 import { mode, useMode } from "./theme";
 
 const SPIN_AFTER = 400;
@@ -45,13 +46,16 @@ export function Live({ page, story, title }: { page: string; story: string; titl
     frame.current?.contentWindow?.postMessage({ ely: "theme", theme }, location.origin);
   }, [theme]);
 
-  useEffect(() => {
+  // Before paint, so no glide frame lands after the press.
+  useLayoutEffect(() => {
     if (!full) return;
     document.documentElement.style.overflow = "hidden";
+    hold(true);
     const escape = (event: KeyboardEvent) => event.key === "Escape" && setFull(false);
     addEventListener("keydown", escape);
     return () => {
       document.documentElement.style.overflow = "";
+      hold(false);
       removeEventListener("keydown", escape);
     };
   }, [full]);

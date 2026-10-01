@@ -1,10 +1,9 @@
 import { Link, Outlet, useRouter } from "@tanstack/react-router";
-import Lenis from "lenis";
-import "lenis/dist/lenis.css";
 import { useEffect } from "react";
 import { REPO } from "./data";
 import { Icon } from "./icons";
 import { useStill } from "./iso/Iso";
+import { smooth } from "./scroll";
 import { setSound, useSound } from "./iso/marimba";
 import { setMode, useMode } from "./theme";
 
@@ -61,13 +60,12 @@ export function Shell() {
   const router = useRouter();
   useEffect(() => {
     if (still) return;
-    // It halts while the page's overflow is hidden, as full screen sets.
-    const lenis = new Lenis({ autoRaf: true, autoToggle: true });
+    const { lenis, end } = smooth();
     // A glide in flight must not outlive its page.
     const off = router.subscribe("onBeforeNavigate", () => lenis.scrollTo(lenis.animatedScroll, { immediate: true, force: true }));
     return () => {
       off();
-      lenis.destroy();
+      end();
     };
   }, [still, router]);
   return (
