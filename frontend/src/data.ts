@@ -21,6 +21,17 @@ export const componentCount = new Set(chapters.flatMap((c) => c.stories.flatMap(
 /** Every story in reading order, for paging and search. */
 export const all = chapters.flatMap((chapter) => chapter.stories.map((story) => ({ chapter, story })));
 
+/** Chapters by title, else their stories by title or component. */
+export function search(query: string): Chapter[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return chapters;
+  return chapters.flatMap((c) => {
+    if (c.title.toLowerCase().includes(q)) return [c];
+    const stories = c.stories.filter((s) => s.title.toLowerCase().includes(q) || s.components.some((n) => n.toLowerCase().includes(q)));
+    return stories.length ? [{ ...c, stories }] : [];
+  });
+}
+
 export const REPO = "https://github.com/ZacharyZhang-NY/Ely-GPUI-Components";
 
 export const pad = (n: number) => String(n).padStart(2, "0");
