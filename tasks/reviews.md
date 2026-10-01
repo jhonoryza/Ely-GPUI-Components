@@ -344,3 +344,6 @@
 | T48k | 1 | FAIL | table words split at phone width (a stylesheet flaw on every page); the assets address missed <out>/assets/; the HTTP client called the desktop's |
 | T48k | 2 | PASS | note taken: one thread is the gallery's choice |
 | T48l | 1 | PASS | |
+| T48m | 1 | FAIL | the every-guide test never checked the title |
+| T48m | 2 | FAIL | the in-place link test used a hash link, which survives without preventDefault |
+| T48m | 3 | PASS | |

@@ -163,7 +163,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T46 E2E: Playwright against the built site
 - [x] T46a Site · Owner's notes: the city title whole, header icons on one line, less space above a story, no visible scroll bars, each story named by its first component, every page laid out at phone, tablet and desktop widths
 - [x] T47 Ship: GitHub repo (public), CI, Cloudflare deploy through `npx wrangler`
-- [ ] T48 Docs: a Docs tab after gpui-kit.com/docs, a rail of guides, an on-this-page list, previous and next; every claim checked against the code, every full Rust sample an example `scripts/check.sh` compiles and the page imports as text
+- [x] T48 Docs: a Docs tab after gpui-kit.com/docs, a rail of guides, an on-this-page list, previous and next; every claim checked against the code, every full Rust sample an example `scripts/check.sh` compiles and the page imports as text
 - [x] T48a Docs · Frame: the Docs tab, `/docs/` and `/docs/$page/`, Markdown pages, the rail, the on-this-page list, previous and next, code blocks, light and dark, phone to desktop
 - [x] T48b Docs · Introduction: what Ely is, the order to read, what is stable, a first example, license
 - [x] T48c Docs · Installation: Rust, the git dependencies, gpui_platform's fonts, runtime shaders, the gallery as a check, what `init` refuses
@@ -176,7 +176,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T48j Docs · Internationalization: the `I18n` global, catalogs, right-to-left
 - [x] T48k Docs · WebAssembly: the web gallery build, its URL, the host protocol, what stays native
 - [x] T48l Docs · Testing: the `test-support` feature, frames, clocks and reduced motion in tests
-- [ ] T48m Docs · E2E: the Docs routes, rail, list, previous and next, and code blocks under Playwright
+- [x] T48m Docs · E2E: the Docs routes, rail, list, previous and next, and code blocks under Playwright
 - [ ] T49 Acceptance: live URL and MVP checklist
 
 ## T00 detail
