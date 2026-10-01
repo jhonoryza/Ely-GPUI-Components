@@ -4,7 +4,7 @@
 
 - Rust 1.95 or later, the version Ely's `Cargo.toml` names.
 - macOS, where Ely is tested. Windows and Linux builds are not tested yet.
-- No full Xcode: Ely compiles GPUI's Metal shaders when the app starts.
+- No full Xcode: GPUI compiles its Metal shaders at run time.
 
 ## Add the dependencies
 
@@ -41,7 +41,7 @@ A window opens with a counter and a Press button. From a clone of the repository
 
 | Symptom | Cause and fix |
 | --- | --- |
-| Panic: ``ely: pass `ely_gpui_component::Assets` to `Application::with_assets` `` | `init` found no Ely assets. Start the app with `gpui_platform::application().with_assets(Assets)`. |
+| Panic: `` ely: pass `ely_gpui_component::Assets` to `Application::with_assets` `` | `init` found no Ely assets. Start the app with `gpui_platform::application().with_assets(Assets)`. |
 | Panic: `ely: asset source failed` | The app's asset source returned an error. The panic carries it. |
 | Panic: `ely: embedded fonts failed to register` | GPUI's text system refused Ely's fonts. File a bug with the log. |
 | Windows open with no text on macOS | `gpui_platform` lacks the `font-kit` feature. |
