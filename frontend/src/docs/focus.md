@@ -36,7 +36,7 @@ Tab from the window moves through First, the tile and Last. Enter or Space on th
 
 ## Buttons
 
-A `Button` stays out of focus when clicked: it stops GPUI's focus on mouse down. Tab still reaches it, unless it is disabled; a loading button stays a Tab stop, so focus holds through the wait. A button whose words and action change with a mode keeps one handle through `Button::focus_handle(&handle)`, so focus holds across the change.
+A `Button` stays out of focus when clicked: it stops GPUI's focus on mouse down. Tab still reaches it, unless it is disabled; a loading button stays a Tab stop, so focus holds through the wait. A button whose words and action change with a mode keeps one handle through `Button::focus_handle(&handle)`, built with `tab_stop(true)`, so focus holds across the change.
 
 ## Overlays
 

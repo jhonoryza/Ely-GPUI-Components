@@ -169,7 +169,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T48c Docs · Installation: Rust, the git dependencies, gpui_platform's fonts, runtime shaders, the gallery as a check, what `init` refuses
 - [x] T48d Docs · Getting started: an app from `init` to a window under a root `FocusScope`, with a Button
 - [x] T48e Docs · Theme: modes, tokens through `cx.theme()`, high contrast, color-blind safe charts, an owner's palette
-- [ ] T48f Docs · Focus and keyboard: Tab and Shift-Tab, the root scope, tab stops, the focus ring, overlays that take and give back focus
+- [x] T48f Docs · Focus and keyboard: Tab and Shift-Tab, the root scope, tab stops, the focus ring, overlays that take and give back focus
 - [ ] T48g Docs · Motion: durations, reduced motion, springs, motion from a change
 - [ ] T48h Docs · Icons, fonts and assets: `Assets`, `IconName`, adding icons, the embedded fonts, file icons
 - [ ] T48i Docs · Overlays: what draws over the page, dialogs, popovers, toasts

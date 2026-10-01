@@ -335,3 +335,4 @@
 | T48c | 2 | PASS | |
 | T48d | 1 | PASS | note taken: the lead and the table both count four parts |
 | T48e | 1 | PASS | notes taken: `mode()` in the read table, `platform` among update's fields |
+| T48f | 1 | PASS | note taken: a button's own handle is built with tab_stop(true) |
