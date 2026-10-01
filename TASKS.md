@@ -154,13 +154,13 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T44b Port · Build: gpui and gpui_platform from Zed's repo by git at 1a28cff; the crate, its tests and the gallery build, and check.sh passes
 - [x] T44c Port · Parity: every page and scripted state captured light and dark and matched against T44a's shots; AGENTS.md's gpui 0.2.2 and taffy 0.9 rules re-tested at 1a28cff and rewritten
 - [x] T44d Web · Stories: the gallery builds for wasm32 through gpui_web; one story per component, chosen by URL, themed by the host page; what cannot run in a browser says why
-- [ ] T45 Website: `frontend/` rebuilt after `frontend-reference/` (serro.ai's language: heavy titles, thin faint text, hairlines, one accent), Vite 8, pnpm, React 19, TanStack Router, light and dark; isometric line miniatures that grow cell by cell on a marimba beat; every story live, a native capture where a browser cannot run it; no box inside a box, no subheadings; run locally, not published
+- [x] T45 Website: `frontend/` rebuilt after `frontend-reference/` (serro.ai's language: heavy titles, thin faint text, hairlines, one accent), Vite 8, pnpm, React 19, TanStack Router, light and dark; isometric line miniatures that grow cell by cell on a marimba beat; every story live, a native capture where a browser cannot run it; no box inside a box, no subheadings; run locally, not published
 - [x] T45a Site · Stack: the old `frontend/` replaced by Vite 8, React 19 and TanStack Router under pnpm; routes `/`, `/components/`, `/components/$page/$story`; theme, fonts, the stories manifest
 - [x] T45b Site · Iso: isometric line miniatures on a canvas, no perspective, hidden lines removed, cells growing on a sixteenth-note marimba beat, playable under the pointer, light and dark, still under reduced motion
 - [x] T45c Site · Home: a full-screen hero and full-screen sections, each a miniature beside its live component, counts, the chapters as a city of plinths, a closing call; motion from scroll and route changes
 - [x] T45d Site · Components: the chapter index and the story page redesigned; live stories without frames, native captures for what a browser cannot run, search, keys
 - [x] T45e Site · Local: the gallery bundle built for localhost and the site served for the owner to see; not published
-- [ ] T46 E2E: Playwright against the built site
+- [x] T46 E2E: Playwright against the built site
 - [ ] T47 Ship: GitHub repo (public), CI, Cloudflare deploy through `npx wrangler`
 - [ ] T48 Acceptance: live URL and MVP checklist
 

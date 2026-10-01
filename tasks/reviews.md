@@ -324,3 +324,5 @@
 | T45d | 1 | FAIL | the rail revealed the chapter link, not the story; Shift arrows paged |
 | T45d | 2 | PASS | reviewer now Claude Code, Fable 5.1 high; its note fixed after: Slash leaves a hidden field alone |
 | T45e | 1 | PASS | |
+| T46 | 1 | FAIL | the typing test passed without typing; two home tests passed with no frame mounted; full screen and window captures checked by class and srcset only |
+| T46 | 2 | PASS | |
