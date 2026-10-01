@@ -61,7 +61,8 @@ export function Shell() {
   const router = useRouter();
   useEffect(() => {
     if (still) return;
-    const lenis = new Lenis({ autoRaf: true });
+    // It halts while the page's overflow is hidden, as full screen sets.
+    const lenis = new Lenis({ autoRaf: true, autoToggle: true });
     // A glide in flight must not outlive its page.
     const off = router.subscribe("onBeforeNavigate", () => lenis.scrollTo(lenis.animatedScroll, { immediate: true, force: true }));
     return () => {

@@ -47,11 +47,11 @@ export function Live({ page, story, title }: { page: string; story: string; titl
 
   useEffect(() => {
     if (!full) return;
-    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     const escape = (event: KeyboardEvent) => event.key === "Escape" && setFull(false);
     addEventListener("keydown", escape);
     return () => {
-      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
       removeEventListener("keydown", escape);
     };
   }, [full]);
@@ -61,7 +61,7 @@ export function Live({ page, story, title }: { page: string; story: string; titl
       <button className="skip-live" onClick={() => after.current?.focus()}>
         Skip the live example
       </button>
-      <div className={full ? "live full" : "live"} data-lenis-prevent={full || undefined}>
+      <div className={full ? "live full" : "live"}>
         <iframe key={run} ref={frame} title={`${title}, live`} src={src(start)} />
         {state !== "ready" && (
           <div className="live-state" role="status">
