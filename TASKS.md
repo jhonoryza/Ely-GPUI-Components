@@ -171,7 +171,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T48e Docs · Theme: modes, tokens through `cx.theme()`, high contrast, color-blind safe charts, an owner's palette
 - [x] T48f Docs · Focus and keyboard: Tab and Shift-Tab, the root scope, tab stops, the focus ring, overlays that take and give back focus
 - [x] T48g Docs · Motion: durations, reduced motion, springs, motion from a change
-- [ ] T48h Docs · Icons, fonts and assets: `Assets`, `IconName`, adding icons, the embedded fonts, file icons
+- [x] T48h Docs · Icons, fonts and assets: `Assets`, `IconName`, adding icons, the embedded fonts, file icons
 - [ ] T48i Docs · Overlays: what draws over the page, dialogs, popovers, toasts
 - [ ] T48j Docs · Internationalization: the `I18n` global, catalogs, right-to-left
 - [ ] T48k Docs · WebAssembly: the web gallery build, its URL, the host protocol, what stays native

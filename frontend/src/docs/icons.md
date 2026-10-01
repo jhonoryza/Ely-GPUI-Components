@@ -1,6 +1,6 @@
 # Icons, fonts and assets
 
-`Assets` embeds Ely's icons and fonts in the binary. Pass it to `with_assets`; `init` registers the fonts and checks that the icons load.
+`Assets` embeds Ely's icons and fonts in the binary. Pass it to `with_assets`; `init` registers the fonts and checks that `icons/check.svg` loads.
 
 ## Icons
 
