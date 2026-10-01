@@ -3,7 +3,7 @@
 A component library for [GPUI](https://www.gpui.rs), the Rust UI framework behind Zed.
 Every component ships in light and dark. The palette is warm and quiet. Color carries meaning, not decoration.
 
-Every component runs live at https://ely-gpui.zacharyzhang.com, compiled to WebAssembly.
+Every component runs live at https://elygpui.com, compiled to WebAssembly.
 
 Status: early. `TASKS.md` tracks every component, chapter by chapter.
 
