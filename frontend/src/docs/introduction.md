@@ -8,7 +8,7 @@ The guides run in the order of the rail, each building on the one before.
 
 - One theme for every component: light and dark palettes, high contrast, color-blind safe charts, and tokens for color, size, radius and shadow. Components read the theme, never literals.
 - Keyboard first: `init` binds Tab and Shift-Tab, a root `FocusScope` keeps focus in the window, and every control that takes a press is a Tab stop with a focus ring.
-- Motion that honors reduced motion: durations shorten to nothing and repeating motion holds still.
+- Motion that honors reduced motion: durations shorten to a millisecond and repeating motion holds still.
 - The gallery, `cargo run --example gallery`, shows every component on its chapter's page. The same gallery compiles to WebAssembly and runs the components page.
 
 ## What is stable

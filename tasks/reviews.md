@@ -330,3 +330,4 @@
 | T48a | 1 | FAIL | escaped entities in titles and the list; section links broke under the trailing slash; long inline code widened 280px; no guide list under 1024px |
 | T48a | 2 | FAIL | the rail and list clipped the focus ring's left side |
 | T48a | 3 | PASS | rendering moved to build time first: a bad guide fails the build; notes fixed after (an id-less heading fails, protocol-relative links stay native, dead padding rule gone) |
+| T48b | 1 | PASS | note taken: durations shorten to a millisecond |

@@ -165,7 +165,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T47 Ship: GitHub repo (public), CI, Cloudflare deploy through `npx wrangler`
 - [ ] T48 Docs: a Docs tab after gpui-kit.com/docs, a rail of guides, an on-this-page list, previous and next; every claim checked against the code, every full Rust sample an example `scripts/check.sh` compiles and the page imports as text
 - [x] T48a Docs · Frame: the Docs tab, `/docs/` and `/docs/$page/`, Markdown pages, the rail, the on-this-page list, previous and next, code blocks, light and dark, phone to desktop
-- [ ] T48b Docs · Introduction: what Ely is, the order to read, what is stable, a first example, license
+- [x] T48b Docs · Introduction: what Ely is, the order to read, what is stable, a first example, license
 - [ ] T48c Docs · Installation: Rust, the git dependencies, gpui_platform's fonts, runtime shaders, the gallery as a check, what `init` refuses
 - [ ] T48d Docs · Getting started: an app from `init` to a window under a root `FocusScope`, with a Button
 - [ ] T48e Docs · Theme: modes, tokens through `cx.theme()`, high contrast, color-blind safe charts, an owner's palette
