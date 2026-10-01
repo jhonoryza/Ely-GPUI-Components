@@ -156,7 +156,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T44d Web · Stories: the gallery builds for wasm32 through gpui_web; one story per component, chosen by URL, themed by the host page; what cannot run in a browser says why
 - [ ] T45 Website: `frontend/` rebuilt after `frontend-reference/` (serro.ai's language: heavy titles, thin faint text, hairlines, one accent), Vite 8, pnpm, React 19, TanStack Router, light and dark; isometric line miniatures that grow cell by cell on a marimba beat; every story live, a native capture where a browser cannot run it; no box inside a box, no subheadings; run locally, not published
 - [x] T45a Site · Stack: the old `frontend/` replaced by Vite 8, React 19 and TanStack Router under pnpm; routes `/`, `/components/`, `/components/$page/$story`; theme, fonts, the stories manifest
-- [ ] T45b Site · Iso: isometric line miniatures on a canvas, no perspective, hidden lines removed, cells growing on a sixteenth-note marimba beat, playable under the pointer, light and dark, still under reduced motion
+- [x] T45b Site · Iso: isometric line miniatures on a canvas, no perspective, hidden lines removed, cells growing on a sixteenth-note marimba beat, playable under the pointer, light and dark, still under reduced motion
 - [ ] T45c Site · Home: a full-screen hero and full-screen sections, each a miniature beside its live component, counts, the chapters as a city of plinths, a closing call; motion from scroll and route changes
 - [ ] T45d Site · Components: the chapter index and the story page redesigned; live stories without frames, native captures for what a browser cannot run, search, keys
 - [ ] T45e Site · Local: the gallery bundle built for localhost and the site served for the owner to see; not published
@@ -492,3 +492,5 @@ Per-component lines live in `tasks/`. Tags there:
 | T45a | 1 | FAIL | a reloaded example restarted in the first mode; storage denial lost the system's dark mode in silence; skipped view transitions rejected unhandled; docs denied the native captures; dead exports |
 | T45a | 2 | FAIL | two doc comments ran 14 words |
 | T45a | 3 | PASS | |
+| T45b | 1 | FAIL | diagonal cells painted over the cells before them; the pointer struck cells not yet grown; reduced motion read once; replay by pointer only; the header ran 2px past 280 |
+| T45b | 2 | PASS | |
