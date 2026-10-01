@@ -333,3 +333,4 @@
 | T48b | 1 | PASS | note taken: durations shorten to a millisecond |
 | T48c | 1 | FAIL | said Ely compiles the shaders when the app starts; a code span kept a trailing space |
 | T48c | 2 | PASS | |
+| T48d | 1 | PASS | note taken: the lead and the table both count four parts |

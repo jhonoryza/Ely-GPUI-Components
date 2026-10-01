@@ -1,10 +1,10 @@
 # Getting started
 
-An Ely app is a GPUI app with three more parts: Ely's assets, one call to `init`, and a root `FocusScope` around each window's content.
+An Ely app is a GPUI app with four more parts: Ely's assets, one call to `init`, a root `FocusScope` around each window's content, and colors from the theme.
 
-## Four steps
+## Four parts
 
-| Step | Why |
+| Part | Why |
 | --- | --- |
 | `gpui_platform::application().with_assets(Assets)` | Ely embeds its icons and fonts. `init` panics without them. |
 | `ely_gpui_component::init(cx)` | Call once, before any window. It registers the fonts, sets the theme, and binds Tab, Shift-Tab and the keys of text fields, the code editor, documents and, natively, the terminal. |
