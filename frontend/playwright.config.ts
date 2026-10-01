@@ -10,6 +10,7 @@ export default defineConfig({
   webServer: { command: "pnpm preview --port 4173 --strictPort", url: "http://localhost:4173", reuseExistingServer: true },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
     { name: "phone", use: { ...devices["Pixel 7"] } },
   ],
 });
