@@ -40,7 +40,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - `src/<chapter>/`: one folder per chapter of `gpui-components.md`.
 - `src/theme`: palettes, tokens, `ActiveTheme`. `src/motion`: durations, easings, spring.
 - `examples/gallery/pages/<chapter>.rs`: one page per chapter, in PRD order.
-- `TASKS.md` and `tasks/`: progress. Every PRD entry has a line and a tag.
+- `TASKS.md` and `tasks/`: progress. Every PRD entry has a line and a tag; `tasks/reviews.md` keeps every review round.
 
 ## Rules
 

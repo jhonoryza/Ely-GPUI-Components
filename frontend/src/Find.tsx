@@ -6,7 +6,7 @@ export function Find({ query, onQuery, onEnter, className }: { query: string; on
   const field = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const slash = (e: KeyboardEvent) => {
-      if (e.key !== "/" || e.metaKey || e.ctrlKey || typing(e)) return;
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || typing(e) || !field.current?.checkVisibility()) return;
       e.preventDefault();
       field.current?.focus();
     };
