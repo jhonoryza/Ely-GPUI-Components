@@ -29,7 +29,6 @@ const router = createRouter({
   routeTree: root.addChildren([home, index, chapter, story]),
   trailingSlash: "always",
   scrollRestoration: true,
-  defaultViewTransition: true,
 });
 
 declare module "@tanstack/react-router" {

@@ -1,16 +1,11 @@
-import ArrowLeft from "reicon/icons/ArrowLeft";
-import ArrowRight from "reicon/icons/ArrowRight";
 import ArrowRightUp from "reicon/icons/ArrowRightUp";
 import Maximize from "reicon/icons/Maximize";
 import Minimize from "reicon/icons/Minimize";
 import Moon from "reicon/icons/Moon";
 import Refresh from "reicon/icons/Refresh";
-import Search from "reicon/icons/Search";
-import Sound from "reicon/icons/Sound";
 import Sun from "reicon/icons/Sun";
-import VolumeCross from "reicon/icons/VolumeCross";
 
-const set = { ArrowLeft, ArrowRight, ArrowRightUp, Maximize, Minimize, Moon, Refresh, Search, Sound, Sun, VolumeCross };
+const set = { ArrowRightUp, Maximize, Minimize, Moon, Refresh, Sun };
 
 // simple-icons' GitHub mark (CC0); Reicon has none.
 const GITHUB =

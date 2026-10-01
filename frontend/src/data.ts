@@ -16,8 +16,6 @@ export interface Chapter {
 
 export const chapters: Chapter[] = manifest.pages;
 
-export const storyCount = chapters.reduce((sum, chapter) => sum + chapter.stories.length, 0);
-
 export const componentCount = new Set(chapters.flatMap((c) => c.stories.flatMap((s) => s.components))).size;
 
 /** Every story in reading order, for paging and search. */

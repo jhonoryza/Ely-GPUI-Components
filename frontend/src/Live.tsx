@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { mode, useMode } from "./theme";
 
@@ -14,7 +14,8 @@ export function Live({ page, story, title }: { page: string; story: string; titl
   const [state, setState] = useState<State>("starting");
   const [full, setFull] = useState(false);
   const [run, setRun] = useState(0);
-  const [start] = useState(mode);
+  // Each new frame opens in the mode the site has then.
+  const start = useMemo(() => mode(), [run]);
   const src = (t: string) => `/gallery/?page=${page}&story=${story}&theme=${t}`;
 
   useEffect(() => {
