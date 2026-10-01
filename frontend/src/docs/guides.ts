@@ -6,7 +6,7 @@ import { Marked, type Tokens } from "marked";
 const at = (relative: string) => fileURLToPath(new URL(relative, import.meta.url));
 
 /** The guides in reading order, by file name. */
-const ORDER = ["introduction", "installation", "getting-started", "theme", "focus"];
+const ORDER = ["introduction", "installation", "getting-started", "theme", "focus", "motion"];
 
 export interface Guide {
   /** The path segment; the introduction has none. */

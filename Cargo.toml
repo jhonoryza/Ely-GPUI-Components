@@ -103,3 +103,7 @@ path = "examples/docs/theme.rs"
 [[example]]
 name = "docs_focus"
 path = "examples/docs/focus.rs"
+
+[[example]]
+name = "docs_motion"
+path = "examples/docs/motion.rs"
