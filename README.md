@@ -5,7 +5,7 @@ Every component ships in light and dark. The palette is warm and quiet. Color ca
 
 Every component runs live at https://elygpui.com, compiled to WebAssembly.
 
-Status: early. `TASKS.md` tracks every component, chapter by chapter.
+Status: early. `TASKS.md` tracks every component, chapter by chapter. To help, see `CONTRIBUTING.md`.
 
 ## Use
 
