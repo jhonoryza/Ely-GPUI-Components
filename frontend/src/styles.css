@@ -175,7 +175,7 @@ img.shot { display: block; max-width: 100%; height: auto; }
 .docs-rail a[aria-current="page"] { font-weight: 500; }
 .doc { padding: 96px 0 128px; min-width: 0; }
 .doc h1 { font-size: clamp(36px, 4vw, 56px); line-height: 1.05; font-weight: 800; letter-spacing: -0.035em; margin-bottom: 40px; }
-.prose { font-size: 17px; line-height: 30px; }
+.prose { font-size: 17px; line-height: 30px; overflow-wrap: anywhere; }
 .prose p, .prose li { color: color-mix(in srgb, var(--fg) 82%, var(--bg)); }
 .prose p { margin: 0 0 20px; }
 .prose h2 { font-size: 28px; line-height: 36px; font-weight: 700; letter-spacing: -0.02em; margin: 64px 0 16px; scroll-margin-top: 96px; }
@@ -207,8 +207,10 @@ img.shot { display: block; max-width: 100%; height: auto; }
 }
 
 @media (max-width: 1023px) {
-  .docs { grid-template-columns: minmax(0, 1fr); }
-  .docs-rail { display: none; }
+  .docs { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .docs-rail { position: static; height: auto; padding: 96px 0 0; }
+  .docs-rail ol { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+  .doc { padding-top: 48px; }
   .reader { grid-template-columns: minmax(0, 1fr); }
   .side { display: none; }
   .feature, .feature:nth-of-type(odd), .city { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 32px; }

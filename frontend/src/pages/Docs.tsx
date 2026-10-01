@@ -37,7 +37,8 @@ export function Docs() {
     const link = target.closest<HTMLAnchorElement>("a[href^='/']");
     if (!link || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
-    navigate({ to: link.getAttribute("href")! });
+    const url = new URL(link.href);
+    navigate({ to: url.pathname, hash: url.hash.slice(1) || undefined });
   };
 
   return (
@@ -66,7 +67,7 @@ export function Docs() {
         </nav>
       </article>
       {guide.toc.length > 0 && (
-        <nav className="doc-toc" aria-label="On this page">
+        <nav className="doc-toc" aria-label="On this page" data-lenis-prevent>
           <ol>
             {guide.toc.map((h) => (
               <li key={h.id}>

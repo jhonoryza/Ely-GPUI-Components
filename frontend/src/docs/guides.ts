@@ -20,9 +20,11 @@ const escape = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;
 const slugify = (text: string) =>
   text
     .toLowerCase()
-    .replace(/<[^>]+>/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+
+/** A heading's words: no backticks, links as their text. */
+const plain = (markdown: string) => markdown.replace(/`/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
 
 function read(file: string): Guide {
   const source = sources[`./${file}.md`];
@@ -31,16 +33,18 @@ function read(file: string): Guide {
   const toc: Guide["toc"] = [];
   const marked = new Marked({
     renderer: {
-      heading({ tokens, depth }: Tokens.Heading) {
-        const html = this.parser.parseInline(tokens);
+      heading({ tokens, depth, text }: Tokens.Heading) {
+        const words = plain(text);
         if (depth === 1) {
-          title = html.replace(/<[^>]+>/g, "");
+          if (title) throw new Error(`docs: ${file}.md has a second # title`);
+          title = words;
           return "";
         }
-        const id = slugify(html);
+        const html = this.parser.parseInline(tokens);
+        const id = slugify(words);
         if (depth === 2) {
           if (toc.some((h) => h.id === id)) throw new Error(`docs: ${file}.md repeats heading ${id}`);
-          toc.push({ id, text: html.replace(/<[^>]+>/g, "") });
+          toc.push({ id, text: words });
         }
         return `<h${depth} id="${id}">${html}</h${depth}>`;
       },

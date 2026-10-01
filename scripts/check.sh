@@ -27,4 +27,8 @@ deferred=$(grep -rn 'deferred(' src --include='*.rs' | grep -v '^src/primitives/
 [ -z "$deferred" ] || { echo "gpui deferred outside primitives::raise:"; echo "$deferred"; fail=1; }
 instant=$(grep -rnE '(^|[^_[:alnum:]])time::(Instant|\{[^}]*Instant)' src examples || true)
 [ -z "$instant" ] || { echo "std Instant panics in the browser, use web_time::Instant:"; echo "$instant"; fail=1; }
+for f in examples/docs/*.rs; do
+  n=$(basename "$f" .rs)
+  grep -qx "path = \"$f\"" Cargo.toml && grep -qx "name = \"docs_$n\"" Cargo.toml || { echo "$f needs [[example]] docs_$n in Cargo.toml"; fail=1; }
+done
 exit $fail
