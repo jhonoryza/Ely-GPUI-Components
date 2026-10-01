@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { componentCount } from "./data";
 
-/** The search field; Slash focuses it, Enter takes the first match. */
+/** Search: Slash focuses it, Enter opens the first match. */
 export function Find({ query, onQuery, onEnter, className }: { query: string; onQuery: (q: string) => void; onEnter: () => void; className: string }) {
   const field = useRef<HTMLInputElement>(null);
   useEffect(() => {

@@ -112,7 +112,7 @@ export function miniature(canvas: HTMLCanvasElement, model: Block[], still: bool
     if (!frame) frame = requestAnimationFrame(draw);
   };
 
-  /** Model index of the grown block at a point, not the table. */
+  /** The grown block at a point, by model index. */
   const pick = (x: number, y: number): number | null => {
     const r = canvas.getBoundingClientRect();
     const dpr = canvas.width / r.width;

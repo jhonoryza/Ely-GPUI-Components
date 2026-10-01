@@ -11,7 +11,7 @@ export function smooth(): { lenis: Lenis; end: () => void } {
   return { lenis: own, end: () => (own.destroy(), (lenis = null)) };
 }
 
-/** Holds the page still at once, a glide in flight included. */
+/** Holds the page still at once, glide included. */
 export function hold(still: boolean): void {
   if (still) lenis?.stop();
   else lenis?.start();

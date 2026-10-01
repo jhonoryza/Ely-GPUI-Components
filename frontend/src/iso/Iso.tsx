@@ -22,7 +22,7 @@ interface Props {
   lift?: number | null;
 }
 
-/** Grows once shown; a press regrows it or picks a block. */
+/** Grows once shown; a press regrows or picks. */
 export function Iso({ model, label, className, onHover, onPick, lift }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const mini = useRef<ReturnType<typeof miniature> | null>(null);
