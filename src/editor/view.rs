@@ -72,8 +72,12 @@ impl CodeEditor {
             return None;
         }
         let rows = headers.into_iter().map(|line| {
-            let text = self.buffer.line(line).to_string();
-            let styles = syntax::colors(&text, cx);
+            let styles = syntax::colors(
+                self.language_name(),
+                self.buffer.line_range(line),
+                self.buffer.text(),
+                cx,
+            );
             let jump = cx.entity();
             div()
                 .id(("sticky", line))
@@ -104,7 +108,10 @@ impl CodeEditor {
                         .line_height(self.frame.line)
                         .whitespace_nowrap()
                         .text_color(colors.syntax.variable)
-                        .child(StyledText::new(text).with_highlights(styles)),
+                        .child(
+                            StyledText::new(self.buffer.line(line).to_string())
+                                .with_highlights(styles),
+                        ),
                 )
         });
         Some(
@@ -131,7 +138,12 @@ impl CodeEditor {
             .map(|row| match row {
                 Row::Line(at) => {
                     let text = self.buffer.line(*at);
-                    syntax::colors(text, cx)
+                    syntax::colors(
+                        self.language_name(),
+                        self.buffer.line_range(*at),
+                        self.buffer.text(),
+                        cx,
+                    )
                         .into_iter()
                         .filter_map(|(range, style)| {
                             let start = text[..range.start].chars().count();
