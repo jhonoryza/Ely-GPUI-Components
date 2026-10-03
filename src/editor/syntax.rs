@@ -13,8 +13,10 @@ use crate::forms::{Kind, code_highlights, lex};
 /// the line's byte range in the buffer, and the whole buffer text. Returns the
 /// line's highlight spans — ranges relative to the line start — or `None` to
 /// fall back to the built-in highlighter (unknown language, parse failure).
-pub type HighlightFn =
-    Rc<dyn Fn(&str, Range<usize>, &str, &App) -> Option<Vec<(Range<usize>, HighlightStyle)>>>;
+#[derive(Clone)]
+pub struct HighlightFn(
+    pub Rc<dyn Fn(&str, Range<usize>, &str, &App) -> Option<Vec<(Range<usize>, HighlightStyle)>>>,
+);
 
 impl Global for HighlightFn {}
 
@@ -140,7 +142,7 @@ pub(crate) fn colors(
 ) -> Vec<(Range<usize>, HighlightStyle)> {
     if let Some(spans) = cx
         .try_global::<HighlightFn>()
-        .and_then(|highlight| highlight(language, line_range.clone(), buffer, cx))
+        .and_then(|highlight| (highlight.0)(language, line_range.clone(), buffer, cx))
     {
         return spans;
     }
@@ -158,6 +160,13 @@ pub(crate) fn colors(
             )
         })
         .collect()
+}
+
+/// Highlight for non-editor surfaces (chat code blocks, diff viewers, hover
+/// cards): no language context, so the installed hook only applies when it
+/// handles the empty language name; otherwise the built-in highlighter runs.
+pub(crate) fn code_colors(text: &str, cx: &App) -> Vec<(Range<usize>, HighlightStyle)> {
+    colors("", 0..text.len(), text, cx)
 }
 
 /// Where `needle` appears in the lines of `range`, as offsets, whole words only when it is a word.
