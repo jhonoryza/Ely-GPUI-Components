@@ -85,7 +85,7 @@ impl RenderOnce for HoverInfo {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let styles = syntax::colors(&self.signature, cx);
+        let styles = syntax::code_colors(&self.signature, cx);
         let rule = || div().h_0().border_t_1().border_color(colors.border);
         let has_links = !self.links.is_empty();
         let links = self
