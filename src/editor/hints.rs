@@ -270,7 +270,7 @@ impl RenderOnce for SignatureHelp {
         let count = self.signatures.len();
         let active = self.active.min(count - 1);
         let signature = &self.signatures[active];
-        let mut styles = syntax::colors(&signature.label, cx);
+        let mut styles = syntax::code_colors(&signature.label, cx);
         if let Some(range) = signature.params.get(self.param) {
             styles.push((
                 range.clone(),
