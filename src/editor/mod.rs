@@ -54,6 +54,7 @@ pub use refactor::{ActionKind, CodeAction, CodeActionMenu, RenameInput};
 pub use search::{FileHits, Hit, ReferencesPanel, SearchPanel, SearchResultItem};
 pub use settings::{Setting, SettingValue, SettingsEditor, settings_json};
 pub use state::{CodeEditor, CursorShape, EditorEvent, LineNumbers};
+pub use syntax::{HighlightFn, set_highlighter};
 pub use status::{
     BranchIndicator, CursorPosition, Encoding, IndentSettings, LanguageMode, LineEnding, LspState,
     LspStatus, NotificationBell,

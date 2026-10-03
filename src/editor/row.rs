@@ -121,7 +121,12 @@ impl CodeEditor {
             let line = self.buffer.line_of(ghost.offset);
             let rest =
                 self.buffer.text()[ghost.offset..self.buffer.line_range(line).end].to_string();
-            let styles = syntax::colors(&rest, cx);
+            let styles = syntax::colors(
+                self.language_name(),
+                ghost.offset..self.buffer.line_range(line).end,
+                self.buffer.text(),
+                cx,
+            );
             StyledText::new(rest).with_highlights(styles)
         });
         base.child(self.gutter(Cell::Blank, ix, cx))

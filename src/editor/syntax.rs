@@ -1,9 +1,28 @@
 use std::ops::Range;
+use std::rc::Rc;
 
-use gpui::{App, HighlightStyle};
+use gpui::{App, Global, HighlightStyle};
 
 use super::buffer::Buffer;
 use crate::forms::{Kind, code_highlights, lex};
+
+/// A host-installed syntax highlighter, consulted before the built-in
+/// one-pass highlighter.
+///
+/// Receives the editor's language name (as set with `CodeEditor::language`),
+/// the line's byte range in the buffer, and the whole buffer text. Returns the
+/// line's highlight spans — ranges relative to the line start — or `None` to
+/// fall back to the built-in highlighter (unknown language, parse failure).
+pub type HighlightFn =
+    Rc<dyn Fn(&str, Range<usize>, &str, &App) -> Option<Vec<(Range<usize>, HighlightStyle)>>>;
+
+impl Global for HighlightFn {}
+
+/// Install the process-wide syntax highlighter. Call once at startup; the
+/// editor falls back to its built-in highlighter wherever this returns `None`.
+pub fn set_highlighter(cx: &mut App, highlight: HighlightFn) {
+    cx.set_global(highlight);
+}
 
 /// Each line that opens a block, and the last line the block holds, read from indentation.
 pub(crate) fn folds(buffer: &Buffer) -> Vec<(usize, usize)> {
@@ -109,7 +128,23 @@ pub(crate) fn matched(brackets: &[Bracket], caret: usize) -> Option<(usize, usiz
 }
 
 /// A line's syntax colors as highlight styles.
-pub(crate) fn colors(text: &str, cx: &App) -> Vec<(Range<usize>, HighlightStyle)> {
+///
+/// When the host installed a highlighter with [`set_highlighter`] and it
+/// returns spans for this line, those win; otherwise the built-in one-pass
+/// highlighter runs on the line's text.
+pub(crate) fn colors(
+    language: &str,
+    line_range: Range<usize>,
+    buffer: &str,
+    cx: &App,
+) -> Vec<(Range<usize>, HighlightStyle)> {
+    if let Some(spans) = cx
+        .try_global::<HighlightFn>()
+        .and_then(|highlight| highlight(language, line_range.clone(), buffer, cx))
+    {
+        return spans;
+    }
+    let text = &buffer[line_range];
     code_highlights(text, cx)
         .into_iter()
         .map(|(range, highlight)| {
