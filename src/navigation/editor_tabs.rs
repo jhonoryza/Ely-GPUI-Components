@@ -305,6 +305,11 @@ impl RenderOnce for EditorTabs {
                         })
                     })
                     .on_click(move |event, window, cx| {
+                        // Keep tab clicks local: without this, a double-click
+                        // on a tab would also fire click handlers on ancestor
+                        // elements (e.g. an "empty area" double-click action
+                        // on the tab strip).
+                        cx.stop_propagation();
                         if preview && event.click_count() == 2 {
                             run(&keep, "keep", &id, window, cx);
                         } else {
