@@ -36,6 +36,7 @@ pub mod onboarding;
 pub mod overlays;
 pub mod primitives;
 pub mod project;
+pub mod rendering;
 pub mod settings;
 pub mod shell;
 pub mod tables;

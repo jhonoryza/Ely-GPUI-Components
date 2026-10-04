@@ -352,3 +352,4 @@
 | G3 | 1 | FAIL | RangeSlider thumbs reported the whole track, not the bounds the other thumb leaves |
 | G3 | 2 | PASS | |
 | T50a | 1 | PASS | codex gpt-6.1-sol max |
+| T50b | 1 | PASS | |
