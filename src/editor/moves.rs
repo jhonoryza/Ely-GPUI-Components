@@ -130,6 +130,23 @@ impl CodeEditor {
         cx.notify();
     }
 
+    /// Folds every foldable block in the buffer; cursors inside move to headers.
+    pub fn fold_all(&mut self, cx: &mut Context<Self>) {
+        for (header, _) in folds(&self.buffer) {
+            if !self.folded.contains(&header) {
+                self.toggle_fold(header, cx);
+            }
+        }
+    }
+
+    /// Unfolds every folded block.
+    pub fn unfold_all(&mut self, cx: &mut Context<Self>) {
+        if !self.folded.is_empty() {
+            self.folded.clear();
+            cx.notify();
+        }
+    }
+
     /// Opens every fold that hides a cursor.
     pub(crate) fn unfold_cursors(&mut self) {
         if self.folded.is_empty() {
