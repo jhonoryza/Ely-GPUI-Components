@@ -353,3 +353,4 @@
 | G3 | 2 | PASS | |
 | T50a | 1 | PASS | codex gpt-6.1-sol max |
 | T50b | 1 | PASS | |
+| T50c | 1 | PASS | the gallery's missing non-macOS post_scroll stub added |

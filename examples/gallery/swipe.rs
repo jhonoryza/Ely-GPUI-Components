@@ -89,3 +89,8 @@ fn post_scroll(x: f64, y: f64, across: f32, phase: i64, number: u32) -> Result<(
     }
     Ok(())
 }
+
+#[cfg(not(target_os = "macos"))]
+fn post_scroll(_: f64, _: f64, _: f32, _: i64, _: u32) -> Result<()> {
+    anyhow::bail!("scripted scrolls need macOS")
+}

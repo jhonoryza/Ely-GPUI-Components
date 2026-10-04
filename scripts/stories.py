@@ -31,6 +31,9 @@ SHOWN = {
     ("theme", "Shape"): ["Elevation"],
     ("theme", "Motion"): ["Spring"],
     ("theme", "ThemeEditor"): ["ThemeProvider"],
+    ("rendering", "RenderSurface"): [
+        "ShaderView", "CameraTexture", "ZeroCopyTexture", "MetalSurface",
+    ],
 }
 
 

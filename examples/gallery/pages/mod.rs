@@ -34,6 +34,7 @@ mod onboarding;
 mod overlays;
 mod primitives;
 mod project;
+mod rendering;
 mod settings;
 mod shell;
 mod tables;
@@ -101,6 +102,7 @@ pub const ALL: &[Page] = &[
     maps::PAGE,
     misc::PAGE,
     tooling::PAGE,
+    rendering::PAGE,
 ];
 
 pub use i18n::install as install_i18n;

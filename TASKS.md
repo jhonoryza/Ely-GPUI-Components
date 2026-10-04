@@ -180,7 +180,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [ ] T49 Acceptance: live URL and MVP checklist
 - [x] T50a Rendering · Plan: chapter 44 in the PRD, `tasks/ch44.md`, these lines
 - [x] T50b Rendering · Surface: `rendering::RenderSurface`, tested — `tasks/ch44.md`
-- [ ] T50c Rendering · Gallery: a Rendering page, its story, `stories.json`; the gallery runs on Linux
+- [x] T50c Rendering · Gallery: a Rendering page, its story, `stories.json`; the gallery runs on Linux
 - [ ] T50d Rendering · Web: the story runs live on the site from the wasm gallery, checked in a browser
 - [ ] T50e Rendering · Platforms: CI builds and tests the crate on Linux, macOS and Windows, arm64 and x86_64
 - [ ] T50f Rendering · Docs: a guide with an example `scripts/check.sh` compiles; AGENTS.md
