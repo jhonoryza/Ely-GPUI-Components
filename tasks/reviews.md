@@ -354,3 +354,4 @@
 | T50a | 1 | PASS | codex gpt-6.1-sol max |
 | T50b | 1 | PASS | |
 | T50c | 1 | PASS | the gallery's missing non-macOS post_scroll stub added |
+| T50d | 1 | PASS | the e2e test failed against a gallery whose surface never redraws |

@@ -90,6 +90,22 @@ test("typing reaches a live field after a press", async ({ page, isMobile }) => 
   await expect.poll(() => ink(page, text)).toBeGreaterThan(30);
 });
 
+test("a render surface draws again when its slider moves", async ({ page, isMobile }) => {
+  test.skip(isMobile, "no hardware keyboard");
+  await page.emulateMedia({ colorScheme: "light" });
+  await live(page, "/components/rendering/rendersurface/");
+  const box = (await page.locator(".live iframe").boundingBox())!;
+  // Inside the field, below the note and above the slider, as the gallery lays them.
+  const field = { x: box.x + 24, y: box.y + 100, width: 720, height: 330 };
+  // Ready can come a frame before the field paints.
+  await expect.poll(() => ink(page, field)).toBeGreaterThan(2000);
+  const before = await ink(page, field);
+  await page.mouse.click(box.x + 2, box.y + 2);
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("End");
+  await expect.poll(() => ink(page, field)).not.toBe(before);
+});
+
 test("full screen covers the page and Escape leaves it", async ({ page }) => {
   await live(page, "/components/buttons/button/");
   await page.locator(".live").hover();
