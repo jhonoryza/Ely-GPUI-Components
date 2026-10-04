@@ -240,7 +240,7 @@ impl ContextMenu {
         }
     }
 
-    /// Opens on the owner's numbered request, not on a right click: for rows that come after the press.
+    /// Opens on the owner's numbered request, not a right click.
     pub fn manual(mut self, request: Option<(u64, Point<Pixels>)>) -> Self {
         self.request = Some(request);
         self
