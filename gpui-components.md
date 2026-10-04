@@ -1418,3 +1418,14 @@
 - IconBrowser
 - A11yChecker
 - ScreenshotTest Harness
+
+---
+
+## 44. 渲染表面（Rendering）
+
+- RenderSurface — 宿主按盒子的设备像素绘出帧
+- FramebufferView / OffscreenRenderSurface / CustomRendererSurface / TextureView → RenderSurface
+- ShaderView / GpuSurface / WebGPUSurface / Compute Visualization / GPU Particle View — 宿主自带 GPU，读回帧交给 RenderSurface
+- CameraTexture / GStreamerTexture / ExternalTexture — 宿主的帧交给 RenderSurface
+- ZeroCopyTexture / SharedTextureView / MetalSurface / OpenGLSurface / VulkanSurface / D3D11/D3D12Surface — gpui 不共享设备
+- 3D Scene / 3D Viewport → media::ModelViewer

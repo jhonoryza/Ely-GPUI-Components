@@ -1,7 +1,7 @@
 # Tasks
 
 Progress truth. Work runs top to bottom. No item is skipped.
-Each `T` item ends with a review in a herdr split pane, three rounds at most: codex (`gpt-6-astra`, effort `max`) through T24d round 2; from T24d round 3, after codex ran out of quota on 2026-09-26, a Claude session on Fable 5.1 at max effort, at the user's word; from T44a round 2, codex again, as the user asked; from T45d round 2, Claude Code on Fable 5.1 at high effort, at the user's word.
+Each `T` item ends with a review in a herdr split pane, three rounds at most: codex (`gpt-6-astra`, effort `max`) through T24d round 2; from T24d round 3, after codex ran out of quota on 2026-09-26, a Claude session on Fable 5.1 at max effort, at the user's word; from T44a round 2, codex again, as the user asked; from T45d round 2, Claude Code on Fable 5.1 at high effort, at the user's word; from T50a, codex `gpt-6.1-sol` at `max`, at the user's word.
 
 Per-component lines live in `tasks/`. Tags there:
 
@@ -178,6 +178,13 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T48l Docs · Testing: the `test-support` feature, frames, clocks and reduced motion in tests
 - [x] T48m Docs · E2E: the Docs routes, rail, list, previous and next, and code blocks under Playwright
 - [ ] T49 Acceptance: live URL and MVP checklist
+- [x] T50a Rendering · Plan: chapter 44 in the PRD, `tasks/ch44.md`, these lines
+- [ ] T50b Rendering · Surface: `rendering::RenderSurface`, tested — `tasks/ch44.md`
+- [ ] T50c Rendering · Gallery: a Rendering page, its story, `stories.json`; the gallery runs on Linux
+- [ ] T50d Rendering · Web: the story runs live on the site from the wasm gallery, checked in a browser
+- [ ] T50e Rendering · Platforms: CI builds and tests the crate on Linux, macOS and Windows, arm64 and x86_64
+- [ ] T50f Rendering · Docs: a guide with an example `scripts/check.sh` compiles; AGENTS.md
+- [ ] T50g Rendering · Acceptance: the checklist, item by item
 
 ## T00 detail
 
