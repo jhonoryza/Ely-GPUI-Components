@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ClickEvent, Div, ElementId, Entity, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, RenderOnce, SharedString, Stateful, Styled, Window, div,
-    prelude::*,
+    MouseButton, ParentElement, Pixels, Point, RenderOnce, SharedString, Stateful, Styled, Window,
+    div, prelude::*,
 };
 use smallvec::SmallVec;
 
@@ -226,6 +226,7 @@ impl RenderOnce for SplitButton {
 pub struct ContextMenu {
     id: ElementId,
     menu: Menu,
+    request: Option<Option<(u64, Point<Pixels>)>>,
     children: SmallVec<[AnyElement; 2]>,
 }
 
@@ -234,8 +235,15 @@ impl ContextMenu {
         Self {
             id: id.into(),
             menu,
+            request: None,
             children: SmallVec::new(),
         }
+    }
+
+    /// Opens on the owner's numbered request, not on a right click: for rows that come after the press.
+    pub fn manual(mut self, request: Option<(u64, Point<Pixels>)>) -> Self {
+        self.request = Some(request);
+        self
     }
 }
 
@@ -248,14 +256,24 @@ impl ParentElement for ContextMenu {
 impl RenderOnce for ContextMenu {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let state = state(&self.id, window, cx);
+        if let Some(Some((number, at))) = self.request {
+            let asked = window.use_keyed_state((self.id.clone(), "asked"), cx, |_, _| None);
+            if *asked.read(cx) != Some(number) {
+                asked.update(cx, |asked, _| *asked = Some(number));
+                log::info!("context menu {:?}: asked at {at:?}", self.id);
+                Open::show(&state, &self.menu, Spot::At(at), false, cx);
+            }
+        }
         let (open, shut, menu) = (state.clone(), state.clone(), self.menu.clone());
         div()
             .id(self.id.clone())
             .relative()
-            .on_mouse_down(MouseButton::Right, move |event, window, cx| {
-                window.prevent_default();
-                log::info!("context menu: at {:?}", event.position);
-                Open::show(&open, &menu, Spot::At(event.position), false, cx);
+            .when(self.request.is_none(), |host| {
+                host.on_mouse_down(MouseButton::Right, move |event, window, cx| {
+                    window.prevent_default();
+                    log::info!("context menu: at {:?}", event.position);
+                    Open::show(&open, &menu, Spot::At(event.position), false, cx);
+                })
             })
             .on_mouse_down(MouseButton::Left, move |_, window, cx| {
                 if shut.read(cx).is_open() {

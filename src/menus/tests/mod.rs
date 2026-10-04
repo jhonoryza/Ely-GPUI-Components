@@ -18,6 +18,7 @@ struct Desk {
     view_rows: bool,
     enters_above: usize,
     shift: bool,
+    asked: Option<(u64, gpui::Point<gpui::Pixels>)>,
 }
 
 impl Desk {
@@ -83,7 +84,15 @@ impl Render for Desk {
                         ContextMenu::new("area", menu.clone())
                             .child(div().w(px(200.0)).h(px(120.0))),
                     )
-                    .child(SearchableMenu::new("find", "Find", menu)),
+                    .child(SearchableMenu::new("find", "Find", menu.clone()))
+                    .child(
+                        ContextMenu::new("late", menu).manual(self.asked).child(
+                            div()
+                                .debug_selector(|| "late".into())
+                                .w(px(200.0))
+                                .h(px(40.0)),
+                        ),
+                    ),
             )
     }
 }
@@ -117,6 +126,7 @@ fn desk(cx: &mut TestAppContext) -> (gpui::Entity<Desk>, &mut VisualTestContext)
         view_rows: true,
         enters_above: 0,
         shift: false,
+        asked: None,
     });
     settle(cx);
     (view, cx)
@@ -203,6 +213,27 @@ fn a_right_click_opens_the_context_menu_where_it_lands(cx: &mut TestAppContext) 
     cx.simulate_mouse_move(at, None, Modifiers::none());
     cx.simulate_mouse_down(at, MouseButton::Right, Modifiers::none());
     cx.simulate_mouse_up(at, MouseButton::Right, Modifiers::none());
+    settle(cx);
+    press("down", cx);
+    press("enter", cx);
+    assert_eq!(ran(&view, cx), ["cut"]);
+}
+
+#[gpui::test]
+fn a_manual_context_menu_opens_only_from_its_owner(cx: &mut TestAppContext) {
+    let (view, cx) = desk(cx);
+    let at = cx.debug_bounds("late").expect("the host").center();
+    cx.simulate_mouse_move(at, None, Modifiers::none());
+    cx.simulate_mouse_down(at, MouseButton::Right, Modifiers::none());
+    cx.simulate_mouse_up(at, MouseButton::Right, Modifiers::none());
+    settle(cx);
+    press("down", cx);
+    press("enter", cx);
+    assert!(ran(&view, cx).is_empty(), "a right click opens nothing");
+    view.update(cx, |desk, cx| {
+        desk.asked = Some((1, point(px(60.0), px(80.0))));
+        cx.notify();
+    });
     settle(cx);
     press("down", cx);
     press("enter", cx);
