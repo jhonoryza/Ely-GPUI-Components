@@ -220,6 +220,37 @@ fn a_typed_number_reaches_the_owner_before_any_blur(cx: &mut TestAppContext) {
     );
 }
 
+struct Committed {
+    values: Vec<f64>,
+}
+
+impl Render for Committed {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let view = cx.entity();
+        NumberInput::new("committed", 4.0)
+            .on_commit(move |value, _, cx| view.update(cx, |view, _| view.values.push(value)))
+    }
+}
+
+#[gpui::test]
+fn typing_commits_only_on_enter_and_steps(cx: &mut TestAppContext) {
+    setup(cx);
+    let (view, cx) = cx.add_window_view(|_, _| Committed { values: Vec::new() });
+    cx.update(|window, cx| window.focus_next(cx));
+    cx.simulate_keystrokes("cmd-a");
+    cx.simulate_input("12");
+    assert!(
+        view.read_with(cx, |view, _| view.values.is_empty()),
+        "typing waits"
+    );
+    cx.simulate_keystrokes("enter");
+    cx.simulate_keystrokes("up");
+    assert_eq!(
+        view.read_with(cx, |view, _| view.values.clone()),
+        [12.0, 13.0]
+    );
+}
+
 struct Pin {
     code: String,
 }

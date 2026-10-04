@@ -62,6 +62,7 @@ fn on_grid(bound: f64, scale: f64, inward: fn(f64) -> f64) -> f64 {
 struct Numeric {
     input: Entity<TextInput>,
     on_change: Option<OnChange>,
+    on_commit: Option<OnChange>,
     value: f64,
     limits: (f64, f64, f64, usize),
     _events: Subscription,
@@ -77,7 +78,7 @@ impl Numeric {
 /// Shows `value` in the field, then tells the owner.
 fn show(
     input: &Entity<TextInput>,
-    on_change: Option<&OnChange>,
+    (on_change, on_commit): (Option<&OnChange>, Option<&OnChange>),
     value: f64,
     precision: usize,
     window: &mut Window,
@@ -89,21 +90,26 @@ fn show(
     if let Some(on_change) = on_change {
         on_change(value, window, cx);
     }
+    if let Some(on_commit) = on_commit {
+        on_commit(value, window, cx);
+    }
 }
 
 /// Settles `next` into the limits and shows it.
 fn commit(state: &Entity<Numeric>, next: f64, window: &mut Window, cx: &mut App) {
-    let (input, on_change, (min, max, _, precision)) = {
+    let (input, on_change, on_commit, (min, max, _, precision)) = {
         let numeric = state.read(cx);
         (
             numeric.input.clone(),
             numeric.on_change.clone(),
+            numeric.on_commit.clone(),
             numeric.limits,
         )
     };
     let value = settle(next, min, max, precision);
     state.update(cx, |numeric, _| numeric.value = value);
-    show(&input, on_change.as_ref(), value, precision, window, cx);
+    let handlers = (on_change.as_ref(), on_commit.as_ref());
+    show(&input, handlers, value, precision, window, cx);
 }
 
 fn numeric(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity<Numeric> {
@@ -120,7 +126,7 @@ fn numeric(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity<Numeric>
                     numeric.value = value;
                     show(
                         input,
-                        numeric.on_change.as_ref(),
+                        (numeric.on_change.as_ref(), numeric.on_commit.as_ref()),
                         value,
                         precision,
                         window,
@@ -147,6 +153,7 @@ fn numeric(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity<Numeric>
         Numeric {
             input,
             on_change: None,
+            on_commit: None,
             value: 0.0,
             limits: (f64::MIN, f64::MAX, 1.0, 0),
             _events: events,
@@ -215,6 +222,7 @@ pub struct NumberInput {
     suffix: Option<AnyElement>,
     size: ControlSize,
     on_change: Option<OnChange>,
+    on_commit: Option<OnChange>,
     scrub_label: Option<SharedString>,
 }
 
@@ -231,6 +239,7 @@ impl NumberInput {
             suffix: None,
             size: ControlSize::default(),
             on_change: None,
+            on_commit: None,
             scrub_label: None,
         }
     }
@@ -288,6 +297,12 @@ impl NumberInput {
         self.on_change = Some(Rc::new(handler));
         self
     }
+
+    /// Runs on Enter, blur, steps and scrubs; never while typing.
+    pub fn on_commit(mut self, handler: impl Fn(f64, &mut Window, &mut App) + 'static) -> Self {
+        self.on_commit = Some(Rc::new(handler));
+        self
+    }
 }
 
 impl RenderOnce for NumberInput {
@@ -296,6 +311,7 @@ impl RenderOnce for NumberInput {
         let (value, min, max, step) = (self.value, self.min, self.max, self.step);
         state.update(cx, |numeric, _| {
             numeric.on_change = self.on_change.clone();
+            numeric.on_commit = self.on_commit.clone();
             numeric.value = value;
             numeric.limits = (min, max, step, self.precision);
         });
@@ -465,36 +481,4 @@ impl RenderOnce for ScrubInput {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{parse, settle};
-
-    #[test]
-    fn parses_grouped_and_typographic_minus_and_refuses_junk() {
-        assert_eq!(parse("1,234.5"), Some(1234.5));
-        assert_eq!(parse("\u{2212}3"), Some(-3.0));
-        assert_eq!(parse("abc"), None);
-        assert_eq!(parse("1e999"), None);
-    }
-
-    #[test]
-    fn settle_clamps_then_rounds() {
-        assert_eq!(settle(1.23456, 0.0, 10.0, 2), 1.23);
-        assert_eq!(settle(-5.0, 0.0, 10.0, 0), 0.0);
-        assert_eq!(settle(12.6, 0.0, 10.0, 0), 10.0);
-    }
-
-    #[test]
-    fn settle_rounds_before_it_clamps() {
-        assert_eq!(settle(0.2 + 0.1, 0.0, 0.25, 1), 0.2);
-        assert_eq!(settle(-0.26, -0.25, 1.0, 1), -0.2);
-        assert_eq!(settle(0.3, 0.0, 0.29, 2), 0.29);
-        assert_eq!(settle(0.29, 0.29, 0.29, 2), 0.29);
-        assert_eq!(settle(10000000.01, 0.0, 10000000.005, 2), 10000000.0);
-    }
-
-    #[test]
-    #[should_panic(expected = "no 1-place number lies in 0.21..=0.29")]
-    fn settle_refuses_a_range_without_a_number_at_its_precision() {
-        settle(0.25, 0.21, 0.29, 1);
-    }
-}
+mod tests;
