@@ -182,7 +182,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T50b Rendering · Surface: `rendering::RenderSurface`, tested — `tasks/ch44.md`
 - [x] T50c Rendering · Gallery: a Rendering page, its story, `stories.json`; the gallery runs on Linux
 - [x] T50d Rendering · Web: the story runs live on the site from the wasm gallery, checked in a browser
-- [ ] T50e Rendering · Platforms: CI builds and tests the crate on Linux, macOS and Windows, arm64 and x86_64
+- [x] T50e Rendering · Platforms: CI builds and tests the crate on Linux, macOS and Windows, arm64 and x86_64
 - [ ] T50f Rendering · Docs: a guide with an example `scripts/check.sh` compiles; AGENTS.md
 - [ ] T50g Rendering · Acceptance: the checklist, item by item
 

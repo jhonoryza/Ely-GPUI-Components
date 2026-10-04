@@ -355,3 +355,4 @@
 | T50b | 1 | PASS | |
 | T50c | 1 | PASS | the gallery's missing non-macOS post_scroll stub added |
 | T50d | 1 | PASS | the e2e test failed against a gallery whose surface never redraws |
+| T50e | 1 | PASS | run 37175728059: seven jobs green; 21 tests typed cmd- where init binds secondary- |
