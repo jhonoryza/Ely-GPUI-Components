@@ -13,10 +13,13 @@ use crate::forms::{Kind, code_highlights, lex};
 /// the line's byte range in the buffer, and the whole buffer text. Returns the
 /// line's highlight spans — ranges relative to the line start — or `None` to
 /// fall back to the built-in highlighter (unknown language, parse failure).
+/// The highlight callback: language name, line byte range, whole buffer text.
+/// Returns the line's spans, or `None` for the built-in fallback.
+pub type HighlightCallback =
+    Rc<dyn Fn(&str, Range<usize>, &str, &App) -> Option<Vec<(Range<usize>, HighlightStyle)>>>;
+
 #[derive(Clone)]
-pub struct HighlightFn(
-    pub Rc<dyn Fn(&str, Range<usize>, &str, &App) -> Option<Vec<(Range<usize>, HighlightStyle)>>>,
-);
+pub struct HighlightFn(pub HighlightCallback);
 
 impl Global for HighlightFn {}
 
