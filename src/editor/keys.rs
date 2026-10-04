@@ -241,9 +241,7 @@ pub(crate) fn listen<E: InteractiveElement>(root: E, cx: &mut Context<CodeEditor
         false,
         cx
     ));
-    let root = on!(root, Backspace, |e, _, cx| {
-        e.delete_by(|buffer, at| buffer.previous(at)..at, cx)
-    });
+    let root = on!(root, Backspace, |e, _, cx| { e.backspace(cx) });
     let root = on!(root, Delete, |e, _, cx| e
         .delete_by(|buffer, at| at..buffer.next(at), cx));
     let root = on!(root, DeleteWordLeft, |e, _, cx| {
