@@ -358,3 +358,5 @@
 | T50e | 1 | PASS | run 37175728059: seven jobs green; 21 tests typed cmd- where init binds secondary- |
 | T50f | 1 | FAIL | AGENTS.md said a literal cmd- is no shortcut off macOS; gpui parses cmd- as the platform key everywhere |
 | T50f | 2 | PASS | |
+| T50g | 1 | FAIL | the platforms row said the gallery builds on all six; macOS arm64 checks it with clippy |
+| T50g | 2 | PASS | |
