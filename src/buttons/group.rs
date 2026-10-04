@@ -10,6 +10,7 @@ use super::{
     button::{Slot, label_size},
 };
 use crate::{
+    i18n,
     primitives::{FocusRing, Icon, IconName, Tooltip},
     theme::{ActiveTheme, ControlSize, Radius},
 };
@@ -93,7 +94,7 @@ fn toggle_face(
     item: &ToggleItem,
     on: bool,
     size: ControlSize,
-    press: OnPress,
+    press: Option<OnPress>,
     cx: &App,
 ) -> impl IntoElement + use<> {
     assert!(
@@ -125,18 +126,20 @@ fn toggle_face(
         .text_size(theme.text_size(text))
         .font_weight(FontWeight::MEDIUM)
         .text_color(fg)
-        .map(|face| {
-            if on {
-                face.bg(colors.active)
-            } else {
-                face.hover(|style| style.bg(hover))
-            }
+        .when(on, |face| face.bg(colors.active))
+        .map(|face| match press {
+            None => face
+                .aria_description(i18n::text(cx, "state.unavailable", &[]))
+                .opacity(0.45)
+                .cursor_not_allowed(),
+            Some(press) => face
+                .when(!on, |face| face.hover(|style| style.bg(hover)))
+                .cursor_pointer()
+                .tab_index(0)
+                .focus_ring(cx)
+                .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
+                .on_click(move |_, window, cx| press(window, cx)),
         })
-        .cursor_pointer()
-        .tab_index(0)
-        .focus_ring(cx)
-        .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
-        .on_click(move |_, window, cx| press(window, cx))
         .when_some(item.icon, |face, icon| {
             face.child(Icon::new(icon).size(icon_size).color(fg))
         })
@@ -154,6 +157,7 @@ pub struct ToggleButton {
     id: ElementId,
     item: ToggleItem,
     on: bool,
+    disabled: bool,
     size: ControlSize,
     on_toggle: Option<OnToggle>,
 }
@@ -164,6 +168,7 @@ impl ToggleButton {
             id: id.into(),
             item,
             on,
+            disabled: false,
             size: ControlSize::default(),
             on_toggle: None,
         }
@@ -171,6 +176,12 @@ impl ToggleButton {
 
     pub fn size(mut self, size: ControlSize) -> Self {
         self.size = size;
+        self
+    }
+
+    /// Shown, not pressable; the item's tooltip can say why.
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
         self
     }
 
@@ -189,6 +200,7 @@ impl RenderOnce for ToggleButton {
                 toggle(!on, window, cx);
             }
         });
+        let press = (!self.disabled).then_some(press);
         toggle_face(self.id, &self.item, on, self.size, press, cx)
     }
 }
@@ -280,7 +292,7 @@ impl RenderOnce for ToggleGroup {
                     item,
                     on,
                     self.size,
-                    press,
+                    Some(press),
                     cx,
                 )
             })
