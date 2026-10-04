@@ -165,7 +165,7 @@ def slug(title):
 def entries():
     """Component names by key, and ticked entries with a home."""
     names, homed = {}, []
-    for file in sorted((ROOT / "tasks").glob("*.md")):
+    for file in sorted((ROOT / "tasks").glob("ch*.md")):
         for line in file.read_text().splitlines():
             if m := re.match(r"- \[([ x])\] (.+?)(?: — | → | \(T\d|$)", line):
                 aliases = [re.sub(r"\s*\([^)]*\)", "", name).strip() for name in m.group(2).split(" / ")]
