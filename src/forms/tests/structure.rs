@@ -61,7 +61,7 @@ fn cmd_enter_in_a_field_submits_the_form_once(cx: &mut TestAppContext) {
     let (view, cx) = signup(cx);
     cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_input("Ada");
-    cx.simulate_keystrokes("cmd-enter");
+    cx.simulate_keystrokes("secondary-enter");
     let counts = view.read_with(cx, |view, _| (view.sent, view.field_submits));
     assert_eq!(counts, (1, 0));
 }
@@ -73,7 +73,7 @@ fn cmd_enter_on_any_control_in_a_form_submits_it(cx: &mut TestAppContext) {
         window.focus_next(cx);
         window.focus_next(cx);
     });
-    cx.simulate_keystrokes("cmd-enter");
+    cx.simulate_keystrokes("secondary-enter");
     assert_eq!(
         view.read_with(cx, |view, _| view.sent),
         1,

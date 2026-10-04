@@ -269,7 +269,7 @@ fn a_card_waits_for_a_whole_code_and_a_name(cx: &mut TestAppContext) {
     tab(3, cx);
     write("3", cx);
     tab(4, cx);
-    tap("cmd-a", cx);
+    tap("secondary-a", cx);
     tap("backspace", cx);
     tap("enter", cx);
     assert!(said(&host, cx).is_empty(), "no name on the card");

@@ -376,7 +376,7 @@ fn a_grid_that_shrinks_keeps_its_cursor_inside(cx: &mut TestAppContext) {
     count.set(1);
     view.update(cx, |_, cx| cx.notify());
     settle(cx);
-    cx.simulate_keystrokes("cmd-c");
+    cx.simulate_keystrokes("secondary-c");
     settle(cx);
     let copied = cx.update(|_, cx| cx.read_from_clipboard().and_then(|item| item.text()));
     assert_eq!(

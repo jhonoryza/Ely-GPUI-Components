@@ -121,7 +121,7 @@ fn a_composition_undoes_in_one_step(cx: &mut TestAppContext) {
         })
     });
     assert_eq!(text(field, cx), "你");
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     assert_eq!(text(field, cx), "");
 }
 
@@ -142,7 +142,7 @@ fn a_committed_composition_obeys_the_filter_and_length(cx: &mut TestAppContext) 
         })
     });
     assert_eq!(text(field, cx), "1");
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     assert_eq!(text(field, cx), "");
 }
 
@@ -158,7 +158,7 @@ fn a_browser_paste_undoes_apart_from_the_typing(cx: &mut TestAppContext) {
         })
     });
     assert_eq!(text(field, cx), "abcd");
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     assert_eq!(text(field, cx), "ab");
 }
 
@@ -169,7 +169,7 @@ fn undo_leaves_a_disabled_field_alone(cx: &mut TestAppContext) {
     focus(field, cx);
     cx.simulate_input("a");
     field.update(cx, |input, cx| input.set_disabled(true, cx));
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     assert_eq!(text(field, cx), "a");
 }
 
@@ -194,7 +194,7 @@ fn stepping_starts_from_the_typed_number(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Stepped { value: 4.0 });
     cx.update(|window, cx| window.focus_next(cx));
-    cx.simulate_keystrokes("cmd-a");
+    cx.simulate_keystrokes("secondary-a");
     cx.simulate_input("20");
     cx.simulate_keystrokes("up");
     assert_eq!(view.read_with(cx, |view, _| view.value), 21.0);
@@ -205,7 +205,7 @@ fn a_typed_number_reaches_the_owner_before_any_blur(cx: &mut TestAppContext) {
     setup(cx);
     let (view, cx) = cx.add_window_view(|_, _| Stepped { value: 100.0 });
     cx.update(|window, cx| window.focus_next(cx));
-    cx.simulate_keystrokes("cmd-a");
+    cx.simulate_keystrokes("secondary-a");
     cx.simulate_input("250");
     assert_eq!(
         view.read_with(cx, |view, _| view.value),
@@ -242,7 +242,7 @@ fn select_all_then_typing_replaces_the_pin(cx: &mut TestAppContext) {
     });
     cx.update(|window, cx| window.focus_next(cx));
     cx.simulate_input("4821");
-    cx.simulate_keystrokes("cmd-a");
+    cx.simulate_keystrokes("secondary-a");
     cx.simulate_input("1234");
     assert_eq!(view.read_with(cx, |view, _| view.code.clone()), "1234");
 }
@@ -277,7 +277,7 @@ fn select_all_then_typing_refits_a_masked_field(cx: &mut TestAppContext) {
     let (state, cx) = masked("1-999", cx);
     cx.simulate_input("123");
     assert_eq!(text(&state, cx), "1-123");
-    cx.simulate_keystrokes("cmd-a");
+    cx.simulate_keystrokes("secondary-a");
     cx.simulate_input("1");
     assert_eq!(text(&state, cx), "1-1");
 }

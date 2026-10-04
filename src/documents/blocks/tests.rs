@@ -96,7 +96,7 @@ fn backspace_at_the_start_joins_up_and_undo_parts_them(cx: &mut TestAppContext) 
         blocks(&editor, cx),
         [text(BlockKind::Paragraph, "tone lift")]
     );
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     settle(cx);
     assert_eq!(
         blocks(&editor, cx),
@@ -229,7 +229,7 @@ fn enter_over_a_selection_drops_it_and_splits_there(cx: &mut TestAppContext) {
             text(BlockKind::Paragraph, "ef")
         ]
     );
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     settle(cx);
     assert_eq!(
         blocks(&editor, cx),
@@ -244,12 +244,12 @@ fn undo_puts_the_caret_back_where_the_change_began(cx: &mut TestAppContext) {
     caret(&editor, 0, 3, cx);
     cx.simulate_keystrokes("enter");
     settle(cx);
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     settle(cx);
     let first = cx.update(|_, cx| editor.read(cx).blocks[0].key);
     let focused = cx.update(|window, cx| editor.read(cx).focused(window, cx));
     assert_eq!(focused, Some((first, 0)));
-    cx.simulate_keystrokes("cmd-shift-z");
+    cx.simulate_keystrokes("secondary-shift-z");
     settle(cx);
     assert_eq!(
         blocks(&editor, cx),
@@ -259,7 +259,7 @@ fn undo_puts_the_caret_back_where_the_change_began(cx: &mut TestAppContext) {
         ],
         "redo splits again"
     );
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     settle(cx);
     cx.simulate_input("x");
     settle(cx);
@@ -305,7 +305,7 @@ fn undoing_a_kind_change_brings_back_its_styling(cx: &mut TestAppContext) {
     });
     settle(cx);
     caret(&editor, 0, 0, cx);
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     settle(cx);
     let bold = cx.update(|_, cx| {
         let field = editor.read(cx).blocks[0].fields[0].clone();
@@ -329,7 +329,7 @@ fn undo_of_typing_restores_the_selection_it_replaced(cx: &mut TestAppContext) {
     cx.simulate_keystrokes("x");
     settle(cx);
     assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abxef")]);
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     settle(cx);
     let selection = cx.update(|_, cx| editor.read(cx).blocks[0].fields[0].read(cx).selection());
     assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abcdef")]);
@@ -371,15 +371,15 @@ fn undo_of_a_delete_or_a_paste_restores_the_selection(cx: &mut TestAppContext) {
     cx.simulate_keystrokes("backspace");
     settle(cx);
     assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abef")]);
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     settle(cx);
     assert_eq!(selection(cx), 2..4, "undo of a delete selects what it took");
     cx.update(|_, cx| cx.write_to_clipboard(gpui::ClipboardItem::new_string("xy".into())));
     select(&editor, 0, 0, 2..4, cx);
-    cx.simulate_keystrokes("cmd-v");
+    cx.simulate_keystrokes("secondary-v");
     settle(cx);
     assert_eq!(blocks(&editor, cx), [text(BlockKind::Paragraph, "abxyef")]);
-    cx.simulate_keystrokes("cmd-z");
+    cx.simulate_keystrokes("secondary-z");
     settle(cx);
     assert_eq!(
         selection(cx),

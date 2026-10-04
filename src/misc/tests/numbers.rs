@@ -123,7 +123,7 @@ fn a_converter_reads_an_amount_in_another_unit(cx: &mut TestAppContext) {
     );
     press("tab", cx);
     press("tab", cx);
-    press("cmd-a", cx);
+    press("secondary-a", cx);
     cx.simulate_input("-40");
     assert!(shown("converted-−40 °F", cx));
     press("tab", cx);
@@ -134,7 +134,7 @@ fn a_converter_reads_an_amount_in_another_unit(cx: &mut TestAppContext) {
     assert!(shown("converted-233.15 K", cx), "picked Kelvin");
     press("shift-tab", cx);
     press("shift-tab", cx);
-    press("cmd-a", cx);
+    press("secondary-a", cx);
     cx.simulate_input("-");
     assert!(shown("converted-—", cx));
 }

@@ -142,7 +142,7 @@ fn an_edit_saves_only_a_change_and_escape_cancels(cx: &mut TestAppContext) {
         window.focus(&field, cx);
     });
     settle(cx);
-    cx.simulate_keystrokes("cmd-enter");
+    cx.simulate_keystrokes("secondary-enter");
     settle(cx);
     assert_eq!(
         edit.read_with(cx, |edit, _| edit.saved),
@@ -151,7 +151,7 @@ fn an_edit_saves_only_a_change_and_escape_cancels(cx: &mut TestAppContext) {
     );
     cx.simulate_input(" Gently.");
     settle(cx);
-    cx.simulate_keystrokes("cmd-enter");
+    cx.simulate_keystrokes("secondary-enter");
     settle(cx);
     assert_eq!(edit.read_with(cx, |edit, _| edit.saved), 1);
     cx.simulate_keystrokes("escape");

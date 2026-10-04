@@ -18,7 +18,7 @@ fn a_paste_fills_cells_from_the_cursor(cx: &mut TestAppContext) {
     cx.simulate_click(point(px(48.0), px(42.0)), Modifiers::none());
     settle(cx);
     cx.update(|_, cx| cx.write_to_clipboard(ClipboardItem::new_string("x\ty\nz\tw".into())));
-    cx.simulate_keystrokes("cmd-v");
+    cx.simulate_keystrokes("secondary-v");
     settle(cx);
     let cells = |row, col, text: &str| (row, col, text.to_string());
     assert_eq!(

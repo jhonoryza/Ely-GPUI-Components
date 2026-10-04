@@ -55,16 +55,16 @@ fn colors(_: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
         .into_any_element()
 }
 
-/// The first color is the eighth stop; Enter opens its picker, where the third stop is the hex field, which takes a new background.
+/// The first color is the eighth stop; Enter opens its picker, where the hex field follows the eyedropper, a stop on macOS alone, and takes a new background.
 #[gpui::test]
 fn a_color_well_sets_its_own_color(cx: &mut TestAppContext) {
     let (host, cx) = desk(colors, cx);
     tab(8, cx);
     tap("enter", cx);
-    for _ in 0..3 {
+    for _ in 0..if cfg!(target_os = "macos") { 3 } else { 2 } {
         tap("tab", cx);
     }
-    tap("cmd-a", cx);
+    tap("secondary-a", cx);
     cx.simulate_input("#224466");
     tap("enter", cx);
     assert_eq!(said(&host, cx), ["#224466"]);
