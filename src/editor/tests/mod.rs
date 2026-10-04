@@ -41,6 +41,28 @@ fn typed_pairs_close_and_one_undo_takes_back_the_burst(cx: &mut TestAppContext) 
 }
 
 #[gpui::test]
+fn backspace_inside_a_fresh_pair_removes_both_halves(cx: &mut TestAppContext) {
+    let (editor, cx) = editor("", cx);
+    editor.update(cx, |editor, cx| {
+        let caret = 0..0;
+        editor.select([caret], cx);
+        editor.type_text("(", cx);
+        assert_eq!(editor.text(), "()");
+        editor.backspace(cx);
+        assert_eq!(editor.text(), "", "both halves go at once");
+        editor.type_text("`", cx);
+        assert_eq!(editor.text(), "``", "backtick pairs too");
+        // Not inside a pair: plain backspace deletes one char.
+        editor.type_text("x", cx);
+        assert_eq!(editor.text(), "`x`");
+        editor.backspace(cx);
+        assert_eq!(editor.text(), "``");
+        editor.backspace(cx);
+        assert_eq!(editor.text(), "");
+    });
+}
+
+#[gpui::test]
 fn select_next_takes_the_word_then_its_next_match(cx: &mut TestAppContext) {
     let (editor, cx) = editor("a foo b foo c", cx);
     editor.update(cx, |editor, cx| {
