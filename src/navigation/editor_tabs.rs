@@ -81,6 +81,7 @@ pub struct EditorTabs {
     on_pin: Option<OnTab>,
     on_keep: Option<OnTab>,
     on_reorder: Option<OnReorder>,
+    on_context: Option<OnTab>,
 }
 
 impl EditorTabs {
@@ -94,6 +95,7 @@ impl EditorTabs {
             on_pin: None,
             on_keep: None,
             on_reorder: None,
+            on_context: None,
         }
     }
 
@@ -145,6 +147,15 @@ impl EditorTabs {
         self.on_reorder = Some(Rc::new(handler));
         self
     }
+
+    /// Right-click on a tab, e.g. to open a context menu for `id`.
+    pub fn on_context(
+        mut self,
+        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_context = Some(Rc::new(handler));
+        self
+    }
 }
 
 fn run(handler: &Option<OnTab>, what: &str, id: &SharedString, window: &mut Window, cx: &mut App) {
@@ -183,10 +194,11 @@ impl RenderOnce for EditorTabs {
                 let on = chosen == Some(ix);
                 let group = SharedString::from(format!("editor-tab-{}", tab.id));
                 let fg = if on { colors.fg } else { colors.fg_muted };
-                let (select, keep, close) = (
+                let (select, keep, close, context) = (
                     self.on_select.clone(),
                     self.on_keep.clone(),
                     self.on_close.clone(),
+                    self.on_context.clone(),
                 );
                 let (id, middle_id, preview) = (tab.id.clone(), tab.id.clone(), tab.preview);
                 let slot_id = tab.id.clone();
@@ -284,6 +296,12 @@ impl RenderOnce for EditorTabs {
                     .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
                     .on_mouse_down(MouseButton::Middle, move |_, window, cx| {
                         run(&close, "close", &middle_id, window, cx)
+                    })
+                    .when_some(context.clone(), |el, context| {
+                        let context_id = id.clone();
+                        el.on_mouse_down(MouseButton::Right, move |_, window, cx| {
+                            run(&Some(context.clone()), "context", &context_id, window, cx)
+                        })
                     })
                     .on_click(move |event, window, cx| {
                         if preview && event.click_count() == 2 {
