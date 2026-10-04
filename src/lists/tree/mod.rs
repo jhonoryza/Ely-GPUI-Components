@@ -65,6 +65,7 @@ pub struct Tree {
     on_load: Option<OnKey>,
     on_rename: Option<OnRename>,
     on_move: Option<OnMove>,
+    on_context: Option<OnKey>,
 }
 
 impl Tree {
@@ -83,6 +84,7 @@ impl Tree {
             on_load: None,
             on_rename: None,
             on_move: None,
+            on_context: None,
         }
     }
 
@@ -158,6 +160,15 @@ impl Tree {
         handler: impl Fn(&SharedString, &SharedString, DropAt, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.on_move = Some(Rc::new(handler));
+        self
+    }
+
+    /// Right-click on a row, e.g. to open a context menu for the node's key.
+    pub fn on_context(
+        mut self,
+        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_context = Some(Rc::new(handler));
         self
     }
 }
@@ -316,6 +327,7 @@ impl RenderOnce for Tree {
             check: check.clone(),
             activate: activate.clone(),
             on_move: self.on_move,
+            context: self.on_context.clone(),
         };
         let list = uniform_list((id.clone(), "rows"), count, move |range, window, cx| {
             draw(&data, range, window, cx)

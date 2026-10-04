@@ -36,6 +36,7 @@ pub(super) struct Rows {
     pub check: Option<OnKey>,
     pub activate: OnRow,
     pub on_move: Option<OnMove>,
+    pub context: Option<OnKey>,
 }
 
 pub(super) fn draw(
@@ -228,6 +229,12 @@ fn row(rows: &Rows, ix: usize, window: &mut Window, cx: &mut App) -> AnyElement 
                     .border_1()
                     .border_color(colors.focus),
             )
+        })
+        .when_some(rows.context.clone(), |el, context| {
+            let context_key = key.clone();
+            el.on_mouse_down(MouseButton::Right, move |_, window, cx| {
+                context(&context_key, window, cx);
+            })
         })
         .on_click(move |event, window, cx| {
             window.focus(&focus, cx);
