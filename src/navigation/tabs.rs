@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, FontWeight, InteractiveElement,
-    IntoElement, MouseButton, ParentElement, RenderOnce, Role, SharedString,
+    IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce, Role, SharedString,
     StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
@@ -23,6 +23,7 @@ pub enum TabPlacement {
 }
 
 type OnValue = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
+type OnContext = Rc<dyn Fn(&SharedString, Point<Pixels>, &mut Window, &mut App)>;
 
 /// A strip of tabs and the chosen tab's panel. A line slides to the chosen tab; arrows move it.
 #[derive(IntoElement)]
@@ -33,6 +34,7 @@ pub struct Tabs {
     placement: TabPlacement,
     panel: Option<AnyElement>,
     on_change: Option<OnValue>,
+    on_context: Option<OnContext>,
 }
 
 impl Tabs {
@@ -48,6 +50,7 @@ impl Tabs {
             placement: TabPlacement::default(),
             panel: None,
             on_change: None,
+            on_context: None,
         }
     }
 
@@ -67,6 +70,17 @@ impl Tabs {
         handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.on_change = Some(Rc::new(handler));
+        self
+    }
+}
+
+impl Tabs {
+    /// A right click on a tab: its value and the pointer.
+    pub fn on_context(
+        mut self,
+        handler: impl Fn(&SharedString, Point<Pixels>, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_context = Some(Rc::new(handler));
         self
     }
 }
@@ -148,6 +162,8 @@ impl RenderOnce for Tabs {
                     (false, false) => colors.fg_muted,
                 };
                 let pick = pick.clone();
+                let context = self.on_context.clone().filter(|_| !tab.disabled);
+                let value = tab.value.clone();
                 div()
                     .id(("tab", ix))
                     .role(Role::Tab)
@@ -184,6 +200,14 @@ impl RenderOnce for Tabs {
                                     pick(ix, window, cx);
                                 }
                             })
+                    })
+                    .when_some(context, |item, context| {
+                        item.on_mouse_down(MouseButton::Right, move |event, window, cx| {
+                            window.prevent_default();
+                            cx.stop_propagation();
+                            log::info!("tabs: context on {value}");
+                            context(&value, event.position, window, cx);
+                        })
                     })
                     .when_some(tab.icon, |item, icon| {
                         item.child(Icon::new(icon).size(IconSize::Sm).color(fg))
