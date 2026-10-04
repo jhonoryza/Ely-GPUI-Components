@@ -49,6 +49,21 @@ impl Toast {
         self
     }
 
+    /// The heading, for owners that keep their own notification history.
+    pub fn title_text(&self) -> &SharedString {
+        &self.title
+    }
+
+    /// The detail line, if any.
+    pub fn body_text(&self) -> Option<&SharedString> {
+        self.body.as_ref()
+    }
+
+    /// The level, if any.
+    pub fn level(&self) -> Option<Severity> {
+        self.severity
+    }
+
     pub fn severity(mut self, severity: Severity) -> Self {
         self.severity = Some(severity);
         self
