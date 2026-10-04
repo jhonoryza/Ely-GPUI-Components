@@ -11,6 +11,7 @@ const GUIDES: [string, string][] = [
   ["motion", "Motion"],
   ["icons", "Icons, fonts and assets"],
   ["overlays", "Overlays"],
+  ["rendering", "Rendering"],
   ["i18n", "Internationalization"],
   ["webassembly", "WebAssembly"],
   ["testing", "Testing"],

@@ -119,3 +119,7 @@ path = "examples/docs/overlays.rs"
 [[example]]
 name = "docs_i18n"
 path = "examples/docs/i18n.rs"
+
+[[example]]
+name = "docs_render"
+path = "examples/docs/render.rs"

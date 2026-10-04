@@ -1,6 +1,6 @@
 # Introduction
 
-Ely is a component library for [GPUI](https://www.gpui.rs), the Rust UI framework behind Zed. It holds 43 chapters, from primitives and forms to charts, a code editor, maps and a terminal. Every component draws in light and dark, and every one shows on the [components page](/components/): live, or as a native capture where a browser cannot run it.
+Ely is a component library for [GPUI](https://www.gpui.rs), the Rust UI framework behind Zed. It holds 44 chapters, from primitives and forms to charts, a code editor, maps, a terminal and render surfaces. Every component draws in light and dark, and every one shows on the [components page](/components/): live, or as a native capture where a browser cannot run it.
 
 The guides run in the order of the rail, each building on the one before.
 

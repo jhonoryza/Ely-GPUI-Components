@@ -55,7 +55,7 @@ pnpm deploy     # Cloudflare, through wrangler
 ## Build notes
 
 - gpui compiles its Metal shaders at runtime here (`runtime_shaders`, on by default), so a full Xcode install is not required. gpui_platform needs `font-kit`, or macOS draws no text.
-- Tested on macOS only. The capture tool needs macOS.
+- CI tests the crate and builds the gallery on macOS, Windows and Linux, arm64 and x86_64. The capture tool needs macOS.
 
 ## License
 
