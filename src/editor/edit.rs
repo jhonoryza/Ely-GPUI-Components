@@ -9,7 +9,14 @@ use super::{
 };
 
 /// Pairs typing an opener closes at once.
-const PAIRS: [(char, char); 5] = [('(', ')'), ('[', ']'), ('{', '}'), ('"', '"'), ('\'', '\'')];
+const PAIRS: [(char, char); 6] = [
+    ('(', ')'),
+    ('[', ']'),
+    ('{', '}'),
+    ('"', '"'),
+    ('\'', '\''),
+    ('`', '`'),
+];
 
 impl CodeEditor {
     /// Replaces each selection with `text`; typing in one burst makes one undo step.
@@ -93,6 +100,31 @@ impl CodeEditor {
             .map(|caret| Selection::caret(caret.head - close.len_utf8()))
             .collect();
         self.set_selections(back, cx);
+    }
+
+    /// Backspace removes both halves when the caret sits inside a pair.
+    pub(crate) fn backspace(&mut self, cx: &mut Context<Self>) {
+        let unpair = self.selections.iter().all(Selection::is_empty)
+            && self.selections.iter().all(|selection| {
+                let at = selection.head;
+                let text = self.buffer.text();
+                let before = text[..at].chars().next_back();
+                let after = text[at..].chars().next();
+                matches!((before, after), (Some(o), Some(c)) if PAIRS.contains(&(o, c)))
+            });
+        if unpair {
+            let edits = self
+                .selections
+                .iter()
+                .map(|selection| {
+                    let at = selection.head;
+                    // Pairs are ASCII, so byte math is safe here.
+                    (at - 1..at + 1, String::new())
+                })
+                .collect();
+            return self.apply(edits, false, cx);
+        }
+        self.delete_by(|buffer, at| buffer.previous(at)..at, cx);
     }
 
     /// Deletes each selection, or what `reach` finds from each bare caret.
