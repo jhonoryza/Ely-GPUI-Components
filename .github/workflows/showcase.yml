@@ -48,6 +48,7 @@ jobs:
           failed=$(echo "$runs" | jq '[.[] | select(.status == "completed" and (.conclusion | IN("success", "skipped", "neutral") | not))] | length')
           if [ "$total" -eq 0 ] || [ "$waiting" -gt 0 ]; then
             echo "showcase: ${head:0:7}'s checks have not finished; next run looks again"
+            [ "$FORCE" = "true" ] && echo "commit=$pinned" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [ "$failed" -gt 0 ]; then
