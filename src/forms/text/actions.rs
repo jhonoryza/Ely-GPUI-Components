@@ -360,9 +360,13 @@ impl Render for TextInput {
         div()
             .id("ely-text-input")
             .role(Role::TextInput)
-            .when(!self.placeholder.is_empty(), |el| {
-                el.aria_label(self.placeholder.clone())
-            })
+            .when_some(
+                [&self.label, &self.placeholder]
+                    .into_iter()
+                    .find(|name| !name.is_empty())
+                    .cloned(),
+                |el, name| el.aria_label(name),
+            )
             .when(!self.masked, |el| el.aria_value(self.text.clone()))
             .key_context(CONTEXT)
             .track_focus(&self.focus)

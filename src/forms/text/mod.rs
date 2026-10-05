@@ -51,6 +51,7 @@ pub struct TextInput {
     focus: FocusHandle,
     text: String,
     placeholder: SharedString,
+    label: SharedString,
     selection: Range<usize>,
     reversed: bool,
     marked: Option<Range<usize>>,
@@ -105,6 +106,7 @@ impl TextInput {
             focus,
             text: String::new(),
             placeholder: SharedString::default(),
+            label: SharedString::default(),
             selection: 0..0,
             reversed: false,
             marked: None,
@@ -138,6 +140,12 @@ impl TextInput {
 
     pub fn placeholder(mut self, text: impl Into<SharedString>) -> Self {
         self.placeholder = text.into();
+        self
+    }
+
+    /// The name assistive technology reads; the placeholder otherwise.
+    pub fn label(mut self, text: impl Into<SharedString>) -> Self {
+        self.label = text.into();
         self
     }
 

@@ -252,6 +252,7 @@ pub struct Select {
     choices: Vec<Choice>,
     selected: Option<SharedString>,
     placeholder: SharedString,
+    label: Option<SharedString>,
     size: ControlSize,
     disabled: bool,
     on_change: Option<OnValue>,
@@ -264,10 +265,17 @@ impl Select {
             choices: choices.into_iter().collect(),
             selected: None,
             placeholder: SharedString::from("Choose…"),
+            label: None,
             size: ControlSize::default(),
             disabled: false,
             on_change: None,
         }
+    }
+
+    /// The name assistive technology reads; nothing is drawn.
+    pub fn label(mut self, text: impl Into<SharedString>) -> Self {
+        self.label = Some(text.into());
+        self
     }
 
     pub fn selected(mut self, value: impl Into<SharedString>) -> Self {
@@ -329,6 +337,7 @@ impl RenderOnce for Select {
         )
         .role(Role::ComboBox)
         .aria_placeholder(self.placeholder.clone())
+        .when_some(self.label.clone(), |trigger, label| trigger.aria_label(label))
         .when_some(shown.as_ref(), |trigger, choice| {
             trigger.aria_value(choice.label.clone())
         })
