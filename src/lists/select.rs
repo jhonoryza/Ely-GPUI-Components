@@ -2,7 +2,8 @@ use std::{rc::Rc, time::Duration};
 
 use gpui::{
     App, Div, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
-    ScrollHandle, SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
+    Role, ScrollHandle, SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window,
+    div, prelude::FluentBuilder as _,
 };
 use web_time::Instant;
 
@@ -86,6 +87,7 @@ pub struct SelectableList {
     rows: Vec<(SharedString, ListItem)>,
     selected: Vec<SharedString>,
     multiple: bool,
+    label: Option<SharedString>,
     on_change: Option<OnSelect>,
     on_activate: Option<OnActivate>,
 }
@@ -98,6 +100,7 @@ impl SelectableList {
             rows: Vec::new(),
             selected: Vec::new(),
             multiple: false,
+            label: None,
             on_change: None,
             on_activate: None,
         }
@@ -111,6 +114,12 @@ impl SelectableList {
 
     pub fn selected(mut self, keys: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
         self.selected = keys.into_iter().map(Into::into).collect();
+        self
+    }
+
+    /// Names the list for assistive tech.
+    pub fn label(mut self, label: impl Into<SharedString>) -> Self {
+        self.label = Some(label.into());
         self
     }
 
@@ -249,6 +258,7 @@ impl RenderOnce for SelectableList {
             .map(|(ix, (key, item))| {
                 let (pick, focus, activate) = (pick.clone(), focus.clone(), activate.clone());
                 item.selected(selected.contains(&key))
+                    .place(ix + 1, count)
                     .current(focused && ix == at)
                     .on_click(move |event, window, cx| {
                         let held = event.modifiers();
@@ -269,6 +279,8 @@ impl RenderOnce for SelectableList {
             (cursor.clone(), activate.clone(), off.clone(), keys.clone());
         self.base
             .id(self.id)
+            .role(Role::List)
+            .when_some(self.label, |list, label| list.aria_label(label))
             .track_focus(&focus)
             .track_scroll(&scroll)
             .overflow_y_scroll()

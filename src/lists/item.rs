@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ClickEvent, ElementId, FontWeight, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
+    MouseButton, ParentElement, RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled,
     Window, div, prelude::*, relative,
 };
 use smallvec::SmallVec;
@@ -29,6 +29,8 @@ pub struct ListItem {
     strong: bool,
     quiet: bool,
     struck: bool,
+    /// Its place among its list's rows, from one, and their count.
+    place: Option<(usize, usize)>,
     on_click: Option<OnClick>,
 }
 
@@ -47,6 +49,7 @@ impl ListItem {
             strong: false,
             quiet: false,
             struck: false,
+            place: None,
             on_click: None,
         }
     }
@@ -104,6 +107,12 @@ impl ListItem {
         self
     }
 
+    /// Tells assistive tech it is row `at` of `of`, from one.
+    pub fn place(mut self, at: usize, of: usize) -> Self {
+        self.place = Some((at, of));
+        self
+    }
+
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
@@ -140,6 +149,15 @@ impl RenderOnce for ListItem {
         let pressable = self.on_click.is_some() && !self.disabled;
         div()
             .id(self.id)
+            .role(Role::ListItem)
+            .aria_label(self.title.clone())
+            .aria_selected(self.selected)
+            .when_some(self.description.clone(), |row, text| {
+                row.aria_description(text)
+            })
+            .when_some(self.place, |row, (at, of)| {
+                row.aria_position_in_set(at).aria_size_of_set(of)
+            })
             .flex()
             .items_center()
             .gap_3()
