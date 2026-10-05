@@ -337,7 +337,9 @@ impl RenderOnce for Select {
         )
         .role(Role::ComboBox)
         .aria_placeholder(self.placeholder.clone())
-        .when_some(self.label.clone(), |trigger, label| trigger.aria_label(label))
+        .when_some(self.label.clone(), |trigger, label| {
+            trigger.aria_label(label)
+        })
         .when_some(shown.as_ref(), |trigger, choice| {
             trigger.aria_value(choice.label.clone())
         })
