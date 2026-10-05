@@ -35,6 +35,11 @@ const EN: &[(&str, &str)] = &[
     ("dialog.cancel", "Cancel"),
     ("dialog.close", "Close"),
     ("state.unavailable", "Unavailable"),
+    ("templates.find", "Find a template"),
+    ("templates.all", "All"),
+    ("templates.list", "Templates"),
+    ("templates.use", "Use template"),
+    ("templates.none", "No template matches"),
 ];
 
 const ZH_CN: &[(&str, &str)] = &[
@@ -68,6 +73,11 @@ const ZH_CN: &[(&str, &str)] = &[
     ("dialog.cancel", "取消"),
     ("dialog.close", "关闭"),
     ("state.unavailable", "不可用"),
+    ("templates.find", "查找模板"),
+    ("templates.all", "全部"),
+    ("templates.list", "模板"),
+    ("templates.use", "使用模板"),
+    ("templates.none", "没有匹配的模板"),
 ];
 
 /// Ely's own message for `key` in `locale`, English for a locale Ely does not ship; fails on an unknown key.

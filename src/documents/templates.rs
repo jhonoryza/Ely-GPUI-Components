@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     App, AppContext as _, Context, ElementId, Entity, FontWeight, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
+    MouseButton, ParentElement, RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled,
     Window, div, prelude::*,
 };
 
@@ -10,7 +10,8 @@ use super::render::MarkdownRenderer;
 use crate::{
     buttons::{Button, ButtonVariant},
     forms::{Choice, ChoiceChips, Input, Pick, TextInput},
-    primitives::{Icon, IconName},
+    i18n,
+    primitives::{FocusRing as _, Icon, IconName, tab_stop},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
 };
 
@@ -82,7 +83,9 @@ impl RenderOnce for TemplatePicker {
             (self.id.clone(), "picking"),
             cx,
             |window, cx: &mut Context<Picking>| Picking {
-                search: cx.new(|cx| TextInput::new(window, cx).placeholder("Find a template")),
+                search: cx.new(|cx| {
+                    TextInput::new(window, cx).placeholder(i18n::text(cx, "templates.find", &[]))
+                }),
                 category: ALL.into(),
                 highlighted: 0,
             },
@@ -102,6 +105,8 @@ impl RenderOnce for TemplatePicker {
             .copied()
             .find(|ix| *ix == highlighted)
             .or(shown.first().copied());
+        // One stop for the list; arrows move, Enter uses.
+        let focus = tab_stop((self.id.clone(), "list-focus").into(), true, window, cx);
         let mut categories: Vec<SharedString> = vec![ALL.into()];
         for template in self.templates.iter() {
             if !categories.contains(&template.category) {
@@ -114,9 +119,13 @@ impl RenderOnce for TemplatePicker {
             let picking = picking.clone();
             ChoiceChips::new(
                 (self.id.clone(), "categories"),
-                categories
-                    .iter()
-                    .map(|name| Choice::new(name.clone(), name.clone())),
+                categories.iter().map(|name| {
+                    let shown = match name.as_ref() {
+                        ALL => i18n::text(cx, "templates.all", &[]),
+                        _ => name.clone(),
+                    };
+                    Choice::new(name.clone(), shown)
+                }),
             )
             .selected([category.clone()])
             .on_change(move |values, _, cx| {
@@ -128,12 +137,18 @@ impl RenderOnce for TemplatePicker {
                 });
             })
         };
-        let rows = shown.iter().map(|&ix| {
+        let count = shown.len();
+        let rows = shown.iter().enumerate().map(|(at, &ix)| {
             let template = &self.templates[ix];
             let lit = current == Some(ix);
             let pick = picking.clone();
             div()
                 .id((self.id.clone(), format!("template-{ix}")))
+                .role(Role::ListItem)
+                .aria_label(template.name.clone())
+                .aria_selected(lit)
+                .aria_position_in_set(at + 1)
+                .aria_size_of_set(count)
                 .flex()
                 .gap_2()
                 .p_2()
@@ -168,6 +183,33 @@ impl RenderOnce for TemplatePicker {
                         ),
                 )
         });
+        // Arrows move, Enter uses.
+        let keys = {
+            let (picking, take, shown) = (picking.clone(), self.on_use.clone(), shown.clone());
+            move |event: &gpui::KeyDownEvent, window: &mut Window, cx: &mut App| {
+                let at = current.and_then(|ix| shown.iter().position(|each| *each == ix));
+                let to = match (event.keystroke.key.as_str(), at) {
+                    ("down", Some(at)) => shown.get(at + 1).copied(),
+                    ("up", Some(at)) => at.checked_sub(1).map(|at| shown[at]),
+                    ("home", _) => shown.first().copied(),
+                    ("end", _) => shown.last().copied(),
+                    ("enter", Some(_)) => {
+                        if let (Some(take), Some(ix)) = (&take, current) {
+                            log::info!("template picker: use {ix}");
+                            take(ix, window, cx);
+                        }
+                        return;
+                    }
+                    _ => return,
+                };
+                if let Some(ix) = to {
+                    picking.update(cx, |picking, cx| {
+                        picking.highlighted = ix;
+                        cx.notify();
+                    });
+                }
+            }
+        };
         let preview = match current {
             Some(ix) => {
                 let take = self.on_use.clone();
@@ -191,16 +233,19 @@ impl RenderOnce for TemplatePicker {
                                     .child(self.templates[ix].name.clone()),
                             )
                             .child(
-                                Button::new((self.id.clone(), "use"), "Use template")
-                                    .variant(ButtonVariant::Primary)
-                                    .size(ControlSize::Sm)
-                                    .disabled(take.is_none())
-                                    .when_some(take, |button, take| {
-                                        button.on_click(move |_, window, cx| {
-                                            log::info!("template picker: use {ix}");
-                                            take(ix, window, cx)
-                                        })
-                                    }),
+                                Button::new(
+                                    (self.id.clone(), "use"),
+                                    i18n::text(cx, "templates.use", &[]),
+                                )
+                                .variant(ButtonVariant::Primary)
+                                .size(ControlSize::Sm)
+                                .disabled(take.is_none())
+                                .when_some(take, |button, take| {
+                                    button.on_click(move |_, window, cx| {
+                                        log::info!("template picker: use {ix}");
+                                        take(ix, window, cx)
+                                    })
+                                }),
                             ),
                     )
                     .child(
@@ -222,7 +267,7 @@ impl RenderOnce for TemplatePicker {
                 .items_center()
                 .justify_center()
                 .text_color(colors.fg_subtle)
-                .child("No template matches")
+                .child(i18n::text(cx, "templates.none", &[]))
                 .into_any_element(),
         };
         div()
@@ -253,6 +298,11 @@ impl RenderOnce for TemplatePicker {
                     .child(
                         div()
                             .id((self.id.clone(), "list"))
+                            .role(Role::List)
+                            .aria_label(i18n::text(cx, "templates.list", &[]))
+                            .track_focus(&focus)
+                            .focus_ring(cx)
+                            .on_key_down(keys)
                             .flex_1()
                             .overflow_y_scroll()
                             .flex()
