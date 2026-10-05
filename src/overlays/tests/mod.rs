@@ -136,6 +136,7 @@ impl Render for Stage {
                 .into_any_element(),
         });
         FocusScope::new(&self.root)
+            .root()
             .size_full()
             .child(popover)
             .child(div().h(px(52.0)))
@@ -258,6 +259,19 @@ fn escape_closes_a_dialog_and_hands_focus_back(cx: &mut TestAppContext) {
     assert!(view.read_with(cx, |stage, _| stage.open.is_none()));
     let before = view.read_with(cx, |stage, _| stage.before.clone());
     assert!(cx.update(|window, _| before.is_focused(window)));
+}
+
+#[gpui::test]
+fn a_dialog_its_owner_drops_hands_focus_back(cx: &mut TestAppContext) {
+    let (view, cx) = stage(cx);
+    show(&view, Open::Plain, cx);
+    assert!(!before_focused(&view, cx), "the dialog holds focus");
+    view.update(cx, |stage, cx| {
+        stage.open = None;
+        cx.notify();
+    });
+    settle(cx);
+    assert!(before_focused(&view, cx), "focus went back");
 }
 
 #[gpui::test]
