@@ -207,10 +207,23 @@ pub fn plural(count: u64, one: &str, other: &str) -> String {
 
 /// "just now", "3 minutes ago", "in 2 days".
 pub fn relative(then: Timestamp, now: Timestamp) -> String {
+    let Some((count, unit, future)) = span(then, now) else {
+        return "just now".to_string();
+    };
+    let label = plural(count, unit, &format!("{unit}s"));
+    if future {
+        format!("in {label}")
+    } else {
+        format!("{label} ago")
+    }
+}
+
+/// The rounded distance: count, unit, and whether ahead; none under 45 s.
+pub(crate) fn span(then: Timestamp, now: Timestamp) -> Option<(u64, &'static str, bool)> {
     let delta = now.as_second() - then.as_second();
     let seconds = delta.unsigned_abs();
     if seconds < 45 {
-        return "just now".to_string();
+        return None;
     }
     let round = |unit: u64| (seconds + unit / 2) / unit;
     let (count, unit) = match seconds {
@@ -225,12 +238,7 @@ pub fn relative(then: Timestamp, now: Timestamp) -> String {
         s if s < 548 * 86_400 => (1, "year"),
         _ => (round(365 * 86_400), "year"),
     };
-    let label = plural(count, unit, &format!("{unit}s"));
-    if delta < 0 {
-        format!("in {label}")
-    } else {
-        format!("{label} ago")
-    }
+    Some((count, unit, delta < 0))
 }
 
 /// The system's time zone for `user`. An unknown zone stops here rather than reading as UTC.

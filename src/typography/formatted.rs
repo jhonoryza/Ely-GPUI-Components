@@ -1,13 +1,15 @@
 use std::time::Duration;
 
-use gpui::{App, ElementId, IntoElement, ParentElement, RenderOnce, Styled, Task, Window, div};
+use gpui::{
+    App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Task, Window, div,
+};
 use jiff::{Timestamp, tz::TimeZone};
 
 use super::{
     format::{self, DurationStyle, Separators},
     text::tabular,
 };
-use crate::theme::ActiveTheme;
+use crate::{i18n, theme::ActiveTheme};
 
 const TICK: Duration = Duration::from_secs(30);
 
@@ -196,10 +198,23 @@ pub(crate) fn fresh(id: impl Into<ElementId>, window: &mut Window, cx: &mut App)
     });
 }
 
+/// `then` against `now`, in the shown locale.
+pub(crate) fn relative_text(cx: &App, then: Timestamp, now: Timestamp) -> SharedString {
+    let Some((count, unit, future)) = format::span(then, now) else {
+        return i18n::text(cx, "time.now", &[]);
+    };
+    let form = if count == 1 { "one" } else { "other" };
+    let n = count.to_string();
+    let span = i18n::text(cx, &format!("time.{unit}.{form}"), &[("n", &n)]);
+    let key = if future { "time.in" } else { "time.ago" };
+    i18n::text(cx, key, &[("span", &span)])
+}
+
 impl RenderOnce for RelativeTime {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         fresh(self.id, window, cx);
-        figure(format::relative(self.at, Timestamp::now()))
+        let text = relative_text(cx, self.at, Timestamp::now());
+        figure(text.to_string())
     }
 }
 
@@ -239,6 +254,30 @@ impl RenderOnce for DateTimeText {
         };
         let text = format::datetime(self.at, &zone, self.pattern)
             .unwrap_or_else(|error| panic!("DateTimeText pattern {:?}: {error}", self.pattern));
-        figure(text)
+        figure(text.to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use gpui::TestAppContext;
+    use jiff::Timestamp;
+
+    use super::{format, relative_text};
+    use crate::i18n::I18n;
+
+    #[gpui::test]
+    fn relative_time_reads_in_the_shown_locale(cx: &mut TestAppContext) {
+        let now = Timestamp::from_second(1_000_000_000).unwrap();
+        let at = |s: i64| Timestamp::from_second(1_000_000_000 - s).unwrap();
+        for s in [10, 60, 600, -7_200, 86_400 * 3, 86_400 * 400] {
+            let english = cx.update(|cx| relative_text(cx, at(s), now));
+            assert_eq!(english.as_ref(), format::relative(at(s), now));
+        }
+        cx.update(|cx| cx.set_global(I18n::new("zh-CN")));
+        let chinese = |s: i64| cx.update(|cx| relative_text(cx, at(s), now).to_string());
+        assert_eq!(chinese(10), "刚刚");
+        assert_eq!(chinese(600), "10 分钟前");
+        assert_eq!(chinese(-7_200), "2 小时后");
     }
 }

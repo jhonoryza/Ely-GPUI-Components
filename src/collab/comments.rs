@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     App, ElementId, Entity, FontWeight, InteractiveElement, IntoElement, ParentElement, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    SharedString, Styled, Window, div, prelude::*,
 };
 use jiff::Timestamp;
 
@@ -11,9 +11,9 @@ use super::{
     reactions::{Reaction, Reactions},
 };
 use crate::{
-    buttons::{Button, ButtonVariant, SegmentedControl},
-    feedback::EmptyState,
-    forms::{Enter, Input, OnFlag, OnValue, Run, TextInput},
+    buttons::{Button, ButtonVariant},
+    forms::{Enter, Input, OnFlag, Run, TextInput},
+    i18n,
     overlays::Popover,
     primitives::IconName,
     theme::{ActiveTheme, AvatarSize, ControlSize, Radius, TextSize},
@@ -39,8 +39,6 @@ pub struct Thread {
 }
 
 type OnReact = Rc<dyn Fn(usize, &SharedString, &mut Window, &mut App)>;
-type OnThreadFlag = Rc<dyn Fn(&SharedString, bool, &mut Window, &mut App)>;
-type OnThreadReact = Rc<dyn Fn(&SharedString, usize, &SharedString, &mut Window, &mut App)>;
 
 /// A field to answer in and a button to send; Enter sends too, never an empty answer.
 #[derive(IntoElement)]
@@ -86,14 +84,17 @@ impl RenderOnce for Reply {
                     .child(Input::new(&self.field).size(ControlSize::Sm)),
             )
             .child(
-                Button::new((self.id.clone(), "send"), "Reply")
-                    .variant(ButtonVariant::Primary)
-                    .size(ControlSize::Sm)
-                    .disabled(empty)
-                    .on_click(move |_, window, cx| {
-                        log::info!("reply: sent");
-                        send(window, cx)
-                    }),
+                Button::new(
+                    (self.id.clone(), "send"),
+                    i18n::text(cx, "comments.reply", &[]),
+                )
+                .variant(ButtonVariant::Primary)
+                .size(ControlSize::Sm)
+                .disabled(empty)
+                .on_click(move |_, window, cx| {
+                    log::info!("reply: sent");
+                    send(window, cx)
+                }),
             )
     }
 }
@@ -166,7 +167,15 @@ impl RenderOnce for CommentThread {
         let resolve = self.on_resolve.clone().map(|resolve| {
             Button::new(
                 (self.id.clone(), "resolve"),
-                if resolved { "Reopen" } else { "Resolve" },
+                i18n::text(
+                    cx,
+                    if resolved {
+                        "comments.reopen"
+                    } else {
+                        "comments.resolve"
+                    },
+                    &[],
+                ),
             )
             .variant(ButtonVariant::Ghost)
             .size(ControlSize::Sm)
@@ -341,152 +350,5 @@ impl RenderOnce for CommentMarker {
         .icon(IconName::MessageSquare)
         .variant(ButtonVariant::Ghost)
         .size(ControlSize::Sm)
-    }
-}
-
-/// Every conversation on a document down a column, the open ones or the resolved: a press picks one, and the one picked takes replies.
-#[derive(IntoElement)]
-pub struct CommentSidebar {
-    id: ElementId,
-    threads: Vec<Thread>,
-    active: Option<SharedString>,
-    reply: Option<(Entity<TextInput>, Run)>,
-    on_select: Option<OnValue>,
-    on_resolve: Option<OnThreadFlag>,
-    on_react: Option<OnThreadReact>,
-}
-
-impl CommentSidebar {
-    pub fn new(id: impl Into<ElementId>, threads: impl IntoIterator<Item = Thread>) -> Self {
-        Self {
-            id: id.into(),
-            threads: threads.into_iter().collect(),
-            active: None,
-            reply: None,
-            on_select: None,
-            on_resolve: None,
-            on_react: None,
-        }
-    }
-
-    /// The thread picked, by key, and what a press on another asks.
-    pub fn active(
-        mut self,
-        active: Option<SharedString>,
-        on_select: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.active = active;
-        self.on_select = Some(Rc::new(on_select));
-        self
-    }
-
-    /// Answers the picked thread in `field`.
-    pub fn reply(
-        mut self,
-        field: &Entity<TextInput>,
-        on_send: impl Fn(&mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.reply = Some((field.clone(), Rc::new(on_send)));
-        self
-    }
-
-    /// Gets a thread's key and true to resolve it, false to reopen.
-    pub fn on_resolve(
-        mut self,
-        handler: impl Fn(&SharedString, bool, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_resolve = Some(Rc::new(handler));
-        self
-    }
-
-    /// Gets a thread's key, a comment's index and the emoji to toggle on it.
-    pub fn on_react(
-        mut self,
-        handler: impl Fn(&SharedString, usize, &SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_react = Some(Rc::new(handler));
-        self
-    }
-}
-
-impl RenderOnce for CommentSidebar {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let showing = window.use_keyed_state((self.id.clone(), "resolved"), cx, |_, _| false);
-        let resolved = *showing.read(cx);
-        let open = self
-            .threads
-            .iter()
-            .filter(|thread| !thread.resolved)
-            .count();
-        let done = self.threads.len() - open;
-        let filter = SegmentedControl::new(
-            (self.id.clone(), "filter"),
-            if resolved { "resolved" } else { "open" },
-        )
-        .size(ControlSize::Sm)
-        .segment("open", format!("Open {open}"), None)
-        .segment("resolved", format!("Resolved {done}"), None)
-        .on_change(move |value, _, cx| {
-            showing.update(cx, |showing, cx| {
-                *showing = value.as_ref() == "resolved";
-                cx.notify();
-            })
-        });
-        let shown: Vec<Thread> = self
-            .threads
-            .into_iter()
-            .filter(|thread| thread.resolved == resolved)
-            .collect();
-        let empty = shown.is_empty().then(|| {
-            EmptyState::new(
-                (self.id.clone(), "empty"),
-                IconName::MessageSquare,
-                if resolved {
-                    "Nothing resolved yet"
-                } else {
-                    "No open comments"
-                },
-            )
-        });
-        let threads = shown.into_iter().map(|thread| {
-            let key = thread.key.clone();
-            let active = self.active.as_ref() == Some(&key);
-            let mut item = CommentThread::new((self.id.clone(), format!("thread-{key}")), thread)
-                .active(active);
-            if active && let Some((field, send)) = &self.reply {
-                let send = send.clone();
-                item = item.reply(field, move |window, cx| send(window, cx));
-            }
-            if let Some(resolve) = self.on_resolve.clone() {
-                let key = key.clone();
-                item = item.on_resolve(move |on, window, cx| resolve(&key, on, window, cx));
-            }
-            if let Some(react) = self.on_react.clone() {
-                let key = key.clone();
-                item =
-                    item.on_react(move |ix, emoji, window, cx| react(&key, ix, emoji, window, cx));
-            }
-            let select = self.on_select.clone();
-            div()
-                .id((self.id.clone(), format!("pick-{key}")))
-                .when_some(select.filter(|_| !active), |row, select| {
-                    row.on_click(move |_, window, cx| {
-                        log::info!("comment sidebar: {key}");
-                        select(&key, window, cx)
-                    })
-                })
-                .child(item)
-        });
-        div()
-            .id(self.id.clone())
-            .size_full()
-            .flex()
-            .flex_col()
-            .gap_3()
-            .p_3()
-            .overflow_y_scroll()
-            .child(filter)
-            .children(empty)
-            .children(threads)
     }
 }
