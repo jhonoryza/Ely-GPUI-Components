@@ -204,6 +204,10 @@ impl TextInput {
         &self.placeholder
     }
 
+    pub fn label_text(&self) -> &SharedString {
+        &self.label
+    }
+
     pub fn selection(&self) -> Range<usize> {
         self.selection.clone()
     }
@@ -218,6 +222,11 @@ impl TextInput {
 
     pub fn set_placeholder(&mut self, text: impl Into<SharedString>, cx: &mut Context<Self>) {
         self.placeholder = text.into();
+        cx.notify();
+    }
+
+    pub fn set_label(&mut self, text: impl Into<SharedString>, cx: &mut Context<Self>) {
+        self.label = text.into();
         cx.notify();
     }
 

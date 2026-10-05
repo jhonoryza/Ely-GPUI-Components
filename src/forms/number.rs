@@ -224,6 +224,7 @@ pub struct NumberInput {
     on_change: Option<OnChange>,
     on_commit: Option<OnChange>,
     scrub_label: Option<SharedString>,
+    label: SharedString,
 }
 
 impl NumberInput {
@@ -241,7 +242,14 @@ impl NumberInput {
             on_change: None,
             on_commit: None,
             scrub_label: None,
+            label: SharedString::default(),
         }
+    }
+
+    /// The name assistive technology reads, drawn nowhere.
+    pub fn label(mut self, text: impl Into<SharedString>) -> Self {
+        self.label = text.into();
+        self
     }
 
     pub fn range(mut self, min: f64, max: f64) -> Self {
@@ -316,6 +324,10 @@ impl RenderOnce for NumberInput {
             numeric.limits = (min, max, step, self.precision);
         });
         let input = state.read(cx).input.clone();
+        if input.read(cx).label_text() != &self.label {
+            let label = self.label.clone();
+            input.update(cx, |input, cx| input.set_label(label, cx));
+        }
         let shown = format::number(value, self.precision, Separators::EN);
         let editing = input.read(cx).focus().is_focused(window);
         if !editing && input.read(cx).text() != shown {
