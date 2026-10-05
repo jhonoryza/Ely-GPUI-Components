@@ -16,12 +16,8 @@ fn packages() -> [Package; 4] {
         Package::new(
             "Ely GPUI Component",
             "0.1.0",
-            "MIT OR Apache-2.0",
-            concat!(
-                include_str!("../../../../LICENSE-MIT"),
-                "\n\n",
-                include_str!("../../../../LICENSE-APACHE")
-            ),
+            "MIT",
+            include_str!("../../../../LICENSE"),
         ),
         Package::new(
             "Lucide",
