@@ -251,6 +251,36 @@ fn typing_commits_only_on_enter_and_steps(cx: &mut TestAppContext) {
     );
 }
 
+struct Blank {
+    values: Vec<f64>,
+}
+
+impl Render for Blank {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let view = cx.entity();
+        NumberInput::new("blank", 0.0)
+            .blank("Mixed")
+            .on_commit(move |value, _, cx| view.update(cx, |view, _| view.values.push(value)))
+    }
+}
+
+#[gpui::test]
+fn a_blank_field_commits_only_what_is_typed(cx: &mut TestAppContext) {
+    setup(cx);
+    let (view, cx) = cx.add_window_view(|_, _| Blank { values: Vec::new() });
+    cx.update(|window, cx| window.focus_next(cx));
+    cx.simulate_keystrokes("enter");
+    cx.update(|window, cx| window.focus_next(cx));
+    assert!(
+        view.read_with(cx, |view, _| view.values.is_empty()),
+        "Enter and blur on an empty field commit nothing"
+    );
+    cx.update(|window, cx| window.focus_prev(cx));
+    cx.simulate_input("0");
+    cx.simulate_keystrokes("enter");
+    assert_eq!(view.read_with(cx, |view, _| view.values.clone()), [0.0]);
+}
+
 struct Pin {
     code: String,
 }

@@ -65,6 +65,8 @@ struct Numeric {
     on_commit: Option<OnChange>,
     value: f64,
     limits: (f64, f64, f64, usize),
+    /// Shows no number; an empty field commits nothing.
+    blank: bool,
     _events: Subscription,
 }
 
@@ -122,6 +124,9 @@ fn numeric(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity<Numeric>
             let (min, max, _, precision) = numeric.limits;
             match event {
                 InputEvent::Blur | InputEvent::Submit => {
+                    if numeric.blank && input.read(cx).text().trim().is_empty() {
+                        return;
+                    }
                     let value = settle(numeric.current(cx), min, max, precision);
                     numeric.value = value;
                     show(
@@ -156,6 +161,7 @@ fn numeric(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity<Numeric>
             on_commit: None,
             value: 0.0,
             limits: (f64::MIN, f64::MAX, 1.0, 0),
+            blank: false,
             _events: events,
         }
     })
@@ -225,6 +231,7 @@ pub struct NumberInput {
     on_commit: Option<OnChange>,
     scrub_label: Option<SharedString>,
     label: SharedString,
+    blank: Option<SharedString>,
 }
 
 impl NumberInput {
@@ -243,12 +250,19 @@ impl NumberInput {
             on_commit: None,
             scrub_label: None,
             label: SharedString::default(),
+            blank: None,
         }
     }
 
     /// The name assistive technology reads, drawn nowhere.
     pub fn label(mut self, text: impl Into<SharedString>) -> Self {
         self.label = text.into();
+        self
+    }
+
+    /// Shows `placeholder`, not a number, as for a mixed selection; commits once typed in.
+    pub fn blank(mut self, placeholder: impl Into<SharedString>) -> Self {
+        self.blank = Some(placeholder.into());
         self
     }
 
@@ -322,13 +336,21 @@ impl RenderOnce for NumberInput {
             numeric.on_commit = self.on_commit.clone();
             numeric.value = value;
             numeric.limits = (min, max, step, self.precision);
+            numeric.blank = self.blank.is_some();
         });
         let input = state.read(cx).input.clone();
         if input.read(cx).label_text() != &self.label {
             let label = self.label.clone();
             input.update(cx, |input, cx| input.set_label(label, cx));
         }
-        let shown = format::number(value, self.precision, Separators::EN);
+        let placeholder = self.blank.clone().unwrap_or_default();
+        if input.read(cx).placeholder_text() != &placeholder {
+            input.update(cx, |input, cx| input.set_placeholder(placeholder, cx));
+        }
+        let shown = match self.blank {
+            Some(_) => String::new(),
+            None => format::number(value, self.precision, Separators::EN),
+        };
         let editing = input.read(cx).focus().is_focused(window);
         if !editing && input.read(cx).text() != shown {
             input.update(cx, |input, cx| input.set_text(shown, cx));
@@ -452,45 +474,8 @@ impl RenderOnce for NumberInput {
     }
 }
 
-/// A label you drag sideways to change a number, beside its field.
-#[derive(IntoElement)]
-pub struct ScrubInput {
-    field: NumberInput,
-}
-
-impl ScrubInput {
-    pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>, value: f64) -> Self {
-        let mut field = NumberInput::new(id, value);
-        field.scrub_label = Some(label.into());
-        Self { field }
-    }
-
-    pub fn range(mut self, min: f64, max: f64) -> Self {
-        self.field = self.field.range(min, max);
-        self
-    }
-
-    pub fn step(mut self, step: f64) -> Self {
-        self.field = self.field.step(step);
-        self
-    }
-
-    pub fn precision(mut self, places: usize) -> Self {
-        self.field = self.field.precision(places);
-        self
-    }
-
-    pub fn on_change(mut self, handler: impl Fn(f64, &mut Window, &mut App) + 'static) -> Self {
-        self.field = self.field.on_change(handler);
-        self
-    }
-}
-
-impl RenderOnce for ScrubInput {
-    fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        self.field
-    }
-}
+mod scrub;
+pub use scrub::ScrubInput;
 
 #[cfg(test)]
 mod tests;
