@@ -24,6 +24,7 @@ enum Open {
     Confirm,
     Prompt,
     Tall,
+    Nested,
 }
 
 /// A popover, a hover card and one dialog at a time, recording what they do.
@@ -46,7 +47,10 @@ impl Stage {
         move |_, cx| view.update(cx, |stage, _| stage.log.push(what.into()))
     }
 
-    fn shut(&self, cx: &mut Context<Self>) -> impl Fn(&mut Window, &mut gpui::App) + 'static {
+    fn shut(
+        &self,
+        cx: &mut Context<Self>,
+    ) -> impl Fn(&mut Window, &mut gpui::App) + Clone + 'static {
         let view = cx.entity();
         move |_, cx| {
             view.update(cx, |stage, cx| {
@@ -100,6 +104,9 @@ impl Render for Stage {
         );
         let sent = cx.entity();
         let overlay = self.open.map(|open| match open {
+            Open::Nested => Dialog::new("outer", "Outer", shut.clone())
+                .child(Dialog::new("inner", "Inner", shut.clone()))
+                .into_any_element(),
             Open::Plain => Dialog::new("plain", "Plain", shut)
                 .detail("A line of detail")
                 .into_any_element(),
@@ -272,6 +279,19 @@ fn a_dialog_its_owner_drops_hands_focus_back(cx: &mut TestAppContext) {
     });
     settle(cx);
     assert!(before_focused(&view, cx), "focus went back");
+}
+
+#[gpui::test]
+fn nested_dialogs_dropped_together_hand_focus_back(cx: &mut TestAppContext) {
+    let (view, cx) = stage(cx);
+    show(&view, Open::Nested, cx);
+    assert!(!before_focused(&view, cx), "the dialogs hold focus");
+    view.update(cx, |stage, cx| {
+        stage.open = None;
+        cx.notify();
+    });
+    settle(cx);
+    assert!(before_focused(&view, cx), "focus went back past both");
 }
 
 #[gpui::test]

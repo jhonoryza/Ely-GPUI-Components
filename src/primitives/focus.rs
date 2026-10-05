@@ -126,23 +126,39 @@ fn step(scope: &FocusHandle, trap: bool, forward: bool, window: &mut Window, cx:
     }
 }
 
-/// Open overlays holding focus, oldest first, with what they took it from.
+/// Overlays holding focus: their focus and the prior one.
 #[derive(Default)]
-struct Holders(Vec<(WeakEntity<Takeover>, AnyWindowHandle, Option<FocusHandle>)>);
+struct Holders(Vec<Holder>);
+
+struct Holder {
+    takeover: WeakEntity<Takeover>,
+    window: AnyWindowHandle,
+    focus: FocusHandle,
+    previous: Option<FocusHandle>,
+}
 
 impl Global for Holders {}
 
-/// Forgets overlays gone without closing; the newest one's prior focus.
+/// Forgets overlays gone unclosed; the focus before them all.
 fn dropped_overlay(window: &Window, cx: &mut App) -> Option<FocusHandle> {
     let here = window.window_handle();
-    let mut back = None;
-    cx.default_global::<Holders>().0.retain(|(holder, at, previous)| {
-        let gone = holder.upgrade().is_none();
-        if gone && *at == here {
-            back = previous.clone();
-        }
-        !gone
-    });
+    let holders = &mut cx.default_global::<Holders>().0;
+    let (gone, open): (Vec<Holder>, Vec<Holder>) = holders
+        .drain(..)
+        .partition(|holder| holder.takeover.upgrade().is_none());
+    *holders = open;
+    let gone: Vec<Holder> = gone
+        .into_iter()
+        .filter(|holder| holder.window == here)
+        .collect();
+    // Walk back past every gone overlay.
+    let mut back = gone.last()?.previous.clone();
+    while let Some(holder) = gone
+        .iter()
+        .find(|holder| Some(&holder.focus) == back.as_ref())
+    {
+        back = holder.previous.clone();
+    }
     back
 }
 
@@ -176,7 +192,12 @@ pub(crate) fn take_focus(
     if !state.read(cx).taken {
         let previous = window.focused(cx);
         window.focus(&state.read(cx).focus.clone(), cx);
-        let holder = (state.downgrade(), window.window_handle(), previous.clone());
+        let holder = Holder {
+            takeover: state.downgrade(),
+            window: window.window_handle(),
+            focus: state.read(cx).focus.clone(),
+            previous: previous.clone(),
+        };
         cx.default_global::<Holders>().0.push(holder);
         state.update(cx, |takeover, _| {
             takeover.previous = previous;
@@ -189,7 +210,9 @@ pub(crate) fn take_focus(
 /// Returns focus to whatever held it before the overlay opened.
 pub(crate) fn give_back(state: &Entity<Takeover>, window: &mut Window, cx: &mut App) {
     let closed = state.downgrade();
-    cx.default_global::<Holders>().0.retain(|(holder, ..)| *holder != closed);
+    cx.default_global::<Holders>()
+        .0
+        .retain(|holder| holder.takeover != closed);
     let previous = state.update(cx, |takeover, _| {
         takeover.returned = true;
         takeover.previous.clone()
