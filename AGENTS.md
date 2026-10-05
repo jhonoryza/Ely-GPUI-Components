@@ -242,6 +242,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - 2026-09-24: gpui 0.2.2 has no accessibility tree and no tray, badge, or notification API. Those entries carry `blocked` or `prove`.
 - 2026-09-24: the gallery photographs its own window with `CGWindowListCreateImage`. No Screen Recording permission needed.
 - 2026-09-24: license MIT OR Apache-2.0.
+- 2026-10-05: license MIT alone, in `LICENSE`, at the owner's word; replaces the 2026-09-24 choice.
 - 2026-09-25: layouts persist as versioned JSON through serde. Unknown fields are ignored. Newer versions, unknown panels and bad pane trees are refused, and restore is all or nothing.
 - 2026-09-25: an entry built from a later chapter's parts lands with that chapter; its line points there. MenuBar goes to Menus, QuickLauncher to Navigation.
 - 2026-09-25: SystemNotification is blocked. An unbundled app has no notification center (probed on macOS 27.2), and gpui 0.2.2 has no API.

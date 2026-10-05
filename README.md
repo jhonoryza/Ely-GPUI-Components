@@ -61,5 +61,5 @@ pnpm deploy     # Cloudflare, through wrangler
 
 ## License
 
-MIT or Apache-2.0, at your option. Lucide icons: ISC. Inter, JetBrains Mono, IBM Plex Sans and the gallery's Noto Sans Hebrew: SIL Open Font License 1.1.
+MIT. Lucide icons: ISC. Inter, JetBrains Mono, IBM Plex Sans and the gallery's Noto Sans Hebrew: SIL Open Font License 1.1.
 The gallery photos in `examples/gallery/assets` were generated for this project with gpt-image-2.

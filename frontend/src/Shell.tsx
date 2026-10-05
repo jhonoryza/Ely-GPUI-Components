@@ -47,7 +47,7 @@ function Header() {
 function Footer() {
   return (
     <footer className="foot">
-      <span>MIT or Apache-2.0</span>
+      <span>MIT</span>
       <a href={REPO} rel="noopener">
         Source
       </a>

@@ -33,4 +33,4 @@ The example opens a window with one counter and one Button. `cargo run --example
 
 ## License
 
-MIT or Apache-2.0, at your option. The icons are Lucide's, under ISC. Inter, JetBrains Mono and IBM Plex Sans are under the SIL Open Font License 1.1.
+MIT. The icons are Lucide's, under ISC. Inter, JetBrains Mono and IBM Plex Sans are under the SIL Open Font License 1.1.

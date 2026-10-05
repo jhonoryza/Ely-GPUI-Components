@@ -46,4 +46,4 @@ CI runs the same on every pull request. Fill in the pull request template: what 
 
 ## License
 
-Ely is MIT or Apache-2.0, at your option. Unless you say otherwise, what you contribute is licensed the same way.
+Ely is MIT. Unless you say otherwise, what you contribute is licensed the same way.
