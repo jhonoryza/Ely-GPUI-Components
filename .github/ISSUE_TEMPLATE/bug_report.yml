@@ -50,7 +50,7 @@ body:
     id: version
     attributes:
       label: Commit or version
-      placeholder: 4f0b372
+      placeholder: 259ee2a
   - type: textarea
     id: logs
     attributes:
