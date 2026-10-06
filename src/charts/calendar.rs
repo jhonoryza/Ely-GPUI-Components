@@ -125,7 +125,7 @@ impl RenderOnce for CalendarHeatmap {
                 .expect("seven days hold every weekday");
             beside(
                 top + side * (weekday as f32 + 0.5),
-                sizes.gutter,
+                sizes.gutter.to_pixels(rem),
                 text(date.strftime("%a").to_string()),
             )
         });

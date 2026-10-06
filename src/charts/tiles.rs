@@ -371,7 +371,7 @@ impl RenderOnce for HeatmapChart {
         let row_labels = self.rows.iter().enumerate().map(|(ix, (label, _))| {
             beside(
                 rect.y + cell_h * (ix as f32 + 0.5),
-                sizes.gutter,
+                sizes.gutter.to_pixels(rem),
                 text(label.clone()),
             )
         });

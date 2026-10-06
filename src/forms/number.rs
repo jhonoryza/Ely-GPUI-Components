@@ -67,6 +67,9 @@ struct Numeric {
     limits: (f64, f64, f64, usize),
     /// Shows no number; an empty field commits nothing.
     blank: bool,
+    /// The owner's value as shown; a new one replaces a draft once focus leaves.
+    owner: Option<String>,
+    pending: bool,
     _events: Subscription,
 }
 
@@ -162,6 +165,8 @@ fn numeric(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity<Numeric>
             value: 0.0,
             limits: (f64::MIN, f64::MAX, 1.0, 0),
             blank: false,
+            owner: None,
+            pending: false,
             _events: events,
         }
     })
@@ -331,14 +336,27 @@ impl RenderOnce for NumberInput {
     fn render(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let state = numeric(&self.id, window, cx);
         let (value, min, max, step) = (self.value, self.min, self.max, self.step);
-        state.update(cx, |numeric, _| {
+        let shown = match self.blank {
+            Some(_) => String::new(),
+            None => format::number(value, self.precision, Separators::EN),
+        };
+        let input = state.read(cx).input.clone();
+        let editing = input.read(cx).focus().is_focused(window);
+        let echo = input.read(cx).text() == shown;
+        let reseed = state.update(cx, |numeric, _| {
             numeric.on_change = self.on_change.clone();
             numeric.on_commit = self.on_commit.clone();
-            numeric.value = value;
             numeric.limits = (min, max, step, self.precision);
             numeric.blank = self.blank.is_some();
+            if numeric.owner.as_ref() != Some(&shown) {
+                numeric.owner = Some(shown.clone());
+                numeric.value = value;
+                numeric.pending = !echo;
+            }
+            let reseed = numeric.pending && !editing;
+            numeric.pending &= editing;
+            reseed
         });
-        let input = state.read(cx).input.clone();
         if input.read(cx).label_text() != &self.label {
             let label = self.label.clone();
             input.update(cx, |input, cx| input.set_label(label, cx));
@@ -347,12 +365,7 @@ impl RenderOnce for NumberInput {
         if input.read(cx).placeholder_text() != &placeholder {
             input.update(cx, |input, cx| input.set_placeholder(placeholder, cx));
         }
-        let shown = match self.blank {
-            Some(_) => String::new(),
-            None => format::number(value, self.precision, Separators::EN),
-        };
-        let editing = input.read(cx).focus().is_focused(window);
-        if !editing && input.read(cx).text() != shown {
+        if reseed {
             input.update(cx, |input, cx| input.set_text(shown, cx));
         }
         let now = state.read(cx).current(cx);
@@ -430,8 +443,12 @@ impl RenderOnce for NumberInput {
                 now > min,
                 Box::new(down),
             ));
+        let ends = [min, max].map(|end| format::number(end, self.precision, Separators::EN));
+        let widest = ends.into_iter().max_by_key(|end| end.chars().count());
+        let ranged = min > f64::MIN && max < f64::MAX;
         let field = Input::new(&input)
             .size(self.size)
+            .when_some(widest.filter(|_| ranged), Input::least)
             .prefix(
                 div()
                     .flex()

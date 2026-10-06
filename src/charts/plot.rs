@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use super::{
-    axes::{anchored, marks},
+    axes::{PAD, anchored, marks},
     geometry::{Geometry, Ink, Rect, frame},
     glide::Glide,
     paint::{Pen, measure, tint},
@@ -17,7 +17,8 @@ use super::{
 use crate::{
     buttons::{Button, ButtonVariant},
     motion,
-    theme::{ActiveTheme, ControlSize, Radius},
+    theme::{ActiveTheme, ControlSize, Radius, TextSize},
+    typography::text_width,
 };
 
 pub(crate) type Format = Rc<dyn Fn(f64) -> String>;
@@ -127,12 +128,20 @@ pub(crate) fn plot(plot: Plot, base: Div, window: &mut Window, cx: &mut App) -> 
         .filter(|(_, to)| *to < count)
         .unwrap_or((0, count.saturating_sub(1)));
     let box_size = (f32::from(bounds.size.width), f32::from(bounds.size.height));
-    let rect = frame(
-        box_size,
-        pixels(sizes.gutter),
-        pixels(sizes.foot),
-        pixels(sizes.inset),
-    );
+    let gutter = if plot.horizontal {
+        let size = theme.text_size(TextSize::Xs).to_pixels(rem);
+        let widest = plot
+            .labels
+            .iter()
+            .map(|label| f32::from(text_width(label, size, window)))
+            .fold(0.0, f32::max);
+        (widest + pixels(PAD))
+            .max(pixels(sizes.gutter))
+            .min(box_size.0 / 2.0)
+    } else {
+        pixels(sizes.gutter)
+    };
+    let rect = frame(box_size, gutter, pixels(sizes.foot), pixels(sizes.inset));
     let scene = Scene {
         frame: rect,
         values: &values,

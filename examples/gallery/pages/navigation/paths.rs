@@ -58,14 +58,16 @@ pub fn pagination(window: &mut Window, cx: &mut App) -> impl IntoElement + use<>
     let now = *page.read(cx);
     section(
         "Pagination",
-        "The first, the last, and the pages around this one. A gap stands for two or more pages.",
+        "The first, the last, and the pages around this one. A gap stands for two or more pages. Type a page to go there.",
         cx,
     )
     .child(specimen(
         format!("page {now} of 20"),
         probe(
             "pagination",
-            Pagination::new("pagination", now, 20).on_change(move |to, _, cx| set(&page, to, cx)),
+            Pagination::new("pagination", now, 20)
+                .jump()
+                .on_change(move |to, _, cx| set(&page, to, cx)),
         ),
         cx,
     ))

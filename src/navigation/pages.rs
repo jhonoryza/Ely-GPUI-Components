@@ -7,7 +7,8 @@ use gpui::{
 
 use crate::{
     buttons::{Button, ButtonVariant, IconButton},
-    forms::Run,
+    forms::{NumberInput, Run},
+    i18n,
     primitives::IconName,
     theme::{ActiveTheme, ControlSize, TextSize},
     typography::format::{self, Separators},
@@ -49,6 +50,8 @@ pub struct Pagination {
     page: usize,
     pages: usize,
     near: usize,
+    size: ControlSize,
+    jump: bool,
     on_change: Option<OnPage>,
 }
 
@@ -60,8 +63,21 @@ impl Pagination {
             page,
             pages,
             near: 1,
+            size: ControlSize::Sm,
+            jump: false,
             on_change: None,
         }
+    }
+
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.size = size;
+        self
+    }
+
+    /// A field after Next that goes to the page typed.
+    pub fn jump(mut self) -> Self {
+        self.jump = true;
+        self
     }
 
     /// Pages shown on each side of the current one.
@@ -89,16 +105,43 @@ impl RenderOnce for Pagination {
                 }
             })
         };
-        let subtle = cx.theme().colors.fg_subtle;
-        let (back, ahead) = (go.clone(), go.clone());
+        let theme = cx.theme();
+        let (size, subtle, small) = (
+            self.size,
+            theme.colors.fg_subtle,
+            theme.text_size(TextSize::Sm),
+        );
+        let (back, ahead, jump) = (go.clone(), go.clone(), go.clone());
+        let to = i18n::text(cx, "pagination.jump", &[]);
+        let jump = self.jump.then(|| {
+            let words = div()
+                .whitespace_nowrap()
+                .text_size(small)
+                .text_color(subtle)
+                .child(to.clone());
+            div().flex().items_center().gap_2().child(words).child(
+                div().flex_none().child(
+                    NumberInput::new((self.id.clone(), "jump"), page as f64)
+                        .label(to)
+                        .range(1.0, pages as f64)
+                        .precision(0)
+                        .size(size)
+                        .on_commit(move |to, window, cx| {
+                            if to as usize != page {
+                                jump(to as usize, window, cx);
+                            }
+                        }),
+                ),
+            )
+        });
         let cells = list
             .into_iter()
             .enumerate()
             .map(move |(ix, entry)| match entry {
                 Some(number) => {
                     let go = go.clone();
-                    Button::new(("page", number), number.to_string())
-                        .size(ControlSize::Sm)
+                    let button = Button::new(("page", number), number.to_string())
+                        .size(size)
                         .variant(if number == page {
                             ButtonVariant::Secondary
                         } else {
@@ -108,7 +151,10 @@ impl RenderOnce for Pagination {
                             if number != page {
                                 go(number, window, cx);
                             }
-                        })
+                        });
+                    div()
+                        .debug_selector(move || format!("pagination-page-{number}"))
+                        .child(button)
                         .into_any_element()
                 }
                 None => div()
@@ -120,26 +166,33 @@ impl RenderOnce for Pagination {
             });
         div()
             .id(self.id)
+            .debug_selector(|| "pagination-root".into())
             .flex()
+            .flex_wrap()
             .items_center()
             .gap_1()
             .child(
-                IconButton::new("previous", IconName::ChevronLeft)
-                    .size(ControlSize::Sm)
-                    .variant(ButtonVariant::Ghost)
-                    .tooltip("Previous page")
-                    .disabled(page == 1)
-                    .on_click(move |_, window, cx| back(page - 1, window, cx)),
+                div().debug_selector(|| "pagination-previous".into()).child(
+                    IconButton::new("previous", IconName::ChevronLeft)
+                        .size(size)
+                        .variant(ButtonVariant::Ghost)
+                        .tooltip(i18n::text(cx, "pagination.previous", &[]))
+                        .disabled(page == 1)
+                        .on_click(move |_, window, cx| back(page - 1, window, cx)),
+                ),
             )
             .children(cells)
             .child(
-                IconButton::new("next", IconName::ChevronRight)
-                    .size(ControlSize::Sm)
-                    .variant(ButtonVariant::Ghost)
-                    .tooltip("Next page")
-                    .disabled(page == pages)
-                    .on_click(move |_, window, cx| ahead(page + 1, window, cx)),
+                div().debug_selector(|| "pagination-next".into()).child(
+                    IconButton::new("next", IconName::ChevronRight)
+                        .size(size)
+                        .variant(ButtonVariant::Ghost)
+                        .tooltip(i18n::text(cx, "pagination.next", &[]))
+                        .disabled(page == pages)
+                        .on_click(move |_, window, cx| ahead(page + 1, window, cx)),
+                ),
             )
+            .children(jump)
     }
 }
 

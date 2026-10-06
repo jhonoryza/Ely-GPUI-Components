@@ -115,7 +115,11 @@ impl RenderOnce for RealtimeChart {
                 .whitespace_nowrap()
                 .text_size(theme.text_size(TextSize::Xs))
                 .text_color(colors.fg_subtle);
-            beside(scale.at(*tick), sizes.gutter, label.child(compact(*tick)))
+            beside(
+                scale.at(*tick),
+                sizes.gutter.to_pixels(rem),
+                label.child(compact(*tick)),
+            )
         });
         let (ink, levels) = (
             tint(&colors, 0),

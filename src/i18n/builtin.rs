@@ -62,6 +62,9 @@ const EN: &[(&str, &str)] = &[
     ("time.month.other", "{n} months"),
     ("time.year.one", "{n} year"),
     ("time.year.other", "{n} years"),
+    ("pagination.previous", "Previous page"),
+    ("pagination.next", "Next page"),
+    ("pagination.jump", "Go to"),
 ];
 
 const ZH_CN: &[(&str, &str)] = &[
@@ -122,6 +125,9 @@ const ZH_CN: &[(&str, &str)] = &[
     ("time.month.other", "{n} 个月"),
     ("time.year.one", "{n} 年"),
     ("time.year.other", "{n} 年"),
+    ("pagination.previous", "上一页"),
+    ("pagination.next", "下一页"),
+    ("pagination.jump", "跳至"),
 ];
 
 /// Ely's own message for `key` in `locale`, English for a locale Ely does not ship; fails on an unknown key.

@@ -1,6 +1,6 @@
 use gpui::{
     AnyElement, App, Entity, InteractiveElement, IntoElement, MouseButton, ParentElement,
-    RenderOnce, Styled, Window, div, prelude::*,
+    RenderOnce, SharedString, Styled, Window, div, prelude::*,
 };
 
 use super::TextInput;
@@ -19,6 +19,7 @@ pub struct Input {
     suffix: Option<AnyElement>,
     clearable: bool,
     invalid: bool,
+    least: Option<SharedString>,
 }
 
 impl Input {
@@ -30,6 +31,7 @@ impl Input {
             suffix: None,
             clearable: false,
             invalid: false,
+            least: None,
         }
     }
 
@@ -45,6 +47,12 @@ impl Input {
 
     pub fn suffix(mut self, suffix: impl IntoElement) -> Self {
         self.suffix = Some(suffix.into_any_element());
+        self
+    }
+
+    /// Holds room to show `text` whole.
+    pub fn least(mut self, text: impl Into<SharedString>) -> Self {
+        self.least = Some(text.into());
         self
     }
 
@@ -125,8 +133,16 @@ impl RenderOnce for Input {
                     .flex_1()
                     .min_w_0()
                     .child(self.state)
-                    // An empty strut keeps the frame's inset to type in.
-                    .child(div().px(theme.control_padding(self.size)).border_x_1()),
+                    // A strut keeps the frame's inset to type in.
+                    .child(
+                        div()
+                            .px(theme.control_padding(self.size))
+                            .border_x_1()
+                            .h_0()
+                            .overflow_hidden()
+                            .whitespace_nowrap()
+                            .children(self.least),
+                    ),
             )
             .when(self.clearable && !empty && !disabled, |frame| {
                 frame.child(

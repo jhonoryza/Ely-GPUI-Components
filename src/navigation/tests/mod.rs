@@ -1,3 +1,4 @@
+mod pages;
 mod tabs;
 
 use gpui::{

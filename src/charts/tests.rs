@@ -9,6 +9,7 @@ use gpui::{
 };
 use jiff::civil::date;
 
+use super::axes::PAD;
 use super::{
     AreaChart, BarChart, BoxPlot, Bullet, BulletChart, CalendarHeatmap, ChartLegend, ChordDiagram,
     FunnelChart, GanttChart, HeatmapChart, Histogram, LineChart, NetworkGraph, ParallelCoordinates,
@@ -329,4 +330,46 @@ fn every_chart_fills_a_column_its_block_measures_by_content(cx: &mut TestAppCont
         [px(240.0); 22],
         "each chart spans the card inside its padding"
     );
+}
+
+/// A sideways bar chart `wide` across with one band named `name`.
+struct Sideways(String, f32);
+
+impl Render for Sideways {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div().w(px(self.1)).child(
+            BarChart::new("sideways", [self.0.clone()])
+                .series(Series::new("s", [3.0]))
+                .horizontal(),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_long_band_name_widens_the_gutter_to_half_the_chart(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let long = "x".repeat(200);
+    for (name, wide) in [
+        ("claude-sonnet-4-5-20250929", 400.0),
+        (&long, 400.0),
+        (&long, 80.0),
+    ] {
+        let (_, cx) = cx.add_window_view(|_, _| Sideways(name.to_string(), wide));
+        settle(cx);
+        let root = cx.debug_bounds("chart-root").expect("the chart draws");
+        let band = cx.debug_bounds("chart-band").expect("the band is named");
+        let half = root.left() + px(wide / 2.0);
+        let pad = cx.update(|window, _| PAD.to_pixels(window.rem_size()));
+        assert!(
+            band.left() >= root.left(),
+            "{wide}: the name's box starts in the chart"
+        );
+        assert!(
+            band.right() + pad <= half,
+            "{wide}: the gutter takes half at most"
+        );
+        if wide > 200.0 {
+            assert!(band.size.width > px(48.0), "past the theme gutter");
+        }
+    }
 }

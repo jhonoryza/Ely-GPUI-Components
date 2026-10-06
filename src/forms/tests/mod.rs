@@ -281,6 +281,21 @@ fn a_blank_field_commits_only_what_is_typed(cx: &mut TestAppContext) {
     assert_eq!(view.read_with(cx, |view, _| view.values.clone()), [0.0]);
 }
 
+#[gpui::test]
+fn a_blur_commits_the_typed_number(cx: &mut TestAppContext) {
+    setup(cx);
+    let (view, cx) = cx.add_window_view(|_, _| Committed { values: Vec::new() });
+    cx.update(|window, cx| {
+        window.activate_window();
+        window.focus_next(cx);
+    });
+    cx.simulate_keystrokes("secondary-a");
+    cx.simulate_input("12");
+    cx.update(|window, cx| window.blur(cx));
+    cx.run_until_parked();
+    assert_eq!(view.read_with(cx, |view, _| view.values.clone()), [12.0]);
+}
+
 struct Pin {
     code: String,
 }

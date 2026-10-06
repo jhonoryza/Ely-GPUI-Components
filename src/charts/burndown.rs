@@ -135,7 +135,7 @@ impl RenderOnce for BurndownChart {
         let levels: Vec<Div> = burn
             .ticks
             .iter()
-            .map(|(y, value)| beside(*y, sizes.gutter, label(compact(*value))))
+            .map(|(y, value)| beside(*y, sizes.gutter.to_pixels(rem), label(compact(*value))))
             .collect();
         let dates: Vec<Div> = marks(self.first, count as i32)
             .into_iter()

@@ -10,8 +10,11 @@ use super::{
 };
 use crate::{
     theme::{ActiveTheme, Radius, TextSize},
-    typography::{LEADING, tabular, text_width},
+    typography::{Ellipsis, LEADING, tabular, text_width},
 };
+
+/// Room between a gutter's label and the plot.
+pub(crate) const PAD: Rems = Rems(0.5);
 
 /// A label centered under `x`, below the frame.
 pub(crate) fn below(x: f32, frame: Rect, label: Div) -> Div {
@@ -27,7 +30,7 @@ pub(crate) fn below(x: f32, frame: Rect, label: Div) -> Div {
 }
 
 /// A label centered on `y`, set right in the gutter.
-pub(crate) fn beside(y: f32, gutter: Rems, label: Div) -> Div {
+pub(crate) fn beside(y: f32, gutter: Pixels, label: Div) -> Div {
     div()
         .absolute()
         .left_0()
@@ -37,7 +40,7 @@ pub(crate) fn beside(y: f32, gutter: Rems, label: Div) -> Div {
         .flex()
         .items_center()
         .justify_end()
-        .pr_2()
+        .pr(PAD)
         .child(label)
 }
 
@@ -93,7 +96,7 @@ pub(crate) fn marks(
             if plot.horizontal {
                 below(*at, rect, label)
             } else {
-                beside(*at, sizes.gutter, label)
+                beside(*at, Pixels::from(rect.x), label)
             }
         })
         .collect();
@@ -116,7 +119,14 @@ pub(crate) fn marks(
             .filter(|(ix, _)| ix % every == 0)
             .map(|(_, (at, label))| {
                 if plot.horizontal {
-                    beside(*at, sizes.gutter, text(label.clone()))
+                    let name = div()
+                        .debug_selector(|| "chart-band".into())
+                        .min_w_0()
+                        .text_right()
+                        .text_size(theme.text_size(TextSize::Xs))
+                        .text_color(colors.fg_subtle)
+                        .child(Ellipsis::new(label.clone()));
+                    beside(*at, Pixels::from(rect.x), name)
                 } else {
                     below(*at, rect, text(label.clone()))
                 }
