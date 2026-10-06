@@ -25,7 +25,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P08 Menus — `src/menus`
 - [x] P09 Overlays — `src/overlays`
 - [x] P10 Feedback — `src/feedback`
-- [ ] P11 Loading & Motion — `src/motion`
+- [x] P11 Loading & Motion — `src/motion`
 - [ ] P12 Data Display — `src/data_display`
 - [ ] P13 Lists & Trees — `src/lists`
 - [ ] P14 Tables — `src/tables`
@@ -75,3 +75,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P08: no change. Kept: a bar's menus and a pie's slices (one value each); the panel's level lookup, which `settle` fits to the menu before every draw. Review: 1 round.
 - P09: a `Lightbox` or `Tour` past its last item logs and closes, handing focus back. Kept: dialog Enter without `focus_first` and popover face builders on an owner's opener (static builder misuse). Review: 1 round.
 - P10: no change. Kept: a toast's stay above zero (one value). Review: 1 round.
+- P11: a buffer at or behind the value draws none; `slide` was fixed in P05. Kept: values in 0..=1, segment and skeleton counts (one value each), builder misuse, reorder's permutation. Review: 1 round.

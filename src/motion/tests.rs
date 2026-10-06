@@ -99,12 +99,6 @@ fn a_lazy_row_builds_once_it_scrolls_into_view(cx: &mut TestAppContext) {
 }
 
 #[test]
-#[should_panic(expected = "is behind")]
-fn a_buffer_behind_the_value_is_refused() {
-    let _ = ProgressBar::new("bar", 0.6).buffer(0.4);
-}
-
-#[test]
 #[should_panic(expected = "not 0..=1")]
 fn a_value_past_whole_is_refused() {
     let _ = ProgressBar::new("bar", 1.2);

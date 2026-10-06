@@ -75,14 +75,10 @@ impl ProgressBar {
         }
     }
 
-    /// What has loaded ahead of the value, drawn fainter.
+    /// What has loaded ahead of the value, drawn fainter; none when it lies behind, as after a seek.
     pub fn buffer(mut self, buffer: f32) -> Self {
         let value = self.value.expect("an indeterminate bar has no buffer");
-        assert!(
-            checked(buffer, "buffer") >= value,
-            "buffer {buffer} is behind {value}"
-        );
-        self.buffer = Some(buffer);
+        self.buffer = (checked(buffer, "buffer") > value).then_some(buffer);
         self
     }
 
@@ -287,11 +283,17 @@ impl RenderOnce for ProgressRing {
 mod tests {
     use gpui::div;
 
-    use super::ProgressRing;
+    use super::{ProgressBar, ProgressRing};
 
     #[test]
     #[should_panic(expected = "a percent or content inside, not both")]
     fn a_ring_holds_a_percent_or_content_not_both() {
         let _ = ProgressRing::new("ring", 0.5).inside(div()).percent();
+    }
+
+    #[test]
+    fn a_buffer_ahead_shows_and_one_behind_does_not() {
+        assert_eq!(ProgressBar::new("bar", 0.4).buffer(0.7).buffer, Some(0.7));
+        assert_eq!(ProgressBar::new("bar", 0.6).buffer(0.4).buffer, None);
     }
 }
