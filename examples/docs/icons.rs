@@ -87,7 +87,7 @@ fn main() {
     gpui_platform::application()
         .with_assets(AppAssets)
         .run(|cx: &mut App| {
-            ely_gpui_component::init(cx);
+            ely_gpui_component::init(cx).expect("Ely failed to start");
             IconTheme::default()
                 .name("Cargo.toml", IconName::Package)
                 .apply(cx);

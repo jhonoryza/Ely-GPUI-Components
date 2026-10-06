@@ -6,14 +6,14 @@ Rules, at the owner's word:
 
 - A handler a component needs is an argument of `new`. Leaving it out fails to compile, not at render.
 - A state live data or the outside world can reach (a key gone from a list that changed, a failed load) logs an error naming the owner and draws a visible state: nothing chosen, or an error line in the component's box. The app keeps running.
-- An assert on a caller's argument, or on a fact true by construction, stays, as std's do. One that runtime data or input can trip is fixed.
+- An assert on a caller's argument, or on a fact true by construction, stays, as std's do. One that runtime data or input can trip is fixed. Reachable means what a component meets on its own: input inside it, its own later state, a call to the outside, or two arguments that agree at one time and not the next (a selected key and its list). One value checked against itself (a ratio above zero) is the caller's contract.
 
 Each item reads every site in its folders, fixes what the rules name, updates callers in the gallery, docs examples and tests, passes `scripts/check.sh`, and passes a codex review (`gpt-6.1-sol`, effort `high`) in a herdr split, five rounds at most. Then it commits and pushes.
 
 ## Items
 
 - [x] P00 Policy in AGENTS.md
-- [ ] P01 Primitives — `src/primitives`, `src/lib.rs`, `src/assets.rs`
+- [x] P01 Primitives — `src/primitives`, `src/lib.rs`, `src/assets.rs`
 - [ ] P02 Typography — `src/typography`
 - [ ] P03 Layout — `src/layout`
 - [ ] P04 Window & Shell — `src/shell`
@@ -63,3 +63,4 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 
 One line per item: what changed, what stayed and why, review rounds.
 - P00: AGENTS.md holds the three rules; this list follows the PRD's chapters. Review: 2 rounds (round 1 found the runtime clause missing).
+- P01: `init` returns `anyhow::Result`; a missing app icon logs once and shows `Icon::broken`. Kept: `layer.rs` expects (gpui's element order), `checked_ratio` (one value, the caller's). Review: 2 rounds.

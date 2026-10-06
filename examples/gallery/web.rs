@@ -106,7 +106,10 @@ pub fn start() {
             if let Some(choice) = EARLY.take() {
                 start.choice = choice;
             }
-            let window = launch(start, cx);
+            let window = match launch(start, cx) {
+                Ok(window) => window,
+                Err(error) => return log::error!("gallery: {error:#}"),
+            };
             HOST.with(|host| *host.borrow_mut() = Some((cx.to_async(), window)));
         });
 }

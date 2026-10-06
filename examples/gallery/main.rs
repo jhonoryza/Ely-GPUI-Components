@@ -41,7 +41,8 @@ mod web;
 use std::path::PathBuf;
 
 #[cfg(not(target_family = "wasm"))]
-use anyhow::{Context as _, Result, bail};
+use anyhow::bail;
+use anyhow::{Context as _, Result};
 #[cfg(not(target_family = "wasm"))]
 use assets::GalleryAssets;
 use ely_gpui_component::theme::{Mode, Theme};
@@ -113,8 +114,8 @@ pub struct Start {
 }
 
 /// Sets Ely up and opens the gallery's window.
-fn launch(start: Start, cx: &mut App) -> WindowHandle<shell::Gallery> {
-    ely_gpui_component::init(cx);
+fn launch(start: Start, cx: &mut App) -> Result<WindowHandle<shell::Gallery>> {
+    ely_gpui_component::init(cx)?;
     #[cfg(debug_assertions)]
     ely_gpui_component::tooling::install_inspector(cx);
     pages::bind_keys(cx);
@@ -142,10 +143,10 @@ fn launch(start: Start, cx: &mut App) -> WindowHandle<shell::Gallery> {
         .open_window(options, |window, cx| {
             cx.new(|cx| shell::Gallery::new(start, window, cx))
         })
-        .expect("gallery window failed to open");
+        .context("gallery window failed to open")?;
     menu_actions(window, cx);
     cx.activate(true);
-    window
+    Ok(window)
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -204,7 +205,13 @@ fn main() -> Result<()> {
     gpui_platform::application()
         .with_assets(GalleryAssets)
         .run(move |cx: &mut App| {
-            let window = launch(start, cx);
+            let window = match launch(start, cx) {
+                Ok(window) => window,
+                Err(error) => {
+                    log::error!("gallery: {error:#}");
+                    return cx.quit();
+                }
+            };
             if let Some(dir) = capture {
                 capture::run(window, dir, page, scripted, cx);
             }

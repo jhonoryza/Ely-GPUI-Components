@@ -22,13 +22,13 @@ use gpui::App;
 
 fn main() {
     gpui_platform::application().with_assets(Assets).run(|cx: &mut App| {
-        ely_gpui_component::init(cx);
+        ely_gpui_component::init(cx).expect("Ely failed to start");
         Theme::set_mode(Mode::Dark, cx);
     });
 }
 ```
 
-`init` registers the fonts and the theme. It panics if `Assets` is not wired into the application.
+`init` registers the fonts and the theme. It returns an error if `Assets` is not wired into the application or the asset source fails.
 
 ## Gallery
 

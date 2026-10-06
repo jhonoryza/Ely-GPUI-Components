@@ -47,19 +47,23 @@ pub mod typography;
 
 pub use assets::Assets;
 
+use anyhow::Context as _;
 use gpui::{App, KeyBinding};
 
 use crate::primitives::{FocusNext, FocusPrev, IconName};
 
 /// Loads fonts and the theme, binds Tab and text keys. Call once, first.
-pub fn init(cx: &mut App) {
+pub fn init(cx: &mut App) -> anyhow::Result<()> {
     match cx.asset_source().load(IconName::Check.path()) {
         Ok(Some(_)) => {}
-        Ok(None) => panic!("ely: pass `ely_gpui_component::Assets` to `Application::with_assets`"),
-        Err(error) => panic!("ely: asset source failed: {error:#}"),
+        Ok(None) => {
+            anyhow::bail!("ely: pass `ely_gpui_component::Assets` to `Application::with_assets`")
+        }
+        Err(error) => return Err(error.context("ely: asset source failed")),
     }
-    assets::load_fonts(cx).expect("ely: embedded fonts failed to register");
+    assets::load_fonts(cx).context("ely: embedded fonts failed to register")?;
     setup(cx);
+    Ok(())
 }
 
 /// `init` without assets or fonts, for app tests that render.

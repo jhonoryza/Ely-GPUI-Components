@@ -8,7 +8,7 @@ Ely tests itself on GPUI's test platform: every chapter has tests, and `cargo te
 
 ## Testing an app that uses Ely
 
-GPUI's `TestAppContext` serves no assets, so `ely_gpui_component::init` panics there, and Ely's theme has no setup outside `init`. An app cannot draw Ely's components in a GPUI unit test today. Test the app's own state there, and see Ely's components in the gallery and in Ely's own tests.
+GPUI's `TestAppContext` serves no assets, so `ely_gpui_component::init` returns an error there. Call `ely_gpui_component::init_for_tests(cx)` instead, under the `test-support` feature: it sets the theme and key bindings without assets or fonts.
 
 ## Writing a test inside Ely
 

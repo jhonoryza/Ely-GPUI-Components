@@ -41,9 +41,9 @@ A window opens with a counter and a Press button. From a clone of the repository
 
 | Symptom | Cause and fix |
 | --- | --- |
-| Panic: `` ely: pass `ely_gpui_component::Assets` to `Application::with_assets` `` | `init` found no Ely assets. Start the app with `gpui_platform::application().with_assets(Assets)`. |
-| Panic: `ely: asset source failed` | The app's asset source returned an error. The panic carries it. |
-| Panic: `ely: embedded fonts failed to register` | GPUI's text system refused Ely's fonts. File a bug with the log. |
+| `init` error: `` ely: pass `ely_gpui_component::Assets` to `Application::with_assets` `` | `init` found no Ely assets. Start the app with `gpui_platform::application().with_assets(Assets)`. |
+| `init` error: `ely: asset source failed` | The app's asset source returned an error. The error carries it. |
+| `init` error: `ely: embedded fonts failed to register` | GPUI's text system refused Ely's fonts. File a bug with the log. |
 | Windows open with no text on macOS | `gpui_platform` lacks the `font-kit` feature. |
 | `mismatched types`, with the note ``there are multiple different versions of crate `gpui` in the dependency graph`` | `gpui` points at a revision other than Ely's. Use `1a28cff4b409169bac058bca40dfbfeb7621d19b`. |
 | `metal shader compilation failed` | Default features are off and Xcode's Metal compiler is missing. Keep `runtime_shaders`. |

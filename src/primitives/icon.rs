@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use gpui::{
     App, AssetSource, Global, Hsla, IntoElement, Radians, RenderOnce, SharedString, Transformation,
@@ -362,7 +362,7 @@ impl Icon {
         }
     }
 
-    /// Draws an SVG supplied by the application's asset source; a missing one fails at render.
+    /// Draws an SVG supplied by the application's asset source; a missing one logs and shows `broken`.
     pub fn from_path(path: impl Into<SharedString>) -> Self {
         Self {
             path: path.into(),
@@ -414,80 +414,67 @@ impl From<IconName> for Icon {
     }
 }
 
-/// App paths already found in the asset source.
+/// App paths already looked up, and whether the source held them.
 #[derive(Default)]
-struct FoundIcons(HashSet<SharedString>);
+struct FoundIcons(HashMap<SharedString, bool>);
 
 impl Global for FoundIcons {}
 
-fn ensure_found(source: &dyn AssetSource, path: &str) {
+fn found(source: &dyn AssetSource, path: &str) -> bool {
     match source.load(path) {
-        Ok(Some(_)) => {}
-        Ok(None) => panic!("ely: icon {path} is not in the app's asset source"),
-        Err(error) => panic!("ely: icon {path} failed to load: {error:#}"),
+        Ok(Some(_)) => true,
+        Ok(None) => {
+            log::error!("ely: icon {path} is not in the app's asset source");
+            false
+        }
+        Err(error) => {
+            log::error!("ely: icon {path} failed to load: {error:#}");
+            false
+        }
+    }
+}
+
+impl Icon {
+    /// What a missing app icon shows: a broken picture in danger.
+    fn broken(self, cx: &App) -> Self {
+        Self {
+            path: IconName::ImageOff.path().into(),
+            bundled: true,
+            color: Some(cx.theme().colors.danger),
+            hover: None,
+            ..self
+        }
     }
 }
 
 impl RenderOnce for Icon {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        if !self.bundled && !cx.default_global::<FoundIcons>().0.contains(&self.path) {
-            ensure_found(cx.asset_source().as_ref(), &self.path);
-            cx.default_global::<FoundIcons>()
+        let source = cx.asset_source().clone();
+        let missing = !self.bundled
+            && !*cx
+                .default_global::<FoundIcons>()
                 .0
-                .insert(self.path.clone());
-        }
+                .entry(self.path.clone())
+                .or_insert_with(|| found(source.as_ref(), &self.path));
+        let icon = if missing { self.broken(cx) } else { self };
         let theme = cx.theme();
-        let color = self.color.unwrap_or(theme.colors.fg);
+        let color = icon.color.unwrap_or(theme.colors.fg);
         svg()
-            .path(self.path)
-            .size(theme.icon_size(self.size))
+            .path(icon.path)
+            .size(theme.icon_size(icon.size))
             .flex_none()
             .text_color(color)
-            .when_some(self.hover, |svg, (group, hover)| {
+            .when_some(icon.hover, |svg, (group, hover)| {
                 svg.group_hover(group, |style| style.text_color(hover))
             })
-            .when(self.rotation.is_some() || self.scale != 1.0, |svg| {
+            .when(icon.rotation.is_some() || icon.scale != 1.0, |svg| {
                 svg.with_transformation(
-                    Transformation::rotate(self.rotation.unwrap_or(Radians(0.0)))
-                        .with_scaling(size(self.scale, self.scale)),
+                    Transformation::rotate(icon.rotation.unwrap_or(Radians(0.0)))
+                        .with_scaling(size(icon.scale, icon.scale)),
                 )
             })
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{Icon, IconName, ensure_found};
-
-    #[test]
-    fn every_icon_ships_in_the_bundle() {
-        for icon in IconName::ALL {
-            assert!(
-                crate::Assets::get(icon.path()).is_some(),
-                "{icon:?} missing at {}",
-                icon.path()
-            );
-        }
-    }
-
-    #[test]
-    fn an_app_path_draws_as_given_and_a_name_as_its_bundled_file() {
-        let custom = Icon::from_path("app-icons/mark.svg");
-        assert_eq!(custom.path.as_ref(), "app-icons/mark.svg");
-        assert!(!custom.bundled);
-        let named = Icon::new(IconName::Check);
-        assert_eq!(named.path.as_ref(), IconName::Check.path());
-        assert!(named.bundled);
-    }
-
-    #[test]
-    fn a_path_the_source_holds_is_found() {
-        ensure_found(&crate::Assets, IconName::Check.path());
-    }
-
-    #[test]
-    #[should_panic(expected = "ely: icon app-icons/missing.svg is not in the app's asset source")]
-    fn a_path_the_source_lacks_fails() {
-        ensure_found(&crate::Assets, "app-icons/missing.svg");
-    }
-}
+mod tests;

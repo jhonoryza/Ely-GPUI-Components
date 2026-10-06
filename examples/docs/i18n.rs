@@ -53,7 +53,7 @@ fn main() {
     gpui_platform::application()
         .with_assets(Assets)
         .run(|cx: &mut App| {
-            ely_gpui_component::init(cx);
+            ely_gpui_component::init(cx).expect("Ely failed to start");
             cx.set_global(
                 I18n::new("en-US")
                     .catalog(
