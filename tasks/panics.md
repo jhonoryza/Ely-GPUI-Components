@@ -1,0 +1,65 @@
+# Panics
+
+Started 2026-10-06. A report counted the crate's panics: handlers left out, keys missing from their lists, outside failures, asserts, `expect`, `unreachable!`. Measured in library code, tests aside: 158 `panic!`, 477 `assert!`, 23 `assert_eq!`/`assert_ne!`, 343 `expect`, 14 `unreachable!`.
+
+Rules, at the owner's word:
+
+- A handler a component needs is an argument of `new`. Leaving it out fails to compile, not at render.
+- A state live data or the outside world can reach (a key gone from a list that changed, a failed load) logs an error naming the owner and draws a visible state: nothing chosen, or an error line in the component's box. The app keeps running.
+- An assert on a caller's argument, or on a fact true by construction, stays, as std's do. One that runtime data or input can trip is fixed.
+
+Each item reads every site in its folders, fixes what the rules name, updates callers in the gallery, docs examples and tests, passes `scripts/check.sh`, and passes a codex review (`gpt-6.1-sol`, effort `high`) in a herdr split, five rounds at most. Then it commits and pushes.
+
+## Items
+
+- [x] P00 Policy in AGENTS.md
+- [ ] P01 Primitives — `src/primitives`, `src/lib.rs`, `src/assets.rs`
+- [ ] P02 Typography — `src/typography`
+- [ ] P03 Layout — `src/layout`
+- [ ] P04 Window & Shell — `src/shell`
+- [ ] P05 Buttons & Actions — `src/buttons`
+- [ ] P06 Forms — `src/forms`
+- [ ] P07 Navigation — `src/navigation`
+- [ ] P08 Menus — `src/menus`
+- [ ] P09 Overlays — `src/overlays`
+- [ ] P10 Feedback — `src/feedback`
+- [ ] P11 Loading & Motion — `src/motion`
+- [ ] P12 Data Display — `src/data_display`
+- [ ] P13 Lists & Trees — `src/lists`
+- [ ] P14 Tables — `src/tables`
+- [ ] P15 Charts — `src/charts`
+- [ ] P16 Finance — `src/finance`
+- [ ] P17 Code Editor — `src/editor`
+- [ ] P18 Terminal — `src/terminal`
+- [ ] P19 Git — `src/git`
+- [ ] P20 Debug — `src/debug`
+- [ ] P21 Documents — `src/documents`
+- [ ] P22 Collaboration — `src/collab`
+- [ ] P23 AI Chat — `src/chat`
+- [ ] P24 Agent — `src/agent`
+- [ ] P25 Generative — `src/generative`
+- [ ] P26 Media — `src/media`
+- [ ] P27 Files — `src/files`
+- [ ] P28 Messaging — `src/messaging`
+- [ ] P29 Mail — `src/mail`
+- [ ] P30 Calendar — `src/calendar`
+- [ ] P31 Project — `src/project`
+- [ ] P32 Canvas & Design — `src/canvas`
+- [ ] P33 DB & Dev Tools — `src/devtools`
+- [ ] P34 Dashboard — `src/dashboard`
+- [ ] P35 Settings — `src/settings`
+- [ ] P36 Account — `src/account`
+- [ ] P37 Onboarding — `src/onboarding`
+- [ ] P38 Interaction — `src/interaction`
+- [ ] P39 Theme — `src/theme`
+- [ ] P40 i18n & a11y — `src/i18n`
+- [ ] P41 Maps — `src/maps`
+- [ ] P42 Misc — `src/misc`
+- [ ] P43 Library Tooling — `src/tooling`
+- [ ] P44 Rendering — `src/rendering`
+- [ ] P45 Recount, acceptance table
+
+## Log
+
+One line per item: what changed, what stayed and why, review rounds.
+- P00: AGENTS.md holds the three rules; this list follows the PRD's chapters. Review: 2 rounds (round 1 found the runtime clause missing).

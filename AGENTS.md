@@ -47,6 +47,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - Borders use gpui's fixed-pixel helpers (`border_1` is 1px). Hairlines do not scale.
 - One component, one home. Duplicates point to it.
 - Fail fast. No silent fallbacks. Log state changes with `log`.
+- A handler a component needs is an argument of `new`, so leaving it out fails to compile. A state live data or the outside world can reach, a key gone from a list that changed or a failed load, logs an error naming the owner and draws a visible state, nothing chosen or an error line, and the app runs on. An assert on a caller's argument or on a fact true by construction stays; one that runtime data or input can trip is fixed. Chapters move to this as `tasks/panics.md` ticks them.
 - Files stay at or under 500 lines. Comments are one short line, and rare.
 - A repeating animation (spinner, breath, sweep) holds still under reduced motion instead of shortening, or it would spin at 1 ms a turn. An effect set off by a change (flash, shake, a bar that fades at rest) reads elapsed time through `motion::since_change` rather than restarting an animation id, so what it holds keeps its state: an animation's id passes to every descendant, and a new one rebuilds their focus, drags and hover.
 - `motion::duration()` honors reduced motion. Springs overshoot. gpui hands an easing's value to the whole animator unclamped, so `motion::spring` goes inside the animator, on only what may overshoot (`forms::Switch` springs its thumb's travel, not its colors).
