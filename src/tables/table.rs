@@ -191,11 +191,13 @@ impl RenderOnce for DataTable {
                 lines.push(Line::Detail { ix });
             }
         };
-        match self
-            .group_by
-            .as_ref()
-            .map(|key| index(key).unwrap_or_else(|| panic!("no column {key} to group by")))
-        {
+        match self.group_by.as_ref().and_then(|key| {
+            let col = index(key);
+            if col.is_none() {
+                log::error!("data table {id:?}: no column {key} to group by; ungrouped");
+            }
+            col
+        }) {
             Some(col) => {
                 for (name, members) in groups(&rows, &order, col) {
                     let shut = folded.contains(&name);

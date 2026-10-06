@@ -113,10 +113,10 @@ impl Spreadsheet {
             from.0 <= to.0 && from.1 <= to.1,
             "a merge runs from its top-left to its bottom-right"
         );
-        assert!(
-            to.0 < self.size.0 && to.1 < self.size.1,
-            "a merge stays inside the sheet"
-        );
+        if to.0 >= self.size.0 || to.1 >= self.size.1 {
+            log::error!("sheet: a merge to {to:?} leaves {:?}; skipped", self.size);
+            return self;
+        }
         self.merges.push(Merge { from, to });
         self
     }

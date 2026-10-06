@@ -11,6 +11,7 @@ use gpui::{
 
 mod clipboard;
 mod columns;
+mod stale;
 
 use super::{Column, DataTable, FilterBuilder, FilterRule, Row};
 use crate::{

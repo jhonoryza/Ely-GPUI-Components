@@ -130,16 +130,24 @@ impl PivotTable {
 
 impl RenderOnce for PivotTable {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let field = |name: &SharedString| {
-            self.fields
-                .iter()
-                .position(|known| known == name)
-                .unwrap_or_else(|| panic!("no field {name} to pivot by"))
-        };
-        let (down, across, value) = (field(&self.by.0), field(&self.by.1), field(&self.by.2));
-        let table = pivot(&self.records, down, across, value, self.how);
+        let field = |name: &SharedString| self.fields.iter().position(|known| known == name);
         let theme = cx.theme();
         let colors = &theme.colors;
+        let (Some(down), Some(across), Some(value)) =
+            (field(&self.by.0), field(&self.by.1), field(&self.by.2))
+        else {
+            let (down, across, value) = &self.by;
+            log::error!(
+                "pivot table: {down}, {across} or {value} is not among {:?}",
+                self.fields
+            );
+            return div()
+                .text_size(theme.text_size(TextSize::Sm))
+                .text_color(colors.danger)
+                .child(format!("No field to pivot by {down}, {across} and {value}"))
+                .into_any_element();
+        };
+        let table = pivot(&self.records, down, across, value, self.how);
         let decimals = self.decimals;
         let reads = |figure: Option<f64>| {
             figure.map_or("—".to_string(), |figure| {
@@ -205,6 +213,7 @@ impl RenderOnce for PivotTable {
             .child(head)
             .children(body)
             .child(totals)
+            .into_any_element()
     }
 }
 

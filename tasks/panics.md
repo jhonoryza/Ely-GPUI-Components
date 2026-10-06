@@ -28,7 +28,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P11 Loading & Motion — `src/motion`
 - [x] P12 Data Display — `src/data_display`
 - [x] P13 Lists & Trees — `src/lists`
-- [ ] P14 Tables — `src/tables`
+- [x] P14 Tables — `src/tables`
 - [ ] P15 Charts — `src/charts`
 - [ ] P16 Finance — `src/finance`
 - [ ] P17 Code Editor — `src/editor`
@@ -78,3 +78,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P11: a buffer at or behind the value draws none; `slide` was fixed in P05. Kept: values in 0..=1, segment and skeleton counts (one value each), builder misuse, reorder's permutation. Review: 1 round.
 - P12: a featured column past the columns features none; a gauge past its scale pegs; usage parts past the total fill it and repeat hues past eight; stars above max log and fill. Kept: one-value contracts, a comparison row's shape, construction. Review: 3 rounds (round 2 met an edit that had not applied).
 - P13: a directory listing's selected name gone from its entries picks none. Kept: one-value contracts; activation, folder split, single-select sections and tree rows hold by construction. Review: 1 round.
+- P14: a pivot field missing from its data draws an error line; a gone group-by column leaves the table ungrouped; a merge past the sheet is skipped; each logs. Kept: row shapes of one snapshot, one-value contracts, builder misuse, construction. Review: 1 round.
