@@ -69,10 +69,7 @@ impl RenderOnce for SegmentedControl {
             .iter()
             .map(|(value, ..)| value.clone())
             .collect();
-        let chosen = values
-            .iter()
-            .position(|value| *value == self.selected)
-            .unwrap_or_else(|| panic!("segmented control has no segment {}", self.selected));
+        let chosen = values.iter().position(|value| *value == self.selected);
         let (state, marker) = slide(self.id.clone(), &values, &self.selected, window, cx);
         let scroll = window
             .use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| ScrollHandle::new())
@@ -133,7 +130,7 @@ impl RenderOnce for SegmentedControl {
             .into_iter()
             .enumerate()
             .map(|(ix, (value, label, icon))| {
-                let on = ix == chosen;
+                let on = Some(ix) == chosen;
                 let fg = if on { colors.fg } else { colors.fg_muted };
                 let (focus, reveal) = stops.remove(0);
                 let (named, labeled) = (value.clone(), value.clone());

@@ -3,7 +3,7 @@ use gpui::{
     Render, Styled, TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
-use super::{Button, ToggleButton, ToggleItem};
+use super::{Button, SegmentedControl, ToggleButton, ToggleItem};
 use crate::{
     primitives::{FocusNext, FocusScope},
     theme::Theme,
@@ -97,4 +97,32 @@ fn a_disabled_toggle_ignores_clicks(cx: &mut TestAppContext) {
     cx.run_until_parked();
     cx.simulate_click(point(px(4.0), px(4.0)), Modifiers::none());
     assert_eq!(view.read_with(cx, |toggles, _| toggles.presses), 1);
+}
+
+/// Segments whose chosen value left with a change of list.
+struct Stale;
+
+impl Render for Stale {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div().w(px(300.0)).child(
+            SegmentedControl::new("views", "gone")
+                .segment("list", "List", None)
+                .segment("grid", "Grid", None),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_choice_missing_from_its_segments_marks_none(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Stale);
+    for _ in 0..3 {
+        cx.run_until_parked();
+        cx.update(|window, _| window.refresh());
+    }
+    assert!(cx.debug_bounds("segment list").is_some());
+    assert!(
+        cx.debug_bounds("segment-thumb").is_none(),
+        "no thumb marks a choice"
+    );
 }

@@ -19,7 +19,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P02 Typography — `src/typography`
 - [x] P03 Layout — `src/layout`
 - [x] P04 Window & Shell — `src/shell`
-- [ ] P05 Buttons & Actions — `src/buttons`
+- [x] P05 Buttons & Actions — `src/buttons`
 - [ ] P06 Forms — `src/forms`
 - [ ] P07 Navigation — `src/navigation`
 - [ ] P08 Menus — `src/menus`
@@ -69,3 +69,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P02: `Link::new` takes its handler; `system_zone` logs once and reads as jiff's unknown zone, which `datetime` marks UTC; an oversized highlight query logs and marks nothing; a cut line's paint fault logs. Kept: caller contracts (speed, digits, step, keystroke, heading level, pattern) and the exponent parse. Review: 3 rounds.
 - P03: `PaneGroup` leaves a gone or last pane and logs (`split` returns `Option`); a stale split path sets nothing; `SplitPane` splits evenly when sizes lag or fail, seeds by the owner's raw sizes, and drops a drag over another pane count; masonry sorts with `total_cmp`. Kept: dock ids (panels never leave), one-value contracts, pane-id overflow, workspace JSON. Review: 2 rounds.
 - P04: no change. Kept: splash progress and column count (caller contracts), the objc class under `Once`, `Tray::pick` (items fixed at creation). Review: 1 round.
+- P05: a `SegmentedControl` whose choice left its segments marks none; the cause, `motion::slide`, logs and returns no marker (P11 inherits it). Kept: one-value contracts (group and quick-action counts, toggle label or icon, share payload). Review: 1 round.
