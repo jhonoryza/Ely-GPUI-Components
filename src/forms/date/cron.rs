@@ -2,7 +2,7 @@ use gpui::{
     App, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled,
     Window, div,
 };
-use jiff::civil::DateTime;
+use jiff::{civil::DateTime, tz::TimeZone};
 
 use super::{
     super::{Input, TextInput},
@@ -11,6 +11,7 @@ use super::{
 use crate::{
     buttons::{Button, ButtonVariant},
     theme::{ActiveTheme, ControlSize, TextSize},
+    typography::format::datetime,
 };
 
 const PRESETS: [(&str, &str); 5] = [
@@ -54,11 +55,29 @@ impl CronEditor {
     }
 }
 
+/// A run's time; in the system zone it goes through `datetime`, which says UTC there.
+fn shown(at: DateTime, zone: Option<&TimeZone>) -> String {
+    const PATTERN: &str = "%a %b %-d, %H:%M";
+    let Some(zone) = zone else {
+        return at.strftime(PATTERN).to_string();
+    };
+    let zoned = at
+        .to_zoned(zone.clone())
+        .expect("a run within five years has a zone time");
+    datetime(zoned.timestamp(), zone, PATTERN).expect("the pattern is fixed")
+}
+
 impl RenderOnce for CronEditor {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let text = self.state.read(cx).text().trim().to_string();
         let rule = (!text.is_empty()).then(|| CronRule::parse(&text));
-        let now = self.now.unwrap_or_else(|| zoned_now().datetime());
+        let (now, zone) = match self.now {
+            Some(now) => (now, None),
+            None => {
+                let zoned = zoned_now();
+                (zoned.datetime(), Some(zoned.time_zone().clone()))
+            }
+        };
         let theme = cx.theme();
         let colors = &theme.colors;
         let presets = PRESETS.iter().enumerate().map(|(ix, (label, preset))| {
@@ -83,10 +102,8 @@ impl RenderOnce for CronEditor {
                 let runs = if next.is_empty() {
                     "No run in the next five years.".to_string()
                 } else {
-                    let times: Vec<String> = next
-                        .iter()
-                        .map(|at| at.strftime("%a %b %-d, %H:%M").to_string())
-                        .collect();
+                    let times: Vec<String> =
+                        next.iter().map(|at| shown(*at, zone.as_ref())).collect();
                     format!("Next: {}", times.join(" \u{00b7} "))
                 };
                 (rule.describe(), colors.fg, Some(runs))
@@ -115,5 +132,23 @@ impl RenderOnce for CronEditor {
                     .text_color(colors.fg_muted)
                     .child(runs)
             }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use jiff::{civil::date, tz::TimeZone};
+
+    use super::shown;
+
+    #[test]
+    fn a_run_in_the_unknown_zone_says_utc() {
+        let at = date(2026, 10, 6).at(9, 30, 0, 0);
+        assert_eq!(shown(at, None), "Tue Oct 6, 09:30");
+        assert_eq!(shown(at, Some(&TimeZone::UTC)), "Tue Oct 6, 09:30");
+        assert_eq!(
+            shown(at, Some(&TimeZone::unknown())),
+            "Tue Oct 6, 09:30 UTC"
+        );
     }
 }

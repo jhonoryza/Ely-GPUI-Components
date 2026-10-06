@@ -266,12 +266,18 @@ impl TextInput {
         self.replace(self.selection.clone(), text, false, cx);
     }
 
+    /// Selects `range`; one outside the text or inside a character is logged and left.
     pub fn select(&mut self, range: Range<usize>, cx: &mut Context<Self>) {
-        assert!(
-            range.start <= range.end && range.end <= self.text.len(),
-            "selection {range:?} is outside {} bytes",
-            self.text.len()
-        );
+        let fits = range.start <= range.end
+            && self.text.is_char_boundary(range.start)
+            && self.text.is_char_boundary(range.end);
+        if !fits {
+            log::error!(
+                "text input: no selection {range:?} in {} bytes",
+                self.text.len()
+            );
+            return;
+        }
         self.selection = range;
         self.reversed = false;
         self.restart_blink(cx);

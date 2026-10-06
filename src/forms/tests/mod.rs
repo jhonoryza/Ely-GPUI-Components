@@ -2,6 +2,7 @@ mod choices;
 mod colors;
 mod dates;
 mod other;
+mod stale;
 mod structure;
 mod tags;
 mod upload;

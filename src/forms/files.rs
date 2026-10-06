@@ -120,11 +120,12 @@ fn files(multiple: bool) -> PathPromptOptions {
     }
 }
 
+/// The file's name, or the whole path for a root such as `C:\`.
 fn file_name(path: &Path) -> String {
-    path.file_name()
-        .expect("a chosen file has a name")
-        .to_string_lossy()
-        .into_owned()
+    match path.file_name() {
+        Some(name) => name.to_string_lossy().into_owned(),
+        None => path.display().to_string(),
+    }
 }
 
 /// Chosen files in a field. A click opens the dialog; files dropped on it count too.
@@ -347,7 +348,13 @@ impl RenderOnce for DropZone {
 mod tests {
     use std::fs;
 
-    use super::{PICTURES, dropped, taken};
+    use super::{PICTURES, dropped, file_name, taken};
+
+    #[test]
+    fn a_root_shows_its_whole_path() {
+        assert_eq!(file_name(std::path::Path::new("/")), "/");
+        assert_eq!(file_name(std::path::Path::new("/notes/plan.md")), "plan.md");
+    }
 
     #[test]
     fn drops_take_files_and_refuse_folders_extras_and_nothing() {

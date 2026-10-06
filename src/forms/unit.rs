@@ -28,7 +28,7 @@ impl UnitInput {
     ) -> Self {
         let units: Vec<SharedString> = units.into_iter().map(Into::into).collect();
         let unit = unit.into();
-        assert!(units.contains(&unit), "unit {unit} is not among {units:?}");
+        assert!(!units.is_empty(), "unit input has no units");
         Self {
             field: NumberInput::new(id, value),
             units,
@@ -65,12 +65,13 @@ impl UnitInput {
 impl RenderOnce for UnitInput {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
-        let position = self
-            .units
-            .iter()
-            .position(|unit| *unit == self.unit)
-            .expect("checked at construction");
-        let next = self.units[(position + 1) % self.units.len()].clone();
+        let next = match self.units.iter().position(|unit| *unit == self.unit) {
+            Some(at) => self.units[(at + 1) % self.units.len()].clone(),
+            None => {
+                log::error!("unit input: {} is not among {:?}", self.unit, self.units);
+                self.units[0].clone()
+            }
+        };
         let on_unit = self.on_unit;
         let hover = theme.colors.hover;
         let unit = div()
