@@ -78,7 +78,7 @@ impl RenderOnce for DescriptionList {
                                     .when(stacked, |value| value.min_w_0())
                                     .when(!stacked, |value| value.min_w(theme.label_width() * 0.5))
                                     .text_color(colors.fg)
-                                    .child(div().min_w_0().child(value)),
+                                    .child(div().flex_1().min_w_0().child(value)),
                             )
                     }),
             )
