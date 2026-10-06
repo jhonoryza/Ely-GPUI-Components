@@ -318,15 +318,9 @@ impl Tour {
         at: usize,
         on_close: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
-        let steps: Vec<TourStep> = steps.into_iter().collect();
-        assert!(
-            at < steps.len(),
-            "step {at} is past the last of {}",
-            steps.len()
-        );
         Self {
             id: id.into(),
-            steps,
+            steps: steps.into_iter().collect(),
             at,
             on_step: None,
             on_close: Rc::new(on_close),
@@ -361,6 +355,11 @@ impl RenderOnce for Tour {
                 }
             })
         };
+        if at >= count {
+            log::error!("tour {:?}: step {at} of {count} is gone; closing", self.id);
+            window.defer(cx, move |window, cx| close(window, cx));
+            return div().into_any_element();
+        }
         let (back, next) = (at.checked_sub(1), (at + 1 < count).then_some(at + 1));
         let current = self.steps[at].clone();
         let turn = motion::changes((self.id.clone(), "at"), at, window, cx);

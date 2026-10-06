@@ -96,15 +96,9 @@ impl Lightbox {
         at: usize,
         on_close: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
-        let slides: Vec<Slide> = slides.into_iter().collect();
-        assert!(
-            slides.is_empty() || at < slides.len(),
-            "slide {at} is past the last of {}",
-            slides.len()
-        );
         Self {
             id: id.into(),
-            slides,
+            slides: slides.into_iter().collect(),
             at,
             on_step: None,
             on_close: Rc::new(on_close),
@@ -137,6 +131,14 @@ impl RenderOnce for Lightbox {
         };
         if count == 0 {
             log::info!("lightbox {:?}: no pictures left", self.id);
+            window.defer(cx, move |window, cx| close(window, cx));
+            return div().into_any_element();
+        }
+        if at >= count {
+            log::error!(
+                "lightbox {:?}: slide {at} of {count} is gone; closing",
+                self.id
+            );
             window.defer(cx, move |window, cx| close(window, cx));
             return div().into_any_element();
         }

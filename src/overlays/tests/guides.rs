@@ -352,3 +352,21 @@ fn left_from_back_keeps_the_tour_keys(cx: &mut TestAppContext) {
     press("right", cx);
     assert_eq!(state(&view, cx).1, 1);
 }
+
+#[gpui::test]
+fn a_lightbox_or_tour_past_its_last_closes(cx: &mut TestAppContext) {
+    let (view, cx) = guides(cx);
+    for open in [Open::Lightbox, Open::Tour] {
+        view.update(cx, |guides, cx| {
+            guides.open = Some(open);
+            guides.at = 5;
+            cx.notify();
+        });
+        settle(cx);
+        assert_eq!(
+            view.read_with(cx, |guides, _| guides.open),
+            None,
+            "{open:?}"
+        );
+    }
+}
