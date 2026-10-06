@@ -65,6 +65,8 @@ const EN: &[(&str, &str)] = &[
     ("pagination.previous", "Previous page"),
     ("pagination.next", "Next page"),
     ("pagination.jump", "Go to"),
+    ("signature.here", "Sign here"),
+    ("signature.clear", "Clear"),
 ];
 
 const ZH_CN: &[(&str, &str)] = &[
@@ -128,6 +130,8 @@ const ZH_CN: &[(&str, &str)] = &[
     ("pagination.previous", "上一页"),
     ("pagination.next", "下一页"),
     ("pagination.jump", "跳至"),
+    ("signature.here", "在此签名"),
+    ("signature.clear", "清除"),
 ];
 
 /// Ely's own message for `key` in `locale`, English for a locale Ely does not ship; fails on an unknown key.

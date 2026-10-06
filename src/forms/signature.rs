@@ -9,6 +9,7 @@ use gpui::{
 
 use crate::{
     buttons::{Button, ButtonVariant},
+    i18n,
     layout::seeded::use_seeded,
     theme::{ActiveTheme, ControlSize, Radius, TextSize},
 };
@@ -238,7 +239,9 @@ impl RenderOnce for SignaturePad {
                     .text_size(theme.text_size(TextSize::Sm))
                     .text_color(colors.fg_subtle)
                     .child("×")
-                    .when(empty, |line| line.child("Sign here")),
+                    .when(empty, |line| {
+                        line.child(i18n::text(cx, "signature.here", &[]))
+                    }),
             )
             .child(
                 canvas(
@@ -262,7 +265,7 @@ impl RenderOnce for SignaturePad {
             .gap_1()
             .child(pad)
             .child(
-                Button::new((self.id, "clear"), "Clear")
+                Button::new((self.id, "clear"), i18n::text(cx, "signature.clear", &[]))
                     .size(ControlSize::Sm)
                     .variant(ButtonVariant::Ghost)
                     .disabled(empty)
