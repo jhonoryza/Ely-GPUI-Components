@@ -22,7 +22,7 @@ fn shortest(heights: &[Pixels]) -> usize {
     heights
         .iter()
         .enumerate()
-        .min_by(|a, b| a.1.partial_cmp(b.1).expect("heights are finite"))
+        .min_by(|a, b| f32::from(*a.1).total_cmp(&f32::from(*b.1)))
         .map(|(ix, _)| ix)
         .expect("at least one column")
 }
@@ -181,6 +181,11 @@ mod tests {
     use gpui::px;
 
     use super::{columns_for, fit, shortest};
+
+    #[test]
+    fn a_nan_height_never_stops_the_shortest_column() {
+        assert_eq!(shortest(&[px(f32::NAN), px(4.0), px(2.0)]), 2);
+    }
 
     #[test]
     fn what_fits_sits_centered() {

@@ -118,16 +118,23 @@ impl PaneLayout {
         true
     }
 
-    fn set_sizes(&mut self, path: &[usize], shares: &[f32]) {
+    /// Sets the split at `path`; false if the tree no longer has it.
+    fn set_sizes(&mut self, path: &[usize], shares: &[f32]) -> bool {
         let PaneLayout::Split {
             sizes, children, ..
         } = self
         else {
-            panic!("pane layout path points past a leaf");
+            return false;
         };
         match path.split_first() {
-            None => *sizes = shares.to_vec(),
-            Some((ix, rest)) => children[*ix].set_sizes(rest, shares),
+            None if shares.len() == sizes.len() => {
+                *sizes = shares.to_vec();
+                true
+            }
+            None => false,
+            Some((ix, rest)) => children
+                .get_mut(*ix)
+                .is_some_and(|child| child.set_sizes(rest, shares)),
         }
     }
 }
@@ -162,21 +169,30 @@ impl PaneGroup {
         out
     }
 
-    /// Opens a new pane beside `pane` and focuses it.
-    pub fn split(&mut self, pane: PaneId, axis: Axis, cx: &mut Context<Self>) -> PaneId {
+    /// Opens a new pane beside `pane` and focuses it; `None` if `pane` is gone.
+    pub fn split(&mut self, pane: PaneId, axis: Axis, cx: &mut Context<Self>) -> Option<PaneId> {
         let new = self.next;
-        assert!(self.root.split(pane, axis, new), "no pane {pane} to split");
+        if !self.root.split(pane, axis, new) {
+            log::error!("pane group: no pane {pane} to split");
+            return None;
+        }
         self.next = new.checked_add(1).expect("pane ids exhausted");
         self.focused = new;
         log::info!("pane group: split {pane} -> {new} ({axis:?})");
         cx.notify();
-        new
+        Some(new)
     }
 
-    /// Panics on the last pane; its close button is disabled.
+    /// Closes `pane`; the last pane, or one already gone, stays as it is.
     pub fn close(&mut self, pane: PaneId, cx: &mut Context<Self>) {
-        assert!(self.panes().len() > 1, "cannot close the last pane");
-        assert!(self.root.close(pane), "no pane {pane} to close");
+        if self.panes().len() < 2 {
+            log::error!("pane group: pane {pane} is the last; it stays");
+            return;
+        }
+        if !self.root.close(pane) {
+            log::error!("pane group: no pane {pane} to close");
+            return;
+        }
         if self.focused == pane {
             self.focused = self.panes()[0];
         }
@@ -185,6 +201,10 @@ impl PaneGroup {
     }
 
     pub fn focus(&mut self, pane: PaneId, cx: &mut Context<Self>) {
+        if !self.panes().contains(&pane) {
+            log::error!("pane group: no pane {pane} to focus");
+            return;
+        }
         self.focused = pane;
         cx.notify();
     }
@@ -225,7 +245,9 @@ impl PaneGroup {
                 let mut split = SplitPane::new(gpui::SharedString::from(key), *axis, min)
                     .sizes(sizes)
                     .on_resize(cx.listener(move |group: &mut Self, shares: &[f32], _, _| {
-                        group.root.set_sizes(&at, shares)
+                        if !group.root.set_sizes(&at, shares) {
+                            log::error!("pane group: no split at {at:?} for {shares:?}");
+                        }
                     }));
                 for (ix, child) in children.iter().enumerate() {
                     let mut child_path = path.clone();
@@ -410,6 +432,16 @@ mod tests {
         let mut kept = three(vec![1.0, 3.0, 4.0]);
         assert!(kept.close(3));
         assert_eq!(sizes(&kept), [0.25, 0.75]);
+    }
+
+    #[test]
+    fn a_stale_split_path_sets_nothing() {
+        let mut root = PaneLayout::Pane(1);
+        root.split(1, Axis::Horizontal, 2);
+        assert!(!root.set_sizes(&[0], &[0.5, 0.5]), "a leaf");
+        assert!(!root.set_sizes(&[4], &[0.5, 0.5]), "past the children");
+        assert!(!root.set_sizes(&[], &[1.0]), "a share too few");
+        assert!(root.set_sizes(&[], &[0.3, 0.7]));
     }
 
     #[test]

@@ -137,25 +137,42 @@ impl RenderOnce for SplitPane {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let count = self.panes.len();
         assert!(count >= 2, "split pane {:?} needs two panes", self.id);
-        let weights = self.sizes.unwrap_or_else(|| vec![1.0; count]);
-        assert_eq!(
-            weights.len(),
-            count,
-            "split pane {:?}: one size per pane",
-            self.id
-        );
-        let total = check_weights(&weights)
-            .unwrap_or_else(|error| panic!("split pane {:?}: {error:#}", self.id));
-        let normalized: Vec<f32> = weights.iter().map(|weight| weight / total).collect();
-        let fractions = use_seeded(self.id.clone(), normalized, window, cx);
+        let even = vec![1.0 / count as f32; count];
+        let normalized = match self.sizes.clone() {
+            None => even,
+            Some(weights) if weights.len() != count => {
+                log::error!(
+                    "split pane {:?}: {} sizes for {count} panes; even shares",
+                    self.id,
+                    weights.len()
+                );
+                even
+            }
+            Some(weights) => match check_weights(&weights) {
+                Ok(total) => weights.iter().map(|weight| weight / total).collect(),
+                Err(error) => {
+                    log::error!("split pane {:?}: {error:#}; even shares", self.id);
+                    even
+                }
+            },
+        };
+        let seed = (self.sizes, normalized);
+        let fractions = use_seeded(self.id.clone(), seed, window, cx);
         let owner = fractions.entity_id();
         let on_resize = self.on_resize;
-        let shares = fractions.read(cx).value.clone();
+        let shares = fractions.read(cx).value.1.clone();
         let (axis, min) = (self.axis, self.min);
         let mut root = div().id(self.id).size_full().flex().on_drag_move(
             move |event: &DragMoveEvent<DividerDrag>, window, cx| {
                 let drag = event.drag(cx);
                 if drag.owner != owner {
+                    return;
+                }
+                if drag.start.len() != count {
+                    log::error!(
+                        "split pane: a drag over {} panes ends at {count}",
+                        drag.start.len()
+                    );
                     return;
                 }
                 let (along, extent) = match axis {
@@ -179,7 +196,7 @@ impl RenderOnce for SplitPane {
                     report(&next, window, cx);
                 }
                 fractions.update(cx, |shares, cx| {
-                    shares.value = next;
+                    shares.value.1 = next;
                     cx.notify();
                 });
             },

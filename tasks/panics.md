@@ -17,7 +17,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P00 Policy in AGENTS.md
 - [x] P01 Primitives — `src/primitives`, `src/lib.rs`, `src/assets.rs`
 - [x] P02 Typography — `src/typography`
-- [ ] P03 Layout — `src/layout`
+- [x] P03 Layout — `src/layout`
 - [ ] P04 Window & Shell — `src/shell`
 - [ ] P05 Buttons & Actions — `src/buttons`
 - [ ] P06 Forms — `src/forms`
@@ -67,3 +67,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P00: AGENTS.md holds the three rules; this list follows the PRD's chapters. Review: 2 rounds (round 1 found the runtime clause missing).
 - P01: `init` returns `anyhow::Result`; a missing app icon logs once and shows `Icon::broken`. Kept: `layer.rs` expects (gpui's element order), `checked_ratio` (one value, the caller's). Review: 2 rounds.
 - P02: `Link::new` takes its handler; `system_zone` logs once and reads as jiff's unknown zone, which `datetime` marks UTC; an oversized highlight query logs and marks nothing; a cut line's paint fault logs. Kept: caller contracts (speed, digits, step, keystroke, heading level, pattern) and the exponent parse. Review: 3 rounds.
+- P03: `PaneGroup` leaves a gone or last pane and logs (`split` returns `Option`); a stale split path sets nothing; `SplitPane` splits evenly when sizes lag or fail, seeds by the owner's raw sizes, and drops a drag over another pane count; masonry sorts with `total_cmp`. Kept: dock ids (panels never leave), one-value contracts, pane-id overflow, workspace JSON. Review: 2 rounds.
