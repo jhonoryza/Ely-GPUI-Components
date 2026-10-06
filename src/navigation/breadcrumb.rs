@@ -38,13 +38,16 @@ impl Crumb {
     /// The level's neighbors, itself among them; a click lists them.
     pub fn siblings(mut self, siblings: impl IntoIterator<Item = Choice>) -> Self {
         self.siblings = siblings.into_iter().collect();
-        assert!(
-            self.siblings
-                .iter()
-                .any(|sibling| sibling.value == self.value),
-            "crumb {} is not among its siblings",
-            self.value
-        );
+        if !self
+            .siblings
+            .iter()
+            .any(|sibling| sibling.value == self.value)
+        {
+            log::error!(
+                "crumb {} is not among its siblings; none marked",
+                self.value
+            );
+        }
         self
     }
 }

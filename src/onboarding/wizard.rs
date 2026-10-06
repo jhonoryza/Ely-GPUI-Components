@@ -158,6 +158,8 @@ impl RenderOnce for OnboardingWizard {
                 .iter()
                 .map(|step| Choice::new(step.key.clone(), step.title.clone())),
             current,
+            move |to, window, cx| on_step(to, window, cx),
+            move |window, cx| on_finish(window, cx),
         )
         .headless()
         .ready(self.ready)
@@ -168,9 +170,7 @@ impl RenderOnce for OnboardingWizard {
                 .gap_5()
                 .child(words)
                 .children(self.content),
-        )
-        .on_step(move |to, window, cx| on_step(to, window, cx))
-        .on_finish(move |window, cx| on_finish(window, cx));
+        );
         div()
             .flex()
             .flex_col()

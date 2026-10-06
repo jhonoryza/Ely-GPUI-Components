@@ -130,18 +130,22 @@ impl RenderOnce for CommandPalette {
         let query = input.read(cx).text().trim().to_string();
         let groups = if query.is_empty() {
             let find = |value: &SharedString| {
-                self.groups
+                let found = self
+                    .groups
                     .iter()
                     .flat_map(|(_, commands)| commands)
-                    .find(|command| command.value == *value)
-                    .unwrap_or_else(|| panic!("recent command {value} is not in the palette"))
+                    .find(|command| command.value == *value);
+                if found.is_none() {
+                    log::error!("command palette {:?}: recent {value} is gone", self.id);
+                }
+                found
             };
             let recent = Group {
                 title: Some(i18n::text(cx, "palette.recent", &[])),
                 rows: self
                     .recent
                     .iter()
-                    .map(|value| find(value).row(Vec::new(), cx))
+                    .filter_map(|value| Some(find(value)?.row(Vec::new(), cx)))
                     .collect(),
             };
             iter::once(recent)

@@ -117,3 +117,28 @@ fn the_jump_field_holds_the_last_page_at_every_size(cx: &mut TestAppContext) {
         );
     }
 }
+
+/// Pages the owner has not caught up with: `page` of `pages`.
+struct Behind(usize, usize);
+
+impl Render for Behind {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div().child(Pagination::new("behind", self.0, self.1).jump())
+    }
+}
+
+#[gpui::test]
+fn a_page_past_the_last_or_no_pages_marks_none(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Behind(7, 3));
+    cx.run_until_parked();
+    assert!(cx.debug_bounds("pagination-page-3").is_some());
+    assert!(cx.debug_bounds("pagination-page-7").is_none());
+    let (_, cx) = cx.add_window_view(|_, _| Behind(1, 0));
+    cx.run_until_parked();
+    assert!(cx.debug_bounds("pagination-page-1").is_none());
+    assert!(
+        cx.debug_bounds("number-root").is_none(),
+        "no field to jump with"
+    );
+}

@@ -29,11 +29,7 @@ impl BackForwardNavigation {
         current: usize,
     ) -> Self {
         let places: Vec<Choice> = places.into_iter().collect();
-        assert!(
-            current < places.len(),
-            "place {current} is past the last of {}",
-            places.len()
-        );
+        assert!(!places.is_empty(), "history has no places");
         Self {
             id: id.into(),
             places,
@@ -52,6 +48,14 @@ impl BackForwardNavigation {
 impl RenderOnce for BackForwardNavigation {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let (current, last) = (self.current, self.places.len() - 1);
+        let valid = current <= last;
+        if !valid {
+            log::error!(
+                "history {:?}: place {current} of {}; none marked",
+                self.id,
+                last + 1
+            );
+        }
         let go: OnGo = {
             let (id, on_go) = (self.id.clone(), self.on_go);
             Rc::new(move |to, window, cx| {
@@ -96,7 +100,7 @@ impl RenderOnce for BackForwardNavigation {
                     .size(ControlSize::Sm)
                     .variant(ButtonVariant::Ghost)
                     .tooltip("Back")
-                    .disabled(current == 0)
+                    .disabled(!valid || current == 0)
                     .on_click(move |_, window, cx| back(current - 1, window, cx)),
             )
             .child(
@@ -104,7 +108,7 @@ impl RenderOnce for BackForwardNavigation {
                     .size(ControlSize::Sm)
                     .variant(ButtonVariant::Ghost)
                     .tooltip("Forward")
-                    .disabled(current == last)
+                    .disabled(!valid || current == last)
                     .on_click(move |_, window, cx| ahead(current + 1, window, cx)),
             )
             .child(list)

@@ -163,3 +163,20 @@ fn a_right_click_names_its_tab_and_keeps_the_choice(cx: &mut TestAppContext) {
     );
     assert_eq!(chosen, "c");
 }
+
+#[gpui::test]
+fn tabs_whose_choice_closed_mark_none_and_arrows_start_at_the_ends(cx: &mut TestAppContext) {
+    setup(cx);
+    let (view, cx) = cx.add_window_view(|_, _| Strip {
+        chosen: "gone".into(),
+    });
+    cx.update(|window, cx| window.focus_next(cx));
+    cx.simulate_keystrokes("right");
+    assert_eq!(view.read_with(cx, |view, _| view.chosen.clone()), "a");
+    view.update(cx, |view, cx| {
+        view.chosen = "gone".into();
+        cx.notify();
+    });
+    cx.simulate_keystrokes("left");
+    assert_eq!(view.read_with(cx, |view, _| view.chosen.clone()), "c");
+}

@@ -108,10 +108,14 @@ pub fn steps(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 probe(
                     "wizard",
                     div().w(px(560.0)).child(
-                        Wizard::new("wizard", setup_steps(), now)
-                            .content(div().h(px(72.0)).child(Paragraph::new(body)))
-                            .on_step(move |to, _, cx| set(&walk, to, cx))
-                            .on_finish(move |_, cx| set(&finish, true, cx)),
+                        Wizard::new(
+                            "wizard",
+                            setup_steps(),
+                            now,
+                            move |to, _, cx| set(&walk, to, cx),
+                            move |_, cx| set(&finish, true, cx),
+                        )
+                        .content(div().h(px(72.0)).child(Paragraph::new(body))),
                     ),
                 ),
                 cx,

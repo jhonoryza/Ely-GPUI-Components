@@ -6,7 +6,7 @@ Rules, at the owner's word:
 
 - A handler a component needs is an argument of `new`. Leaving it out fails to compile, not at render.
 - A state live data or the outside world can reach (a key gone from a list that changed, a failed load) logs an error naming the owner and draws a visible state: nothing chosen, or an error line in the component's box. The app keeps running.
-- An assert on a caller's argument, or on a fact true by construction, stays, as std's do. One that runtime data or input can trip is fixed. Reachable means what a component meets on its own: input inside it, its own later state, a call to the outside, or two arguments that agree at one time and not the next (a selected key and its list). One value checked against itself (a ratio above zero) is the caller's contract.
+- An assert on a caller's argument, or on a fact true by construction, stays, as std's do. One that runtime data or input can trip is fixed. Reachable means what a component meets on its own: input inside it, its own later state, a call to the outside, or two arguments that agree at one time and not the next (a selected key and its list). One value checked against itself (a ratio above zero) is the caller's contract. A current index or key checked against its list is two arguments even in one call: an owner that rebuilds from live data reaches the mismatch. A list's own emptiness is one value.
 - An unknown system time zone logs once and reads as UTC; every time shown in the system zone goes through `format::datetime`, which says "UTC" then. Each item routes its own times there.
 - A paint call that fails inside gpui (glyphs, the sprite atlas) logs an error naming the component and skips that draw; drawing an error state would meet the same fault.
 
@@ -21,7 +21,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P04 Window & Shell — `src/shell`
 - [x] P05 Buttons & Actions — `src/buttons`
 - [x] P06 Forms — `src/forms`
-- [ ] P07 Navigation — `src/navigation`
+- [x] P07 Navigation — `src/navigation`
 - [ ] P08 Menus — `src/menus`
 - [ ] P09 Overlays — `src/overlays`
 - [ ] P10 Feedback — `src/feedback`
@@ -71,3 +71,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P04: no change. Kept: splash progress and column count (caller contracts), the objc class under `Once`, `Tray::pick` (items fixed at creation). Review: 1 round.
 - P05: a `SegmentedControl` whose choice left its segments marks none; the cause, `motion::slide`, logs and returns no marker (P11 inherits it). Kept: one-value contracts (group and quick-action counts, toggle label or icon, share payload). Review: 1 round.
 - P06: a root path shows whole; `TextInput::select` logs a range past the text or inside a character; the text element logs shaping and paint faults; a unit gone from its list logs; cron runs in the system zone go through `datetime`. Kept: empty choice lists (the owner disables, as AGENTS.md says), one-value contracts, facts by construction. Review: 2 rounds.
+- P07: `Wizard::new` takes `on_step` and `on_finish`; tabs, crumbs, history, steps, wizards and pagination with a place their list no longer holds log and mark none; an empty or all-disabled tab strip ignores arrows; a gone recent command is skipped. Kept: non-empty lists, disabled-free switcher and search items, row index parse. Review: 3 rounds.

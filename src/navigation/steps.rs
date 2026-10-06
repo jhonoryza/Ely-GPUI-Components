@@ -33,15 +33,9 @@ impl Steps {
         steps: impl IntoIterator<Item = Choice>,
         current: usize,
     ) -> Self {
-        let steps: Vec<Choice> = steps.into_iter().collect();
-        assert!(
-            current < steps.len(),
-            "step {current} is past the last of {}",
-            steps.len()
-        );
         Self {
             id: id.into(),
-            steps,
+            steps: steps.into_iter().collect(),
             current,
             vertical: false,
             on_select: None,
@@ -65,12 +59,16 @@ impl RenderOnce for Steps {
         let id = self.id.clone();
         let turn = motion::changes((id.clone(), "current"), self.current, window, cx);
         let (current, vertical, count) = (self.current, self.vertical, self.steps.len());
+        let valid = current < count;
+        if !valid {
+            log::error!("steps {id:?}: step {current} of {count}; none marked");
+        }
         let duration = motion::duration(motion::SLOW, cx);
         let theme = cx.theme();
         let colors = &theme.colors;
         let mark = theme.control_height(ControlSize::Sm);
         let line = |ix: usize| {
-            let filled = ix < current;
+            let filled = valid && ix < current;
             let fill = div().bg(colors.accent).map(|fill| {
                 if vertical {
                     fill.w_full()
@@ -102,7 +100,7 @@ impl RenderOnce for Steps {
                 .child(fill)
         };
         let steps = self.steps.into_iter().enumerate().map(|(ix, step)| {
-            let (done, now) = (ix < current, ix == current);
+            let (done, now) = (valid && ix < current, valid && ix == current);
             let circle = div()
                 .flex()
                 .flex_none()
@@ -217,31 +215,28 @@ pub struct Wizard {
     content: Option<AnyElement>,
     ready: bool,
     headless: bool,
-    on_step: Option<OnStep>,
-    on_finish: Option<Run>,
+    on_step: OnStep,
+    on_finish: Run,
 }
 
 impl Wizard {
+    /// `on_step` runs with the step Back, Next or a finished step leads to; `on_finish` with Finish.
     pub fn new(
         id: impl Into<ElementId>,
         steps: impl IntoIterator<Item = Choice>,
         current: usize,
+        on_step: impl Fn(usize, &mut Window, &mut App) + 'static,
+        on_finish: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
-        let steps: Vec<Choice> = steps.into_iter().collect();
-        assert!(
-            current < steps.len(),
-            "step {current} is past the last of {}",
-            steps.len()
-        );
         Self {
             id: id.into(),
-            steps,
+            steps: steps.into_iter().collect(),
             current,
             content: None,
             ready: true,
             headless: false,
-            on_step: None,
-            on_finish: None,
+            on_step: Rc::new(on_step),
+            on_finish: Rc::new(on_finish),
         }
     }
 
@@ -262,30 +257,22 @@ impl Wizard {
         self.ready = ready;
         self
     }
-
-    /// Runs with the step Back, Next or a finished step leads to.
-    pub fn on_step(mut self, handler: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_step = Some(Rc::new(handler));
-        self
-    }
-
-    pub fn on_finish(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_finish = Some(Rc::new(handler));
-        self
-    }
 }
 
 impl RenderOnce for Wizard {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let (current, last) = (self.current, self.steps.len().saturating_sub(1));
+        let valid = current < self.steps.len();
+        if !valid {
+            log::error!(
+                "wizard {:?}: step {current} of {}",
+                self.id,
+                self.steps.len()
+            );
+        }
         let turn = motion::changes((self.id.clone(), "content"), current, window, cx);
         let id = self.id.clone();
-        let on_step = self
-            .on_step
-            .unwrap_or_else(|| panic!("wizard {id:?} has no on_step"));
-        let on_finish = self
-            .on_finish
-            .unwrap_or_else(|| panic!("wizard {id:?} has no on_finish"));
+        let (on_step, on_finish) = (self.on_step, self.on_finish);
         let step: OnStep = {
             let id = id.clone();
             Rc::new(move |to, window, cx| {
@@ -322,7 +309,7 @@ impl RenderOnce for Wizard {
             if current == last { "Finish" } else { "Next" },
         )
         .primary()
-        .disabled(!self.ready)
+        .disabled(!valid || !self.ready)
         .focus_handle(&advance)
         .on_click(move |_, window, cx| match current == last {
             true => finish(window, cx),
@@ -352,7 +339,7 @@ impl RenderOnce for Wizard {
                     .child(
                         Button::new((id.clone(), "back"), "Back")
                             .variant(ButtonVariant::Ghost)
-                            .disabled(current == 0)
+                            .disabled(!valid || current == 0)
                             .on_click(move |_, window, cx| {
                                 if current == 1 {
                                     window.focus(&to_advance, cx);

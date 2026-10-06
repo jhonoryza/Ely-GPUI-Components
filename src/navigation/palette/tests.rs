@@ -120,7 +120,7 @@ impl Render for Host {
                         Command::new("light", "Light theme"),
                     ],
                 )
-                .recent(["dark"])
+                .recent(["dark", "retired"])
                 .on_run(got)
                 .into_any_element(),
             Kind::Files => QuickOpen::new(

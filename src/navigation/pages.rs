@@ -94,7 +94,19 @@ impl Pagination {
 
 impl RenderOnce for Pagination {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let list = page_list(self.page, self.pages, self.near);
+        let valid = (1..=self.pages).contains(&self.page);
+        if !valid {
+            log::error!(
+                "pagination {:?}: page {} of {}; none marked",
+                self.id,
+                self.page,
+                self.pages
+            );
+        }
+        let list = match self.pages {
+            0 => Vec::new(),
+            pages => page_list(self.page.clamp(1, pages), pages, self.near),
+        };
         let (page, pages) = (self.page, self.pages);
         let go = {
             let (id, on_change) = (self.id.clone(), self.on_change);
@@ -113,7 +125,7 @@ impl RenderOnce for Pagination {
         );
         let (back, ahead, jump) = (go.clone(), go.clone(), go.clone());
         let to = i18n::text(cx, "pagination.jump", &[]);
-        let jump = self.jump.then(|| {
+        let jump = (self.jump && pages > 0).then(|| {
             let words = div()
                 .whitespace_nowrap()
                 .text_size(small)
@@ -177,7 +189,7 @@ impl RenderOnce for Pagination {
                         .size(size)
                         .variant(ButtonVariant::Ghost)
                         .tooltip(i18n::text(cx, "pagination.previous", &[]))
-                        .disabled(page == 1)
+                        .disabled(!valid || page == 1)
                         .on_click(move |_, window, cx| back(page - 1, window, cx)),
                 ),
             )
@@ -188,7 +200,7 @@ impl RenderOnce for Pagination {
                         .size(size)
                         .variant(ButtonVariant::Ghost)
                         .tooltip(i18n::text(cx, "pagination.next", &[]))
-                        .disabled(page == pages)
+                        .disabled(!valid || page == pages)
                         .on_click(move |_, window, cx| ahead(page + 1, window, cx)),
                 ),
             )

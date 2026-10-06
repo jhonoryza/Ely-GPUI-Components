@@ -88,10 +88,7 @@ impl Tabs {
 impl RenderOnce for Tabs {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let values: Vec<SharedString> = self.tabs.iter().map(|tab| tab.value.clone()).collect();
-        let chosen = values
-            .iter()
-            .position(|value| *value == self.selected)
-            .unwrap_or_else(|| panic!("tabs {:?} have no tab {}", self.id, self.selected));
+        let chosen = values.iter().position(|value| *value == self.selected);
         let placement = self.placement;
         let axis = match placement {
             TabPlacement::Left => Axis::Vertical,
@@ -155,7 +152,7 @@ impl RenderOnce for Tabs {
             .iter()
             .enumerate()
             .map(|(ix, tab)| {
-                let on = ix == chosen;
+                let on = Some(ix) == chosen;
                 let fg = match (tab.disabled, on) {
                     (true, _) => colors.fg_disabled,
                     (false, true) => colors.fg,
@@ -235,6 +232,9 @@ impl RenderOnce for Tabs {
                 TabPlacement::Left => strip.border_r_1().pr_1(),
             })
             .on_key_down(move |event, window, cx| {
+                if keys.is_empty() {
+                    return;
+                }
                 let back = if axis == Axis::Vertical { "up" } else { "left" };
                 let ahead = if axis == Axis::Vertical {
                     "down"
@@ -242,15 +242,19 @@ impl RenderOnce for Tabs {
                     "right"
                 };
                 let key = event.keystroke.key.as_str();
+                let (from_back, from_ahead) = match chosen {
+                    Some(at) => (at, at),
+                    None => (0, keys.len() - 1),
+                };
                 let to = match key {
-                    key if key == back => step(&keys, chosen, -1),
-                    key if key == ahead => step(&keys, chosen, 1),
+                    key if key == back => step(&keys, from_back, -1),
+                    key if key == ahead => step(&keys, from_ahead, 1),
                     "home" => step(&keys, keys.len() - 1, 1),
                     "end" => step(&keys, 0, -1),
                     _ => return,
                 };
                 cx.stop_propagation();
-                if to != chosen {
+                if Some(to) != chosen && !keys[to].disabled {
                     key_pick(to, window, cx);
                 }
             })

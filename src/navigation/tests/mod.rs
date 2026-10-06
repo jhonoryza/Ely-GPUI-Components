@@ -1,4 +1,5 @@
 mod pages;
+mod stale;
 mod tabs;
 
 use gpui::{
@@ -83,14 +84,18 @@ impl Render for Flow {
             Choice::new("plan", "Plan"),
             Choice::new("confirm", "Confirm"),
         ];
-        Wizard::new("flow", steps, self.step)
-            .on_step(move |to, _, cx| {
+        Wizard::new(
+            "flow",
+            steps,
+            self.step,
+            move |to, _, cx| {
                 stepper.update(cx, |view, cx| {
                     view.step = to;
                     cx.notify();
                 })
-            })
-            .on_finish(move |_, cx| finisher.update(cx, |view, _| view.done = true))
+            },
+            move |_, cx| finisher.update(cx, |view, _| view.done = true),
+        )
     }
 }
 
