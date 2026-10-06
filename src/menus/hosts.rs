@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ClickEvent, Div, ElementId, Entity, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, Pixels, Point, RenderOnce, SharedString, Stateful, Styled, Window,
-    div, prelude::*,
+    MouseButton, ParentElement, Pixels, Point, RenderOnce, SharedString, Stateful, StyleRefinement,
+    Styled, Window, div, prelude::*,
 };
 use smallvec::SmallVec;
 
@@ -221,13 +221,14 @@ impl RenderOnce for SplitButton {
     }
 }
 
-/// Its children, and a menu that opens at the pointer on a right click.
+/// Its children, and a menu that opens at the pointer on a right click. Styles size the host, so a list inside can fill it.
 #[derive(IntoElement)]
 pub struct ContextMenu {
     id: ElementId,
     menu: Menu,
     request: Option<Option<(u64, Point<Pixels>)>>,
     children: SmallVec<[AnyElement; 2]>,
+    base: Div,
 }
 
 impl ContextMenu {
@@ -237,6 +238,7 @@ impl ContextMenu {
             menu,
             request: None,
             children: SmallVec::new(),
+            base: div(),
         }
     }
 
@@ -253,6 +255,12 @@ impl ParentElement for ContextMenu {
     }
 }
 
+impl Styled for ContextMenu {
+    fn style(&mut self) -> &mut StyleRefinement {
+        self.base.style()
+    }
+}
+
 impl RenderOnce for ContextMenu {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let state = state(&self.id, window, cx);
@@ -265,7 +273,7 @@ impl RenderOnce for ContextMenu {
             }
         }
         let (open, shut, menu) = (state.clone(), state.clone(), self.menu.clone());
-        div()
+        self.base
             .id(self.id.clone())
             .relative()
             .when(self.request.is_none(), |host| {

@@ -246,3 +246,36 @@ fn pie_confirm_keys_stay_inside_and_ignore_modifiers(cx: &mut TestAppContext) {
     assert_eq!(view.read_with(cx, |wheel, _| wheel.ran.clone()), ["copy"]);
     assert_eq!(view.read_with(cx, |wheel, _| wheel.enters_above), 0);
 }
+
+/// A sized context menu over a child that fills it.
+struct Filled {
+    seen: std::rc::Rc<std::cell::Cell<f32>>,
+}
+
+impl Render for Filled {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let seen = self.seen.clone();
+        let fill = gpui::canvas(
+            move |bounds, _, _| seen.set(f32::from(bounds.size.height)),
+            |_, _, _, _| {},
+        )
+        .size_full();
+        div().h(px(200.)).w(px(100.)).child(
+            crate::menus::ContextMenu::new("filled", crate::menus::Menu::new())
+                .size_full()
+                .child(fill),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_sized_context_menu_lets_its_child_fill_it(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let seen = std::rc::Rc::new(std::cell::Cell::new(0.0));
+    let (_, cx) = cx.add_window_view({
+        let seen = seen.clone();
+        move |_, _| Filled { seen }
+    });
+    settle(cx);
+    assert_eq!(seen.get(), 200.0);
+}
