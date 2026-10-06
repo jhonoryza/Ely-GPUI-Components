@@ -59,6 +59,17 @@ pub fn init(cx: &mut App) {
         Err(error) => panic!("ely: asset source failed: {error:#}"),
     }
     assets::load_fonts(cx).expect("ely: embedded fonts failed to register");
+    setup(cx);
+}
+
+/// `init` without assets or fonts, for app tests that render.
+#[cfg(any(test, feature = "test-support"))]
+pub fn init_for_tests(cx: &mut App) {
+    setup(cx);
+}
+
+/// The theme and key bindings.
+fn setup(cx: &mut App) {
     theme::Theme::init(cx);
     cx.bind_keys([
         KeyBinding::new("tab", FocusNext, None),
