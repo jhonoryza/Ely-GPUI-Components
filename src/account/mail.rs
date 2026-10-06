@@ -72,7 +72,9 @@ fn email_step(step: Step, window: &mut Window, cx: &mut App) -> AnyElement {
         )
     };
     let back = back.map(|(label, run)| {
-        Link::new((id.clone(), "back"), label).on_click(move |_, window, cx| run(window, cx))
+        Link::new((id.clone(), "back"), label, move |_, window, cx| {
+            run(window, cx)
+        })
     });
     if sent {
         let other = other.map(|(label, run)| {

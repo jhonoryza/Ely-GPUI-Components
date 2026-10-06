@@ -11,39 +11,27 @@ use crate::{
 
 type ClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 
-/// Inline link. Give it an `href` or an `on_click`.
+/// Inline link that runs `on_click`; `ExternalLink` opens an address.
 #[derive(IntoElement)]
 pub struct Link {
     id: ElementId,
     label: SharedString,
-    href: Option<SharedString>,
-    on_click: Option<ClickHandler>,
+    on_click: ClickHandler,
     external: bool,
 }
 
 impl Link {
-    pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        label: impl Into<SharedString>,
+        on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             label: label.into(),
-            href: None,
-            on_click: None,
+            on_click: Box::new(on_click),
             external: false,
         }
-    }
-
-    /// Opens in the system browser.
-    pub fn href(mut self, url: impl Into<SharedString>) -> Self {
-        self.href = Some(url.into());
-        self
-    }
-
-    pub fn on_click(
-        mut self,
-        handler: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_click = Some(Box::new(handler));
-        self
     }
 }
 
@@ -51,11 +39,6 @@ impl RenderOnce for Link {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let color = theme.colors.link;
-        let action: ClickHandler = match (self.on_click, self.href) {
-            (Some(handler), _) => handler,
-            (None, Some(url)) => Box::new(move |_, _, cx| cx.open_url(&url)),
-            (None, None) => panic!("link {:?} has neither href nor on_click", self.id),
-        };
         div()
             .id(self.id)
             .flex()
@@ -71,7 +54,7 @@ impl RenderOnce for Link {
             .focus_ring(cx)
             .hover(|style| style.underline())
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
-            .on_click(action)
+            .on_click(self.on_click)
             .child(self.label)
             .when(self.external, |link| {
                 link.child(
@@ -93,7 +76,8 @@ impl ExternalLink {
         label: impl Into<SharedString>,
         url: impl Into<SharedString>,
     ) -> Self {
-        let mut link = Link::new(id, label).href(url);
+        let url: SharedString = url.into();
+        let mut link = Link::new(id, label, move |_, _, cx| cx.open_url(&url));
         link.external = true;
         Self(link)
     }
@@ -102,5 +86,48 @@ impl ExternalLink {
 impl RenderOnce for ExternalLink {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{cell::Cell, rc::Rc};
+
+    use gpui::{
+        Context, IntoElement, KeyUpEvent, Keystroke, ParentElement, Render, TestAppContext, Window,
+        div,
+    };
+
+    use super::{ExternalLink, Link};
+    use crate::theme::Theme;
+
+    struct Links(Rc<Cell<u32>>);
+
+    impl Render for Links {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            let presses = self.0.clone();
+            div()
+                .child(Link::new("guide", "guide", move |_, _, _| {
+                    presses.set(presses.get() + 1)
+                }))
+                .child(ExternalLink::new("site", "site", "https://example.com"))
+        }
+    }
+
+    #[gpui::test]
+    fn a_link_runs_its_handler_and_an_external_link_opens_its_address(cx: &mut TestAppContext) {
+        cx.update(Theme::init);
+        let presses = Rc::new(Cell::new(0));
+        let seen = presses.clone();
+        let (_, cx) = cx.add_window_view(|_, _| Links(seen));
+        for _ in 0..2 {
+            cx.update(|window, cx| window.focus_next(cx));
+            cx.simulate_keystrokes("enter");
+            cx.simulate_event(KeyUpEvent {
+                keystroke: Keystroke::parse("enter").expect("a key"),
+            });
+        }
+        assert_eq!(presses.get(), 1);
+        assert_eq!(cx.opened_url().as_deref(), Some("https://example.com"));
     }
 }

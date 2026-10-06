@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use jiff::{Timestamp, fmt::strtime, tz::TimeZone};
 
 /// Typographic minus; aligns with plus in tabular figures.
@@ -241,16 +243,24 @@ pub(crate) fn span(then: Timestamp, now: Timestamp) -> Option<(u64, &'static str
     Some((count, unit, delta < 0))
 }
 
-/// The system's time zone for `user`. An unknown zone stops here rather than reading as UTC.
+/// The system's zone; an unknown one logs once, naming `user`, and reads as jiff's unknown zone.
 pub(crate) fn system_zone(user: &str) -> TimeZone {
     TimeZone::try_system().unwrap_or_else(|error| {
-        panic!("{user}: the system time zone is unknown ({error}); pass a zone")
+        static TOLD: AtomicBool = AtomicBool::new(false);
+        if !TOLD.swap(true, Ordering::Relaxed) {
+            log::error!("{user}: the system time zone is unknown ({error}); times show in UTC");
+        }
+        TimeZone::unknown()
     })
 }
 
-/// strftime in `zone`; a bad pattern is an error.
+/// strftime in `zone`; a bad pattern is an error. The unknown zone says UTC.
 pub fn datetime(at: Timestamp, zone: &TimeZone, pattern: &str) -> Result<String, jiff::Error> {
-    strtime::format(pattern, &at.to_zoned(zone.clone()))
+    let text = strtime::format(pattern, &at.to_zoned(zone.clone()))?;
+    Ok(match zone.is_unknown() && !text.contains("UTC") {
+        true => format!("{text} UTC"),
+        false => text,
+    })
 }
 
 #[cfg(test)]
@@ -394,5 +404,18 @@ mod tests {
         let formatted = datetime(at, &TimeZone::UTC, "%Y-%m-%d %H:%M").unwrap();
         assert_eq!(formatted, "1970-01-01 00:00");
         assert!(datetime(at, &TimeZone::UTC, "%Y %").is_err());
+        let unknown = TimeZone::unknown();
+        assert_eq!(
+            datetime(at, &unknown, "%H:%M").expect("a pattern"),
+            "00:00 UTC"
+        );
+        let named = datetime(at, &unknown, "%H:%M %Z %%Z").expect("a pattern");
+        assert_eq!(named, "00:00 UTC %Z");
+        let escaped = datetime(at, &unknown, "%H:%M %%Z").expect("a pattern");
+        assert_eq!(escaped, "00:00 %Z UTC");
+        assert_eq!(
+            datetime(at, &TimeZone::UTC, "%H:%M").expect("a pattern"),
+            "00:00"
+        );
     }
 }

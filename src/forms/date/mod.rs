@@ -28,7 +28,7 @@ pub use time::{DateTimePicker, DurationPicker, TimePicker};
 pub use week::WeekPicker;
 pub use zone::TimezoneSelect;
 
-/// The system's clock in its own zone. An unknown zone stops here, not in UTC.
+/// The system's clock in its own zone, UTC when that zone is unknown.
 pub(crate) fn zoned_now() -> Zoned {
     Timestamp::now().to_zoned(system_zone("date pickers"))
 }

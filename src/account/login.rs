@@ -48,7 +48,7 @@ pub(super) fn aside(
         .text_size(theme.text_size(TextSize::Sm))
         .text_color(theme.colors.fg_muted)
         .child(words)
-        .child(Link::new(id, link).on_click(move |_, window, cx| run(window, cx)))
+        .child(Link::new(id, link, move |_, window, cx| run(window, cx)))
 }
 
 /// What a sign-in hands its owner.
@@ -170,8 +170,11 @@ impl RenderOnce for LoginForm {
                             }),
                     )
                     .children(self.on_forgot.map(|run| {
-                        Link::new((id.clone(), "forgot"), "Forgot password?")
-                            .on_click(move |_, window, cx| run(window, cx))
+                        Link::new(
+                            (id.clone(), "forgot"),
+                            "Forgot password?",
+                            move |_, window, cx| run(window, cx),
+                        )
                     })),
             )
             .children(

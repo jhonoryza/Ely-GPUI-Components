@@ -187,13 +187,19 @@ impl Highlight {
         let ranges = if query.is_empty() {
             Vec::new()
         } else {
-            RegexBuilder::new(&regex::escape(query))
+            match RegexBuilder::new(&regex::escape(query))
                 .case_insensitive(true)
                 .build()
-                .expect("an escaped literal is a valid regex")
-                .find_iter(&text)
-                .map(|found| found.range())
-                .collect()
+            {
+                Ok(found) => found.find_iter(&text).map(|found| found.range()).collect(),
+                Err(error) => {
+                    log::error!(
+                        "highlight: no marks for a {}-byte query: {error}",
+                        query.len()
+                    );
+                    Vec::new()
+                }
+            }
         };
         Self { text, ranges }
     }
@@ -215,6 +221,12 @@ impl RenderOnce for Highlight {
 #[cfg(test)]
 mod tests {
     use super::{Highlight, Range};
+
+    #[test]
+    fn a_query_past_the_regex_limit_marks_nothing() {
+        let long = "a".repeat(500_000);
+        assert!(Highlight::matching("aaa", &long).ranges.is_empty());
+    }
 
     #[test]
     fn matching_finds_every_case_insensitive_hit() {

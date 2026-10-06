@@ -127,16 +127,17 @@ fn cut_line(text: SharedString, fit: fn(&str, Pixels, &mut Window) -> String) ->
                     let style = window.text_style();
                     let line = style.line_height_in_pixels(window.rem_size());
                     let x = offset(style.text_align, bounds.size.width - shaped.width);
-                    shaped
-                        .paint(
-                            bounds.origin + point(x, Pixels::ZERO),
-                            line,
-                            TextAlign::Left,
-                            None,
-                            window,
-                            cx,
-                        )
-                        .expect("a cut line paints");
+                    let painted = shaped.paint(
+                        bounds.origin + point(x, Pixels::ZERO),
+                        line,
+                        TextAlign::Left,
+                        None,
+                        window,
+                        cx,
+                    );
+                    if let Err(error) = painted {
+                        log::error!("ellipsis: a cut line failed to paint: {error:#}");
+                    }
                 },
             )
             .absolute()

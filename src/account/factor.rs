@@ -113,10 +113,11 @@ impl RenderOnce for TwoFactorInput {
             )
             .children(note)
             .children(self.on_recovery.map(|run| {
-                div().child(
-                    Link::new((id.clone(), "recovery"), "Use a recovery code")
-                        .on_click(move |_, window, cx| run(window, cx)),
-                )
+                div().child(Link::new(
+                    (id.clone(), "recovery"),
+                    "Use a recovery code",
+                    move |_, window, cx| run(window, cx),
+                ))
             }))
     }
 }

@@ -211,9 +211,9 @@ pub fn link(cx: &App) -> impl IntoElement + use<> {
     .child(
         row()
             .child("Read the")
-            .child(
-                Link::new("guide", "style guide").on_click(|_, _, _| log::info!("gallery: link")),
-            )
+            .child(Link::new("guide", "style guide", |_, _, _| {
+                log::info!("gallery: link")
+            }))
             .child("before you start."),
     )
 }
