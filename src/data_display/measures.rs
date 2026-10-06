@@ -188,7 +188,7 @@ pub struct Gauge {
 }
 
 impl Gauge {
-    /// `value` lies within `min..=max`.
+    /// A `value` past `min..=max` pegs the dial and shows as it is.
     pub fn new(
         id: impl Into<ElementId>,
         label: impl Into<SharedString>,
@@ -199,10 +199,6 @@ impl Gauge {
         assert!(
             min < max,
             "a gauge needs min below max, got {min} and {max}"
-        );
-        assert!(
-            (min..=max).contains(&value),
-            "{value} is outside {min}..={max}"
         );
         Self {
             id: id.into(),
@@ -236,7 +232,7 @@ impl Gauge {
 impl RenderOnce for Gauge {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let (min, max) = self.range;
-        let share = ((self.value - min) / (max - min)) as f32;
+        let share = ((self.value - min) / (max - min)).clamp(0.0, 1.0) as f32;
         let theme = cx.theme();
         let (limits, track, tones) = (self.thresholds, theme.colors.border, tones(&theme.colors));
         let dial = gliding(self.id.clone(), share, window, cx, move |at| {
@@ -340,14 +336,9 @@ impl UsageBar {
 }
 
 impl UsageBar {
-    /// What the parts use and whether they fill the total, within float error.
+    /// What the parts use and whether they fill the total, within float error; over it they fill it.
     fn used(&self) -> (f64, bool) {
         let used: f64 = self.parts.iter().map(|(_, amount)| amount).sum();
-        assert!(
-            used <= self.total * (1.0 + 1e-9),
-            "the parts ({used}) pass the total ({})",
-            self.total
-        );
         (used, used >= self.total * (1.0 - 1e-9))
     }
 
@@ -365,11 +356,7 @@ impl RenderOnce for UsageBar {
         let theme = cx.theme();
         let colors = &theme.colors;
         let (used, full) = self.used();
-        assert!(
-            self.parts.len() <= colors.chart.len(),
-            "a usage bar has colors for {} parts",
-            colors.chart.len()
-        );
+        let hue = |ix: usize| colors.chart[ix % colors.chart.len()];
         let total = self.total;
         let grown = |share: f64| {
             let mut part = div().h_full().flex_basis(relative(0.0));
@@ -383,7 +370,7 @@ impl RenderOnce for UsageBar {
             .h(theme.meter_track())
             .children(self.parts.iter().enumerate().map(|(ix, (_, amount))| {
                 grown(amount / total)
-                    .bg(colors.chart[ix])
+                    .bg(hue(ix))
                     .when(ix == 0, |part| part.rounded_l_full())
                     .when(ix == last && full, |part| part.rounded_r_full())
             }))
@@ -400,12 +387,7 @@ impl RenderOnce for UsageBar {
                 .flex()
                 .items_center()
                 .gap_1p5()
-                .child(
-                    div()
-                        .size(theme.status_dot())
-                        .rounded_full()
-                        .bg(colors.chart[ix]),
-                )
+                .child(div().size(theme.status_dot()).rounded_full().bg(hue(ix)))
                 .child(div().text_color(colors.fg).child(name.clone()))
                 .child(
                     tabular(div())
@@ -438,6 +420,12 @@ mod tests {
         assert_eq!(tone(0.5, limits, &colors), colors.fg);
         assert_eq!(tone(0.85, limits, &colors), colors.warning);
         assert_eq!(tone(0.97, limits, &colors), colors.danger);
+    }
+
+    #[test]
+    fn parts_past_the_total_fill_it() {
+        let over = UsageBar::new(10.0).part("a", 8.0).part("b", 5.0);
+        assert_eq!(over.used(), (13.0, true));
     }
 
     #[test]

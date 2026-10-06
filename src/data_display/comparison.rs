@@ -35,12 +35,13 @@ impl Comparison {
 
     /// Tints column `ix`, such as the plan you suggest.
     pub fn featured(mut self, ix: usize) -> Self {
-        assert!(
-            ix < self.columns.len(),
-            "column {ix} is past the last of {}",
-            self.columns.len()
-        );
-        self.featured = Some(ix);
+        self.featured = (ix < self.columns.len()).then_some(ix);
+        if self.featured.is_none() {
+            log::error!(
+                "comparison: column {ix} of {}; none featured",
+                self.columns.len()
+            );
+        }
         self
     }
 
@@ -155,6 +156,17 @@ impl RenderOnce for Comparison {
 #[cfg(test)]
 mod tests {
     use super::Comparison;
+
+    #[test]
+    fn a_featured_column_past_the_last_features_none() {
+        assert_eq!(Comparison::new(["Free", "Pro"]).featured(5).featured, None);
+        assert_eq!(
+            Comparison::new(["Free", "Pro"]).featured(1).featured,
+            Some(1)
+        );
+        let later = Comparison::new(["Free", "Pro"]).featured(1).featured(5);
+        assert_eq!(later.featured, None, "a later bad index clears the first");
+    }
 
     #[test]
     #[should_panic(expected = "row Storage needs a cell per option")]

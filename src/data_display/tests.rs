@@ -9,7 +9,10 @@ use gpui::{
     TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
-use super::{Badge, Carousel, DescriptionList, PropertyGrid, PropertyGroup, Statistic, Tone};
+use super::{
+    Badge, Carousel, DescriptionList, Gauge, PropertyGrid, PropertyGroup, Stars, Statistic, Tone,
+    UsageBar,
+};
 use crate::{
     primitives::Measure,
     theme::{TextSize, Theme},
@@ -282,4 +285,26 @@ fn left_from_the_first_slide_wraps_to_the_last(cx: &mut TestAppContext) {
     cx.simulate_keystrokes("right");
     settle(cx);
     assert_eq!(front(&places), Some(0));
+}
+
+/// Readings past their scale: a gauge over its max, stars over theirs, more parts than hues.
+struct Over;
+
+impl Render for Over {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let parts = (0..10).fold(UsageBar::new(100.0), |bar, ix| {
+            bar.part(format!("p{ix}"), 12.0)
+        });
+        div()
+            .child(Gauge::new("cpu", "CPU", 140.0, 0.0, 100.0))
+            .child(Stars::new(6.5))
+            .child(parts)
+    }
+}
+
+#[gpui::test]
+fn readings_past_their_scale_draw(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Over);
+    cx.run_until_parked();
 }

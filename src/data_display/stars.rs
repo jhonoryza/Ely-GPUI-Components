@@ -76,7 +76,9 @@ impl Stars {
 impl RenderOnce for Stars {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let (score, max) = (self.score, self.max);
-        assert!(score <= max as f32, "a score of {score} is above {max}");
+        if score > max as f32 {
+            log::error!("stars: a score of {score} is above {max}; all filled");
+        }
         let theme = cx.theme();
         let (on, off) = (theme.colors.accent, theme.colors.border_strong);
         let side = theme.icon_size(self.size);
