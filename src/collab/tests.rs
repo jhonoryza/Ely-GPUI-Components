@@ -98,3 +98,50 @@ fn following_begun_from_outside_still_stops_on_escape(cx: &mut TestAppContext) {
     let back = cx.update(|window, cx| desk.read(cx).outside.focus_handle(cx).is_focused(window));
     assert!(back, "focus returns to where it was");
 }
+
+/// Two threads, one resolved, and the key each pick asked for.
+struct Board {
+    picked: Vec<gpui::SharedString>,
+}
+
+impl Render for Board {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let thread = |key: &str, resolved| super::Thread {
+            key: key.to_string().into(),
+            quote: None,
+            comments: vec![super::Comment {
+                author: Peer::new("ada", "Ada", 0),
+                at: jiff::Timestamp::UNIX_EPOCH,
+                body: format!("About {key}").into(),
+                reactions: Vec::new(),
+            }],
+            resolved,
+        };
+        let pick = cx.entity();
+        div().size_full().child(
+            super::CommentSidebar::new("remarks", [thread("a", false), thread("b", true)])
+                .active(None, move |key, _, cx| {
+                    pick.update(cx, |board, _| board.picked.push(key.clone()))
+                }),
+        )
+    }
+}
+
+#[gpui::test]
+fn without_resolving_one_list_takes_keyboard_picks(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        Theme::init(cx);
+        forms::bind_keys(cx);
+    });
+    let (board, cx) = cx.add_window_view(|_, _| Board { picked: Vec::new() });
+    cx.run_until_parked();
+    assert!(cx.debug_bounds("comment-a").is_some());
+    assert!(cx.debug_bounds("comment-b").is_some(), "resolved shows too");
+    cx.update(|window, cx| {
+        window.activate_window();
+        window.focus_next(cx);
+    });
+    cx.simulate_keystrokes("enter");
+    let picked = board.read_with(cx, |board, _| board.picked.clone());
+    assert_eq!(picked, vec![gpui::SharedString::from("a")]);
+}

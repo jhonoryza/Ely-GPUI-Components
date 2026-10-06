@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, RenderOnce,
+    App, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, RenderOnce, Role,
     SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
@@ -12,7 +12,7 @@ use crate::{
     forms::{OnValue, Run, TextInput},
     i18n,
     primitives::IconName,
-    theme::ControlSize,
+    theme::{ActiveTheme, ControlSize, Radius},
 };
 
 type OnThreadFlag = Rc<dyn Fn(&SharedString, bool, &mut Window, &mut App)>;
@@ -135,7 +135,15 @@ impl RenderOnce for CommentSidebar {
                 i18n::text(cx, none, &[]),
             )
         });
-        let threads = shown.into_iter().map(|thread| {
+        let count = shown.len();
+        let theme = cx.theme();
+        let (ring, radius) = (theme.colors.focus, theme.radius(Radius::Md));
+        let threads = shown.into_iter().enumerate().map(|(at, thread)| {
+            let name: SharedString = match (thread.comments.first(), &thread.quote) {
+                (Some(first), _) => format!("{}: {}", first.author.name, first.body).into(),
+                (None, Some(quote)) => quote.clone(),
+                (None, None) => thread.key.clone(),
+            };
             let key = thread.key.clone();
             let active = self.active.as_ref() == Some(&key);
             let mut item = CommentThread::new((self.id.clone(), format!("thread-{key}")), thread)
@@ -153,19 +161,43 @@ impl RenderOnce for CommentSidebar {
                 item =
                     item.on_react(move |ix, emoji, window, cx| react(&key, ix, emoji, window, cx));
             }
-            let select = self.on_select.clone();
+            let select = self.on_select.clone().filter(|_| !active);
+            let row = key.clone();
             div()
                 .id((self.id.clone(), format!("pick-{key}")))
-                .when_some(select.filter(|_| !active), |row, select| {
+                .debug_selector(move || format!("comment-{row}"))
+                .role(Role::ListItem)
+                .aria_label(name)
+                .aria_selected(active)
+                .aria_position_in_set(at + 1)
+                .aria_size_of_set(count)
+                .tab_index(0)
+                .rounded(radius)
+                .border_1()
+                .border_color(gpui::transparent_black())
+                .focus(move |style| style.border_color(ring))
+                .when_some(select, |row, select| {
+                    let (click, press, pressed) = (select.clone(), key.clone(), key.clone());
                     row.on_click(move |_, window, cx| {
-                        log::info!("comment sidebar: {key}");
-                        select(&key, window, cx)
+                        log::info!("comment sidebar: {press}");
+                        click(&press, window, cx)
+                    })
+                    .on_key_down(move |event, window, cx| {
+                        let key = event.keystroke.key.as_str();
+                        if matches!(key, "enter" | "space") && !event.keystroke.modifiers.modified()
+                        {
+                            cx.stop_propagation();
+                            log::info!("comment sidebar: {pressed}");
+                            select(&pressed, window, cx)
+                        }
                     })
                 })
                 .child(item)
         });
         div()
             .id(self.id.clone())
+            .role(Role::List)
+            .aria_label(i18n::text(cx, "comments.list", &[]))
             .size_full()
             .flex()
             .flex_col()
