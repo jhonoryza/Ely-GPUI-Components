@@ -13,6 +13,7 @@ use super::{
     parts::ChartTooltip,
     plot::Format,
     scale::compact,
+    series::drawable,
 };
 use crate::{
     theme::{ActiveTheme, Radius, TextSize},
@@ -118,15 +119,18 @@ pub(crate) fn sankey(
     let columns = column.iter().max().map_or(1, |last| last + 1);
     let placed = &column;
     let members = |c: usize| (0..count).filter(move |ix| placed[*ix] == c);
+    let total = |c: usize| members(c).map(|ix| through[ix]).sum::<f64>();
+    let biggest = (0..columns).map(total).fold(0.0, f64::max);
     let scale = (0..columns)
         .map(|c| {
-            let (total, gaps) = (
-                members(c).map(|ix| through[ix]).sum::<f64>(),
-                members(c).count().saturating_sub(1),
-            );
-            (frame.h - padding * gaps as f32).max(0.0) / total.max(f64::EPSILON) as f32
+            let gaps = members(c).count().saturating_sub(1);
+            f64::from((frame.h - padding * gaps as f32).max(0.0)) / (total(c) / biggest)
         })
-        .fold(f32::MAX, f32::min);
+        .fold(f64::INFINITY, f64::min);
+    let height = |value: f64| match biggest > 0.0 {
+        true => (value / biggest * scale) as f32,
+        false => 0.0,
+    };
     let mut nodes = vec![Rect::default(); count];
     for c in 0..columns {
         let x = if columns > 1 {
@@ -134,7 +138,7 @@ pub(crate) fn sankey(
         } else {
             frame.x
         };
-        let tall: f32 = members(c).map(|ix| through[ix] as f32 * scale).sum::<f32>()
+        let tall: f32 = members(c).map(|ix| height(through[ix])).sum::<f32>()
             + padding * members(c).count().saturating_sub(1) as f32;
         let mut y = frame.y + (frame.h - tall) / 2.0;
         for ix in members(c) {
@@ -142,7 +146,7 @@ pub(crate) fn sankey(
                 x,
                 y,
                 w: node,
-                h: through[ix] as f32 * scale,
+                h: height(through[ix]),
             };
             y += nodes[ix].h + padding;
         }
@@ -152,7 +156,7 @@ pub(crate) fn sankey(
         .map(|link| Ribbon {
             from: (0.0, 0.0),
             to: (0.0, 0.0),
-            thick: link.2 as f32 * scale,
+            thick: height(link.2),
         })
         .collect();
     let mut order: Vec<usize> = (0..links.len()).collect();
@@ -200,13 +204,16 @@ impl SankeyChart {
 
     /// A flow of `value` from node `from` to node `to`, by their places in the list.
     pub fn link(mut self, from: usize, to: usize, value: f64) -> Self {
+        if from >= self.nodes.len() || to >= self.nodes.len() || from == to {
+            log::error!(
+                "sankey: a link {from} -> {to} among {} nodes; skipped",
+                self.nodes.len()
+            );
+            return self;
+        }
         assert!(
-            from < self.nodes.len() && to < self.nodes.len() && from != to,
-            "a link joins two known nodes"
-        );
-        assert!(
-            value.is_finite() && value > 0.0,
-            "a link carries a positive value"
+            drawable(value) && value > 0.0,
+            "a link carries a positive value, within charts::LIMIT"
         );
         self.links.push((from, to, value));
         self
@@ -243,6 +250,7 @@ impl RenderOnce for SankeyChart {
             w: (f32::from(bounds.size.width) - room * 2.0).max(0.0),
             h: (f32::from(bounds.size.height) - pixels(sizes.inset) * 2.0).max(0.0),
         };
+        let hover = hover.filter(|_| frame.w > 0.0);
         let (nodes, ribbons) = if frame.w > 0.0 {
             sankey(
                 self.nodes.len(),

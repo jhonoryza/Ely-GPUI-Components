@@ -18,6 +18,7 @@ use super::{
     pie::{bearing, toward, wedge},
     plot::Format,
     scale::{compact, nice},
+    series::drawable,
     tiles::{Tiles, tracked},
 };
 use crate::{
@@ -38,8 +39,8 @@ pub struct Bullet {
 impl Bullet {
     pub fn new(label: impl Into<SharedString>, value: f64, target: f64) -> Self {
         assert!(
-            value.is_finite() && target.is_finite() && value >= 0.0 && target >= 0.0,
-            "a bullet reads values of zero or more"
+            drawable(value) && drawable(target) && value >= 0.0 && target >= 0.0,
+            "a bullet reads values of zero or more, within charts::LIMIT"
         );
         Self {
             label: label.into(),
@@ -54,8 +55,8 @@ impl Bullet {
         self.bands = ends.into_iter().collect();
         assert!(
             self.bands.windows(2).all(|pair| pair[0] < pair[1])
-                && self.bands.iter().all(|end| *end > 0.0),
-            "bands end in rising order"
+                && self.bands.iter().all(|end| *end > 0.0 && drawable(*end)),
+            "bands end in rising order, within charts::LIMIT"
         );
         self
     }
@@ -283,8 +284,8 @@ impl ProgressChart {
     /// A goal: how far it has come of its target.
     pub fn goal(mut self, name: impl Into<SharedString>, value: f64, target: f64) -> Self {
         assert!(
-            value.is_finite() && value >= 0.0 && target.is_finite() && target > 0.0,
-            "a goal has a positive target and a value of zero or more"
+            drawable(value) && value >= 0.0 && drawable(target) && target > 0.0,
+            "a goal has a positive target and a value of zero or more, within charts::LIMIT"
         );
         self.goals.push((name.into(), value, target));
         self
@@ -313,9 +314,10 @@ impl RenderOnce for ProgressChart {
             .iter()
             .map(|(_, value, target)| value / target)
             .collect();
+        let drawn: Vec<f64> = shares.iter().map(|share| share.min(1.0)).collect();
         let slow = motion::duration(motion::SLOW, cx);
         let (glided, moving) = glide.update(cx, |glide, _| {
-            glide.follow(std::slice::from_ref(&shares), slow)
+            glide.follow(std::slice::from_ref(&drawn), slow)
         });
         if moving {
             window.request_animation_frame();

@@ -12,6 +12,7 @@ use super::{
     parts::ChartTooltip,
     plot::Format,
     scale::{Linear, compact, nice},
+    series::drawable,
     tiles::{Tiles, tracked},
 };
 use crate::theme::{ActiveTheme, TextSize};
@@ -109,8 +110,8 @@ impl ParallelCoordinates {
             "a record needs a value per axis"
         );
         assert!(
-            values.iter().all(|value| value.is_finite()),
-            "a record needs finite values"
+            values.iter().all(|value| drawable(*value)),
+            "a record needs values, within charts::LIMIT"
         );
         self.records.push((name.into(), values));
         self

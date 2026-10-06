@@ -14,6 +14,7 @@ use super::{
     parts::ChartTooltip,
     plot::Format,
     scale::compact,
+    series::drawable,
 };
 use crate::{
     theme::{ActiveTheme, Radius, TextSize},
@@ -105,8 +106,8 @@ impl Treemap {
 
     pub fn tile(mut self, name: impl Into<SharedString>, value: f64) -> Self {
         assert!(
-            value.is_finite() && value >= 0.0,
-            "a tile needs a value of zero or more"
+            drawable(value) && value >= 0.0,
+            "a tile needs a value of zero or more, within charts::LIMIT"
         );
         self.tiles.push((name.into(), value));
         self
@@ -282,8 +283,8 @@ impl HeatmapChart {
             "a heatmap row needs a value per column"
         );
         assert!(
-            values.iter().all(|value| value.is_finite()),
-            "a heatmap needs finite values"
+            values.iter().all(|value| drawable(*value)),
+            "a heatmap needs values, within charts::LIMIT"
         );
         self.rows.push((label.into(), values));
         self

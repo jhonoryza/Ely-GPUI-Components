@@ -45,7 +45,16 @@ pub(crate) struct Five {
 fn quantile(sorted: &[f64], share: f64) -> f64 {
     let at = share * (sorted.len() - 1) as f64;
     let (below, above) = (at.floor() as usize, at.ceil() as usize);
-    sorted[below] + (sorted[above] - sorted[below]) * (at - below as f64)
+    let (low, high, part) = (sorted[below], sorted[above], at - below as f64);
+    if low == high {
+        return low;
+    }
+    let lerp = low + (high - low) * part;
+    if lerp.is_finite() {
+        lerp
+    } else {
+        low * (1.0 - part) + high * part
+    }
 }
 
 pub(crate) fn five(values: &[f64]) -> Five {
@@ -148,6 +157,13 @@ pub(crate) fn steps(changes: &[(f64, bool)]) -> Vec<(f64, f64, Step)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn quartiles_across_all_of_f64_stay_finite() {
+        let spread = five(&[-f64::MAX, f64::MAX]);
+        assert!(spread.q1.is_finite() && spread.q3.is_finite());
+        assert_eq!((spread.low, spread.high), (-f64::MAX, f64::MAX));
+    }
 
     #[test]
     fn values_fall_into_equal_bins() {

@@ -10,6 +10,7 @@ use super::{
     paint::{finish, measure, tint},
     pie::{bearing, wedge},
     scale::compact,
+    series::drawable,
     tiles::Tiles,
 };
 use crate::{
@@ -28,8 +29,8 @@ pub struct Slice {
 impl Slice {
     pub fn new(name: impl Into<SharedString>, value: f64) -> Self {
         assert!(
-            value.is_finite() && value >= 0.0,
-            "a slice needs a value of zero or more"
+            drawable(value) && value >= 0.0,
+            "a slice needs a value of zero or more, within charts::LIMIT"
         );
         Self {
             name: name.into(),

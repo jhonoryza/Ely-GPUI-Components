@@ -4,7 +4,10 @@ use gpui::{
     App, Div, ElementId, Entity, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
     Refineable, RenderOnce, StyleRefinement, Styled, Window, canvas, div, fill,
 };
-use jiff::{Span, civil::Date};
+use jiff::{
+    Span,
+    civil::{Date, date},
+};
 
 use super::{
     axes::{anchored, beside},
@@ -14,6 +17,7 @@ use super::{
     parts::ChartTooltip,
     plot::Format,
     scale::compact,
+    series::drawable,
     tiles::{Tiles, key, tracked},
 };
 use crate::theme::{ActiveTheme, Radius, TextSize};
@@ -37,10 +41,13 @@ impl CalendarHeatmap {
     ) -> Self {
         let counts: Vec<f64> = counts.into_iter().collect();
         assert!(
-            counts
-                .iter()
-                .all(|count| count.is_finite() && *count >= 0.0),
-            "a calendar needs counts of zero or more"
+            counts.iter().all(|count| drawable(*count) && *count >= 0.0),
+            "a calendar needs counts of zero or more, within charts::LIMIT"
+        );
+        let span = Span::new().days(counts.len().saturating_sub(1) as i64);
+        assert!(
+            start.checked_add(span).is_ok(),
+            "a calendar's last day lies past the dates jiff holds"
         );
         Self {
             base: div(),
@@ -119,10 +126,7 @@ impl RenderOnce for CalendarHeatmap {
                     .child(text(day(ix).strftime("%b").to_string()))
             });
         let weekdays = [0usize, 2, 4].map(|weekday| {
-            let date = (0..7)
-                .map(day)
-                .find(|date| date.weekday().to_monday_zero_offset() as usize == weekday)
-                .expect("seven days hold every weekday");
+            let date = date(2024, 1, 1 + weekday as i8);
             beside(
                 top + side * (weekday as f32 + 0.5),
                 sizes.gutter.to_pixels(rem),

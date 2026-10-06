@@ -129,10 +129,13 @@ impl NetworkGraph {
 
     /// An edge between two nodes, by their places in the list.
     pub fn edge(mut self, a: usize, b: usize) -> Self {
-        assert!(
-            a < self.nodes.len() && b < self.nodes.len() && a != b,
-            "an edge joins two known nodes"
-        );
+        if a >= self.nodes.len() || b >= self.nodes.len() || a == b {
+            log::error!(
+                "network: an edge {a} - {b} among {} nodes; skipped",
+                self.nodes.len()
+            );
+            return self;
+        }
         self.edges.push((a, b));
         self
     }

@@ -29,7 +29,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P12 Data Display — `src/data_display`
 - [x] P13 Lists & Trees — `src/lists`
 - [x] P14 Tables — `src/tables`
-- [ ] P15 Charts — `src/charts`
+- [x] P15 Charts — `src/charts`
 - [ ] P16 Finance — `src/finance`
 - [ ] P17 Code Editor — `src/editor`
 - [ ] P18 Terminal — `src/terminal`
@@ -79,3 +79,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P12: a featured column past the columns features none; a gauge past its scale pegs; usage parts past the total fill it and repeat hues past eight; stars above max log and fill. Kept: one-value contracts, a comparison row's shape, construction. Review: 3 rounds (round 2 met an edit that had not applied).
 - P13: a directory listing's selected name gone from its entries picks none. Kept: one-value contracts; activation, folder split, single-select sections and tree rows hold by construction. Review: 1 round.
 - P14: a pivot field missing from its data draws an error line; a gone group-by column leaves the table ungrouped; a merge past the sheet is skipped; each logs. Kept: row shapes of one snapshot, one-value contracts, builder misuse, construction. Review: 1 round.
+- P15: chart values are finite and within ±`charts::LIMIT` (1e30), so sums and pixels stay in `f32`; scales work in halves and bound a share to ±1e4 ranges; chord and sankey size by shares; quartiles, weekday labels, flat tangents and a zero-width sankey's hover hold; notes, links, edges and waits past their lists are skipped. Review: 5 rounds, the cap; round 5's finding (points at one x) is fixed and tested, and P16's review checks it.

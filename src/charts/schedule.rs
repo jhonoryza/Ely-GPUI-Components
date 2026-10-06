@@ -107,12 +107,15 @@ impl GanttChart {
     }
 
     /// A task; the ones it waits for come before it.
-    pub fn task(mut self, task: Task) -> Self {
-        assert!(
-            task.after.iter().all(|ix| *ix < self.tasks.len()),
-            "task {} waits for one not yet given",
-            task.name
-        );
+    pub fn task(mut self, mut task: Task) -> Self {
+        let known = self.tasks.len();
+        if task.after.iter().any(|ix| *ix >= known) {
+            log::error!(
+                "gantt: task {} waits for one not given; that wait is dropped",
+                task.name
+            );
+            task.after.retain(|ix| *ix < known);
+        }
         self.tasks.push(task);
         self
     }

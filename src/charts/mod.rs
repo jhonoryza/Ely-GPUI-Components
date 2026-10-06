@@ -43,6 +43,7 @@ pub use radar::RadarChart;
 pub use realtime::RealtimeChart;
 pub use relations::ChordDiagram;
 pub use schedule::{GanttChart, Task};
+pub use series::LIMIT;
 pub use series::{Points, Series};
 pub use sunburst::{Slice, Sunburst};
 pub use targets::{Bullet, BulletChart, ProgressChart};

@@ -10,6 +10,7 @@ use super::{
     geometry::{Categories, Ink, Mark, categories, scatter},
     plot::{Format, Layout, Pick, Plot, Scene, Tips, plot},
     scale::compact,
+    series::drawable,
     series::{Points, Series, csv, points_csv},
 };
 use crate::theme::ActiveTheme;
@@ -173,18 +174,22 @@ macro_rules! category_chart {
 
             /// A dashed level across the chart with its label, as a target or a limit.
             pub fn rule(mut self, value: f64, label: impl Into<SharedString>) -> Self {
-                assert!(value.is_finite(), "a rule needs a finite value");
+                assert!(
+                    drawable(value),
+                    "a rule needs a value, within charts::LIMIT"
+                );
                 self.chart.rules.push((value, label.into()));
                 self
             }
 
             /// A mark at category `ix` with its label, as a release or an incident.
             pub fn note(mut self, ix: usize, label: impl Into<SharedString>) -> Self {
-                assert!(
-                    ix < self.chart.labels.len(),
-                    "note {ix} is past the last label"
-                );
-                self.chart.notes.push((ix, label.into()));
+                let label = label.into();
+                if ix >= self.chart.labels.len() {
+                    log::error!("chart: note {label} at {ix} is past the last label; skipped");
+                    return self;
+                }
+                self.chart.notes.push((ix, label));
                 self
             }
 

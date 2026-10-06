@@ -15,6 +15,7 @@ use super::{
     pie::{bearing, toward, wedge},
     plot::Format,
     scale::compact,
+    series::drawable,
     tiles::{Tiles, tracked},
 };
 use crate::theme::{ActiveTheme, TextSize};
@@ -26,10 +27,9 @@ type Arcs = Vec<(f32, f32)>;
 pub(crate) fn chords(matrix: &[Vec<f64>], pad: f32) -> (Arcs, Vec<Arcs>) {
     let grand: f64 = matrix.iter().flatten().sum();
     let room = (TAU - pad * matrix.len() as f32).max(0.0);
-    let scale = if grand > 0.0 {
-        room / grand as f32
-    } else {
-        0.0
+    let share = |value: f64| match grand > 0.0 {
+        true => (value / grand * f64::from(room)) as f32,
+        false => 0.0,
     };
     let mut angle = -FRAC_PI_2 + pad / 2.0;
     let (mut groups, mut parts) = (Vec::new(), Vec::new());
@@ -38,7 +38,7 @@ pub(crate) fn chords(matrix: &[Vec<f64>], pad: f32) -> (Arcs, Vec<Arcs>) {
         parts.push(
             row.iter()
                 .map(|value| {
-                    let part = (angle, *value as f32 * scale);
+                    let part = (angle, share(*value));
                     angle += part.1;
                     part
                 })
@@ -126,8 +126,8 @@ impl ChordDiagram {
             matrix
                 .iter()
                 .flatten()
-                .all(|value| value.is_finite() && *value >= 0.0),
-            "flows are zero or more"
+                .all(|value| drawable(*value) && *value >= 0.0),
+            "flows are zero or more, within charts::LIMIT"
         );
         Self {
             base: div(),

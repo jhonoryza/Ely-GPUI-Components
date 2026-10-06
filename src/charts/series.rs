@@ -7,12 +7,20 @@ pub struct Series {
     pub(crate) values: Vec<f64>,
 }
 
+/// The largest value a chart draws: sums and pixels of such values stay within `f32`.
+pub const LIMIT: f64 = 1e30;
+
+/// A value a chart can draw: finite and within ±`LIMIT`.
+pub(crate) fn drawable(value: f64) -> bool {
+    value.is_finite() && value.abs() <= LIMIT
+}
+
 impl Series {
     pub fn new(name: impl Into<SharedString>, values: impl IntoIterator<Item = f64>) -> Self {
         let values: Vec<f64> = values.into_iter().collect();
         assert!(
-            values.iter().all(|value| value.is_finite()),
-            "a series needs finite values"
+            values.iter().all(|value| drawable(*value)),
+            "a series needs values, within charts::LIMIT"
         );
         Self {
             name: name.into(),
@@ -36,8 +44,8 @@ impl Points {
     ) -> Self {
         let points: Vec<(f64, f64)> = points.into_iter().collect();
         assert!(
-            points.iter().all(|(x, y)| x.is_finite() && y.is_finite()),
-            "points need finite values"
+            points.iter().all(|(x, y)| drawable(*x) && drawable(*y)),
+            "points need values, within charts::LIMIT"
         );
         Self {
             name: name.into(),
@@ -55,8 +63,8 @@ impl Points {
             "a bubble needs a size for each point"
         );
         assert!(
-            sizes.iter().all(|size| size.is_finite() && *size >= 0.0),
-            "bubble sizes are not negative"
+            sizes.iter().all(|size| drawable(*size) && *size >= 0.0),
+            "bubble sizes are not negative, within charts::LIMIT"
         );
         self.sizes = Some(sizes);
         self
@@ -96,7 +104,7 @@ pub(crate) fn extent(values: impl Iterator<Item = f64>) -> (f64, f64) {
     })
 }
 
-/// Tangents for a smooth line through `points` that never overshoots between them (Fritsch–Carlson).
+/// Tangents for a smooth line through `points` that never overshoots between them (Fritsch–Carlson); points at one x rise straight.
 pub(crate) fn tangents(points: &[(f32, f32)]) -> Vec<f32> {
     let count = points.len();
     if count < 2 {
@@ -104,7 +112,10 @@ pub(crate) fn tangents(points: &[(f32, f32)]) -> Vec<f32> {
     }
     let slopes: Vec<f32> = points
         .windows(2)
-        .map(|pair| (pair[1].1 - pair[0].1) / (pair[1].0 - pair[0].0))
+        .map(|pair| {
+            let slope = (pair[1].1 - pair[0].1) / (pair[1].0 - pair[0].0);
+            if slope.is_finite() { slope } else { 0.0 }
+        })
         .collect();
     let mut tangents: Vec<f32> = (0..count)
         .map(|ix| match ix {
@@ -177,6 +188,16 @@ pub(crate) fn points_csv(clouds: &[Points]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn points_at_one_x_rise_with_flat_tangents() {
+        let rising = tangents(&[(10.0, 0.0), (10.0, 5.0), (10.0, 9.0), (11.0, 9.5)]);
+        assert!(
+            rising.iter().all(|tangent| tangent.is_finite()),
+            "{rising:?}"
+        );
+        assert_eq!(&rising[..2], &[0.0, 0.0]);
+    }
 
     #[test]
     fn stacks_rise_from_zero_and_negatives_fall() {

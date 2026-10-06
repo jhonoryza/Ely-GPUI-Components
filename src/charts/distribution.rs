@@ -11,6 +11,7 @@ use super::{
     plot::{Layout, Pick, Plot, Scene, Tips},
     scale::{Band, Linear, compact, nice},
     series::Series,
+    series::drawable,
     stats::{Step, bins, density, five, steps},
 };
 
@@ -77,8 +78,8 @@ impl Histogram {
     pub fn new(id: impl Into<ElementId>, values: impl IntoIterator<Item = f64>) -> Self {
         let values: Vec<f64> = values.into_iter().collect();
         assert!(
-            values.iter().all(|value| value.is_finite()),
-            "a histogram needs finite values"
+            values.iter().all(|value| drawable(*value)),
+            "a histogram needs values, within charts::LIMIT"
         );
         Self {
             base: div(),
@@ -130,7 +131,10 @@ impl WaterfallChart {
 
     /// A change, up or down, from the running total.
     pub fn step(mut self, label: impl Into<SharedString>, change: f64) -> Self {
-        assert!(change.is_finite(), "a step needs a finite change");
+        assert!(
+            drawable(change),
+            "a step needs a change, within charts::LIMIT"
+        );
         self.steps.push((label.into(), change, false));
         self
     }
@@ -257,8 +261,8 @@ macro_rules! grouped {
             ) -> Self {
                 let values: Vec<f64> = values.into_iter().collect();
                 assert!(
-                    values.len() >= 2 && values.iter().all(|value| value.is_finite()),
-                    "a group needs two finite values"
+                    values.len() >= 2 && values.iter().all(|value| drawable(*value)),
+                    "a group needs two values, within charts::LIMIT"
                 );
                 self.groups.push((label.into(), values));
                 self

@@ -10,6 +10,7 @@ use super::{
     geometry::{Rect, frame},
     paint::{at, finish, measure, place, ring, tint, trace},
     scale::{Linear, compact, nice},
+    series::drawable,
 };
 use crate::{
     motion,
@@ -43,8 +44,8 @@ impl RealtimeChart {
     ) -> Self {
         let values: Vec<f64> = values.into_iter().collect();
         assert!(
-            values.iter().all(|value| value.is_finite()),
-            "a stream needs finite values"
+            values.iter().all(|value| drawable(*value)),
+            "a stream needs values, within charts::LIMIT"
         );
         Self {
             base: div(),

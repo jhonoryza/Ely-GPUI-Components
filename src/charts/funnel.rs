@@ -13,6 +13,7 @@ use super::{
     parts::ChartTooltip,
     plot::Format,
     scale::compact,
+    series::drawable,
     tiles::Tiles,
 };
 use crate::{
@@ -41,8 +42,8 @@ impl FunnelChart {
 
     pub fn stage(mut self, name: impl Into<SharedString>, value: f64) -> Self {
         assert!(
-            value.is_finite() && value >= 0.0,
-            "a stage needs a value of zero or more"
+            drawable(value) && value >= 0.0,
+            "a stage needs a value of zero or more, within charts::LIMIT"
         );
         self.stages.push((name.into(), value));
         self

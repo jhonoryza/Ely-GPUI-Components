@@ -1,3 +1,6 @@
+/// Shares past this many ranges lie off any screen; the bound keeps their pixels in `f32`.
+const FAR: f64 = 1e4;
+
 /// A linear map from a domain of values onto a range of pixels.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Linear {
@@ -22,16 +25,17 @@ impl Linear {
         } else {
             (f64::from(at) - f64::from(self.range.0)) / f64::from(span)
         };
-        self.domain.0 + (self.domain.1 - self.domain.0) * share
+        let (low, high) = (self.domain.0 / 2.0, self.domain.1 / 2.0);
+        (low + (high - low) * share) * 2.0
     }
 
-    /// Where `value` lands; a flat domain lands in the middle.
+    /// Where `value` lands; a flat domain lands in the middle. Halves keep wide domains finite.
     pub(crate) fn at(&self, value: f64) -> f32 {
-        let span = self.domain.1 - self.domain.0;
-        let share = if span == 0.0 {
+        let (low, high) = (self.domain.0 / 2.0, self.domain.1 / 2.0);
+        let share = if high == low {
             0.5
         } else {
-            (value - self.domain.0) / span
+            ((value / 2.0 - low) / (high - low)).clamp(-FAR, FAR)
         };
         self.range.0 + (self.range.1 - self.range.0) * share as f32
     }
@@ -62,12 +66,13 @@ pub(crate) fn nice(low: f64, high: f64, count: usize) -> ((f64, f64), Vec<f64>) 
     let (low, high) = (low.min(high), low.max(high));
     let (low, high) = if high - low <= high.abs().max(low.abs()) * 1e-12 {
         let pad = (high.abs().max(low.abs()) * 0.1).max(1.0);
-        (low - pad, high + pad)
+        ((low - pad).max(f64::MIN), (high + pad).min(f64::MAX))
     } else {
         (low, high)
     };
     let step = nice_step(high - low, count);
-    let (start, end) = ((low / step).floor() * step, (high / step).ceil() * step);
+    let start = ((low / step).floor() * step).max(f64::MIN);
+    let end = ((high / step).ceil() * step).min(f64::MAX);
     let ticks = (0..count.max(1) * 4 + 4)
         .map(|ix| start + step * ix as f64)
         .take_while(|tick| *tick <= end + step * 1e-9)

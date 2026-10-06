@@ -1,3 +1,5 @@
+mod limits;
+
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -138,7 +140,7 @@ impl Render for Picked {
     }
 }
 
-fn settle(cx: &mut VisualTestContext) {
+pub(super) fn settle(cx: &mut VisualTestContext) {
     for _ in 0..3 {
         cx.run_until_parked();
         cx.update(|window, _| window.refresh());
@@ -372,4 +374,37 @@ fn a_long_band_name_widens_the_gutter_to_half_the_chart(cx: &mut TestAppContext)
             assert!(band.size.width > px(48.0), "past the theme gutter");
         }
     }
+}
+
+/// A note, a link, an edge and a wait that name what their chart lacks.
+struct Dangling;
+
+impl Render for Dangling {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let line = LineChart::new("line", ["a", "b"])
+            .series(Series::new("s", [1.0, 2.0]))
+            .note(7, "late");
+        let sankey = SankeyChart::new("sankey", ["a", "b"])
+            .link(0, 9, 5.0)
+            .link(0, 1, 5.0);
+        let network = NetworkGraph::new("network")
+            .node("a", 0)
+            .node("b", 0)
+            .edge(0, 9);
+        let gantt = GanttChart::new("gantt")
+            .task(Task::new("t", date(2026, 3, 1), date(2026, 3, 9)).after(4));
+        div()
+            .w(px(400.0))
+            .child(line)
+            .child(sankey)
+            .child(network)
+            .child(gantt)
+    }
+}
+
+#[gpui::test]
+fn entries_past_their_lists_are_skipped(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Dangling);
+    settle(cx);
 }

@@ -11,6 +11,7 @@ use super::{
     parts::ChartTooltip,
     scale::{Linear, compact, nice},
     schedule::{days, marks},
+    series::drawable,
     tiles::{Tiles, tracked},
 };
 use crate::{
@@ -62,7 +63,10 @@ impl BurndownChart {
     /// A sprint from its first day through its last, with `scope` to do, in points or issues.
     pub fn new(id: impl Into<ElementId>, first: Date, last: Date, scope: f64) -> Self {
         assert!(last > first, "a sprint ends after its first day");
-        assert!(scope.is_finite() && scope > 0.0, "a sprint has work to do");
+        assert!(
+            drawable(scope) && scope > 0.0,
+            "a sprint has work to do, within charts::LIMIT"
+        );
         Self {
             base: div(),
             id: id.into(),
@@ -85,8 +89,8 @@ impl BurndownChart {
         assert!(
             self.left
                 .iter()
-                .all(|value| value.is_finite() && *value >= 0.0),
-            "work left is a count, zero or more"
+                .all(|value| drawable(*value) && *value >= 0.0),
+            "work left is a count, zero or more, within charts::LIMIT"
         );
         self
     }

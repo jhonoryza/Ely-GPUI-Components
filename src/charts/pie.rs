@@ -16,6 +16,7 @@ use super::{
     paint::{finish, measure, tint},
     parts::{ChartLegend, ChartTooltip},
     scale::compact,
+    series::drawable,
 };
 use crate::{
     motion,
@@ -191,8 +192,8 @@ impl PieChart {
 
     pub fn slice(mut self, name: impl Into<SharedString>, value: f64) -> Self {
         assert!(
-            value.is_finite() && value >= 0.0,
-            "a slice needs a value of zero or more"
+            drawable(value) && value >= 0.0,
+            "a slice needs a value of zero or more, within charts::LIMIT"
         );
         self.slices.push((name.into(), value));
         self
