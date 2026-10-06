@@ -24,7 +24,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P07 Navigation — `src/navigation`
 - [x] P08 Menus — `src/menus`
 - [x] P09 Overlays — `src/overlays`
-- [ ] P10 Feedback — `src/feedback`
+- [x] P10 Feedback — `src/feedback`
 - [ ] P11 Loading & Motion — `src/motion`
 - [ ] P12 Data Display — `src/data_display`
 - [ ] P13 Lists & Trees — `src/lists`
@@ -74,3 +74,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P07: `Wizard::new` takes `on_step` and `on_finish`; tabs, crumbs, history, steps, wizards and pagination with a place their list no longer holds log and mark none; an empty or all-disabled tab strip ignores arrows; a gone recent command is skipped. Kept: non-empty lists, disabled-free switcher and search items, row index parse. Review: 3 rounds.
 - P08: no change. Kept: a bar's menus and a pie's slices (one value each); the panel's level lookup, which `settle` fits to the menu before every draw. Review: 1 round.
 - P09: a `Lightbox` or `Tour` past its last item logs and closes, handing focus back. Kept: dialog Enter without `focus_first` and popover face builders on an owner's opener (static builder misuse). Review: 1 round.
+- P10: no change. Kept: a toast's stay above zero (one value). Review: 1 round.
