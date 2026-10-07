@@ -245,7 +245,9 @@ impl RenderOnce for ChannelList {
                 .iter()
                 .flat_map(|(_, rows)| rows)
                 .any(|(key, _)| key == open);
-            assert!(listed, "no chat {open}");
+            if !listed {
+                log::error!("channel list: no chat {open}; none open");
+            }
         }
         let open: OnValue = {
             let (id, on_open) = (self.id.clone(), self.on_open.clone());

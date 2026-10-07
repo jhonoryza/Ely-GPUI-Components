@@ -124,7 +124,9 @@ impl RenderOnce for MemberList {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         if let Some(selected) = &self.selected {
             let listed = self.members.iter().any(|member| member.key == *selected);
-            assert!(listed, "no member {selected}");
+            if !listed {
+                log::error!("member list: no member {selected}; none selected");
+            }
         }
         let theme = cx.theme();
         let colors = &theme.colors;

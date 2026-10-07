@@ -42,7 +42,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P25 Generative — `src/generative`
 - [x] P26 Media — `src/media`
 - [x] P27 Files — `src/files`
-- [ ] P28 Messaging — `src/messaging`
+- [x] P28 Messaging — `src/messaging`
 - [ ] P29 Mail — `src/mail`
 - [ ] P30 Calendar — `src/calendar`
 - [ ] P31 Project — `src/project`
@@ -93,3 +93,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P25: a verdict, ratio, style, shot, voice, variation or prompt version gone from its list logs and marks none (no picture, no Vary or Upscale, no diff); embedding points in a gone group stay out; an epoch and GPU memory past their whole log and peg. A seed field holds a seed: each field handed in is fitted, and text that is no seed clears; in `TextInput`, a fit starts a fresh undo history, undo keeps and `set_text` fits against the committed text, never an input method's unfinished one (`committed`), and a lifted mask stroke stays on its picture. Kept: one-value contracts, unique group names, one snapshot's loss lists, two to four sides, the legend's lookup. Review: 5 rounds, the cap; round 5's finding (`set_text` over a composition) is fixed and tested, and P26's review checks it.
 - P26: a live position past its media logs and sits at the end (`media::played`); loaded time, a trim and chapters past the length peg or stay out; a gone device or track, or a refused trim, leaves none and clears the last; a dropped root path shows whole; subtitle times no clock holds read as none; a rail layout left no width gives no share (`scrubber::along`), so hover, press and drag skip it; waveform buckets count in `u64`, which a 32-bit web `usize` outgrows. Kept: non-zero lengths, one-value contracts, one list's uniqueness and order, lookups by construction. Review: 4 rounds; it also passed P25's last fix.
 - P27: an owner's pick gone from a grid, an explorer folder or a directory listing logs and is kept as given, so it replaces a local pick and marks none (P13's listing now does the same); the columns mark a path name only while its parent holds it as a folder; moved bytes past a total log, the bar already capped; duplicate marks on no copy, or on every copy of a group, are dropped, so Remove never takes a group's last copy. Kept: one list's uniqueness, a snapshot's path and levels, items and downloads, lookups by construction, `datetime` with a constant pattern. Review: 3 rounds.
+- P28: an open chat or selected member no longer listed logs and marks none. Kept: one list's uniqueness and non-emptiness, one message's receipt and replies, constant `datetime` patterns, picks from lists without disabled rows, keys from the same render. Review: 1 round.

@@ -225,3 +225,40 @@ fn an_emoji_is_searched_and_picked_and_focus_comes_back(cx: &mut TestAppContext)
         "the words follow the emoji field in Tab order"
     );
 }
+
+/// A chat list and a member list whose open chat and selected member left.
+struct Departed;
+
+impl Render for Departed {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .w(px(320.0))
+            .child(
+                crate::messaging::ChannelList::new("chats")
+                    .section(
+                        "Channels",
+                        [(
+                            "general",
+                            crate::messaging::ChannelItem::new("general", "general"),
+                        )],
+                    )
+                    .open("gone"),
+            )
+            .child(
+                MemberList::new(
+                    "members",
+                    [Member::new("ana", "Ana Lima", Presence::Online)],
+                )
+                .selected("gone"),
+            )
+    }
+}
+
+#[gpui::test]
+fn a_chat_or_member_that_left_marks_none(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Departed);
+    settle(cx);
+    assert!(cx.debug_bounds("item-selected-general").is_none());
+    assert!(cx.debug_bounds("item-selected-Ana Lima").is_none());
+}
