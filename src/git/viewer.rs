@@ -33,7 +33,7 @@ type OnIndex = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 type OnLayout = Rc<dyn Fn(DiffLayout, &mut Window, &mut App)>;
 type OnLine = Rc<dyn Fn(Place, bool, &mut Window, &mut App)>;
 
-/// One file's changes: each change in its context with old and new numbers and its changed words marked, the stretches between folded until pressed; unified or side by side. Long diffs draw only the rows in view; it fills its box.
+/// One file's changes, unified or side by side; fills its box.
 #[derive(IntoElement)]
 pub struct DiffViewer {
     id: ElementId,
@@ -123,7 +123,7 @@ impl DiffViewer {
         self
     }
 
-    /// Leaves the file's header, its path, counts and layout, to the owner, as a change card draws it.
+    /// Leaves the header, path, counts and layout, to the owner.
     pub fn headless(mut self) -> Self {
         self.headless = true;
         self
@@ -134,7 +134,7 @@ impl DiffViewer {
         self
     }
 
-    /// Folded stretches shown in full, by their place among the stretches.
+    /// Folded stretches shown in full, by their place.
     pub fn open(mut self, stretches: impl IntoIterator<Item = usize>) -> Self {
         self.open = stretches.into_iter().collect();
         self

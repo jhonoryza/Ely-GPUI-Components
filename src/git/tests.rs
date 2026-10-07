@@ -6,7 +6,7 @@ use gpui::{
 use super::DiffViewer;
 use crate::{forms, primitives::FocusNext, theme::Theme};
 
-/// A diff whose first stretch folds, and the folds asked open.
+/// A diff whose first stretch folds, and folds asked open.
 struct Folded {
     opened: Vec<usize>,
 }
@@ -51,7 +51,7 @@ fn a_fold_opens_from_the_keyboard(cx: &mut TestAppContext) {
     assert_eq!(view.read_with(cx, |folded, _| folded.opened.clone()), [0]);
 }
 
-/// A blame from before the file changed: an owner too few, and one past the blames.
+/// A blame older than its code: owners short and past.
 struct Behind;
 
 impl Render for Behind {

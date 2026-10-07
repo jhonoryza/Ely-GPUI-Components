@@ -1,6 +1,6 @@
-//! Component copy in English and Chinese; `text` reads it when the app's catalogs lack the key.
+//! Component copy in English and Chinese, the apps' fallback.
 
-/// English, the canonical set; zh-CN holds the same keys, a test keeps parity.
+/// English, the canonical set; zh-CN mirrors its keys.
 const EN: &[(&str, &str)] = &[
     ("palette.command.placeholder", "Type a command"),
     ("palette.command.empty", "No matching commands"),
@@ -170,7 +170,7 @@ const ZH_CN: &[(&str, &str)] = &[
     ("git.commit.amend", "修改最近一次提交"),
 ];
 
-/// Ely's own message for `key` in `locale`, English for a locale Ely does not ship; fails on an unknown key.
+/// Ely's message for `key`; English if unshipped, fails if unknown.
 pub(crate) fn builtin(locale: &str, key: &str) -> &'static str {
     let table = if locale == "zh-CN" { ZH_CN } else { EN };
     table

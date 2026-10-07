@@ -11,7 +11,7 @@ pub enum LineKind {
     Removed,
 }
 
-/// A line of a diff: its kind, its numbers in the old and new text from one, its text, and the words that changed.
+/// A diff line: kind, numbers from one, text, changed words.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiffLine {
     pub kind: LineKind,
@@ -21,7 +21,7 @@ pub struct DiffLine {
     pub words: Vec<Range<usize>>,
 }
 
-/// A stretch of a diff: changed lines in their context, or unchanged lines folded away between.
+/// A hunk of changes in context, or folded unchanged lines.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Stretch {
     Hunk {
@@ -42,7 +42,7 @@ fn same(text: &str, old: usize, new: usize) -> DiffLine {
     }
 }
 
-/// `old` against `new` line by line: hunks with `context` lines around each change, the rest folded.
+/// `old` against `new`, `context` lines per hunk, the rest folded.
 pub fn diff(old: &str, new: &str, context: usize) -> Vec<Stretch> {
     let diff = TextDiff::from_lines(old, new);
     let (olds, news): (Vec<&str>, Vec<&str>) = (
@@ -197,7 +197,7 @@ pub fn mark_words(lines: &mut [DiffLine]) {
     }
 }
 
-/// The numbers a side-by-side row shows: the old file's on the left, the new file's on the right.
+/// A side-by-side row's numbers: old left, new right.
 pub(crate) fn side_numbers(
     left: Option<&DiffLine>,
     right: Option<&DiffLine>,
