@@ -330,12 +330,6 @@ fn the_keys_start_from_the_song_under_way(cx: &mut TestAppContext) {
 }
 
 #[test]
-#[should_panic(expected = "no track c")]
-fn the_song_under_way_is_one_of_the_list() {
-    let _ = Playlist::new("list", [track("a", "Tall Windows")]).current("c", false);
-}
-
-#[test]
 #[should_panic(expected = "track a twice")]
 fn a_song_is_listed_once() {
     let _ = Playlist::new("list", [track("a", "One"), track("a", "Two")]);

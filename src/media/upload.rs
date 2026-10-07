@@ -94,7 +94,7 @@ impl RenderOnce for ImageUpload {
         );
         let name = path
             .file_name()
-            .expect("a picked file has a name")
+            .unwrap_or(path.as_os_str())
             .to_string_lossy()
             .into_owned();
         let opened = match &decoded {

@@ -11,6 +11,7 @@ mod devices;
 mod edit;
 mod images;
 mod player;
+mod stale;
 mod video;
 
 pub(super) fn setup(cx: &mut TestAppContext) {

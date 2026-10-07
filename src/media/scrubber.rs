@@ -23,6 +23,12 @@ pub(crate) type OnTime = Rc<dyn Fn(Duration, &mut Window, &mut App)>;
 /// Seconds an arrow key moves the time; Page keys move ten times as far.
 const STEP: f64 = 5.0;
 
+/// Where `pointer` falls along `bounds`, a share of its width held to it; none on a rail layout left no width.
+pub(crate) fn along(bounds: Bounds<Pixels>, pointer: Point<Pixels>) -> Option<f32> {
+    let width = f32::from(bounds.size.width);
+    (width > 0.0).then(|| (f32::from(pointer.x - bounds.left()) / width).clamp(0.0, 1.0))
+}
+
 /// The time at `share` of `length`, the share held to the track.
 pub(crate) fn time_at(share: f32, length: Duration) -> Duration {
     length.mul_f32(share.clamp(0.0, 1.0))
@@ -96,7 +102,8 @@ pub struct Scrubber {
 impl Scrubber {
     /// `at` is how far it has played, within `length`.
     pub fn new(id: impl Into<ElementId>, length: Duration, at: Duration) -> Self {
-        assert!(!length.is_zero() && at <= length, "{at:?} of {length:?}");
+        assert!(!length.is_zero(), "{at:?} of no length");
+        let at = super::played(at, length, "scrubber");
         Self {
             id: id.into(),
             length,
@@ -116,22 +123,24 @@ impl Scrubber {
 
     /// How far it has loaded.
     pub fn loaded(mut self, loaded: Duration) -> Self {
-        assert!(
-            loaded <= self.length,
-            "loaded {loaded:?} of {:?}",
-            self.length
-        );
-        self.loaded = loaded;
+        if loaded > self.length {
+            log::error!("scrubber: loaded {loaded:?} of {:?}; it fills", self.length);
+        }
+        self.loaded = loaded.min(self.length);
         self
     }
 
     /// A chapter from `start`, after the last one given.
     pub fn chapter(mut self, start: Duration, title: impl Into<SharedString>) -> Self {
         let after = self.chapters.last().is_none_or(|(last, _)| *last < start);
-        assert!(
-            after && start < self.length,
-            "a chapter at {start:?} out of order"
-        );
+        assert!(after, "a chapter at {start:?} out of order");
+        if start >= self.length {
+            log::error!(
+                "scrubber: a chapter at {start:?} past {:?}; left out",
+                self.length
+            );
+            return self;
+        }
         self.chapters.push((start, title.into()));
         self
     }
@@ -257,9 +266,6 @@ impl RenderOnce for Scrubber {
             )
             .children(knob)
             .children(tip);
-        let spot = move |bounds: Bounds<Pixels>, pointer: Point<Pixels>| {
-            f32::from(pointer.x - bounds.left()) / f32::from(bounds.size.width)
-        };
         let (moved, left) = (track.clone(), track.clone());
         div()
             .id(self.id.clone())
@@ -271,7 +277,7 @@ impl RenderOnce for Scrubber {
             .child(rail)
             .on_mouse_move(move |event, _, cx| {
                 moved.update(cx, |track, cx| {
-                    track.hover = Some(spot(track.bounds, event.position).clamp(0.0, 1.0));
+                    track.hover = along(track.bounds, event.position);
                     cx.notify();
                 })
             })
@@ -292,8 +298,11 @@ impl RenderOnce for Scrubber {
                     .focus_ring(cx)
                     .cursor_pointer()
                     .on_mouse_down(MouseButton::Left, move |event, window, cx| {
-                        let time =
-                            time_at(spot(pressed_track.read(cx).bounds, event.position), length);
+                        let Some(share) = along(pressed_track.read(cx).bounds, event.position)
+                        else {
+                            return;
+                        };
+                        let time = time_at(share, length);
                         log::info!("scrubber: seek to {}", clock(time));
                         pressed(time, window, cx);
                     })
@@ -303,11 +312,10 @@ impl RenderOnce for Scrubber {
                             return;
                         }
                         let bounds = dragged_track.read(cx).bounds;
-                        dragged(
-                            time_at(spot(bounds, event.event.position), length),
-                            window,
-                            cx,
-                        );
+                        let Some(share) = along(bounds, event.event.position) else {
+                            return;
+                        };
+                        dragged(time_at(share, length), window, cx);
                     })
                     .on_key_down(move |event, window, cx| {
                         let (now, end) = (at.as_secs_f64(), length.as_secs_f64());

@@ -2,12 +2,12 @@ use std::{rc::Rc, time::Duration};
 
 use gpui::{
     App, Bounds, Corners, DragMoveEvent, ElementId, EmptyView, EntityId, HoverListenerMode,
-    InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce,
     StatefulInteractiveElement, Styled, Window, canvas, div, fill, point, prelude::*, relative,
     size, transparent_black,
 };
 
-use super::scrubber::{OnTime, clock, time_at, time_tip};
+use super::scrubber::{OnTime, along, clock, time_at, time_tip};
 use crate::{
     forms::keyed,
     layout::fit,
@@ -25,10 +25,12 @@ pub(crate) fn resample(peaks: &[f32], count: usize) -> Vec<f32> {
         "{} peaks into {count}",
         peaks.len()
     );
+    // In u64: bar by length outgrows a 32-bit usize on the web.
+    let edge = |bar: usize| (bar as u64 * peaks.len() as u64 / count as u64) as usize;
     (0..count)
         .map(|bar| {
-            let from = bar * peaks.len() / count;
-            let to = ((bar + 1) * peaks.len() / count).max(from + 1);
+            let from = edge(bar);
+            let to = edge(bar + 1).max(from + 1);
             peaks[from..to].iter().copied().fold(0.0, f32::max)
         })
         .collect()
@@ -66,7 +68,8 @@ impl AudioWaveform {
             !peaks.is_empty() && peaks.iter().all(|peak| (0.0..=1.0).contains(peak)),
             "peaks lie within 0 to 1"
         );
-        assert!(!length.is_zero() && at <= length, "{at:?} of {length:?}");
+        assert!(!length.is_zero(), "{at:?} of no length");
+        let at = super::played(at, length, "audio waveform");
         Self {
             id: id.into(),
             peaks: Rc::new(peaks),
@@ -138,9 +141,6 @@ impl RenderOnce for AudioWaveform {
         .top_0()
         .left_0()
         .size_full();
-        let spot = move |bounds: Bounds<Pixels>, pointer: Point<Pixels>| {
-            (f32::from(pointer.x - bounds.left()) / f32::from(bounds.size.width)).clamp(0.0, 1.0)
-        };
         let (moved, left) = (wave.clone(), wave.clone());
         div()
             .id(self.id.clone())
@@ -154,7 +154,7 @@ impl RenderOnce for AudioWaveform {
             .children(tip)
             .on_mouse_move(move |event, _, cx| {
                 moved.update(cx, |wave, cx| {
-                    wave.hover = Some(spot(wave.bounds, event.position));
+                    wave.hover = along(wave.bounds, event.position);
                     cx.notify();
                 })
             })
@@ -175,8 +175,11 @@ impl RenderOnce for AudioWaveform {
                     .focus_ring(cx)
                     .cursor_pointer()
                     .on_mouse_down(MouseButton::Left, move |event, window, cx| {
-                        let time =
-                            time_at(spot(pressed_wave.read(cx).bounds, event.position), length);
+                        let Some(share) = along(pressed_wave.read(cx).bounds, event.position)
+                        else {
+                            return;
+                        };
+                        let time = time_at(share, length);
                         log::info!("audio waveform: seek to {}", clock(time));
                         pressed(time, window, cx);
                     })
@@ -186,11 +189,10 @@ impl RenderOnce for AudioWaveform {
                             return;
                         }
                         let bounds = dragged_wave.read(cx).bounds;
-                        dragged(
-                            time_at(spot(bounds, event.event.position), length),
-                            window,
-                            cx,
-                        );
+                        let Some(share) = along(bounds, event.event.position) else {
+                            return;
+                        };
+                        dragged(time_at(share, length), window, cx);
                     })
                     .on_key_down(move |event, window, cx| {
                         let (now, end) = (at.as_secs_f64(), length.as_secs_f64());

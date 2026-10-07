@@ -20,6 +20,8 @@ mod viewer;
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
 
+use std::time::Duration;
+
 pub use annotate::ImageAnnotator;
 pub use audio::{AudioSpectrum, AudioWaveform};
 pub(crate) use camera::name_chip;
@@ -39,3 +41,11 @@ pub use subtitles::{Cue, SubtitleEditor};
 pub use thumbnail::ImageThumbnail;
 pub use upload::ImageUpload;
 pub use viewer::ImageViewer;
+
+/// `at` within `length`: a live position past the end logs and sits at the end.
+fn played(at: Duration, length: Duration, owner: &str) -> Duration {
+    if at > length {
+        log::error!("{owner}: {at:?} past {length:?}; at the end");
+    }
+    at.min(length)
+}

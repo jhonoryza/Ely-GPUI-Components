@@ -2,12 +2,12 @@ use std::{rc::Rc, time::Duration};
 
 use gpui::{
     App, Bounds, CursorStyle, DragMoveEvent, ElementId, EmptyView, EntityId, ImageSource,
-    InteractiveElement, IntoElement, MouseButton, ObjectFit, ParentElement, Pixels, Point,
-    RenderOnce, StatefulInteractiveElement, Styled, Window, canvas, div, img, prelude::*, relative,
+    InteractiveElement, IntoElement, MouseButton, ObjectFit, ParentElement, Pixels, RenderOnce,
+    StatefulInteractiveElement, Styled, Window, canvas, div, img, prelude::*, relative,
     transparent_black,
 };
 
-use super::scrubber::{OnTime, clock, time_at};
+use super::scrubber::{OnTime, along, clock, time_at};
 use crate::{
     primitives::{FocusRing, tab_stop},
     theme::ActiveTheme,
@@ -88,10 +88,11 @@ impl VideoThumbnailStrip {
     ) -> Self {
         let frames: Vec<ImageSource> = frames.into_iter().map(Into::into).collect();
         assert!(
-            !frames.is_empty() && !length.is_zero() && at <= length,
+            !frames.is_empty() && !length.is_zero(),
             "{} frames, {at:?} of {length:?}",
             frames.len()
         );
+        let at = super::played(at, length, "thumbnail strip");
         Self {
             id: id.into(),
             frames,
@@ -105,10 +106,19 @@ impl VideoThumbnailStrip {
 
     /// The part kept, from its start to its end.
     pub fn trim(mut self, start: Duration, end: Duration) -> Self {
-        assert!(
-            start + LEAST <= end && end <= self.length,
-            "a trim of {start:?} to {end:?}"
-        );
+        assert!(start + LEAST <= end, "a trim of {start:?} to {end:?}");
+        if end > self.length {
+            log::error!(
+                "thumbnail strip: a trim to {end:?} past {:?}; it ends there",
+                self.length
+            );
+        }
+        let end = end.min(self.length);
+        if start + LEAST > end {
+            log::error!("thumbnail strip: a trim from {start:?} leaves too little; none kept");
+            self.trim = None;
+            return self;
+        }
         self.trim = Some((start, end));
         self
     }
@@ -233,9 +243,6 @@ impl RenderOnce for VideoThumbnailStrip {
             )
             .children(kept)
             .child(playhead);
-        let spot = move |bounds: Bounds<Pixels>, pointer: Point<Pixels>| {
-            f32::from(pointer.x - bounds.left()) / f32::from(bounds.size.width)
-        };
         let (on_seek, on_trim) = (self.on_seek, self.on_trim);
         let act = move |held: Option<End>, time: Duration, window: &mut Window, cx: &mut App| match (
             held, trim, &on_trim, &on_seek,
@@ -262,7 +269,9 @@ impl RenderOnce for VideoThumbnailStrip {
                     .cursor_pointer()
                     .on_mouse_down(MouseButton::Left, move |event, window, cx| {
                         let bounds = pressed_strip.read(cx).bounds;
-                        let at = spot(bounds, event.position);
+                        let Some(at) = along(bounds, event.position) else {
+                            return;
+                        };
                         let reach = f32::from(reach) / f32::from(bounds.size.width);
                         let held = trim.and_then(|trim| end_at(trim, at, reach, length));
                         pressed_strip.update(cx, |strip, _| strip.held = held);
@@ -281,12 +290,10 @@ impl RenderOnce for VideoThumbnailStrip {
                             let strip = moved_strip.read(cx);
                             (strip.bounds, strip.held)
                         };
-                        moved(
-                            held,
-                            time_at(spot(bounds, event.event.position), length),
-                            window,
-                            cx,
-                        );
+                        let Some(share) = along(bounds, event.event.position) else {
+                            return;
+                        };
+                        moved(held, time_at(share, length), window, cx);
                     })
                     .on_key_down(move |event, window, cx| {
                         let command = &event.keystroke.modifiers;
@@ -312,9 +319,23 @@ impl RenderOnce for VideoThumbnailStrip {
 mod tests {
     use std::time::Duration;
 
-    use super::{End, end_at, trimmed};
+    use super::{End, VideoThumbnailStrip, end_at, trimmed};
 
     const TEN: Duration = Duration::from_secs(10);
+
+    #[test]
+    fn a_trim_past_the_video_ends_at_it_or_keeps_none() {
+        let strip = || VideoThumbnailStrip::new("strip", ["a.jpg"], TEN, Duration::ZERO);
+        let second = Duration::from_secs(1);
+        assert_eq!(
+            strip().trim(second * 2, second * 12).trim,
+            Some((second * 2, TEN))
+        );
+        let gone = strip()
+            .trim(second * 2, second * 6)
+            .trim(second * 11, second * 13);
+        assert_eq!(gone.trim, None);
+    }
 
     #[test]
     fn a_trim_end_moves_and_stops_short_of_the_other_and_the_length() {

@@ -60,7 +60,8 @@ impl VideoPlayer {
         length: Duration,
         at: Duration,
     ) -> Self {
-        assert!(!length.is_zero() && at <= length, "{at:?} of {length:?}");
+        assert!(!length.is_zero(), "{at:?} of no length");
+        let at = super::played(at, length, "video player");
         Self {
             id: id.into(),
             frame,

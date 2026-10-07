@@ -193,12 +193,6 @@ fn with_none_attached_the_selector_takes_no_focus(cx: &mut TestAppContext) {
 }
 
 #[test]
-#[should_panic(expected = "no device c")]
-fn the_device_in_use_is_one_of_the_list() {
-    let _ = DeviceSelector::new("mics", DeviceKind::Microphone, [device("a")]).chosen("c");
-}
-
-#[test]
 #[should_panic(expected = "device a twice")]
 fn a_device_is_listed_once() {
     let _ = DeviceSelector::new("mics", DeviceKind::Speaker, [device("a"), device("a")]);

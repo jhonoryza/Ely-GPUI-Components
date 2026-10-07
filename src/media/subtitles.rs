@@ -27,7 +27,7 @@ pub struct Cue {
     pub text: SharedString,
 }
 
-/// A time read from `mm:ss.mmm` or `h:mm:ss.mmm`, its fraction optional; none when it does not read.
+/// A time read from `mm:ss.mmm` or `h:mm:ss.mmm`, its fraction optional; none when it does not read or no clock holds it.
 pub(crate) fn parse_time(text: &str) -> Option<Duration> {
     let text = text.trim();
     let (clock, fraction) = text.split_once('.').unwrap_or((text, ""));
@@ -36,10 +36,10 @@ pub(crate) fn parse_time(text: &str) -> Option<Duration> {
         .map(|part| part.parse().ok())
         .collect::<Option<_>>()?;
     let seconds = match parts.as_slice() {
-        [minutes, seconds] if *seconds < 60 => minutes * 60 + seconds,
-        [hours, minutes, seconds] if *minutes < 60 && *seconds < 60 => {
-            hours * 3600 + minutes * 60 + seconds
-        }
+        [minutes, seconds] if *seconds < 60 => minutes.checked_mul(60)?.checked_add(*seconds)?,
+        [hours, minutes, seconds] if *minutes < 60 && *seconds < 60 => hours
+            .checked_mul(3600)?
+            .checked_add(minutes * 60 + seconds)?,
         _ => return None,
     };
     let millis = match fraction.len() {
@@ -49,7 +49,9 @@ pub(crate) fn parse_time(text: &str) -> Option<Duration> {
         }
         _ => return None,
     };
-    Some(Duration::from_millis(seconds * 1000 + millis))
+    Some(Duration::from_millis(
+        seconds.checked_mul(1000)?.checked_add(millis)?,
+    ))
 }
 
 /// A time as `mm:ss.mmm`, the hours ahead once it runs past one.
@@ -331,7 +333,17 @@ mod tests {
             Some(Duration::from_millis(3_723_004))
         );
         assert_eq!(parse_time("75:00"), Some(Duration::from_secs(4500)));
-        for bad in ["1:60", "a:10", "1:2:3:4", "01:02.5000", "01:02.x", ""] {
+        for bad in [
+            "1:60",
+            "a:10",
+            "1:2:3:4",
+            "01:02.5000",
+            "01:02.x",
+            "",
+            "18446744073709551615:00",
+            "5124095576030431:00:00",
+            "307445734561825860:00",
+        ] {
             assert_eq!(parse_time(bad), None, "{bad:?}");
         }
         assert_eq!(stamp(Duration::from_millis(62_500)), "01:02.500");

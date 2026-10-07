@@ -180,10 +180,11 @@ impl DeviceSelector {
     /// The device in use, by key.
     pub fn chosen(mut self, key: impl Into<SharedString>) -> Self {
         let key = key.into();
-        assert!(
-            self.devices.iter().any(|device| device.key == key),
-            "no device {key}"
-        );
+        if !self.devices.iter().any(|device| device.key == key) {
+            log::error!("device selector: no device {key}; none chosen");
+            self.chosen = None;
+            return self;
+        }
         self.chosen = Some(key);
         self
     }
@@ -223,5 +224,20 @@ impl RenderOnce for DeviceSelector {
             }),
             None => select,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Device, DeviceKind, DeviceSelector};
+
+    #[test]
+    fn a_device_gone_from_the_list_leaves_none_chosen() {
+        let device = Device {
+            key: "a".into(),
+            name: "Device a".into(),
+        };
+        let selector = DeviceSelector::new("mics", DeviceKind::Microphone, [device]);
+        assert_eq!(selector.chosen("a").chosen("gone").chosen, None);
     }
 }

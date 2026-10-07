@@ -91,10 +91,12 @@ impl Playlist {
     /// The song under way, by key, and whether it plays.
     pub fn current(mut self, key: impl Into<SharedString>, playing: bool) -> Self {
         let key = key.into();
-        assert!(
-            self.tracks.iter().any(|track| track.key == key),
-            "no track {key}"
-        );
+        if !self.tracks.iter().any(|track| track.key == key) {
+            log::error!("playlist: no track {key}; none under way");
+            self.current = None;
+            self.playing = false;
+            return self;
+        }
         self.current = Some(key);
         self.playing = playing;
         self
@@ -176,7 +178,8 @@ impl AudioPlayer {
         length: Duration,
         at: Duration,
     ) -> Self {
-        assert!(!length.is_zero() && at <= length, "{at:?} of {length:?}");
+        assert!(!length.is_zero(), "{at:?} of no length");
+        let at = super::played(at, length, "now playing");
         Self {
             id: id.into(),
             title: title.into(),
@@ -287,5 +290,26 @@ impl RenderOnce for AudioPlayer {
             )
             .children(self.controls)
             .children(self.volume)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use super::{Playlist, Track};
+
+    #[test]
+    fn a_track_gone_from_the_list_leaves_none_under_way() {
+        let track = Track {
+            key: "a".into(),
+            title: "Tall Windows".into(),
+            artist: "Aster Quartet".into(),
+            length: Duration::from_secs(200),
+        };
+        let list = Playlist::new("list", [track])
+            .current("a", true)
+            .current("gone", true);
+        assert_eq!((list.current, list.playing), (None, false));
     }
 }
