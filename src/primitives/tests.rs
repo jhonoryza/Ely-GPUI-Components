@@ -1,11 +1,11 @@
 use std::{cell::RefCell, rc::Rc};
 
 use gpui::{
-    App, Context, Entity, FocusHandle, IntoElement, Modifiers, ParentElement, Render, RenderOnce,
-    Styled, TestAppContext, Window, anchored, div, point, prelude::*, px,
+    App, Context, Entity, FocusHandle, IntoElement, KeyBinding, Modifiers, ParentElement, Render,
+    RenderOnce, Styled, TestAppContext, Window, actions, anchored, div, point, prelude::*, px,
 };
 
-use super::raise;
+use super::{FocusScope, raise};
 use crate::theme::Theme;
 
 /// A raised square holding a raised button, under a cover drawn after it in the same layer.
@@ -129,4 +129,45 @@ fn a_raise_keeps_its_state_while_another_comes_before_it(cx: &mut TestAppContext
         cx.update(|window, _| handle.is_focused(window)),
         "the box kept focus"
     );
+}
+
+actions!(host, [Indent]);
+
+/// A root scope around a field whose own context binds Tab.
+struct Field {
+    root: FocusHandle,
+    field: FocusHandle,
+    indents: usize,
+}
+
+impl Render for Field {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let view = cx.entity();
+        FocusScope::new(&self.root).root().size_full().child(
+            div()
+                .key_context("HostField")
+                .track_focus(&self.field)
+                .size(px(100.0))
+                .on_action(move |_: &Indent, _, cx| view.update(cx, |field, _| field.indents += 1)),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_deeper_context_keeps_its_own_tab_whatever_init_ran_last(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        cx.bind_keys([KeyBinding::new("tab", Indent, Some("HostField"))]);
+        crate::init_for_tests(cx);
+    });
+    let (view, cx) = cx.add_window_view(|_, cx| Field {
+        root: cx.focus_handle(),
+        field: cx.focus_handle(),
+        indents: 0,
+    });
+    cx.update(|window, cx| {
+        let field = view.read(cx).field.clone();
+        window.focus(&field, cx);
+    });
+    cx.simulate_keystrokes("tab");
+    assert_eq!(view.read_with(cx, |field, _| field.indents), 1);
 }

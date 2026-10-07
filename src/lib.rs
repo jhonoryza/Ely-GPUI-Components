@@ -50,7 +50,7 @@ pub use assets::Assets;
 use anyhow::Context as _;
 use gpui::{App, KeyBinding};
 
-use crate::primitives::{FocusNext, FocusPrev, IconName};
+use crate::primitives::{FOCUS_CONTEXT, FocusNext, FocusPrev, IconName};
 
 /// Loads fonts and the theme, binds Tab and text keys. Call once, first.
 pub fn init(cx: &mut App) -> anyhow::Result<()> {
@@ -76,8 +76,8 @@ pub fn init_for_tests(cx: &mut App) {
 fn setup(cx: &mut App) {
     theme::Theme::init(cx);
     cx.bind_keys([
-        KeyBinding::new("tab", FocusNext, None),
-        KeyBinding::new("shift-tab", FocusPrev, None),
+        KeyBinding::new("tab", FocusNext, Some(FOCUS_CONTEXT)),
+        KeyBinding::new("shift-tab", FocusPrev, Some(FOCUS_CONTEXT)),
     ]);
     forms::bind_keys(cx);
     editor::bind_keys(cx);

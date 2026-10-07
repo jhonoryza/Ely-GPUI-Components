@@ -4,7 +4,7 @@ Every Ely control that takes a press is a Tab stop. Focus moves with Tab and Shi
 
 ## What `init` binds
 
-`init` binds `tab` to the `FocusNext` action and `shift-tab` to `FocusPrev`, with no key context, so they reach every window. A `FocusScope` turns the two actions into focus moves.
+`init` binds `tab` to the `FocusNext` action and `shift-tab` to `FocusPrev`, under `ElyFocus`, the key context every `FocusScope` sets. A `FocusScope` turns the two actions into focus moves. A context nested deeper keeps its own Tab, as a code editor that indents does, whichever library's `init` ran last.
 
 ## The root scope
 

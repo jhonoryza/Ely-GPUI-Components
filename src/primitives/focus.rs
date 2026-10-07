@@ -8,6 +8,9 @@ use crate::theme::ActiveTheme;
 
 actions!(ely, [FocusNext, FocusPrev]);
 
+/// The key context of every `FocusScope`; Tab and Shift-Tab bind under it.
+pub(crate) const CONTEXT: &str = "ElyFocus";
+
 /// Focus-colored border while focused. Give the element a 1px border.
 pub trait FocusRing: InteractiveElement + Sized {
     fn focus_ring(self, cx: &App) -> Self {
@@ -30,7 +33,7 @@ pub struct FocusScope {
 impl FocusScope {
     pub fn new(handle: &FocusHandle) -> Self {
         Self {
-            base: div().track_focus(handle),
+            base: div().key_context(CONTEXT).track_focus(handle),
             handle: handle.clone(),
             trap: false,
             root: false,
