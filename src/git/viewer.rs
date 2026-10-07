@@ -234,6 +234,8 @@ impl RenderOnce for DiffViewer {
                                 .aria_label(spoken(line))
                                 .aria_selected(picked)
                                 .tab_index(0)
+                                .border_1()
+                                .border_color(gpui::transparent_black())
                                 .focus_ring(cx)
                                 .cursor_pointer()
                                 .on_mouse_down(MouseButton::Left, |_, window, _| {
@@ -365,6 +367,8 @@ impl RenderOnce for DiffViewer {
                                     .text_color(colors.fg_subtle)
                                     .when_some(open, |row, open| {
                                         row.tab_index(0)
+                                            .border_1()
+                                            .border_color(gpui::transparent_black())
                                             .focus_ring(cx)
                                             .cursor_pointer()
                                             .hover(|row| row.text_color(colors.fg))

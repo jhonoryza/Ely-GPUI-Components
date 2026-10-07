@@ -78,6 +78,8 @@ impl RenderOnce for CommitItem {
             .aria_label(spoken)
             .aria_selected(self.selected)
             .tab_index(0)
+            .border_1()
+            .border_color(gpui::transparent_black())
             .focus_ring(cx)
             .flex_1()
             .min_w_0()

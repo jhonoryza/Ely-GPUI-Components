@@ -227,6 +227,8 @@ pub(super) fn listed(
                 .aria_label(pick.spoken)
                 .aria_selected(pick.selected)
                 .tab_index(0)
+                .border_1()
+                .border_color(gpui::transparent_black())
                 .focus_ring(cx)
                 .cursor_pointer()
                 .when(pick.selected, |row| row.bg(colors.selection))
@@ -280,9 +282,12 @@ pub(super) fn listed(
                     )
                 }),
         )
-        // On hover the actions take the words' place.
+        // Hover or keyboard focus shows the actions.
         .child(
             div()
+                .id("actions")
+                .focusable()
+                .in_focus(|actions| actions.opacity(1.))
                 .absolute()
                 .top_0p5()
                 .right_1()

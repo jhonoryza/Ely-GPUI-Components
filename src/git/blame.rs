@@ -198,6 +198,8 @@ impl RenderOnce for BlameView {
                                         .role(Role::Button)
                                         .aria_label(said)
                                         .tab_index(0)
+                                        .border_1()
+                                        .border_color(gpui::transparent_black())
                                         .focus_ring(cx)
                                         .cursor_pointer()
                                         .hover(|gutter| gutter.bg(colors.hover))

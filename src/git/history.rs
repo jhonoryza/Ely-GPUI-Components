@@ -76,6 +76,8 @@ impl RenderOnce for FileHistory {
                         .aria_label(commit.subject.clone())
                         .aria_selected(picked)
                         .tab_index(0)
+                        .border_1()
+                        .border_color(gpui::transparent_black())
                         .focus_ring(cx)
                         .flex()
                         .gap_3()

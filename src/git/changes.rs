@@ -169,6 +169,8 @@ impl ChangesList {
             .aria_label(file.path.clone())
             .aria_selected(picked)
             .tab_index(0)
+            .border_1()
+            .border_color(gpui::transparent_black())
             .focus_ring(cx)
             .when(picked, |row| row.bg(colors.selection))
             .flex()
@@ -214,6 +216,9 @@ impl ChangesList {
             )
             .child(
                 div()
+                    .id("actions")
+                    .focusable()
+                    .in_focus(|actions| actions.opacity(1.))
                     .flex()
                     .opacity(0.)
                     .group_hover(group, |actions| actions.opacity(1.))
