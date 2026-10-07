@@ -2,13 +2,14 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, Bounds, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement,
-    PathBuilder, Pixels, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
-    canvas, div, point, prelude::*, size,
+    PathBuilder, Pixels, RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled,
+    Window, canvas, div, point, prelude::*, size, uniform_list,
 };
 
-use super::graph::{GraphRow, Half, lanes};
+use super::graph::{GraphRow, Half};
 use crate::{
     data_display::{Avatar, Tag, Tone},
+    primitives::FocusRing,
     theme::{ActiveTheme, AvatarSize, ControlSize, IconSize, Radius, TextSize},
     typography::Ellipsis,
 };
@@ -68,6 +69,11 @@ impl RenderOnce for CommitItem {
         let (pick, picked) = (self.on_pick, commit.id.clone());
         div()
             .id(self.id.clone())
+            .role(Role::ListItem)
+            .aria_label(commit.subject.clone())
+            .aria_selected(self.selected)
+            .tab_index(0)
+            .focus_ring(cx)
             .flex_1()
             .min_w_0()
             .h(theme.control_height(ControlSize::Lg))
@@ -126,24 +132,28 @@ impl RenderOnce for CommitItem {
     }
 }
 
-/// Commits newest first, one to a row; a press picks one.
+type OnEnd = Rc<dyn Fn(&mut App)>;
+
+/// Commits newest first; draws rows in view, fills its box.
 #[derive(IntoElement)]
 pub struct CommitList {
     id: ElementId,
-    commits: Vec<Commit>,
+    commits: Rc<Vec<Commit>>,
+    graph: Option<Rc<Vec<GraphRow>>>,
     selected: Option<SharedString>,
     on_pick: Option<OnPick>,
-    graph: bool,
+    on_end: Option<OnEnd>,
 }
 
 impl CommitList {
-    pub fn new(id: impl Into<ElementId>, commits: impl IntoIterator<Item = Commit>) -> Self {
+    pub fn new(id: impl Into<ElementId>, commits: Rc<Vec<Commit>>) -> Self {
         Self {
             id: id.into(),
-            commits: commits.into_iter().collect(),
+            commits,
+            graph: None,
             selected: None,
             on_pick: None,
-            graph: false,
+            on_end: None,
         }
     }
 
@@ -160,12 +170,21 @@ impl CommitList {
         self
     }
 
-    /// Draws the lanes beside the rows, as a commit graph.
-    pub fn graph(mut self) -> Self {
-        self.graph = true;
+    /// Lanes beside the rows, from `lanes`.
+    pub fn graph(mut self, rows: Rc<Vec<GraphRow>>) -> Self {
+        self.graph = Some(rows);
+        self
+    }
+
+    /// Called when rows near the end draw.
+    pub fn on_end(mut self, handler: impl Fn(&mut App) + 'static) -> Self {
+        self.on_end = Some(Rc::new(handler));
         self
     }
 }
+
+/// Rows from the end that ask for more.
+const NEAR_END: usize = 20;
 
 /// Paints one row's lanes, `span` lanes wide so every row lines up: strokes into and out of its commit, lanes passing it, and the commit's dot.
 fn lanes_cell(
@@ -219,56 +238,67 @@ fn lanes_cell(
 }
 
 impl RenderOnce for CommitList {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.theme();
-        let rem = window.rem_size();
-        let height = theme.control_height(ControlSize::Lg).to_pixels(rem);
-        let lane = theme.icon_size(IconSize::Md).to_pixels(rem);
-        let stroke = theme.chart().hairline * 1.5;
-        let palette = theme.colors.chart;
-        let graph: Vec<Option<GraphRow>> = if self.graph {
-            let parents: Vec<Vec<&str>> = self
-                .commits
-                .iter()
-                .map(|commit| commit.parents.iter().map(|id| id.as_ref()).collect())
-                .collect();
-            lanes(
-                self.commits
-                    .iter()
-                    .zip(&parents)
-                    .map(|(commit, parents)| (commit.id.as_ref(), parents.as_slice())),
-            )
-            .into_iter()
-            .map(Some)
-            .collect()
-        } else {
-            vec![None; self.commits.len()]
-        };
-        let span = graph
+    fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
+        if let Some(graph) = &self.graph
+            && graph.len() != self.commits.len()
+        {
+            log::error!(
+                "commit list: {} graph rows for {} commits; rows past them draw bare",
+                graph.len(),
+                self.commits.len()
+            );
+        }
+        let span = self
+            .graph
             .iter()
-            .flatten()
+            .flat_map(|rows| rows.iter())
             .map(|row| row.width)
             .max()
             .unwrap_or(0);
-        div()
-            .flex()
-            .flex_col()
-            .children(self.commits.into_iter().zip(graph).map(|(commit, lanes)| {
-                let selected = self.selected.as_ref() == Some(&commit.id);
-                let item = CommitItem::new((self.id.clone(), commit.id.clone()), commit)
-                    .selected(selected);
-                let item = match &self.on_pick {
-                    Some(pick) => {
-                        let pick = pick.clone();
-                        item.on_pick(move |id, window, cx| pick(id, window, cx))
-                    }
-                    None => item,
-                };
-                div()
-                    .flex()
-                    .items_center()
-                    .children(lanes.map(|row| lanes_cell(row, span, lane, height, stroke, palette)))
-                    .child(item)
-            }))
+        let Self {
+            id,
+            commits,
+            graph,
+            selected,
+            on_pick,
+            on_end,
+        } = self;
+        let count = commits.len();
+        uniform_list((id.clone(), "rows"), count, move |range, window, cx| {
+            if let Some(on_end) = on_end.clone().filter(|_| range.end + NEAR_END >= count) {
+                cx.defer(move |cx| on_end(cx));
+            }
+            let theme = cx.theme();
+            let rem = window.rem_size();
+            let height = theme.control_height(ControlSize::Lg).to_pixels(rem);
+            let lane = theme.icon_size(IconSize::Md).to_pixels(rem);
+            let stroke = theme.chart().hairline * 1.5;
+            let palette = theme.colors.chart;
+            range
+                .map(|ix| {
+                    let commit = commits[ix].clone();
+                    let picked = selected.as_ref() == Some(&commit.id);
+                    let item =
+                        CommitItem::new((id.clone(), commit.id.clone()), commit).selected(picked);
+                    let item = match &on_pick {
+                        Some(pick) => {
+                            let pick = pick.clone();
+                            item.on_pick(move |id, window, cx| pick(id, window, cx))
+                        }
+                        None => item,
+                    };
+                    let lanes = graph.as_ref().and_then(|rows| rows.get(ix)).cloned();
+                    div()
+                        .w_full()
+                        .flex()
+                        .items_center()
+                        .children(
+                            lanes.map(|row| lanes_cell(row, span, lane, height, stroke, palette)),
+                        )
+                        .child(item)
+                })
+                .collect()
+        })
+        .size_full()
     }
 }

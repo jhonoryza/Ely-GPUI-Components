@@ -37,7 +37,14 @@ pub fn blame(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     ];
     let history_rows: Vec<_> = history()
         .into_iter()
-        .zip([(12, 4), (3, 3), (9, 1), (18, 0), (2, 1), (40, 0)])
+        .zip([
+            Some((12, 4)),
+            Some((3, 3)),
+            Some((9, 1)),
+            Some((18, 0)),
+            None,
+            Some((40, 0)),
+        ])
         .collect();
     let (pick, select) = (said.clone(), said.clone());
     section(
@@ -46,7 +53,7 @@ pub fn blame(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         cx,
     )
     .child(
-        div().w(px(840.)).child(
+        div().w(px(840.)).h(px(240.)).child(
             BlameView::new("git-blame", CODE, [0, 1, 1, 1, 0, 0, 2, 2, 0, 0], blames)
                 .current(2)
                 .on_commit(move |commit, _, cx| set(&pick, Some(format!("Picked {}.", &commit[..7]).into()), cx)),
@@ -54,8 +61,8 @@ pub fn blame(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     )
     .children(told.map(Caption::new))
     .child(
-        div().w(px(520.)).child(
-            FileHistory::new("git-file-history", history_rows)
+        div().w(px(520.)).h(px(360.)).child(
+            FileHistory::new("git-file-history", std::rc::Rc::new(history_rows))
                 .selected(history()[1].id.clone())
                 .on_pick(move |commit, _, cx| set(&select, Some(format!("Opened {}.", &commit[..7]).into()), cx)),
         ),

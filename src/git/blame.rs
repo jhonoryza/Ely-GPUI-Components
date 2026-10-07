@@ -1,14 +1,15 @@
 use std::{ops::Range, rc::Rc};
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, StyledText, Window, div,
-    prelude::*, relative,
+    App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement, RenderOnce, Role,
+    SharedString, StatefulInteractiveElement, Styled, StyledText, Window, div, prelude::*,
+    relative, uniform_list,
 };
 
 use crate::{
     data_display::Avatar,
     editor::code_colors,
+    primitives::FocusRing,
     theme::{ActiveTheme, AvatarSize, TextSize},
     typography::{Ellipsis, LEADING},
 };
@@ -130,126 +131,137 @@ impl BlameView {
 impl RenderOnce for BlameView {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
-        let colors = theme.colors.clone();
-        let lines: Vec<&str> = self.code.lines().collect();
-        let digits = lines.len().to_string().len();
-        let blocks: Vec<AnyElement> = runs(&self.owners)
-            .into_iter()
-            .map(|(owner, span)| {
-                let blame = owner.map(|owner| self.blames[owner].clone());
-                let Some(found) = blame.clone() else {
-                    let bare = div()
-                        .flex_none()
-                        .w_64()
-                        .border_l_2()
-                        .border_color(colors.border);
-                    return (span, bare.into_any_element(), None);
-                };
-                let blame = found;
-                let fade = 1.0 - blame.age.clamp(0.0, 1.0) * 0.8;
-                let pick = self.on_commit.clone();
-                let commit = blame.commit.clone();
-                let gutter = div()
-                    .id((self.id.clone(), format!("run-{}", span.start)))
-                    .flex_none()
-                    .w_64()
-                    .flex()
-                    .items_start()
-                    .gap_2()
-                    .px_2()
-                    .border_l_2()
-                    .border_color(colors.accent.opacity(fade))
-                    .font_family(theme.font_family.clone())
-                    .text_size(theme.text_size(TextSize::Xs))
-                    .when_some(pick, |gutter, pick| {
-                        gutter
-                            .cursor_pointer()
-                            .hover(|gutter| gutter.bg(colors.hover))
-                            .on_click(move |_, window, cx| pick(&commit, window, cx))
-                    })
-                    .child(
-                        Avatar::new(
-                            (self.id.clone(), format!("author-{}", span.start)),
-                            blame.author.clone(),
-                        )
-                        .size(AvatarSize::Xs),
-                    )
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .flex()
-                            .flex_col()
-                            .child(
-                                div()
-                                    .flex()
-                                    .gap_1()
-                                    .child(
-                                        div()
-                                            .font_weight(FontWeight::MEDIUM)
-                                            .text_color(colors.fg)
-                                            .child(blame.author.clone()),
-                                    )
-                                    .child(
-                                        div()
-                                            .text_color(colors.fg_subtle)
-                                            .child(blame.when.clone()),
-                                    ),
-                            )
-                            .child(
-                                div()
-                                    .text_color(colors.fg_muted)
-                                    .child(Ellipsis::new(blame.subject.clone())),
-                            ),
-                    );
-                (span, gutter.into_any_element(), Some(blame))
-            })
-            .map(|(span, gutter, blame)| {
-                let code = div()
-                    .flex_1()
-                    .min_w_0()
-                    .overflow_hidden()
-                    .line_height(relative(LEADING))
-                    .flex()
-                    .flex_col()
-                    .children(span.clone().map(|line| {
-                        let text = lines[line].to_string();
-                        let styles = code_colors(&text, cx);
-                        div()
-                            .flex()
-                            .gap_3()
-                            .whitespace_nowrap()
-                            .when(self.current == Some(line), |row| row.bg(colors.hover))
-                            .child(
-                                div()
-                                    .flex_none()
-                                    .w(theme.text_size(TextSize::Xs) * (digits as f32 * 0.62))
-                                    .text_right()
-                                    .text_color(colors.fg_subtle)
-                                    .child((line + 1).to_string()),
-                            )
-                            .child(StyledText::new(text).with_highlights(styles))
-                            .when_some(
-                                blame.clone().filter(|_| self.current == Some(line)),
-                                |row, blame| row.child(GitBlameAnnotation::new(blame)),
-                            )
-                    }));
-                div()
-                    .flex()
-                    .border_t_1()
-                    .border_color(colors.border)
-                    .child(gutter)
-                    .child(code)
-                    .into_any_element()
-            })
-            .collect();
-        div()
-            .flex()
-            .flex_col()
+        let frame = div()
+            .size_full()
             .font_family(theme.mono_family.clone())
             .text_size(theme.text_size(TextSize::Xs))
-            .text_color(colors.fg)
-            .children(blocks)
+            .text_color(theme.colors.fg);
+        let Self {
+            id,
+            code,
+            owners,
+            blames,
+            current,
+            on_commit,
+        } = self;
+        let lines: Rc<Vec<SharedString>> =
+            Rc::new(code.lines().map(|line| line.to_string().into()).collect());
+        let digits = lines.len().to_string().len();
+        // Each line's owner, and whether it starts a run.
+        let heads: Rc<Vec<(Option<usize>, bool)>> = Rc::new(
+            runs(&owners)
+                .into_iter()
+                .flat_map(|(owner, span)| span.clone().map(move |line| (owner, line == span.start)))
+                .collect(),
+        );
+        let blames = Rc::new(blames);
+        let list = uniform_list((id.clone(), "lines"), lines.len(), move |range, _, cx| {
+            let theme = cx.theme();
+            let colors = theme.colors.clone();
+            range
+                .map(|line| {
+                    let (owner, head) = heads[line];
+                    let blame = owner.map(|owner| blames[owner].clone());
+                    let fade = blame
+                        .as_ref()
+                        .map(|blame| 1.0 - blame.age.clamp(0.0, 1.0) * 0.8);
+                    let gutter = div()
+                        .id((id.clone(), format!("gutter-{line}")))
+                        .flex_none()
+                        .w_80()
+                        .h_full()
+                        .flex()
+                        .items_center()
+                        .gap_2()
+                        .px_2()
+                        .border_l_2()
+                        .border_color(
+                            fade.map_or(colors.border, |fade| colors.accent.opacity(fade)),
+                        )
+                        .font_family(theme.font_family.clone())
+                        .text_size(theme.text_size(TextSize::Xs));
+                    let gutter = match blame.clone().filter(|_| head) {
+                        Some(blame) => {
+                            let said: SharedString =
+                                format!("{}, {} · {}", blame.author, blame.when, blame.subject)
+                                    .into();
+                            let pick = on_commit.clone();
+                            let commit = blame.commit.clone();
+                            gutter
+                                .when_some(pick, |gutter, pick| {
+                                    gutter
+                                        .role(Role::Button)
+                                        .aria_label(said)
+                                        .tab_index(0)
+                                        .focus_ring(cx)
+                                        .cursor_pointer()
+                                        .hover(|gutter| gutter.bg(colors.hover))
+                                        .on_click(move |_, window, cx| pick(&commit, window, cx))
+                                })
+                                .child(
+                                    Avatar::new(
+                                        (id.clone(), format!("author-{line}")),
+                                        blame.author.clone(),
+                                    )
+                                    .size(AvatarSize::Xs),
+                                )
+                                .child(
+                                    div()
+                                        .flex_none()
+                                        .font_weight(FontWeight::MEDIUM)
+                                        .text_color(colors.fg)
+                                        .child(blame.author.clone()),
+                                )
+                                .child(
+                                    div()
+                                        .flex_none()
+                                        .text_color(colors.fg_subtle)
+                                        .child(blame.when.clone()),
+                                )
+                                .child(
+                                    div()
+                                        .flex_1()
+                                        .min_w_0()
+                                        .text_color(colors.fg_muted)
+                                        .child(Ellipsis::new(blame.subject.clone())),
+                                )
+                        }
+                        None => gutter,
+                    };
+                    let text = lines[line].clone();
+                    let styles = code_colors(&text, cx);
+                    div()
+                        .w_full()
+                        .flex()
+                        .items_center()
+                        .gap_3()
+                        .border_t_1()
+                        .border_color(if head && line > 0 {
+                            colors.border
+                        } else {
+                            gpui::transparent_black()
+                        })
+                        .whitespace_nowrap()
+                        .line_height(relative(LEADING))
+                        .when(current == Some(line), |row| row.bg(colors.hover))
+                        .child(gutter)
+                        .child(
+                            div()
+                                .flex_none()
+                                .w(theme.text_size(TextSize::Xs) * (digits as f32 * 0.62))
+                                .text_right()
+                                .text_color(colors.fg_subtle)
+                                .child((line + 1).to_string()),
+                        )
+                        .child(StyledText::new(text).with_highlights(styles))
+                        .when_some(blame.filter(|_| current == Some(line)), |row, blame| {
+                            row.child(GitBlameAnnotation::new(blame))
+                        })
+                })
+                .collect()
+        })
+        .size_full();
+        frame.child(list)
     }
 }
 

@@ -7,6 +7,8 @@ mod graph;
 mod history;
 mod merge;
 mod merging;
+#[cfg(all(test, feature = "test-support"))]
+mod picking;
 mod refs;
 mod review;
 mod rows;

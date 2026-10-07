@@ -82,6 +82,9 @@ const EN: &[(&str, &str)] = &[
     ("git.diff.split", "Split"),
     ("git.diff.unchanged.one", "{n} unchanged line"),
     ("git.diff.unchanged.other", "{n} unchanged lines"),
+    ("git.commit.commit_to", "Commit to {branch}"),
+    ("git.commit.amend_to", "Amend {branch}"),
+    ("git.commit.amend", "Amend last commit"),
 ];
 
 const ZH_CN: &[(&str, &str)] = &[
@@ -162,6 +165,9 @@ const ZH_CN: &[(&str, &str)] = &[
     ("git.diff.split", "并排"),
     ("git.diff.unchanged.one", "{n} 行未改动"),
     ("git.diff.unchanged.other", "{n} 行未改动"),
+    ("git.commit.commit_to", "提交到 {branch}"),
+    ("git.commit.amend_to", "修改 {branch} 的最近提交"),
+    ("git.commit.amend", "修改最近一次提交"),
 ];
 
 /// Ely's own message for `key` in `locale`, English for a locale Ely does not ship; fails on an unknown key.

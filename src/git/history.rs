@@ -1,36 +1,37 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, SharedString,
-    StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, Role, SharedString,
+    StatefulInteractiveElement, Styled, Window, div, prelude::*, uniform_list,
 };
 
 use super::{badges::DiffStat, commits::Commit};
 use crate::{
+    primitives::FocusRing,
     theme::{ActiveTheme, Radius, TextSize},
     typography::Ellipsis,
 };
 
 type OnPick = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
-/// A file's commits newest first on a line through them: subject, author and when, and what each changed; a press picks one.
+/// A file's commits newest first; draws rows in view.
 #[derive(IntoElement)]
 pub struct FileHistory {
     id: ElementId,
-    commits: Vec<(Commit, (usize, usize))>,
+    commits: Rc<Vec<(Commit, Option<(usize, usize)>)>>,
     selected: Option<SharedString>,
     on_pick: Option<OnPick>,
 }
 
 impl FileHistory {
-    /// Each commit with the lines it added and removed in the file.
+    /// Each commit with lines added and removed, if counted.
     pub fn new(
         id: impl Into<ElementId>,
-        commits: impl IntoIterator<Item = (Commit, (usize, usize))>,
+        commits: Rc<Vec<(Commit, Option<(usize, usize)>)>>,
     ) -> Self {
         Self {
             id: id.into(),
-            commits: commits.into_iter().collect(),
+            commits,
             selected: None,
             on_pick: None,
         }
@@ -51,30 +52,41 @@ impl FileHistory {
 }
 
 impl RenderOnce for FileHistory {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = cx.theme();
-        let colors = theme.colors.clone();
-        let last = self.commits.len().saturating_sub(1);
-        div()
-            .flex()
-            .flex_col()
-            .text_size(theme.text_size(TextSize::Sm))
-            .children(self.commits.into_iter().enumerate().map(
-                |(ix, (commit, (added, removed)))| {
-                    let selected = self.selected.as_ref() == Some(&commit.id);
-                    let (pick, id) = (self.on_pick.clone(), commit.id.clone());
+    fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
+        let Self {
+            id,
+            commits,
+            selected,
+            on_pick,
+        } = self;
+        let last = commits.len().saturating_sub(1);
+        uniform_list((id.clone(), "rows"), commits.len(), move |range, _, cx| {
+            let theme = cx.theme();
+            let colors = theme.colors.clone();
+            range
+                .map(|ix| {
+                    let (commit, lines) = &commits[ix];
+                    let picked = selected.as_ref() == Some(&commit.id);
+                    let (pick, picked_id) = (on_pick.clone(), commit.id.clone());
                     let short: String = commit.id.chars().take(7).collect();
                     div()
-                        .id((self.id.clone(), format!("commit-{ix}")))
+                        .id((id.clone(), format!("commit-{ix}")))
+                        .w_full()
+                        .role(Role::ListItem)
+                        .aria_label(commit.subject.clone())
+                        .aria_selected(picked)
+                        .tab_index(0)
+                        .focus_ring(cx)
                         .flex()
                         .gap_3()
                         .px_2()
+                        .text_size(theme.text_size(TextSize::Sm))
                         .rounded(theme.radius(Radius::Sm))
-                        .when(selected, |row| row.bg(colors.active))
-                        .when(!selected, |row| row.hover(|row| row.bg(colors.hover)))
+                        .when(picked, |row| row.bg(colors.active))
+                        .when(!picked, |row| row.hover(|row| row.bg(colors.hover)))
                         .when_some(pick, |row, pick| {
                             row.cursor_pointer()
-                                .on_click(move |_, window, cx| pick(&id, window, cx))
+                                .on_click(move |_, window, cx| pick(&picked_id, window, cx))
                         })
                         .child(
                             div()
@@ -90,7 +102,7 @@ impl RenderOnce for FileHistory {
                                         .size_2()
                                         .rounded_full()
                                         .border_1()
-                                        .border_color(if selected {
+                                        .border_color(if picked {
                                             colors.focus
                                         } else {
                                             colors.border_strong
@@ -130,13 +142,15 @@ impl RenderOnce for FileHistory {
                                         ),
                                 ),
                         )
-                        .child(
+                        .children(lines.map(|(added, removed)| {
                             div()
                                 .flex_none()
                                 .py_1p5()
-                                .child(DiffStat::new(added, removed)),
-                        )
-                },
-            ))
+                                .child(DiffStat::new(added, removed))
+                        }))
+                })
+                .collect()
+        })
+        .size_full()
     }
 }

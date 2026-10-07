@@ -3,11 +3,13 @@ use ely_gpui_component::{
     forms::TextInput,
     git::{
         Branch, BranchList, BranchSelector, ChangeAction, Changed, ChangesList, Commit,
-        CommitInput, CommitList, GitTag, Stash, StashAction, StashList, TagList,
+        CommitInput, CommitList, GitTag, GraphRow, Stash, StashAction, StashList, TagList, lanes,
     },
     lists::GitStatus,
     typography::Caption,
 };
+use std::rc::Rc;
+
 use gpui::{App, Entity, IntoElement, ParentElement, SharedString, Styled, Window, div, px};
 
 use crate::{
@@ -210,6 +212,21 @@ pub(super) fn history() -> Vec<Commit> {
     ]
 }
 
+/// The sample history's lanes.
+fn graph() -> Vec<GraphRow> {
+    let commits = history();
+    let parents: Vec<Vec<&str>> = commits
+        .iter()
+        .map(|commit| commit.parents.iter().map(|id| id.as_ref()).collect())
+        .collect();
+    lanes(
+        commits
+            .iter()
+            .zip(&parents)
+            .map(|(commit, parents)| (commit.id.as_ref(), parents.as_slice())),
+    )
+}
+
 pub fn commits(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let picked = keep("git-picked", || history()[0].id.clone(), window, cx);
     let now = picked.read(cx).clone();
@@ -220,9 +237,9 @@ pub fn commits(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         cx,
     )
     .child(
-        div().w(px(840.)).child(
-            CommitList::new("git-graph", history())
-                .graph()
+        div().w(px(840.)).h(px(320.)).child(
+            CommitList::new("git-graph", Rc::new(history()))
+                .graph(Rc::new(graph()))
                 .selected(now)
                 .on_pick(move |id, _, cx| set(&pick, id.clone(), cx)),
         ),

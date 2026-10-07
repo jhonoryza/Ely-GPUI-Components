@@ -398,12 +398,15 @@ impl RenderOnce for CommitInput {
         let commit = self.on_commit.filter(|_| ready);
         let submit = commit.clone();
         let label = if self.amend {
-            format!("Amend {}", self.branch)
+            i18n::text(cx, "git.commit.amend_to", &[("branch", &self.branch)])
         } else {
-            format!("Commit to {}", self.branch)
+            i18n::text(cx, "git.commit.commit_to", &[("branch", &self.branch)])
         };
-        let amend =
-            Checkbox::new((self.id.clone(), "amend"), self.amend).label("Amend last commit");
+        let amend = Checkbox::new((self.id.clone(), "amend"), self.amend).label(i18n::text(
+            cx,
+            "git.commit.amend",
+            &[],
+        ));
         let amend = match self.on_amend {
             Some(on_amend) => amend.on_change(move |on, window, cx| on_amend(on, window, cx)),
             None => amend,
