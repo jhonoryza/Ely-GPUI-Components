@@ -28,7 +28,11 @@ fn main() {
 }
 ```
 
-`init` registers the fonts and the theme. It returns an error if `Assets` is not wired into the application or the asset source fails.
+`init` registers the fonts and the theme. It returns an error if the application's asset source cannot load one of Ely's files.
+
+## With GPUI Kit
+
+Ely runs beside Longbridge's [GPUI Kit](https://gpui-kit.com) in one window, on the GPUI snapshot Kit 0.7.1 pins. Pass `Assets::before(gpui_kit::assets::Assets)` as the one asset source, call both `init`s, open the window with `gpui_kit::open_window`, and wrap the view in Ely's root `FocusScope`. The [guide](https://elygpui.com/docs/gpui-kit) covers themes, focus and the inspector; `compat/kit` holds a whole app and the tests behind each claim.
 
 ## Gallery
 
