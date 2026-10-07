@@ -67,6 +67,17 @@ const EN: &[(&str, &str)] = &[
     ("pagination.jump", "Go to"),
     ("signature.here", "Sign here"),
     ("signature.clear", "Clear"),
+    ("git.changes.conflicted", "Conflicts"),
+    ("git.changes.staged", "Staged changes"),
+    ("git.changes.unstaged", "Changes"),
+    ("git.changes.untracked", "Untracked"),
+    ("git.changes.ignored", "Ignored"),
+    ("git.changes.open", "Open file"),
+    ("git.changes.discard", "Discard changes"),
+    ("git.changes.stage", "Stage"),
+    ("git.changes.unstage", "Unstage"),
+    ("git.changes.stage_all", "Stage all"),
+    ("git.changes.unstage_all", "Unstage all"),
 ];
 
 const ZH_CN: &[(&str, &str)] = &[
@@ -132,6 +143,17 @@ const ZH_CN: &[(&str, &str)] = &[
     ("pagination.jump", "跳至"),
     ("signature.here", "在此签名"),
     ("signature.clear", "清除"),
+    ("git.changes.conflicted", "冲突"),
+    ("git.changes.staged", "已暂存"),
+    ("git.changes.unstaged", "改动"),
+    ("git.changes.untracked", "未跟踪"),
+    ("git.changes.ignored", "已忽略"),
+    ("git.changes.open", "打开文件"),
+    ("git.changes.discard", "丢弃改动"),
+    ("git.changes.stage", "暂存"),
+    ("git.changes.unstage", "取消暂存"),
+    ("git.changes.stage_all", "全部暂存"),
+    ("git.changes.unstage_all", "全部取消暂存"),
 ];
 
 /// Ely's own message for `key` in `locale`, English for a locale Ely does not ship; fails on an unknown key.

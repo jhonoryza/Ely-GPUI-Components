@@ -75,3 +75,35 @@ fn a_blame_that_lags_its_code_draws_every_line(cx: &mut TestAppContext) {
     let (_, cx) = cx.add_window_view(|_, _| Behind);
     cx.run_until_parked();
 }
+
+/// Every section of a changes list, each with one file.
+struct Sorted;
+
+impl Render for Sorted {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        use crate::lists::GitStatus;
+        let file = |path: &str, status| super::Changed {
+            path: path.to_string().into(),
+            status,
+            added: 1,
+            removed: 0,
+        };
+        div().w(px(420.0)).child(
+            super::ChangesList::new(
+                "changes",
+                [file("a.rs", GitStatus::Modified)],
+                [file("b.rs", GitStatus::Modified)],
+            )
+            .conflicted([file("c.rs", GitStatus::Conflicted)])
+            .untracked([file("d.rs", GitStatus::Untracked)])
+            .ignored([file("target/", GitStatus::Untracked)]),
+        )
+    }
+}
+
+#[gpui::test]
+fn every_section_draws_with_its_own_words(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Sorted);
+    settle(cx);
+}

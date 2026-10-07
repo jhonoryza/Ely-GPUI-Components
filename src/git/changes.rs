@@ -9,6 +9,7 @@ use super::badges::GitStatusBadge;
 use crate::{
     buttons::{Button, ButtonVariant, IconButton},
     forms::{Checkbox, Input, Submit, TextInput},
+    i18n,
     lists::GitStatus,
     primitives::IconName,
     theme::{ActiveTheme, ControlSize, Radius, TextSize},
@@ -36,12 +37,37 @@ pub enum ChangeAction {
 type OnAction = Rc<dyn Fn(&SharedString, ChangeAction, &mut Window, &mut App)>;
 type OnAll = Rc<dyn Fn(bool, &mut Window, &mut App)>;
 
-/// Files changed in the work tree, the staged apart: each with its status, its folder and what it changed; open, discard, stage or unstage it, or all at once.
+/// Which part of the work tree a file is listed in.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Section {
+    Conflicted,
+    Staged,
+    Unstaged,
+    Untracked,
+    Ignored,
+}
+
+impl Section {
+    fn key(self) -> &'static str {
+        match self {
+            Self::Conflicted => "git.changes.conflicted",
+            Self::Staged => "git.changes.staged",
+            Self::Unstaged => "git.changes.unstaged",
+            Self::Untracked => "git.changes.untracked",
+            Self::Ignored => "git.changes.ignored",
+        }
+    }
+}
+
+/// Files changed in the work tree, kept apart as conflicted, staged, changed, untracked and ignored: each with its status, its folder and what it changed; open, discard, stage or unstage it, or all at once.
 #[derive(IntoElement)]
 pub struct ChangesList {
     id: ElementId,
+    conflicted: Vec<Changed>,
     staged: Vec<Changed>,
     unstaged: Vec<Changed>,
+    untracked: Vec<Changed>,
+    ignored: Vec<Changed>,
     on_action: Option<OnAction>,
     on_all: Option<OnAll>,
 }
@@ -54,11 +80,32 @@ impl ChangesList {
     ) -> Self {
         Self {
             id: id.into(),
+            conflicted: Vec::new(),
             staged: staged.into_iter().collect(),
             unstaged: unstaged.into_iter().collect(),
+            untracked: Vec::new(),
+            ignored: Vec::new(),
             on_action: None,
             on_all: None,
         }
+    }
+
+    /// Files both sides changed; listed first, opened only.
+    pub fn conflicted(mut self, files: impl IntoIterator<Item = Changed>) -> Self {
+        self.conflicted = files.into_iter().collect();
+        self
+    }
+
+    /// Files Git does not track yet; staged or discarded one by one.
+    pub fn untracked(mut self, files: impl IntoIterator<Item = Changed>) -> Self {
+        self.untracked = files.into_iter().collect();
+        self
+    }
+
+    /// Files Git ignores; listed last, opened only.
+    pub fn ignored(mut self, files: impl IntoIterator<Item = Changed>) -> Self {
+        self.ignored = files.into_iter().collect();
+        self
     }
 
     pub fn on_action(
@@ -77,18 +124,19 @@ impl ChangesList {
 }
 
 impl ChangesList {
-    fn row(&self, file: &Changed, staged: bool, cx: &App) -> AnyElement {
+    fn row(&self, file: &Changed, section: Section, cx: &App) -> AnyElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let (folder, name) = match file.path.rsplit_once('/') {
             Some((folder, name)) => (folder.to_string(), name.to_string()),
             None => (String::new(), file.path.to_string()),
         };
-        let group = SharedString::from(format!("change-{staged}-{}", file.path));
-        let action = |key: &str, icon, words: &'static str, act: ChangeAction| {
+        let group = SharedString::from(format!("change-{section:?}-{}", file.path));
+        let action = |key: &str, icon, words: &str, act: ChangeAction| {
+            let words = i18n::text(cx, words, &[]);
             let (on_action, path) = (self.on_action.clone(), file.path.clone());
             IconButton::new(
-                (self.id.clone(), format!("{key}-{staged}-{}", file.path)),
+                (self.id.clone(), format!("{key}-{section:?}-{}", file.path)),
                 icon,
             )
             .variant(ButtonVariant::Ghost)
@@ -103,7 +151,7 @@ impl ChangesList {
         };
         let (open, path) = (self.on_action.clone(), file.path.clone());
         div()
-            .id((self.id.clone(), format!("row-{staged}-{}", file.path)))
+            .id((self.id.clone(), format!("row-{section:?}-{}", file.path)))
             .group(group.clone())
             .flex()
             .items_center()
@@ -117,7 +165,7 @@ impl ChangesList {
                 row.on_click(move |_, window, cx| open(&path, ChangeAction::Open, window, cx))
             })
             .child(GitStatusBadge::new(
-                (self.id.clone(), format!("status-{staged}-{}", file.path)),
+                (self.id.clone(), format!("status-{section:?}-{}", file.path)),
                 file.status,
             ))
             .child(
@@ -152,22 +200,39 @@ impl ChangesList {
                     .child(action(
                         "open",
                         IconName::FileText,
-                        "Open file",
+                        "git.changes.open",
                         ChangeAction::Open,
                     ))
-                    .when(!staged, |actions| {
+                    .when(
+                        matches!(section, Section::Unstaged | Section::Untracked),
+                        |actions| {
+                            actions.child(action(
+                                "discard",
+                                IconName::RotateCcw,
+                                "git.changes.discard",
+                                ChangeAction::Discard,
+                            ))
+                        },
+                    )
+                    .when(section == Section::Staged, |actions| {
                         actions.child(action(
-                            "discard",
-                            IconName::RotateCcw,
-                            "Discard changes",
-                            ChangeAction::Discard,
+                            "unstage",
+                            IconName::Minus,
+                            "git.changes.unstage",
+                            ChangeAction::Unstage,
                         ))
                     })
-                    .child(if staged {
-                        action("unstage", IconName::Minus, "Unstage", ChangeAction::Unstage)
-                    } else {
-                        action("stage", IconName::Plus, "Stage", ChangeAction::Stage)
-                    }),
+                    .when(
+                        matches!(section, Section::Unstaged | Section::Untracked),
+                        |actions| {
+                            actions.child(action(
+                                "stage",
+                                IconName::Plus,
+                                "git.changes.stage",
+                                ChangeAction::Stage,
+                            ))
+                        },
+                    ),
             )
             .child(
                 tabular(div().flex_none().text_color(colors.fg_subtle))
@@ -176,24 +241,28 @@ impl ChangesList {
             .into_any_element()
     }
 
-    fn section(
-        &self,
-        title: &'static str,
-        files: &[Changed],
-        staged: bool,
-        cx: &App,
-    ) -> Option<AnyElement> {
+    fn section(&self, section: Section, files: &[Changed], cx: &App) -> Option<AnyElement> {
         if files.is_empty() {
             return None;
         }
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let on_all = self.on_all.clone();
-        let (icon, words) = if staged {
-            (IconName::Minus, "Unstage all")
-        } else {
-            (IconName::Plus, "Stage all")
+        // Only staged and changed files move all at once.
+        let all = match section {
+            Section::Staged => Some((IconName::Minus, "git.changes.unstage_all", false)),
+            Section::Unstaged => Some((IconName::Plus, "git.changes.stage_all", true)),
+            _ => None,
         };
+        let on_all = self.on_all.clone();
+        let button = all.map(|(icon, key, stage)| {
+            IconButton::new((self.id.clone(), format!("all-{section:?}")), icon)
+                .variant(ButtonVariant::Ghost)
+                .size(ControlSize::Sm)
+                .tooltip(i18n::text(cx, key, &[]))
+                .when_some(on_all, |button, on_all| {
+                    button.on_click(move |_, window, cx| on_all(stage, window, cx))
+                })
+        });
         Some(
             div()
                 .flex()
@@ -207,20 +276,16 @@ impl ChangesList {
                         .py_1()
                         .text_size(theme.text_size(TextSize::Xs))
                         .text_color(colors.fg_muted)
-                        .child(div().flex_1().font_weight(FontWeight::MEDIUM).child(title))
-                        .child(tabular(div()).child(files.len().to_string()))
                         .child(
-                            IconButton::new((self.id.clone(), format!("all-{staged}")), icon)
-                                .variant(ButtonVariant::Ghost)
-                                .size(ControlSize::Sm)
-                                .tooltip(words)
-                                .when_some(on_all, |button, on_all| {
-                                    button
-                                        .on_click(move |_, window, cx| on_all(!staged, window, cx))
-                                }),
-                        ),
+                            div()
+                                .flex_1()
+                                .font_weight(FontWeight::MEDIUM)
+                                .child(i18n::text(cx, section.key(), &[])),
+                        )
+                        .child(tabular(div()).child(files.len().to_string()))
+                        .children(button),
                 )
-                .children(files.iter().map(|file| self.row(file, staged, cx)))
+                .children(files.iter().map(|file| self.row(file, section, cx)))
                 .into_any_element(),
         )
     }
@@ -230,8 +295,11 @@ impl RenderOnce for ChangesList {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let sections = [
-            self.section("Staged changes", &self.staged, true, cx),
-            self.section("Changes", &self.unstaged, false, cx),
+            self.section(Section::Conflicted, &self.conflicted, cx),
+            self.section(Section::Staged, &self.staged, cx),
+            self.section(Section::Unstaged, &self.unstaged, cx),
+            self.section(Section::Untracked, &self.untracked, cx),
+            self.section(Section::Ignored, &self.ignored, cx),
         ];
         div()
             .flex()
