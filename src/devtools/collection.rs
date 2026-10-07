@@ -85,7 +85,8 @@ fn placed(items: &mut Vec<Saved>, item: Saved, target: &str, at: DropAt) -> Resu
             (DropAt::After, _) => items.insert(ix + 1, item),
             (DropAt::Inside, Saved::Folder { items, .. }) => items.push(item),
             (DropAt::Inside, Saved::Request { key, .. }) => {
-                panic!("collection: {key} is a request, and nothing goes inside it")
+                log::error!("collection: {key} is a request, and nothing goes inside it");
+                return Err(item);
             }
         }
         return Ok(());
@@ -102,15 +103,19 @@ fn placed(items: &mut Vec<Saved>, item: Saved, target: &str, at: DropAt) -> Resu
     Err(item)
 }
 
-/// `items` with `key` moved to `at` of `target`, as a drop in the tree asks.
-pub fn moved(items: &[Saved], key: &str, target: &str, at: DropAt) -> Vec<Saved> {
+/// `items` with `key` moved to `at` of `target`, as a drop in the tree asks; none, logged, when either left the items.
+pub fn moved(items: &[Saved], key: &str, target: &str, at: DropAt) -> Option<Vec<Saved>> {
     let mut items = items.to_vec();
-    let item = taken(&mut items, key).unwrap_or_else(|| panic!("collection: no {key} to move"));
+    let Some(item) = taken(&mut items, key) else {
+        log::error!("collection: no {key} to move");
+        return None;
+    };
     if let Err(item) = placed(&mut items, item, target, at) {
-        panic!("collection: no {target} to move {} beside", item.key());
+        log::error!("collection: no {target} to move {} beside", item.key());
+        return None;
     }
     log::info!("collection: moved {key} {at:?} {target}");
-    items
+    Some(items)
 }
 
 type OnKey = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
@@ -236,25 +241,32 @@ mod tests {
             Saved::request("z", "Z", Method::Post),
         ];
         assert_eq!(
-            keys(&moved(&items, "x", "b", DropAt::Inside)),
+            keys(&moved(&items, "x", "b", DropAt::Inside).expect("both are in the items")),
             ["a[y]", "b[x]", "z"]
         );
         assert_eq!(
-            keys(&moved(&items, "z", "a", DropAt::Inside)),
+            keys(&moved(&items, "z", "a", DropAt::Inside).expect("both are in the items")),
             ["a[x,y,z]", "b[]"],
             "a drop inside a folder lands last"
         );
         assert_eq!(
-            keys(&moved(&items, "z", "x", DropAt::Before)),
+            keys(&moved(&items, "z", "x", DropAt::Before).expect("both are in the items")),
             ["a[z,x,y]", "b[]"]
         );
         assert_eq!(
-            keys(&moved(&items, "x", "z", DropAt::After)),
+            keys(&moved(&items, "x", "z", DropAt::After).expect("both are in the items")),
             ["a[y]", "b[]", "z", "x"]
         );
         assert_eq!(
-            keys(&moved(&items, "b", "a", DropAt::Before)),
+            keys(&moved(&items, "b", "a", DropAt::Before).expect("both are in the items")),
             ["b[]", "a[x,y]", "z"]
+        );
+        assert_eq!(moved(&items, "gone", "a", DropAt::Before), None);
+        assert_eq!(moved(&items, "x", "gone", DropAt::Before), None);
+        assert_eq!(
+            moved(&items, "x", "z", DropAt::Inside),
+            None,
+            "a request holds nothing"
         );
     }
 }

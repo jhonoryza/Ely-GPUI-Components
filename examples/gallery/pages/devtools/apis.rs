@@ -156,8 +156,7 @@ pub fn requests(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .flex_col()
                     .gap_4()
                     .child(
-                        EnvironmentSelector::new("devtools-environments", environments(), environment)
-                            .on_change(move |key, _, cx| change(&chose, cx, |desk| desk.environment = key.clone())),
+                        EnvironmentSelector::new("devtools-environments", environments(), environment, move |key, _, cx| change(&chose, cx, |desk| desk.environment = key.clone())),
                     )
                     .child(
                         div()
@@ -178,7 +177,11 @@ pub fn requests(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                                         })
                                     })
                                     .on_move(move |key, target, at, _, cx| {
-                                        change(&dragged, cx, |desk| desk.collection = moved(&desk.collection, key, target, at))
+                                        change(&dragged, cx, |desk| {
+                                            if let Some(collection) = moved(&desk.collection, key, target, at) {
+                                                desk.collection = collection;
+                                            }
+                                        })
                                     }),
                             ),
                     ),
@@ -255,8 +258,7 @@ pub fn socket(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     )
     .child(
         div().w(px(620.)).child(
-            WebSocketConsole::new("devtools-socket", "wss://stream.example.com/orders", state, messages, &draft, clock)
-                .on_send(move |text, _, cx| {
+            WebSocketConsole::new("devtools-socket", "wss://stream.example.com/orders", state, messages, &draft, clock, move |text, _, cx| {
                     sent.update(cx, |line, cx| {
                         let at = line.now;
                         line.messages.push(SocketMessage { direction: Direction::Sent, text, at });
@@ -333,8 +335,14 @@ pub fn graphql(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             fields: vec![("OPEN".into(), "".into()), ("SHIPPED".into(), "".into())],
         },
     ];
-    let mut explorer = GraphQLExplorer::new("devtools-graphql", types, &query, &variables, &search)
-        .on_run(move |_, _, _, cx| change(&ran, cx, |graph| graph.answer = Some(ANSWER.into())));
+    let mut explorer = GraphQLExplorer::new(
+        "devtools-graphql",
+        types,
+        &query,
+        &variables,
+        &search,
+        move |_, _, _, cx| change(&ran, cx, |graph| graph.answer = Some(ANSWER.into())),
+    );
     if let Some(answer) = answer {
         explorer = explorer.answer(answer);
     }

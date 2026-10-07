@@ -64,7 +64,7 @@ pub struct ColorContrastChecker {
     id: ElementId,
     text: Hsla,
     background: Hsla,
-    on_change: Option<OnColors>,
+    on_change: OnColors,
 }
 
 impl ColorContrastChecker {
@@ -72,22 +72,14 @@ impl ColorContrastChecker {
         id: impl Into<ElementId>,
         text: impl Into<Hsla>,
         background: impl Into<Hsla>,
+        on_change: impl Fn(Hsla, Hsla, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             text: text.into(),
             background: background.into(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    /// Gets the text's and the background's colors after either changes.
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(Hsla, Hsla, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
@@ -99,9 +91,7 @@ impl RenderOnce for ColorContrastChecker {
             ..background
         };
         let ratio = contrast(over(text, solid), solid);
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("color contrast checker {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let theme = cx.theme();
         let well = |name: &'static str, color: Hsla, set: OnColor| {
             div()

@@ -35,8 +35,7 @@ pub fn text(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .child(div().w(px(380.)).child(Encoder::new("devtools-encoder", "Hello, 世界")))
             .child(
                 div().w(px(360.)).child(
-                    ColorContrastChecker::new("devtools-contrast", fore, back)
-                        .on_change(move |fore, back, _, cx| change(&colors, cx, |colors| *colors = (fore, back))),
+                    ColorContrastChecker::new("devtools-contrast", fore, back, move |fore, back, _, cx| change(&colors, cx, |colors| *colors = (fore, back))),
                 ),
             ),
     )

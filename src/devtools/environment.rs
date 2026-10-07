@@ -30,7 +30,7 @@ pub struct EnvironmentSelector {
     id: ElementId,
     environments: Vec<Environment>,
     selected: SharedString,
-    on_change: Option<OnKey>,
+    on_change: OnKey,
 }
 
 impl EnvironmentSelector {
@@ -38,21 +38,14 @@ impl EnvironmentSelector {
         id: impl Into<ElementId>,
         environments: impl IntoIterator<Item = Environment>,
         selected: impl Into<SharedString>,
+        on_change: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             environments: environments.into_iter().collect(),
             selected: selected.into(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
@@ -84,71 +77,71 @@ impl RenderOnce for EnvironmentSelector {
             .environments
             .iter()
             .find(|environment| environment.key == self.selected)
-            .unwrap_or_else(|| {
-                panic!(
-                    "environment selector {id:?}: no environment {}",
-                    self.selected
-                )
-            })
-            .clone();
+            .cloned();
+        if chosen.is_none() {
+            log::error!(
+                "environment selector {id:?}: no environment {}; none chosen",
+                self.selected
+            );
+        }
         let shown = window.use_keyed_state((id.clone(), "shown"), cx, |_, _| Vec::<Secret>::new());
         let theme = cx.theme();
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("environment selector {id:?} has no on_change"));
-        let rows = chosen.variables.iter().map(|(name, value)| {
-            let secret = chosen.secrets.contains(name);
-            let key: Secret = (chosen.key.clone(), name.clone());
-            let open = shown.read(cx).contains(&key);
-            let flip = shown.clone();
-            let seen = format!(
-                "environment-{}-{name}-{}",
-                chosen.key,
-                if secret && !open { "masked" } else { "shown" }
-            );
-            div()
-                .flex()
-                .items_center()
-                .gap_2()
-                .py_1()
-                .child(
-                    div()
-                        .flex_none()
-                        .w(theme.label_width())
-                        .font_family(theme.mono_family.clone())
-                        .text_size(theme.text_size(TextSize::Sm))
-                        .child(Ellipsis::new(format!("{{{{{name}}}}}"))),
-                )
-                .child(
-                    div()
-                        .flex_1()
-                        .min_w_0()
-                        .text_size(theme.text_size(TextSize::Sm))
-                        .text_color(theme.colors.fg_muted)
-                        .debug_selector(move || seen)
-                        .child(Ellipsis::new(shown_value(value, secret, open))),
-                )
-                .children(secret.then(|| {
-                    IconButton::new(
-                        (id.clone(), format!("reveal-{name}")),
-                        if open {
-                            IconName::EyeOff
-                        } else {
-                            IconName::Eye
-                        },
+        let on_change = self.on_change;
+        let rows = chosen.iter().flat_map(|chosen| {
+            chosen.variables.iter().map(|(name, value)| {
+                let secret = chosen.secrets.contains(name);
+                let key: Secret = (chosen.key.clone(), name.clone());
+                let open = shown.read(cx).contains(&key);
+                let flip = shown.clone();
+                let seen = format!(
+                    "environment-{}-{name}-{}",
+                    chosen.key,
+                    if secret && !open { "masked" } else { "shown" }
+                );
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .py_1()
+                    .child(
+                        div()
+                            .flex_none()
+                            .w(theme.label_width())
+                            .font_family(theme.mono_family.clone())
+                            .text_size(theme.text_size(TextSize::Sm))
+                            .child(Ellipsis::new(format!("{{{{{name}}}}}"))),
                     )
-                    .tooltip(if open {
-                        "Hide the value"
-                    } else {
-                        "Show the value"
-                    })
-                    .on_click(move |_, _, cx| {
-                        flip.update(cx, |shown, cx| {
-                            flipped(shown, &key);
-                            cx.notify();
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .text_size(theme.text_size(TextSize::Sm))
+                            .text_color(theme.colors.fg_muted)
+                            .debug_selector(move || seen)
+                            .child(Ellipsis::new(shown_value(value, secret, open))),
+                    )
+                    .children(secret.then(|| {
+                        IconButton::new(
+                            (id.clone(), format!("reveal-{name}")),
+                            if open {
+                                IconName::EyeOff
+                            } else {
+                                IconName::Eye
+                            },
+                        )
+                        .tooltip(if open {
+                            "Hide the value"
+                        } else {
+                            "Show the value"
                         })
-                    })
-                }))
+                        .on_click(move |_, _, cx| {
+                            flip.update(cx, |shown, cx| {
+                                flipped(shown, &key);
+                                cx.notify();
+                            })
+                        })
+                    }))
+            })
         });
         div()
             .flex()
@@ -161,7 +154,7 @@ impl RenderOnce for EnvironmentSelector {
                         Choice::new(environment.key.clone(), environment.name.clone())
                     }),
                 )
-                .selected(chosen.key.clone())
+                .selected(self.selected.clone())
                 .on_change(move |key, window, cx| {
                     log::info!("environment selector: {key}");
                     on_change(key, window, cx);
@@ -172,7 +165,10 @@ impl RenderOnce for EnvironmentSelector {
                     .text_size(theme.text_size(TextSize::Xs))
                     .text_color(theme.colors.fg_subtle)
                     .font_weight(FontWeight::MEDIUM)
-                    .child(format!("{} variables", chosen.variables.len())),
+                    .child(match &chosen {
+                        Some(chosen) => format!("{} variables", chosen.variables.len()),
+                        None => "No environment chosen".into(),
+                    }),
             )
             .child(div().flex().flex_col().children(rows))
     }

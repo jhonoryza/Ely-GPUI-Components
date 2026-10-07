@@ -57,7 +57,7 @@ pub struct GraphQLExplorer {
     answer: Option<SharedString>,
     search: Entity<TextInput>,
     running: bool,
-    on_run: Option<OnRun>,
+    on_run: OnRun,
     on_pick: Option<OnKey>,
 }
 
@@ -69,6 +69,7 @@ impl GraphQLExplorer {
         query: &Entity<CodeEditor>,
         variables: &Entity<CodeEditor>,
         search: &Entity<TextInput>,
+        on_run: impl Fn(String, String, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
@@ -78,7 +79,7 @@ impl GraphQLExplorer {
             answer: None,
             search: search.clone(),
             running: false,
-            on_run: None,
+            on_run: Rc::new(on_run),
             on_pick: None,
         }
     }
@@ -91,14 +92,6 @@ impl GraphQLExplorer {
 
     pub fn running(mut self, running: bool) -> Self {
         self.running = running;
-        self
-    }
-
-    pub fn on_run(
-        mut self,
-        handler: impl Fn(String, String, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_run = Some(Rc::new(handler));
         self
     }
 
@@ -149,9 +142,7 @@ impl RenderOnce for GraphQLExplorer {
                 .child(text)
         };
         let tall = theme.list_max_height();
-        let on_run = self
-            .on_run
-            .unwrap_or_else(|| panic!("graphql explorer {id:?} has no on_run"));
+        let on_run = self.on_run;
         let (query, variables) = (self.query.clone(), self.variables.clone());
         let typed = variables.read(cx).text().to_string();
         let unread = (!typed.trim().is_empty())

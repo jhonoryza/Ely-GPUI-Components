@@ -100,10 +100,17 @@ fn console(bench: &Bench, window: &mut Window, cx: &mut App, owner: Entity<Bench
         _ => SocketState::Closed,
     };
     let toggled = owner.clone();
-    WebSocketConsole::new("socket", "wss://example.com", state, [], &draft, now)
-        .on_send(move |text, _, cx| say(&owner, format!("send {text}"), cx))
-        .on_toggle(move |_, cx| say(&toggled, "toggle".into(), cx))
-        .into_any_element()
+    WebSocketConsole::new(
+        "socket",
+        "wss://example.com",
+        state,
+        [],
+        &draft,
+        now,
+        move |text, _, cx| say(&owner, format!("send {text}"), cx),
+    )
+    .on_toggle(move |_, cx| say(&toggled, "toggle".into(), cx))
+    .into_any_element()
 }
 
 /// Stops: Disconnect, the message field, then Send once it holds words.
@@ -179,9 +186,15 @@ fn graph(bench: &Bench, window: &mut Window, cx: &mut App, owner: Entity<Bench>)
         return div().into_any_element();
     };
     let search = window.use_keyed_state("search", cx, TextInput::new);
-    GraphQLExplorer::new("graph", [], &query, &variables, &search)
-        .on_run(move |query, variables, _, cx| say(&owner, format!("{query} {variables}"), cx))
-        .into_any_element()
+    GraphQLExplorer::new(
+        "graph",
+        [],
+        &query,
+        &variables,
+        &search,
+        move |query, variables, _, cx| say(&owner, format!("{query} {variables}"), cx),
+    )
+    .into_any_element()
 }
 
 /// Stops: the schema, the query, the variables, then Run while they read.
@@ -216,10 +229,10 @@ fn environments(bench: &Bench, _: &mut Window, _: &mut App, _: Entity<Bench>) ->
         variables: vec![("token".into(), token.to_string().into())],
         secrets: vec!["token".into()],
     };
-    let selected = if bench.choice == 0 {
-        "staging"
-    } else {
-        "production"
+    let selected = match bench.choice {
+        0 => "staging",
+        1 => "production",
+        _ => "gone",
     };
     EnvironmentSelector::new(
         "environments",
@@ -228,8 +241,8 @@ fn environments(bench: &Bench, _: &mut Window, _: &mut App, _: Entity<Bench>) ->
             env("production", "sk_live_9999"),
         ],
         selected,
+        |_, _, _| {},
     )
-    .on_change(|_, _, _| {})
     .into_any_element()
 }
 
@@ -265,10 +278,16 @@ fn schema(_: &Bench, window: &mut Window, cx: &mut App, owner: Entity<Bench>) ->
         kind: TypeKind::Object,
         fields: vec![("id".into(), "ID!".into())],
     };
-    GraphQLExplorer::new("graph", [order], &query, &variables, &search)
-        .on_run(|_, _, _, _| {})
-        .on_pick(move |path, _, cx| say(&owner, path.to_string(), cx))
-        .into_any_element()
+    GraphQLExplorer::new(
+        "graph",
+        [order],
+        &query,
+        &variables,
+        &search,
+        |_, _, _, _| {},
+    )
+    .on_pick(move |path, _, cx| say(&owner, path.to_string(), cx))
+    .into_any_element()
 }
 
 /// Stops: the schema first, its cursor on Order.
@@ -297,8 +316,8 @@ fn log(_: &Bench, window: &mut Window, cx: &mut App, owner: Entity<Bench>) -> An
         messages,
         &draft,
         now,
+        move |text, _, cx| say(&owner, format!("send {text}"), cx),
     )
-    .on_send(move |text, _, cx| say(&owner, format!("send {text}"), cx))
     .into_any_element()
 }
 
@@ -312,5 +331,23 @@ fn the_log_holds_at_its_newest_message(cx: &mut TestAppContext) {
     assert!(
         newest.bottom() <= log.bottom() && newest.top() >= log.top(),
         "the newest message lies inside the log: {newest:?} in {log:?}"
+    );
+}
+
+#[gpui::test]
+fn an_environment_that_left_shows_none_chosen(cx: &mut TestAppContext) {
+    let (host, cx) = bench(environments, cx);
+    host.update(cx, |bench, cx| {
+        bench.choice = 2;
+        cx.notify();
+    });
+    settle(cx);
+    assert!(
+        cx.debug_bounds("environment-staging-token-masked")
+            .is_none()
+    );
+    assert!(
+        cx.debug_bounds("environment-production-token-masked")
+            .is_none()
     );
 }

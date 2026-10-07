@@ -53,7 +53,7 @@ pub struct WebSocketConsole {
     messages: Vec<SocketMessage>,
     draft: Entity<TextInput>,
     now: Timestamp,
-    on_send: Option<OnText>,
+    on_send: OnText,
     on_toggle: Option<Run>,
 }
 
@@ -66,6 +66,7 @@ impl WebSocketConsole {
         messages: impl IntoIterator<Item = SocketMessage>,
         draft: &Entity<TextInput>,
         now: Timestamp,
+        on_send: impl Fn(SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
@@ -74,18 +75,9 @@ impl WebSocketConsole {
             messages: messages.into_iter().collect(),
             draft: draft.clone(),
             now,
-            on_send: None,
+            on_send: Rc::new(on_send),
             on_toggle: None,
         }
-    }
-
-    /// Gets the text to send; the field empties after.
-    pub fn on_send(
-        mut self,
-        handler: impl Fn(SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_send = Some(Rc::new(handler));
-        self
     }
 
     /// Asked to connect while closed, or to disconnect while open.
@@ -159,9 +151,7 @@ impl RenderOnce for WebSocketConsole {
         };
         let open = self.state == SocketState::Open;
         let (messages, now) = (Rc::new(self.messages), self.now);
-        let on_send = self
-            .on_send
-            .unwrap_or_else(|| panic!("websocket console {:?} has no on_send", self.id));
+        let on_send = self.on_send;
         let draft = self.draft.clone();
         let ready = open && !draft.read(cx).text().trim().is_empty();
         let send = Rc::new(move |window: &mut Window, cx: &mut App| {

@@ -107,15 +107,18 @@ fn enter_opens_a_connection_and_a_rows_button_leaves_the_row_alone(cx: &mut Test
 }
 
 fn structure(_: &Bench, _: &mut Window, _: &mut App, owner: Entity<Bench>) -> AnyElement {
-    TableStructureEditor::new("structure", [Field::new("id", "int").primary()])
-        .on_change(move |fields, _, cx| {
+    TableStructureEditor::new(
+        "structure",
+        [Field::new("id", "int").primary()],
+        move |fields, _, cx| {
             let names: Vec<String> = fields
                 .iter()
                 .map(|field| format!("{}:{}", field.name, field.ty))
                 .collect();
             say(&owner, names.join(" "), cx)
-        })
-        .into_any_element()
+        },
+    )
+    .into_any_element()
 }
 
 /// A row's stops: name, type, empty, key, default and remove; Add field comes after.
@@ -204,16 +207,14 @@ fn another_engine_brings_its_port(cx: &mut TestAppContext) {
 fn narrow(_: &Bench, _: &mut Window, _: &mut App, _: Entity<Bench>) -> AnyElement {
     div()
         .w(px(280.0))
-        .child(
-            TableStructureEditor::new(
-                "structure",
-                [
-                    Field::new("user_id", "timestamptz"),
-                    Field::new("total", "numeric"),
-                ],
-            )
-            .on_change(|_, _, _| {}),
-        )
+        .child(TableStructureEditor::new(
+            "structure",
+            [
+                Field::new("user_id", "timestamptz"),
+                Field::new("total", "numeric"),
+            ],
+            |_, _, _| {},
+        ))
         .into_any_element()
 }
 

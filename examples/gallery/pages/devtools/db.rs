@@ -270,15 +270,12 @@ pub fn structure(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
             .flex_wrap()
             .gap_6()
             .child(
-                div().w(px(660.)).child(TableStructureEditor::new("devtools-structure", fields)
-                        .on_change(move |next, _, cx| change(&edited, cx, |build| build.fields = next)),
+                div().w(px(660.)).child(TableStructureEditor::new("devtools-structure", fields, move |next, _, cx| change(&edited, cx, |build| build.fields = next)),
                 ),
             )
             .child(
                 div().w(px(300.)).child(
-                    IndexManager::new("devtools-indexes", indexes, names)
-                        .on_drop(move |name, _, cx| change(&dropped, cx, |build| build.indexes.retain(|index| index.name != *name)))
-                        .on_create(move |index, _, cx| change(&created, cx, |build| build.indexes.push(index))),
+                    IndexManager::new("devtools-indexes", indexes, names, move |index, _, cx| change(&created, cx, |build| build.indexes.push(index)), move |name, _, cx| change(&dropped, cx, |build| build.indexes.retain(|index| index.name != *name))),
                 ),
             ),
     )

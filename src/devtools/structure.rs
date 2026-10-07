@@ -100,32 +100,26 @@ struct Room(f32);
 pub struct TableStructureEditor {
     id: ElementId,
     fields: Vec<Field>,
-    on_change: Option<OnEdit<Vec<Field>>>,
+    on_change: OnEdit<Vec<Field>>,
 }
 
 impl TableStructureEditor {
-    pub fn new(id: impl Into<ElementId>, fields: impl IntoIterator<Item = Field>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        fields: impl IntoIterator<Item = Field>,
+        on_change: impl Fn(Vec<Field>, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             fields: fields.into_iter().collect(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(Vec<Field>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for TableStructureEditor {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("table structure editor {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (id, fields, on_change) = (self.id, self.fields, &on_change);
         let room = window.use_keyed_state((id.clone(), "room"), cx, |_, _| Room::default());
         let rem = window.rem_size();
@@ -303,8 +297,8 @@ pub struct IndexManager {
     id: ElementId,
     indexes: Vec<Index>,
     fields: Vec<SharedString>,
-    on_drop: Option<OnName>,
-    on_create: Option<OnIndex>,
+    on_drop: OnName,
+    on_create: OnIndex,
 }
 
 impl IndexManager {
@@ -313,34 +307,23 @@ impl IndexManager {
         id: impl Into<ElementId>,
         indexes: impl IntoIterator<Item = Index>,
         fields: impl IntoIterator<Item = impl Into<SharedString>>,
+        on_create: impl Fn(Index, &mut Window, &mut App) + 'static,
+        on_drop: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             indexes: indexes.into_iter().collect(),
             fields: fields.into_iter().map(Into::into).collect(),
-            on_drop: None,
-            on_create: None,
+            on_drop: Rc::new(on_drop),
+            on_create: Rc::new(on_create),
         }
-    }
-
-    pub fn on_drop(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_drop = Some(Rc::new(handler));
-        self
-    }
-
-    pub fn on_create(mut self, handler: impl Fn(Index, &mut Window, &mut App) + 'static) -> Self {
-        self.on_create = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for IndexManager {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_create = self.on_create.expect("an index manager needs on_create");
-        let on_drop = self.on_drop.expect("an index manager needs on_drop");
+        let on_create = self.on_create;
+        let on_drop = self.on_drop;
         let id = self.id;
         let draft = window.use_keyed_state((id.clone(), "draft"), cx, |window, cx| Draft {
             name: cx.new(|cx| TextInput::new(window, cx).placeholder("Index name")),

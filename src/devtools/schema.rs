@@ -245,19 +245,19 @@ pub(crate) fn diagram(
 ) -> (Vec<Node>, Vec<Edge>) {
     let nodes = tables
         .iter()
-        .map(|table| {
-            let at = places
-                .iter()
-                .find(|(name, _)| *name == table.name)
-                .unwrap_or_else(|| panic!("ER diagram: no place for {}", table.name))
-                .1;
-            table.fields.iter().fold(
+        .filter_map(|table| {
+            let Some((_, at)) = places.iter().find(|(name, _)| *name == table.name) else {
+                log::error!("ER diagram: no place for {}; left out", table.name);
+                return None;
+            };
+            let at = *at;
+            Some(table.fields.iter().fold(
                 Node::new(table.name.clone(), table.name.clone(), at),
                 |node, field| {
                     node.input(Port::new(field.name.clone(), field.name.clone(), "field"))
                         .output(Port::new(field.name.clone(), field.typed(), "field"))
                 },
-            )
+            ))
         })
         .collect();
     let edges = tables
@@ -337,8 +337,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "no place for orders")]
-    fn a_table_without_a_place_fails_loud() {
-        diagram(&[DbTable::new("orders", [])], &[]);
+    fn a_table_without_a_place_is_left_out() {
+        let (nodes, edges) = diagram(&[DbTable::new("orders", [])], &[]);
+        assert!(nodes.is_empty() && edges.is_empty());
     }
 }
