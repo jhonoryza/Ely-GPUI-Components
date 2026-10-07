@@ -2,19 +2,19 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement,
-    RenderOnce, SharedString, Styled, Window, div, prelude::*,
+    RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
 use crate::{
     buttons::{ButtonVariant, IconButton},
     i18n,
     navigation::{Group, Palette, Row, fuzzy, marked, query_field},
-    primitives::{Icon, IconName},
+    primitives::{FocusRing, Icon, IconName},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
     typography::{Ellipsis, tabular},
 };
 
-/// A branch: its name, remote or local, whether it is checked out, how far it is from its upstream, and its last commit.
+/// A branch, its upstream distance, and its last commit.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Branch {
     pub name: SharedString,
@@ -36,13 +36,13 @@ fn distance(branch: &Branch) -> Option<String> {
     (!parts.is_empty()).then(|| parts.join(" "))
 }
 
-/// The value a picked row carries: a branch's name, or a new one's after this mark.
+/// Marks a picked row's value as a new branch's name.
 const CREATE: &str = "\u{0}create:";
 
-type OnName = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
+pub(super) type OnName = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 pub(super) type Run = Rc<dyn Fn(&mut Window, &mut App)>;
 
-/// Branches as a palette, local and remote apart, the current one checked; a query no branch is named becomes a new branch.
+/// Branches as a palette; an unknown query makes one.
 #[derive(IntoElement)]
 pub struct BranchSelector {
     id: ElementId,
@@ -197,7 +197,14 @@ impl RenderOnce for BranchSelector {
     }
 }
 
-/// A row's name, detail and trailing words, the actions shown on hover.
+/// A row's name, detail, trailing words and hover actions.
+/// A pickable row: its spoken name, whether picked, the pick.
+pub(super) struct Pick {
+    pub spoken: SharedString,
+    pub selected: bool,
+    pub run: Run,
+}
+
 pub(super) fn listed(
     id: ElementId,
     icon: IconName,
@@ -205,6 +212,7 @@ pub(super) fn listed(
     detail: SharedString,
     trailing: Vec<SharedString>,
     actions: Vec<AnyElement>,
+    pick: Option<Pick>,
     cx: &App,
 ) -> AnyElement {
     let theme = cx.theme();
@@ -213,6 +221,17 @@ pub(super) fn listed(
     div()
         .id(id)
         .group(group.clone())
+        .when_some(pick, |row, pick| {
+            let run = pick.run;
+            row.role(Role::ListItem)
+                .aria_label(pick.spoken)
+                .aria_selected(pick.selected)
+                .tab_index(0)
+                .focus_ring(cx)
+                .cursor_pointer()
+                .when(pick.selected, |row| row.bg(colors.selection))
+                .on_click(move |_, window, cx| run(window, cx))
+        })
         .flex()
         .items_center()
         .gap_2()
@@ -260,13 +279,15 @@ pub(super) fn action(
         .into_any_element()
 }
 
-/// Branches with how far each is from its upstream and its last commit; switch to one or delete it.
+/// Branches with upstream distance and last commit.
 #[derive(IntoElement)]
 pub struct BranchList {
     id: ElementId,
     branches: Vec<Branch>,
     on_switch: Option<OnName>,
     on_delete: Option<OnName>,
+    selected: Option<SharedString>,
+    on_pick: Option<OnName>,
 }
 
 impl BranchList {
@@ -276,7 +297,24 @@ impl BranchList {
             branches: branches.into_iter().collect(),
             on_switch: None,
             on_delete: None,
+            selected: None,
+            on_pick: None,
         }
+    }
+
+    /// The branch shown as picked.
+    pub fn selected(mut self, name: impl Into<SharedString>) -> Self {
+        self.selected = Some(name.into());
+        self
+    }
+
+    /// A press on a row picks its branch.
+    pub fn on_pick(
+        mut self,
+        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_pick = Some(Rc::new(handler));
+        self
     }
 
     pub fn on_switch(
@@ -352,6 +390,11 @@ impl RenderOnce for BranchList {
                     branch.subject.clone(),
                     trailing,
                     actions,
+                    bind(&self.on_pick).map(|run| Pick {
+                        spoken: branch.name.clone(),
+                        selected: self.selected.as_ref() == Some(&branch.name),
+                        run,
+                    }),
                     cx,
                 )
             })

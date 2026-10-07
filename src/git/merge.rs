@@ -1,50 +1,30 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, Div, ElementId, FontWeight, Hsla, IntoElement, ParentElement, RenderOnce,
-    SharedString, Styled, Window, div, prelude::*, relative,
+    AnyElement, App, Div, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement,
+    ParentElement, RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled, Window, div,
+    prelude::*, uniform_list,
 };
 
 use similar::DiffableStr;
 
-use super::merging::{Region, RegionKind, Take, conflicts, resolve, result};
+use super::merging::{Region, RegionKind, Take, conflicts, resolve};
 use crate::{
     buttons::{Button, ButtonVariant},
+    i18n,
     primitives::{Icon, IconName},
     theme::{ActiveTheme, ControlSize, IconSize, Palette, Radius, TextSize},
-    typography::{LEADING, format},
 };
 
 type OnTake = Rc<dyn Fn(usize, Take, &mut Window, &mut App)>;
 type OnText = Rc<dyn Fn(String, &mut Window, &mut App)>;
-
-/// A column of code lines, padded to `rows` so neighbors line up.
-fn column(lines: &[String], rows: usize, wash: Option<Hsla>) -> Div {
-    div()
-        .flex_1()
-        .min_w_0()
-        .flex()
-        .flex_col()
-        .px_2()
-        .when_some(wash, |column, wash| column.bg(wash))
-        .children((0..rows).map(|ix| {
-            let line = lines
-                .get(ix)
-                .map_or("", |line| line.trim_end_matches(['\r', '\n']));
-            div()
-                .whitespace_nowrap()
-                .overflow_hidden()
-                .line_height(relative(LEADING))
-                .child(line.to_string())
-        }))
-}
 
 /// The three buttons that settle a conflict.
 fn takes(
     id: &ElementId,
     conflict: usize,
     on_take: &Option<OnTake>,
-    words: [&'static str; 3],
+    words: [SharedString; 3],
 ) -> Div {
     let [ours, theirs, both] = words;
     div().flex().gap_1().children(
@@ -65,7 +45,7 @@ fn takes(
     )
 }
 
-/// Three versions side by side, ours, the base and theirs, region by region: clean changes merged and marked, each conflict held with a choice of side; the result below.
+/// Ours, base and theirs side by side, rows in view.
 #[derive(IntoElement)]
 pub struct ThreeWayMerge {
     id: ElementId,
@@ -113,156 +93,184 @@ fn washes(kind: RegionKind, colors: &Palette) -> [Option<Hsla>; 3] {
     }
 }
 
+/// A row as the merge draws it.
+#[derive(Clone)]
+enum Line {
+    /// A conflict's place, before its lines.
+    Conflict(usize),
+    /// A line of each side, empty past its end.
+    Code(RegionKind, [Option<String>; 3]),
+}
+
+fn rows(regions: &[Region]) -> Vec<Line> {
+    let mut rows = Vec::new();
+    let mut conflict = 0;
+    for region in regions {
+        if region.kind == RegionKind::Conflict {
+            rows.push(Line::Conflict(conflict));
+            conflict += 1;
+        }
+        let count = region
+            .ours
+            .len()
+            .max(region.base.len())
+            .max(region.theirs.len());
+        let line = |side: &[String], ix: usize| {
+            side.get(ix)
+                .map(|line| line.trim_end_matches(['\r', '\n']).to_string())
+        };
+        rows.extend((0..count).map(|ix| {
+            Line::Code(
+                region.kind,
+                [
+                    line(&region.ours, ix),
+                    line(&region.base, ix),
+                    line(&region.theirs, ix),
+                ],
+            )
+        }));
+    }
+    rows
+}
+
 impl RenderOnce for ThreeWayMerge {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let (merged, open) = result(&self.regions, &self.takes);
-        let total = self
-            .regions
-            .iter()
-            .filter(|region| region.kind == RegionKind::Conflict)
-            .count();
-        let mut conflict = 0;
-        let blocks: Vec<AnyElement> = self
-            .regions
-            .iter()
-            .map(|region| {
-                let rows = region
-                    .ours
-                    .len()
-                    .max(region.base.len())
-                    .max(region.theirs.len());
-                let [ours, base, theirs] = washes(region.kind, &colors);
-                let block = div().flex().flex_col().child(
-                    div()
+        let height = theme.control_height(ControlSize::Sm);
+        let rows = Rc::new(rows(&self.regions));
+        let Self {
+            id,
+            labels,
+            takes: taken,
+            on_take,
+            ..
+        } = self;
+        let header = div()
+            .flex()
+            .gap_px()
+            .bg(colors.hover)
+            .font_weight(FontWeight::MEDIUM)
+            .text_color(colors.fg_muted)
+            .children(
+                labels
+                    .iter()
+                    .map(|label| div().flex_1().min_w_0().px_2().py_1().child(label.clone())),
+            );
+        let list = uniform_list((id.clone(), "rows"), rows.len(), move |range, _, cx| {
+            let colors = cx.theme().colors.clone();
+            range
+                .map(|ix| {
+                    let row = div()
+                        .id((id.clone(), format!("row-{ix}")))
+                        .w_full()
+                        .h(height)
                         .flex()
-                        .gap_px()
-                        .child(column(&region.ours, rows, ours))
-                        .child(column(&region.base, rows, base))
-                        .child(column(&region.theirs, rows, theirs)),
-                );
-                if region.kind != RegionKind::Conflict {
-                    return block.into_any_element();
-                }
-                let at = conflict;
-                conflict += 1;
-                let settled = self.takes.get(at).copied().flatten();
-                block
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap_2()
-                            .px_2()
-                            .py_1()
-                            .border_b_1()
-                            .border_color(colors.border)
-                            .font_family(theme.font_family.clone())
-                            .child(
-                                Icon::new(IconName::TriangleAlert)
-                                    .size(IconSize::Sm)
-                                    .color(colors.warning),
-                            )
-                            .child(div().flex_1().text_color(colors.fg_muted).child(
-                                match settled {
-                                    Some(take) => {
-                                        format!("Conflict {} took {}", at + 1, word(take))
-                                    }
-                                    None => format!("Conflict {}", at + 1),
-                                },
-                            ))
-                            .child(takes(
-                                &self.id,
-                                at,
-                                &self.on_take,
-                                ["Take ours", "Take theirs", "Take both"],
-                            )),
-                    )
-                    .into_any_element()
-            })
-            .collect();
-        let header = |label: &SharedString| {
-            div()
-                .flex_1()
-                .px_2()
-                .py_1()
-                .font_weight(FontWeight::MEDIUM)
-                .text_color(colors.fg_muted)
-                .child(label.clone())
-        };
+                        .items_center();
+                    match &rows[ix] {
+                        Line::Conflict(at) => {
+                            let said = match taken.get(*at).copied().flatten() {
+                                Some(take) => i18n::text(
+                                    cx,
+                                    "git.merge.took",
+                                    &[
+                                        ("n", &(at + 1).to_string()),
+                                        ("side", &i18n::text(cx, word(take), &[])),
+                                    ],
+                                ),
+                                None => i18n::text(
+                                    cx,
+                                    "git.merge.conflict",
+                                    &[("n", &(at + 1).to_string())],
+                                ),
+                            };
+                            let words = [
+                                "git.merge.take_ours",
+                                "git.merge.take_theirs",
+                                "git.merge.take_both",
+                            ]
+                            .map(|key| i18n::text(cx, key, &[]));
+                            row.gap_2()
+                                .px_2()
+                                .role(Role::Heading)
+                                .aria_label(said.clone())
+                                .border_b_1()
+                                .border_color(colors.border)
+                                .font_family(cx.theme().font_family.clone())
+                                .child(
+                                    Icon::new(IconName::TriangleAlert)
+                                        .size(IconSize::Sm)
+                                        .color(colors.warning),
+                                )
+                                .child(div().flex_1().text_color(colors.fg_muted).child(said))
+                                .child(takes(&id, *at, &on_take, words))
+                                .into_any_element()
+                        }
+                        Line::Code(kind, sides) => {
+                            let washes = washes(*kind, &colors);
+                            // Each side named by its label, for assistive tech.
+                            let said: Vec<String> = labels
+                                .iter()
+                                .zip(sides)
+                                .map(|(label, line)| {
+                                    format!("{label}: {}", line.as_deref().unwrap_or(""))
+                                })
+                                .collect();
+                            row.gap_px()
+                                .role(Role::Label)
+                                .aria_label(SharedString::from(said.join(" · ")))
+                                .children(sides.iter().zip(washes).map(|(line, wash)| {
+                                    div()
+                                        .flex_1()
+                                        .min_w_0()
+                                        .h_full()
+                                        .px_2()
+                                        .flex()
+                                        .items_center()
+                                        .whitespace_nowrap()
+                                        .overflow_hidden()
+                                        .when_some(wash, |side, wash| side.bg(wash))
+                                        .children(line.clone())
+                                }))
+                                .into_any_element()
+                        }
+                    }
+                })
+                .collect()
+        })
+        .flex_1();
         div()
+            .size_full()
             .flex()
             .flex_col()
-            .gap_3()
+            .rounded(theme.radius(Radius::Md))
+            .border_1()
+            .border_color(colors.border)
+            .overflow_hidden()
             .text_size(theme.text_size(TextSize::Sm))
+            .child(header)
             .child(
                 div()
+                    .flex_1()
+                    .min_h_0()
                     .flex()
                     .flex_col()
-                    .rounded(theme.radius(Radius::Md))
-                    .border_1()
-                    .border_color(colors.border)
-                    .overflow_hidden()
-                    .child(
-                        div()
-                            .flex()
-                            .gap_px()
-                            .bg(colors.hover)
-                            .children(self.labels.iter().map(header)),
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .font_family(theme.mono_family.clone())
-                            .text_size(theme.text_size(TextSize::Xs))
-                            .children(blocks),
-                    ),
-            )
-            .child(div().text_color(colors.fg_muted).child(if open == 0 {
-                format!(
-                    "Merged: {}, all settled.",
-                    format::plural(total as u64, "conflict", "conflicts")
-                )
-            } else {
-                format!(
-                    "{} of {} still open.",
-                    open,
-                    format::plural(total as u64, "conflict", "conflicts")
-                )
-            }))
-            .child(
-                div()
-                    .p_2()
-                    .rounded(theme.radius(Radius::Md))
-                    .bg(colors.sunken)
                     .font_family(theme.mono_family.clone())
                     .text_size(theme.text_size(TextSize::Xs))
-                    .text_color(colors.fg)
-                    .children(merged.tokenize_lines().into_iter().map(|line| {
-                        let line = line.trim_end_matches(['\r', '\n']);
-                        let marker = ["<<<<<<<", "=======", ">>>>>>>"]
-                            .iter()
-                            .any(|mark| line.starts_with(mark));
-                        div()
-                            .whitespace_nowrap()
-                            .when(marker, |row| row.text_color(colors.warning))
-                            .child(line.to_string())
-                    })),
+                    .child(list),
             )
     }
 }
 
 fn word(take: Take) -> &'static str {
     match take {
-        Take::Ours => "ours",
-        Take::Theirs => "theirs",
-        Take::Both => "both",
+        Take::Ours => "git.merge.ours",
+        Take::Theirs => "git.merge.theirs",
+        Take::Both => "git.merge.both",
     }
 }
 
-/// A file with conflict markers, each conflict shown as the current and the incoming change, with actions to accept either or both.
+/// Marked conflicts, each accepting current, incoming, or both.
 #[derive(IntoElement)]
 pub struct ConflictResolver {
     id: ElementId,
@@ -279,7 +287,7 @@ impl ConflictResolver {
         }
     }
 
-    /// Called with the whole text once a conflict is settled.
+    /// Gets the whole text once a conflict settles.
     pub fn on_resolve(mut self, handler: impl Fn(String, &mut Window, &mut App) + 'static) -> Self {
         self.on_resolve = Some(Rc::new(handler));
         self
@@ -311,7 +319,12 @@ impl RenderOnce for ConflictResolver {
                         &self.id,
                         at,
                         &on_take,
-                        ["Accept current", "Accept incoming", "Accept both"],
+                        [
+                            "git.merge.accept_current",
+                            "git.merge.accept_incoming",
+                            "git.merge.accept_both",
+                        ]
+                        .map(|key| i18n::text(cx, key, &[])),
                     )
                     .py_0p5()
                     .font_family(theme.font_family.clone())

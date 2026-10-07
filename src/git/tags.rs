@@ -5,7 +5,7 @@ use gpui::{
     Window, div,
 };
 
-use super::refs::{Run, action, listed};
+use super::refs::{OnName, Pick, Run, action, listed};
 use crate::{
     primitives::IconName,
     theme::{ActiveTheme, TextSize},
@@ -13,7 +13,7 @@ use crate::{
 
 type OnStash = Rc<dyn Fn(usize, StashAction, &mut Window, &mut App)>;
 
-/// A tag: its name, its message when annotated, the commit it names, and when.
+/// A tag, its message if annotated, its commit, when.
 #[derive(Clone, Debug, PartialEq)]
 pub struct GitTag {
     pub name: SharedString,
@@ -22,11 +22,13 @@ pub struct GitTag {
     pub when: SharedString,
 }
 
-/// Tags newest first, each with its message and the commit it names.
+/// Tags newest first, with message and commit.
 #[derive(IntoElement)]
 pub struct TagList {
     id: ElementId,
     tags: Vec<GitTag>,
+    selected: Option<SharedString>,
+    on_pick: Option<OnName>,
 }
 
 impl TagList {
@@ -34,7 +36,24 @@ impl TagList {
         Self {
             id: id.into(),
             tags: tags.into_iter().collect(),
+            selected: None,
+            on_pick: None,
         }
+    }
+
+    /// The tag shown as picked.
+    pub fn selected(mut self, name: impl Into<SharedString>) -> Self {
+        self.selected = Some(name.into());
+        self
+    }
+
+    /// A press on a row picks its tag.
+    pub fn on_pick(
+        mut self,
+        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_pick = Some(Rc::new(handler));
+        self
     }
 }
 
@@ -57,6 +76,16 @@ impl RenderOnce for TagList {
                     tag.message.clone().unwrap_or_default(),
                     vec![short.into(), tag.when.clone()],
                     Vec::new(),
+                    self.on_pick.clone().map(|pick| {
+                        let name = tag.name.clone();
+                        Pick {
+                            spoken: tag.name.clone(),
+                            selected: self.selected.as_ref() == Some(&tag.name),
+                            run: Rc::new(move |window: &mut Window, cx: &mut App| {
+                                pick(&name, window, cx)
+                            }),
+                        }
+                    }),
                     cx,
                 )
             })
@@ -69,7 +98,7 @@ impl RenderOnce for TagList {
     }
 }
 
-/// A stash: its message, the branch it came from, and when.
+/// A stash: its message, branch, and when.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stash {
     pub message: SharedString,
@@ -85,7 +114,7 @@ pub enum StashAction {
     Drop,
 }
 
-/// Stashes newest first, as `stash@{n}`: apply one, pop it, or drop it.
+/// Stashes newest first: apply, pop or drop.
 #[derive(IntoElement)]
 pub struct StashList {
     id: ElementId,
@@ -148,6 +177,7 @@ impl RenderOnce for StashList {
                         act("pop", IconName::ArrowUp, "Pop", StashAction::Pop),
                         act("drop", IconName::Trash2, "Drop", StashAction::Drop),
                     ],
+                    None,
                     cx,
                 )
             })

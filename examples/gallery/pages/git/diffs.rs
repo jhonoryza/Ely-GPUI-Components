@@ -129,7 +129,7 @@ pub fn merges(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         cx,
     )
     .child(
-        div().w(px(840.)).child(
+        div().w(px(840.)).h(px(320.)).child(
             ThreeWayMerge::new("git-merge", ["main", "base", "feature/lift"], Rc::new(regions(BASE, OURS, THEIRS)))
                 .takes(now_takes)
                 .on_take(move |conflict, side, _, cx| {

@@ -28,7 +28,7 @@ pub struct Region {
     pub theirs: Vec<String>,
 }
 
-/// A region's lines as similar split them, each with its ending.
+/// A region's lines as split, each with its ending.
 fn lines<'a>(
     range: std::ops::Range<usize>,
     line: impl Fn(usize) -> Option<&'a str>,
@@ -42,7 +42,7 @@ fn lines<'a>(
         .collect()
 }
 
-/// The line ending the merged texts use: the first one found, or a newline.
+/// The texts' line ending: the first found, else newline.
 fn ending(regions: &[Region]) -> &'static str {
     let line = regions
         .iter()
@@ -55,7 +55,7 @@ fn ending(regions: &[Region]) -> &'static str {
     }
 }
 
-/// Ends the last line when it has no ending, so what follows starts a line.
+/// Ends an unended last line so what follows starts fresh.
 fn break_line(out: &mut String, ending: &str) {
     if !out.is_empty() && !out.as_str().ends_with_newline() {
         out.push_str(ending);
@@ -84,7 +84,7 @@ pub fn regions(base: &str, ours: &str, theirs: &str) -> Vec<Region> {
         .collect()
 }
 
-/// The merged text with each conflict as taken, and how many are still open; an open one keeps its markers.
+/// The merged text as taken, and how many stay open.
 pub fn result(regions: &[Region], takes: &[Option<Take>]) -> (String, usize) {
     let ending = ending(regions);
     let mut out = String::new();
@@ -126,21 +126,25 @@ pub fn result(regions: &[Region], takes: &[Option<Take>]) -> (String, usize) {
     (out, open)
 }
 
-/// A conflict in marked text: the lines of its markers, from zero.
+/// A marked conflict: its marker lines, from zero.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Conflict {
     pub start: usize,
+    /// A diff3 conflict's `|||||||` line, before its base.
+    pub base: Option<usize>,
     pub middle: usize,
     pub end: usize,
 }
 
-/// The conflicts marked in `text`: `<<<<<<<`, `=======`, `>>>>>>>`, each at a line's start.
+/// The conflicts marked in `text`, markers at line starts.
 pub fn conflicts(text: &str) -> Vec<Conflict> {
     let mut found = Vec::new();
-    let (mut start, mut middle) = (None, None);
+    let (mut start, mut base, mut middle) = (None, None, None);
     for (ix, line) in text.tokenize_lines().into_iter().enumerate() {
         if line.starts_with("<<<<<<<") {
-            (start, middle) = (Some(ix), None);
+            (start, base, middle) = (Some(ix), None, None);
+        } else if line.starts_with("|||||||") && start.is_some() && middle.is_none() {
+            base = Some(ix);
         } else if line.starts_with("=======") && start.is_some() {
             middle = Some(ix);
         } else if line.starts_with(">>>>>>>")
@@ -148,6 +152,7 @@ pub fn conflicts(text: &str) -> Vec<Conflict> {
         {
             found.push(Conflict {
                 start,
+                base: base.take(),
                 middle,
                 end: ix,
             });
@@ -156,14 +161,15 @@ pub fn conflicts(text: &str) -> Vec<Conflict> {
     found
 }
 
-/// `text` with conflict `ix` settled as taken, every other byte kept; none when `text` has no conflict `ix`.
+/// `text` with conflict `ix` settled; none if absent.
 pub fn resolve(text: &str, ix: usize, take: Take) -> Option<String> {
     let Some(conflict) = conflicts(text).get(ix).copied() else {
         log::error!("no conflict {ix} to resolve in this text");
         return None;
     };
     let lines = text.tokenize_lines();
-    let ours = lines[conflict.start + 1..conflict.middle].concat();
+    // A diff3 conflict's base section is neither side.
+    let ours = lines[conflict.start + 1..conflict.base.unwrap_or(conflict.middle)].concat();
     let theirs = lines[conflict.middle + 1..conflict.end].concat();
     let kept = match take {
         Take::Ours => ours,
@@ -184,6 +190,20 @@ pub fn resolve(text: &str, ix: usize, take: Take) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_diff3_conflict_leaves_its_base_out() {
+        let text = "a\n<<<<<<< HEAD\nours\n||||||| base\nold\n=======\ntheirs\n>>>>>>> side\nz\n";
+        assert_eq!(conflicts(text)[0].base, Some(3));
+        assert_eq!(
+            resolve(text, 0, Take::Ours).as_deref(),
+            Some("a\nours\nz\n")
+        );
+        assert_eq!(
+            resolve(text, 0, Take::Both).as_deref(),
+            Some("a\nours\ntheirs\nz\n")
+        );
+    }
 
     const BASE: &str = "fn lift() {\n    0.5\n}\nfn keep() {}\n";
     const OURS: &str = "fn lift() {\n    0.6\n}\nfn keep() {}\n";
@@ -244,6 +264,7 @@ mod tests {
             conflicts(marked),
             [Conflict {
                 start: 1,
+                base: None,
                 middle: 3,
                 end: 5
             }]

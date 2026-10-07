@@ -7,7 +7,9 @@ use gpui::{
     TestAppContext, VisualTestContext, Window, div, px,
 };
 
-use super::{Blame, BlameView, Commit, CommitList, FileHistory};
+use super::{
+    Blame, BlameView, Branch, BranchList, Commit, CommitList, FileHistory, GitTag, TagList,
+};
 use crate::{forms, primitives::FocusNext, theme::Theme};
 
 fn commit(n: usize) -> Commit {
@@ -52,6 +54,34 @@ impl Render for Lists {
                 )
                 .on_pick(move |id, _, _| pick.borrow_mut().picked.push(id.to_string())),
             ),
+            "refs" => {
+                let branch = |name: &str, current| Branch {
+                    name: name.to_string().into(),
+                    remote: false,
+                    current,
+                    ahead: 0,
+                    behind: 0,
+                    subject: "s".into(),
+                    when: "today".into(),
+                };
+                let tag = GitTag {
+                    name: "v1".into(),
+                    message: None,
+                    commit: "a1".into(),
+                    when: "today".into(),
+                };
+                let tagged = self.heard.clone();
+                frame
+                    .child(
+                        BranchList::new("branches", [branch("main", true), branch("side", false)])
+                            .on_pick(move |name, _, _| {
+                                pick.borrow_mut().picked.push(name.to_string())
+                            }),
+                    )
+                    .child(TagList::new("tags", [tag]).on_pick(move |name, _, _| {
+                        tagged.borrow_mut().picked.push(name.to_string())
+                    }))
+            }
             _ => {
                 let blame = |commit: &str| Blame {
                     commit: commit.into(),
@@ -156,5 +186,24 @@ fn a_blame_run_picks_its_commit_from_the_keyboard(cx: &mut TestAppContext) {
         heard.borrow().picked,
         ["a1", "b2"],
         "each run's head, no stop between"
+    );
+}
+
+#[gpui::test]
+fn branches_and_tags_pick_from_the_keyboard(cx: &mut TestAppContext) {
+    let (heard, cx) = shown(cx, 0, "refs");
+    press_first(cx);
+    // Step through the stops until the tag is picked.
+    for _ in 0..8 {
+        if heard.borrow().picked.iter().any(|name| name == "v1") {
+            break;
+        }
+        press_first(cx);
+    }
+    let picked = heard.borrow().picked.clone();
+    assert_eq!(picked.first().map(String::as_str), Some("main"));
+    assert!(
+        picked.contains(&"side".to_string()) && picked.contains(&"v1".to_string()),
+        "{picked:?}"
     );
 }

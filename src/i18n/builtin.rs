@@ -85,6 +85,17 @@ const EN: &[(&str, &str)] = &[
     ("git.commit.commit_to", "Commit to {branch}"),
     ("git.commit.amend_to", "Amend {branch}"),
     ("git.commit.amend", "Amend last commit"),
+    ("git.merge.conflict", "Conflict {n}"),
+    ("git.merge.took", "Conflict {n} took {side}"),
+    ("git.merge.ours", "ours"),
+    ("git.merge.theirs", "theirs"),
+    ("git.merge.both", "both"),
+    ("git.merge.take_ours", "Take ours"),
+    ("git.merge.take_theirs", "Take theirs"),
+    ("git.merge.take_both", "Take both"),
+    ("git.merge.accept_current", "Accept current"),
+    ("git.merge.accept_incoming", "Accept incoming"),
+    ("git.merge.accept_both", "Accept both"),
 ];
 
 const ZH_CN: &[(&str, &str)] = &[
@@ -168,6 +179,17 @@ const ZH_CN: &[(&str, &str)] = &[
     ("git.commit.commit_to", "提交到 {branch}"),
     ("git.commit.amend_to", "修改 {branch} 的最近提交"),
     ("git.commit.amend", "修改最近一次提交"),
+    ("git.merge.conflict", "冲突 {n}"),
+    ("git.merge.took", "冲突 {n} 取了{side}"),
+    ("git.merge.ours", "当前侧"),
+    ("git.merge.theirs", "另一侧"),
+    ("git.merge.both", "两侧"),
+    ("git.merge.take_ours", "取当前侧"),
+    ("git.merge.take_theirs", "取另一侧"),
+    ("git.merge.take_both", "取两侧"),
+    ("git.merge.accept_current", "接受当前"),
+    ("git.merge.accept_incoming", "接受传入"),
+    ("git.merge.accept_both", "接受两者"),
 ];
 
 /// Ely's message for `key`; English if unshipped, fails if unknown.
