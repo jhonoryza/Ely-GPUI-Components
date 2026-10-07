@@ -269,3 +269,22 @@ fn the_owners_echo_of_a_year_keeps_the_day(cx: &mut TestAppContext) {
     }
     assert_eq!(heard(&host, cx), ["open 2027-01-16"]);
 }
+
+/// A month view at the last month the calendar shows.
+fn last_month(_: &Planning, owner: Entity<Planning>) -> gpui::AnyElement {
+    CalendarMonthView::new("month", date(9998, 12, 1), Vec::new())
+        .zone(TimeZone::UTC)
+        .today(date(9998, 12, 31))
+        .on_day(move |day, _, cx| note(&owner, format!("open {day}"), cx))
+        .into_any_element()
+}
+
+#[gpui::test]
+fn the_calendar_ends_a_year_short_of_jiffs_last_day(cx: &mut TestAppContext) {
+    let (host, cx) = planning(last_month, cx);
+    tab_to(4, cx);
+    for key in ["right", "pagedown", "down", "enter"] {
+        press(key, cx);
+    }
+    assert_eq!(heard(&host, cx), ["open 9998-12-31"]);
+}

@@ -354,9 +354,10 @@ impl RenderOnce for CalendarMonthView {
             Rc::new(move |by, window, cx| {
                 let day = match by {
                     0 => today,
-                    by => at
-                        .checked_add(by.months())
-                        .expect("a month lies on either side"),
+                    by => match super::stepped(at, by.months(), "calendar month view") {
+                        Some(day) => day,
+                        None => return,
+                    },
                 };
                 pick(day, window, cx)
             })
@@ -381,7 +382,9 @@ impl RenderOnce for CalendarMonthView {
                     _ => return,
                 };
                 cx.stop_propagation();
-                pick(at.checked_add(by).expect("a day nearby"), window, cx)
+                if let Some(day) = super::stepped(at, by, "calendar month view") {
+                    pick(day, window, cx)
+                }
             }
         };
         let theme = cx.theme();

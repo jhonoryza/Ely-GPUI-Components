@@ -120,41 +120,49 @@ impl Recurrence {
         let mut days = Vec::with_capacity(cap);
         let mut round: i64 = 0;
         while days.len() < cap {
-            let candidates: Vec<Date> = match self.frequency {
-                Frequency::Daily => vec![
-                    first
-                        .checked_add((round * step).days())
-                        .expect("a day ahead"),
-                ],
-                Frequency::Weekly => {
-                    let monday = week_start(first)
-                        .checked_add((round * step).weeks())
-                        .expect("a week ahead");
-                    self.on(first)
-                        .into_iter()
-                        .map(|day| {
-                            monday
-                                .checked_add(i64::from(day.to_monday_zero_offset()).days())
-                                .expect("a day of the week")
-                        })
-                        .filter(|day| *day >= first)
-                        .collect()
-                }
-                Frequency::Monthly => {
-                    let month = first
-                        .first_of_month()
-                        .checked_add((round * step).months())
-                        .expect("a month ahead");
-                    Date::new(month.year(), month.month(), first.day())
-                        .into_iter()
-                        .collect()
-                }
-                Frequency::Yearly => {
-                    let year = first.year() + (round * step) as i16;
-                    Date::new(year, first.month(), first.day())
-                        .into_iter()
-                        .collect()
-                }
+            let candidates: Option<Vec<Date>> = match self.frequency {
+                Frequency::Daily => first
+                    .checked_add((round * step).days())
+                    .ok()
+                    .map(|day| vec![day]),
+                Frequency::Weekly => week_start(first)
+                    .checked_add((round * step).weeks())
+                    .ok()
+                    .map(|monday| {
+                        self.on(first)
+                            .into_iter()
+                            .filter_map(|day| {
+                                monday
+                                    .checked_add(i64::from(day.to_monday_zero_offset()).days())
+                                    .ok()
+                            })
+                            .filter(|day| *day >= first)
+                            .collect()
+                    }),
+                Frequency::Monthly => first
+                    .first_of_month()
+                    .checked_add((round * step).months())
+                    .ok()
+                    .map(|month| {
+                        Date::new(month.year(), month.month(), first.day())
+                            .into_iter()
+                            .collect()
+                    }),
+                Frequency::Yearly => i16::try_from(i64::from(first.year()) + round * step)
+                    .ok()
+                    .filter(|year| *year <= Date::MAX.year())
+                    .map(|year| {
+                        Date::new(year, first.month(), first.day())
+                            .into_iter()
+                            .collect()
+                    }),
+            };
+            let Some(candidates) = candidates else {
+                log::warn!(
+                    "recurrence: it runs past the last day jiff holds after {} days",
+                    days.len()
+                );
+                return days;
             };
             for day in candidates {
                 if !within(day) || days.len() == cap {
@@ -179,6 +187,24 @@ mod tests {
             interval,
             ..Recurrence::new(frequency)
         }
+    }
+
+    #[test]
+    fn a_rule_stops_where_the_calendar_ends() {
+        let yearly = every(Frequency::Yearly, 99).days(date(9900, 2, 28), 5);
+        assert_eq!(yearly, [date(9900, 2, 28), date(9999, 2, 28)]);
+        let monthly = every(Frequency::Monthly, 99).days(date(9990, 1, 15), 5);
+        assert_eq!(monthly, [date(9990, 1, 15), date(9998, 4, 15)]);
+        assert_eq!(
+            every(Frequency::Daily, 99).days(date(9999, 12, 1), 5).len(),
+            1
+        );
+        assert_eq!(
+            every(Frequency::Weekly, 99)
+                .days(date(9999, 12, 1), 5)
+                .len(),
+            1
+        );
     }
 
     #[test]

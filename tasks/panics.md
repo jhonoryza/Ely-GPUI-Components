@@ -44,7 +44,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P27 Files — `src/files`
 - [x] P28 Messaging — `src/messaging`
 - [x] P29 Mail — `src/mail`
-- [ ] P30 Calendar — `src/calendar`
+- [x] P30 Calendar — `src/calendar`
 - [ ] P31 Project — `src/project`
 - [ ] P32 Canvas & Design — `src/canvas`
 - [ ] P33 DB & Dev Tools — `src/devtools`
@@ -95,3 +95,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P27: an owner's pick gone from a grid, an explorer folder or a directory listing logs and is kept as given, so it replaces a local pick and marks none (P13's listing now does the same); the columns mark a path name only while its parent holds it as a folder; moved bytes past a total log, the bar already capped; duplicate marks on no copy, or on every copy of a group, are dropped, so Remove never takes a group's last copy. Kept: one list's uniqueness, a snapshot's path and levels, items and downloads, lookups by construction, `datetime` with a constant pattern. Review: 3 rounds.
 - P28: an open chat or selected member no longer listed logs and marks none. Kept: one list's uniqueness and non-emptiness, one message's receipt and replies, constant `datetime` patterns, picks from lists without disabled rows, keys from the same render. Review: 1 round.
 - P29: an open mailbox, ticked label or selected mail no longer listed logs and marks none; a picked moment its zone cannot hold logs and reads as none, so the time dialog's action stays off. Kept: one list's uniqueness, day arithmetic from the owner's now, constant `datetime` patterns, the dialog's action behind its disabled button. Review: 1 round.
+- P30: calendar views step only within jiff's range less a year at each end (`calendar::within`, `stepped`), so every grid around a day fits, and a step past logs and stays; recurrences end where jiff's range ends; the year view's marks stop at an event's last day; the event editor refuses moves, ends, all-day starts and switches to timed that leave jiff's range or a stale painted kind, each with a log; a backward timed draft's days are its first day. Kept: owner dates at jiff's far edges, one list's uniqueness, an event's own order, one organizer, working hours, slots, reminder offsets, constant patterns, picks that always name a value. Review: 2 rounds.

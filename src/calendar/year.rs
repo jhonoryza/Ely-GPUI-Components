@@ -29,11 +29,14 @@ fn marks(events: &[Event], year: i16, zone: &TimeZone) -> BTreeMap<Date, usize> 
     for (ix, event) in events.iter().enumerate() {
         let (first, last) = event.days(zone);
         let mut day = first;
-        while day <= last {
+        loop {
             if day.year() == year {
                 marks.entry(day).or_insert(ix);
             }
-            day = day.tomorrow().expect("a day follows");
+            if day >= last {
+                break;
+            }
+            day = day.tomorrow().expect("a day before the last has one after");
         }
     }
     marks
@@ -251,9 +254,10 @@ impl RenderOnce for YearView {
             Rc::new(move |by, window, cx| {
                 let day = match by {
                     0 => today,
-                    by => at
-                        .checked_add(by.years())
-                        .expect("a year lies on either side"),
+                    by => match super::stepped(at, by.years(), "year view") {
+                        Some(day) => day,
+                        None => return,
+                    },
                 };
                 pick(day, window, cx)
             })
@@ -278,7 +282,9 @@ impl RenderOnce for YearView {
                     _ => return,
                 };
                 cx.stop_propagation();
-                pick(at.checked_add(by).expect("a day nearby"), window, cx)
+                if let Some(day) = super::stepped(at, by, "year view") {
+                    pick(day, window, cx)
+                }
             }
         };
         let tints = marks(&self.events, shown, &zone)

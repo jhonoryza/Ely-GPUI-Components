@@ -63,39 +63,43 @@ impl EventDraft {
     }
 }
 
-/// `when` as whole days, or as hours from nine to ten on its first day.
-fn toggled(when: When, zone: &TimeZone) -> When {
+/// `when` as whole days, or as hours from nine to ten on its first day; none when the zone holds no such hours.
+pub(super) fn toggled(when: When, zone: &TimeZone) -> Option<When> {
     match when {
         When::Timed { start, end } => {
             let first = start.to_zoned(zone.clone()).date();
             let last = end.to_zoned(zone.clone()).date().max(first);
-            When::AllDay { first, last }
+            Some(When::AllDay { first, last })
         }
         When::AllDay { first, .. } => {
-            let at = |hour| {
-                first
-                    .at(hour, 0, 0, 0)
-                    .to_zoned(zone.clone())
-                    .expect("the zone holds the hour")
-                    .timestamp()
+            let at = |hour| match first.at(hour, 0, 0, 0).to_zoned(zone.clone()) {
+                Ok(at) => Some(at.timestamp()),
+                Err(error) => {
+                    log::error!("event editor: {first} at {hour}:00 has no moment: {error}");
+                    None
+                }
             };
-            When::Timed {
-                start: at(9),
-                end: at(10),
-            }
+            Some(When::Timed {
+                start: at(9)?,
+                end: at(10)?,
+            })
         }
     }
 }
 
-/// `when` with its start moved to `start`, its length kept.
-fn moved(when: When, start: Timestamp) -> When {
+/// `when` with its start moved to `start`, its length kept; none for an all-day event or an end past what jiff holds.
+pub(super) fn moved(when: When, start: Timestamp) -> Option<When> {
     let When::Timed { start: was, end } = when else {
-        panic!("only timed events move by the hour");
+        log::error!("event editor: an all-day event does not move by the hour");
+        return None;
     };
     let length: SignedDuration = end.duration_since(was);
-    When::Timed {
-        start,
-        end: start + length,
+    match start.checked_add(length) {
+        Ok(end) => Some(When::Timed { start, end }),
+        Err(error) => {
+            log::error!("event editor: no end {length} after {start}: {error}");
+            None
+        }
     }
 }
 
@@ -244,17 +248,23 @@ impl RenderOnce for EventEditor {
         let civil = |at: Timestamp| at.to_zoned(zone.clone()).datetime();
         let exact = {
             let zone = zone.clone();
-            move |at: DateTime| {
-                at.to_zoned(zone.clone())
-                    .expect("the zone holds the time")
-                    .timestamp()
+            move |at: DateTime| match at.to_zoned(zone.clone()) {
+                Ok(at) => Some(at.timestamp()),
+                Err(error) => {
+                    log::error!("event editor: {at} has no moment in its zone: {error}");
+                    None
+                }
             }
         };
         let whole = matches!(draft.when, When::AllDay { .. });
         let toggle = {
             let zone = zone.clone();
             let when = draft.when;
-            edit(Rc::new(move |draft| draft.when = toggled(when, &zone)))
+            edit(Rc::new(move |draft| {
+                if let Some(when) = toggled(when, &zone) {
+                    draft.when = when;
+                }
+            }))
         };
         let span: Vec<gpui::AnyElement> = match draft.when {
             When::Timed { start, end } => {
@@ -264,10 +274,14 @@ impl RenderOnce for EventEditor {
                         .on_change({
                             let edit = edit.clone();
                             move |picked, _, cx| {
-                                let start = at(picked);
-                                edit(Rc::new(move |draft| draft.when = moved(draft.when, start)))(
-                                    cx,
-                                )
+                                let Some(start) = at(picked) else {
+                                    return;
+                                };
+                                edit(Rc::new(move |draft| {
+                                    if let Some(when) = moved(draft.when, start) {
+                                        draft.when = when;
+                                    }
+                                }))(cx)
                             }
                         })
                         .into_any_element(),
@@ -275,7 +289,9 @@ impl RenderOnce for EventEditor {
                         .on_change({
                             let edit = edit.clone();
                             move |picked, _, cx| {
-                                let end = until(picked);
+                                let Some(end) = until(picked) else {
+                                    return;
+                                };
                                 edit(Rc::new(move |draft| {
                                     if let When::Timed { start, .. } = draft.when {
                                         draft.when = When::Timed { start, end };
@@ -292,8 +308,11 @@ impl RenderOnce for EventEditor {
                         let edit = edit.clone();
                         move |day, _, cx| {
                             let length = last - first;
+                            let Ok(last) = day.checked_add(length) else {
+                                log::error!("event editor: no day {length} after {day}");
+                                return;
+                            };
                             edit(Rc::new(move |draft| {
-                                let last = day.checked_add(length).expect("a day ahead");
                                 draft.when = When::AllDay { first: day, last };
                             }))(cx)
                         }

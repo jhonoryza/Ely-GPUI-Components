@@ -218,9 +218,14 @@ impl<const DAYS: usize> RenderOnce for CalendarDays<DAYS> {
             Rc::new(move |by, window, cx| {
                 let next = match by {
                     0 => Self::first(today),
-                    by => shown
-                        .checked_add((i64::from(by) * DAYS as i64).days())
-                        .expect("days on either side"),
+                    by => match super::stepped(
+                        shown,
+                        (i64::from(by) * DAYS as i64).days(),
+                        "calendar days",
+                    ) {
+                        Some(day) => day,
+                        None => return,
+                    },
                 };
                 log::info!("calendar days {id:?}: from {next}");
                 first.update(cx, |first, cx| {

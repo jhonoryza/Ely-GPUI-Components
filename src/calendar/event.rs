@@ -73,6 +73,9 @@ impl Event {
             When::AllDay { first, last } => (first, last),
             When::Timed { start, end } => {
                 let first = start.to_zoned(zone.clone()).date();
+                if end <= start {
+                    return (first, first);
+                }
                 let before_end = end - SignedDuration::from_nanos(1);
                 (first, before_end.to_zoned(zone.clone()).date().max(first))
             }

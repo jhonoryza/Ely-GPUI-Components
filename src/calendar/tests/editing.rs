@@ -1,9 +1,10 @@
 use gpui::{Entity, IntoElement, Modifiers, TestAppContext, VisualTestContext, point, px};
-use jiff::{civil::date, tz::TimeZone};
+use jiff::{SignedDuration, Timestamp, civil::date, tz::TimeZone};
 
 use super::{Planning, at, heard, note, planning, press, settle, tab_to};
 use crate::calendar::{
-    AvailabilityPicker, EventDraft, EventEditor, RecurrenceEditor, ReminderPicker, When,
+    AvailabilityPicker, Event, EventDraft, EventEditor, RecurrenceEditor, ReminderPicker, When,
+    editor::{moved, toggled},
 };
 
 fn draft(title: &str, from: i8, to: i8) -> EventDraft {
@@ -191,4 +192,53 @@ fn new_days_from_the_owner_start_the_choice_over(cx: &mut TestAppContext) {
         [format!("pick {}", nine.expect("a UTC time").timestamp())],
         "the chosen day of the old run is gone; the first open day shows"
     );
+}
+
+#[test]
+fn only_a_timed_event_moves_and_only_while_its_end_exists() {
+    let all_day = When::AllDay {
+        first: date(2026, 9, 1),
+        last: date(2026, 9, 2),
+    };
+    assert_eq!(moved(all_day, Timestamp::UNIX_EPOCH), None);
+    let start = Timestamp::UNIX_EPOCH;
+    let hour = When::Timed {
+        start,
+        end: start + SignedDuration::from_hours(1),
+    };
+    assert_eq!(
+        moved(hour, Timestamp::MAX),
+        None,
+        "no end past jiff's last moment"
+    );
+    let later = start + SignedDuration::from_hours(5);
+    let expected = When::Timed {
+        start: later,
+        end: later + SignedDuration::from_hours(1),
+    };
+    assert_eq!(moved(hour, later), Some(expected));
+}
+
+#[test]
+fn a_day_at_jiffs_end_stays_all_day_and_an_end_at_its_start_has_days() {
+    let last = When::AllDay {
+        first: date(9999, 12, 31),
+        last: date(9999, 12, 31),
+    };
+    let west = TimeZone::fixed(jiff::tz::offset(-12));
+    assert_eq!(toggled(last, &west), None);
+    let start = Timestamp::MIN + SignedDuration::from_hours(1);
+    let mut backward = Event::timed(
+        "e",
+        "Backward",
+        start,
+        start + SignedDuration::from_hours(1),
+        0,
+    );
+    backward.when = When::Timed {
+        start,
+        end: Timestamp::MIN,
+    };
+    let first = start.to_zoned(TimeZone::UTC).date();
+    assert_eq!(backward.days(&TimeZone::UTC), (first, first));
 }

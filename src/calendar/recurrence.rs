@@ -191,7 +191,13 @@ impl RenderOnce for RecurrenceEditor {
             .selected(key)
             .on_change(move |key, window, cx| {
                 let ends = match key.as_ref() {
-                    "on" => Ends::On(first.checked_add(1.month()).expect("a month ahead")),
+                    "on" => match first.checked_add(1.month()) {
+                        Ok(last) => Ends::On(last),
+                        Err(error) => {
+                            log::error!("recurrence: no day a month after {first}: {error}");
+                            return;
+                        }
+                    },
                     "after" => Ends::After(10),
                     _ => Ends::Never,
                 };
