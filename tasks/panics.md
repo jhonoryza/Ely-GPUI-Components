@@ -32,7 +32,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P15 Charts — `src/charts`
 - [x] P16 Finance — `src/finance`
 - [x] P17 Code Editor — `src/editor`
-- [ ] P18 Terminal — `src/terminal`
+- [x] P18 Terminal — `src/terminal`
 - [ ] P19 Git — `src/git`
 - [ ] P20 Debug — `src/debug`
 - [ ] P21 Documents — `src/documents`
@@ -83,3 +83,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P16: crossed and locked books, empty sizes, leverage and margin past their bounds, stale range and interval keys, short layouts and comparisons, growth from zero, long QR addresses and grids too fine to draw all log and show; ladders mark their middle rung and key cells by row; every system-zone time goes through `datetime`; `nice_step` stays positive. Kept: one-snapshot shapes and one-value contracts. Review: 5 rounds, passed on the fifth; it also passed P15's last fix.
 - Noted for later items: `chat/params.rs` and `editor/settings.rs` pass `value.abs()` to `decimals`, which asserts a positive step.
 - P17: the editor keeps every owner offset on whole characters of its text (checked on intake, carried through edits by `editor::anchors`, cleared when the whole text changes); stale selections and edit batches are dropped; a painted row whose line the text lost takes no click, drag or IME query; the sticky header reads this frame; a glob too big to compile matches nothing; a missing font advance logs. Kept: owner contracts and construction. Review: 5 rounds, passed on the fifth.
+- P18: row paints and the font advance log gpui faults; a pty side caps at what ConPTY and alacritty's pixel sizes hold; a default shell past the list keeps the one before. Kept: constant regexes, captured matches, keyed rows, non-empty shells. Review: 2 rounds.

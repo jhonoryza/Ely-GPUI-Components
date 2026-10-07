@@ -100,9 +100,17 @@ pub(crate) fn grid(
                     &runs,
                     Some(cell.width),
                 );
-                shaped
-                    .paint_background(at(ix, 0), cell.height, TextAlign::Left, None, window, cx)
-                    .expect("a terminal row's ground paints");
+                let ground = shaped.paint_background(
+                    at(ix, 0),
+                    cell.height,
+                    TextAlign::Left,
+                    None,
+                    window,
+                    cx,
+                );
+                if let Err(error) = ground {
+                    log::error!("terminal: row {ix}'s ground failed to paint: {error:#}");
+                }
                 for (_, columns, why) in frame.lit.iter().filter(|(row, ..)| *row == ix) {
                     let wash = match why {
                         Lit::Selected => look.selection,
@@ -112,9 +120,11 @@ pub(crate) fn grid(
                     let extent = size(cell.width * columns.len() as f32, cell.height);
                     window.paint_quad(fill(Bounds::new(at(ix, columns.start), extent), wash));
                 }
-                shaped
-                    .paint(at(ix, 0), cell.height, TextAlign::Left, None, window, cx)
-                    .expect("a terminal row paints");
+                if let Err(error) =
+                    shaped.paint(at(ix, 0), cell.height, TextAlign::Left, None, window, cx)
+                {
+                    log::error!("terminal: row {ix} failed to paint: {error:#}");
+                }
                 for (column, cluster, style) in &row.clusters {
                     let run = TextRun {
                         len: cluster.len(),
@@ -124,7 +134,7 @@ pub(crate) fn grid(
                         underline: None,
                         strikethrough: None,
                     };
-                    window
+                    let painted = window
                         .text_system()
                         .shape_line(cluster.clone().into(), look.size, &[run], None)
                         .paint(
@@ -134,8 +144,10 @@ pub(crate) fn grid(
                             None,
                             window,
                             cx,
-                        )
-                        .expect("a terminal cluster paints");
+                        );
+                    if let Err(error) = painted {
+                        log::error!("terminal: a cluster in row {ix} failed to paint: {error:#}");
+                    }
                 }
             }
             if let Some((row, columns, _)) = &hovered {

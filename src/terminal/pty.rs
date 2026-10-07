@@ -99,13 +99,37 @@ pub(crate) fn spawn(launch: &Launch, size: TermSize, cell: (u16, u16)) -> anyhow
 }
 
 pub(crate) fn window_size(size: &TermSize, cell: (u16, u16)) -> WindowSize {
-    let cells =
-        |count: usize| u16::try_from(count).expect("a terminal is under 65536 cells a side");
+    let cells = |count: usize, side: u16| {
+        let most = (i16::MAX as u16).min(u16::MAX / side.max(1));
+        let kept = u16::try_from(count).unwrap_or(u16::MAX).min(most);
+        if usize::from(kept) < count {
+            log::error!("terminal: {count} cells of {side} px pass what a pty holds; {kept} kept");
+        }
+        kept
+    };
     WindowSize {
-        num_lines: cells(size.screen_lines),
-        num_cols: cells(size.columns),
+        num_lines: cells(size.screen_lines, cell.1),
+        num_cols: cells(size.columns, cell.0),
         cell_width: cell.0,
         cell_height: cell.1,
+    }
+}
+
+#[cfg(test)]
+mod sizes {
+    use alacritty_terminal::term::test::TermSize;
+
+    use super::window_size;
+
+    #[test]
+    fn more_cells_than_a_pty_holds_cap_at_its_most() {
+        let size = window_size(&TermSize::new(70_000, 24), (8, 16));
+        assert_eq!((size.num_cols, size.num_lines), (u16::MAX / 8, 24));
+        let tiny = window_size(&TermSize::new(70_000, 70_000), (1, 1));
+        assert_eq!(
+            (tiny.num_cols, tiny.num_lines),
+            (i16::MAX as u16, i16::MAX as u16)
+        );
     }
 }
 

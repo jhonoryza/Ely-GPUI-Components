@@ -46,10 +46,13 @@ impl ShellSelector {
     }
 
     pub fn default_shell(mut self, default: usize) -> Self {
-        assert!(
-            default < self.shells.len(),
-            "the default is one of the shells"
-        );
+        if default >= self.shells.len() {
+            log::error!(
+                "shell selector: no shell {default} of {}; the default stays",
+                self.shells.len()
+            );
+            return self;
+        }
         self.default = default;
         self
     }
@@ -191,5 +194,22 @@ impl RenderOnce for TerminalToolbar {
                     .tooltip(words)
                     .on_click(move |_, window, cx| run(window, cx))
             }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ShellChoice, ShellSelector};
+
+    #[test]
+    fn a_default_past_the_shells_keeps_the_one_before() {
+        let shell = |name: &'static str| ShellChoice {
+            name: name.into(),
+            program: name.into(),
+        };
+        let picker = ShellSelector::new("shells", [shell("zsh"), shell("bash")])
+            .default_shell(1)
+            .default_shell(5);
+        assert_eq!(picker.default, 1);
     }
 }

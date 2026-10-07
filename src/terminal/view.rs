@@ -282,11 +282,14 @@ impl Render for Terminal {
         let text = theme.text_size(TextSize::Sm);
         let mono = font(theme.mono_family.clone());
         let pixels = text.to_pixels(window.rem_size());
-        let advance = window
-            .text_system()
-            .advance(window.text_system().resolve_font(&mono), pixels, 'm')
-            .expect("the code font has an m")
-            .width;
+        let resolved = window.text_system().resolve_font(&mono);
+        let advance = match window.text_system().advance(resolved, pixels, 'm') {
+            Ok(advance) => advance.width,
+            Err(error) => {
+                log::error!("terminal: no advance for the code font: {error:#}; cells guessed");
+                pixels * 0.6
+            }
+        };
         self.cell = size(advance, (pixels * LEADING).round());
         let (found, current) = self.search.visible();
         self.shown = Rc::new(frame(&self.term.lock(), &ink, found, current));
