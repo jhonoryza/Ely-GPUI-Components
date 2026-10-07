@@ -58,7 +58,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P41 Maps — `src/maps`
 - [x] P42 Misc — `src/misc`
 - [x] P43 Library Tooling — `src/tooling`
-- [ ] P44 Rendering — `src/rendering`
+- [x] P44 Rendering — `src/rendering`
 - [ ] P45 Recount, acceptance table
 
 ## Log
@@ -109,3 +109,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P41: no change. Kept: finite and unique values, places and zooms in range (the map's own moves clamp and wrap), heat weights, routes of two places, builder misuse, tile sources and zooms, unique pins, ISO codes, the bundled world. Review: 1 round.
 - P42: Captcha, CookieBanner, Poll, QrCodeScanner and Survey take their handlers in `new`; the macOS web view shows wry's build and load failures in its box and logs failed bounds, visibility and focus calls (checked by reading, as Windows cannot build that module; CI builds it); kept state fits lists that changed: cookie switches, export formats, licenses, poll picks and votes, survey sheets, import mappings, quiz and flashcard places; a picture with no frame reads no code. Kept: lists present, a question's right answer, counts per option, unit tables, places from their own choices, Vote behind a pick. Review: 2 rounds.
 - P43: a playground knob painted before the owner's knobs changed sets nothing. Kept: knobs present, unique and starting in range, the preview asking by its own names (code), fixed tables in the inspector, checker and tokens. Review: 1 round.
+- P44: the render surface logs an atlas that cannot free or paint a frame and skips that draw. Kept: one picture at the size asked (the host's contract). Review: 1 round.

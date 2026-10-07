@@ -61,6 +61,7 @@ impl RenderOnce for RenderSurface {
             None
         });
         let (id, revision, draw) = (self.id.clone(), self.revision, self.draw);
+        let painted = self.id.clone();
         framed(self.ratio, cx)
             .id(self.id)
             .debug_selector(|| "render-surface".into())
@@ -84,19 +85,28 @@ impl RenderOnce for RenderSurface {
                                     frame,
                                 })
                             });
-                            if let Some(old) = old {
-                                window
-                                    .drop_image(old.frame)
-                                    .expect("the atlas frees a frame");
+                            if let Some(old) = old
+                                && let Err(error) = window.drop_image(old.frame)
+                            {
+                                log::error!("render surface {id}: the atlas kept a frame: {error}");
                             }
                         }
                         shown.read(cx).as_ref().map(|drawn| drawn.frame.clone())
                     },
-                    |bounds: Bounds<Pixels>, frame, window, _| {
-                        if let Some(frame) = frame {
-                            window
-                                .paint_image(bounds, bounds, Corners::default(), frame, 0, false)
-                                .expect("the atlas takes the frame");
+                    move |bounds: Bounds<Pixels>, frame, window, _| {
+                        if let Some(frame) = frame
+                            && let Err(error) = window.paint_image(
+                                bounds,
+                                bounds,
+                                Corners::default(),
+                                frame,
+                                0,
+                                false,
+                            )
+                        {
+                            log::error!(
+                                "render surface {painted}: the frame did not paint: {error}"
+                            );
                         }
                     },
                 )
