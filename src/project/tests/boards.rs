@@ -229,3 +229,225 @@ fn a_roadmap_draws_only_what_falls_in_its_months(cx: &mut TestAppContext) {
         "October runs through its last day: {end}"
     );
 }
+
+/// A roadmap at the end of jiff's range, a milestone past its count and an assignee who left.
+fn far(_: &Desk, _: Entity<Desk>) -> AnyElement {
+    let people = [crate::project::Person::new("ana", "Ana Lima")];
+    gpui::div()
+        .w(gpui::px(640.0))
+        .child(
+            crate::project::Roadmap::new("roadmap", date(9999, 11, 1), 3).lane(
+                "Design",
+                [crate::project::Initiative::new(
+                    "last",
+                    "Last",
+                    date(9999, 12, 1),
+                    date(9999, 12, 31),
+                )],
+            ),
+        )
+        .child(
+            crate::project::MilestoneProgress::new(
+                "milestone",
+                "Launch",
+                (date(2026, 9, 1), date(2026, 10, 1)),
+                (6, 5),
+            )
+            .today(date(2026, 9, 15)),
+        )
+        .child(crate::project::AssigneePicker::new("assignee", people).assignee("gone"))
+        .into_any_element()
+}
+
+#[gpui::test]
+fn the_end_of_time_an_overcount_and_a_gone_assignee_draw(cx: &mut TestAppContext) {
+    let (_, cx) = desk(far, cx);
+    settle(cx);
+}
+
+/// A roadmap past jiff's last month with a bar on its last day alone.
+fn last_day(_: &Desk, _: Entity<Desk>) -> AnyElement {
+    crate::project::Roadmap::new("last-day-map", date(9999, 11, 1), 3)
+        .lane(
+            "Last",
+            [crate::project::Initiative::new(
+                "only-last-day",
+                "Only last day",
+                date(9999, 12, 31),
+                date(9999, 12, 31),
+            )],
+        )
+        .into_any_element()
+}
+
+#[gpui::test]
+fn the_last_day_jiff_holds_keeps_its_bar(cx: &mut TestAppContext) {
+    let (_, cx) = desk(last_day, cx);
+    let bar = cx
+        .debug_bounds("initiative only-last-day")
+        .expect("the last day belongs to December");
+    assert!(bar.size.width > px(0.0), "one day has a width");
+}
+
+/// Tasks a database lays out: one due at jiff's last day, one due before it starts.
+fn far_tasks(layout: crate::project::DatabaseLayout) -> AnyElement {
+    let tasks = [
+        Task::new("a", "A")
+            .starts(date(2026, 9, 1))
+            .due(date(9999, 12, 31)),
+        Task::new("r", "R")
+            .starts(date(2026, 9, 27))
+            .due(date(2026, 8, 27)),
+    ];
+    crate::project::DatabaseView::new("database", tasks)
+        .layout(layout)
+        .today(date(2026, 9, 1))
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_timeline_caps_long_spans_and_leaves_out_backward_tasks(cx: &mut TestAppContext) {
+    let (_, cx) = desk(
+        |_, _| far_tasks(crate::project::DatabaseLayout::Timeline),
+        cx,
+    );
+    assert!(cx.debug_bounds("initiative a").is_some());
+    assert!(cx.debug_bounds("initiative r").is_none());
+}
+
+#[gpui::test]
+fn a_calendar_leaves_out_days_past_its_own(cx: &mut TestAppContext) {
+    let _ = desk(
+        |_, _| {
+            let last = Task::new("a", "A").due(date(9999, 12, 31));
+            crate::project::DatabaseView::new("database", [last])
+                .layout(crate::project::DatabaseLayout::Calendar)
+                .today(date(2026, 9, 1))
+                .into_any_element()
+        },
+        cx,
+    );
+}
+
+/// A board whose second column leaves once anything is heard.
+fn changing_board(desk: &Desk, _: Entity<Desk>) -> AnyElement {
+    let board = KanbanBoard::new("changing-board")
+        .column(KanbanColumn::new("todo", "Todo").card(card("a")));
+    let board = match desk.heard.is_empty() {
+        true => board.column(KanbanColumn::new("gone", "Gone").card(card("b"))),
+        false => board,
+    };
+    board.into_any_element()
+}
+
+#[gpui::test]
+fn a_column_that_leaves_during_a_drag_takes_no_card(cx: &mut TestAppContext) {
+    let (host, cx) = desk(changing_board, cx);
+    let from = cx.debug_bounds("card a").expect("card a").center();
+    let gone = cx
+        .debug_bounds("column gone")
+        .expect("column gone")
+        .center();
+    cx.simulate_mouse_move(from, None, Modifiers::none());
+    cx.simulate_mouse_down(from, MouseButton::Left, Modifiers::none());
+    for shift in [12.0, 16.0] {
+        let at = point(from.x + px(shift), from.y);
+        cx.simulate_mouse_move(at, Some(MouseButton::Left), Modifiers::none());
+        settle(cx);
+    }
+    host.update(cx, |host, cx| {
+        host.heard.push("removed".into());
+        cx.notify();
+    });
+    settle(cx);
+    assert!(cx.debug_bounds("column gone").is_none());
+    cx.simulate_mouse_move(gone, Some(MouseButton::Left), Modifiers::none());
+    settle(cx);
+    cx.simulate_mouse_up(gone, MouseButton::Left, Modifiers::none());
+    settle(cx);
+}
+
+/// Drags `card a` toward `to` in six moves, as a hand would.
+fn drag_toward(to: gpui::Point<gpui::Pixels>, cx: &mut gpui::VisualTestContext) {
+    let from = cx.debug_bounds("card a").expect("card a").center();
+    cx.simulate_mouse_move(from, None, Modifiers::none());
+    cx.simulate_mouse_down(from, MouseButton::Left, Modifiers::none());
+    for step in 1..=6 {
+        let share = step as f32 / 6.0;
+        let at = point(
+            from.x + (to.x - from.x) * share,
+            from.y + (to.y - from.y) * share,
+        );
+        cx.simulate_mouse_move(at, Some(MouseButton::Left), Modifiers::none());
+        settle(cx);
+    }
+}
+
+/// A board whose second column leaves, and the moves it asks.
+fn leaving_column(host: &Desk, owner: Entity<Desk>) -> AnyElement {
+    let board =
+        KanbanBoard::new("drop-board").column(KanbanColumn::new("todo", "Todo").card(card("a")));
+    let board = match host.heard.is_empty() {
+        true => board.column(KanbanColumn::new("gone", "Gone").card(card("b"))),
+        false => board,
+    };
+    board
+        .on_move(move |key, column, index, _, cx| {
+            note(&owner, format!("move {key} {column} {index}"), cx)
+        })
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_drop_on_a_column_that_left_moves_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = desk(leaving_column, cx);
+    let gone = cx
+        .debug_bounds("column gone")
+        .expect("column gone")
+        .center();
+    drag_toward(gone, cx);
+    host.update(cx, |host, cx| {
+        host.heard.push("removed".into());
+        cx.notify();
+    });
+    settle(cx);
+    cx.simulate_mouse_up(gone, MouseButton::Left, Modifiers::none());
+    settle(cx);
+    assert_eq!(heard(&host, cx), ["removed"]);
+}
+
+/// A target column that loses a card, and the moves it asks.
+fn shrinking_target(host: &Desk, owner: Entity<Desk>) -> AnyElement {
+    let target = KanbanColumn::new("target", "Target").card(card("b"));
+    let target = match host.heard.is_empty() {
+        true => target.card(card("c")),
+        false => target,
+    };
+    let todo = KanbanColumn::new("todo", "Todo")
+        .card(card("a"))
+        .card(card("d"))
+        .card(card("e"));
+    KanbanBoard::new("shrinking-board")
+        .column(todo)
+        .column(target)
+        .on_move(move |key, column, index, _, cx| {
+            note(&owner, format!("move {key} {column} {index}"), cx)
+        })
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_drop_past_a_column_that_lost_a_card_moves_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = desk(shrinking_target, cx);
+    let target = cx.debug_bounds("column target").expect("column target");
+    let to = point(target.center().x, target.bottom() - px(8.0));
+    drag_toward(to, cx);
+    host.update(cx, |host, cx| {
+        host.heard.push("removed c".into());
+        cx.notify();
+    });
+    settle(cx);
+    cx.simulate_mouse_up(to, MouseButton::Left, Modifiers::none());
+    settle(cx);
+    assert_eq!(heard(&host, cx), ["removed c"]);
+}

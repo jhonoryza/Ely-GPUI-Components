@@ -102,25 +102,28 @@ impl Roadmap {
 
 impl RenderOnce for Roadmap {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let end = self
-            .first
-            .checked_add((self.months as i64).months())
-            .expect("a roadmap within jiff's range");
-        let span = end
-            .since(self.first)
-            .expect("days of the roadmap")
-            .get_days();
+        let (last, span) = match self.first.checked_add((self.months as i64).months()) {
+            Ok(end) => (
+                end.yesterday().expect("a day before a later one"),
+                end.since(self.first)
+                    .expect("days of the roadmap")
+                    .get_days(),
+            ),
+            Err(error) => {
+                log::error!(
+                    "roadmap {:?}: its months run past jiff's last day: {error}",
+                    self.id
+                );
+                let days = Date::MAX.since(self.first).expect("days of the roadmap");
+                (Date::MAX, days.get_days() + 1)
+            }
+        };
         let theme = cx.theme();
         let colors = &theme.colors;
         let row = theme.table_row(Density::Compact);
         let months: Vec<(f32, Date)> = (0..self.months)
-            .map(|month| {
-                let day = self
-                    .first
-                    .checked_add((month as i64).months())
-                    .expect("a month of the roadmap");
-                (along(self.first, span, day), day)
-            })
+            .filter_map(|month| self.first.checked_add((month as i64).months()).ok())
+            .map(|day| (along(self.first, span, day), day))
             .collect();
         let head = div()
             .relative()
@@ -154,7 +157,7 @@ impl RenderOnce for Roadmap {
         });
         let today = self
             .today
-            .filter(|today| (self.first..end).contains(today))
+            .filter(|today| (self.first..=last).contains(today))
             .map(|today| {
                 div()
                     .absolute()
@@ -173,15 +176,13 @@ impl RenderOnce for Roadmap {
                 let hue = colors.hue(lane_ix % colors.chart.len(), format_args!("lane {name}"));
                 let bars = initiatives
                     .into_iter()
-                    .filter(|each| each.end >= self.first && each.start < end)
+                    .filter(|each| each.end >= self.first && each.start <= last)
                     .map(|each| {
                         let (from, to) = (
                             along(self.first, span, each.start),
-                            along(
-                                self.first,
-                                span,
-                                each.end.tomorrow().expect("a day after the end"),
-                            ),
+                            each.end
+                                .tomorrow()
+                                .map_or(1.0, |after| along(self.first, span, after)),
                         );
                         let dates = format!(
                             "{}: {} – {}, {} done",

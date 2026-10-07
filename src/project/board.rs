@@ -395,6 +395,7 @@ impl RenderOnce for KanbanBoard {
             )
         });
         let (moves, drops, move_measures) = (hold.clone(), hold, measures);
+        let landings = orders.clone();
         let on_move = self.on_move;
         on_axis(
             div()
@@ -418,6 +419,7 @@ impl RenderOnce for KanbanBoard {
             let column = measures
                 .bodies
                 .iter()
+                .filter(|(key, _)| orders.contains_key(*key))
                 .min_by(|(_, a), (_, b)| {
                     let distance = |bounds: &Bounds<Pixels>| (bounds.center().x - pointer.x).abs();
                     distance(a)
@@ -430,7 +432,7 @@ impl RenderOnce for KanbanBoard {
             let heights: Vec<Pixels> = orders[&column]
                 .iter()
                 .filter(|key| **key != held.key)
-                .map(|key| measures.rows[key])
+                .filter_map(|key| measures.rows.get(key).copied())
                 .collect();
             let middle = pointer.y - held.grab.y + card.size.height / 2.0;
             let index = landing(&heights, body.origin.y, middle);
@@ -453,7 +455,28 @@ impl RenderOnce for KanbanBoard {
             }) else {
                 return;
             };
-            if origins[&held.key] == (held.column.clone(), held.index) {
+            let room = landings
+                .get(&held.column)
+                .map(|order| order.iter().filter(|key| **key != held.key).count());
+            let (Some(origin), Some(room)) = (origins.get(&held.key), room) else {
+                log::error!(
+                    "board: {} or column {} left the board; the drop is dropped",
+                    held.key,
+                    held.column
+                );
+                return;
+            };
+            if held.index > room {
+                log::error!(
+                    "board: {} at {} past {} in {}; the drop is dropped",
+                    held.key,
+                    held.index,
+                    room,
+                    held.column
+                );
+                return;
+            }
+            if *origin == (held.column.clone(), held.index) {
                 log::info!("board: {} dropped where it was", held.key);
                 return;
             }

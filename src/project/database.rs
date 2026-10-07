@@ -15,7 +15,7 @@ use super::{
 };
 use crate::{
     buttons::SegmentedControl,
-    calendar::{CalendarMonthView, Event},
+    calendar::{CalendarMonthView, Event, within},
     data_display::Tone,
     forms::OnValue,
     layout::seeded::use_seeded,
@@ -249,13 +249,23 @@ impl RenderOnce for DatabaseView {
                 }))
                 .into_any_element(),
             DatabaseLayout::Calendar => {
-                let month = self
-                    .tasks
+                let shown = |task: &&Task| match task.due {
+                    Some(due) if !within(due) => {
+                        log::error!(
+                            "database view: {} is due past the calendar's days",
+                            task.key
+                        );
+                        false
+                    }
+                    due => due.is_some(),
+                };
+                let due: Vec<&Task> = self.tasks.iter().filter(shown).collect();
+                let month = due
                     .iter()
                     .filter_map(|task| task.due)
                     .min()
                     .unwrap_or(today);
-                let events = self.tasks.iter().filter_map(|task| {
+                let events = due.iter().filter_map(|task| {
                     task.due.map(|due| {
                         Event::all_day(task.key.clone(), task.title.clone(), due, due, 0)
                     })
@@ -267,11 +277,22 @@ impl RenderOnce for DatabaseView {
                     .into_any_element()
             }
             DatabaseLayout::Timeline => {
-                let dated: Vec<&Task> = self
+                let both: Vec<&Task> = self
                     .tasks
                     .iter()
                     .filter(|task| task.start.is_some() && task.due.is_some())
                     .collect();
+                let dated: Vec<&Task> = both
+                    .iter()
+                    .copied()
+                    .filter(|task| task.start <= task.due)
+                    .collect();
+                let backward = both.len() - dated.len();
+                if backward > 0 {
+                    log::error!(
+                        "database view: {backward} tasks are due before they start; left out"
+                    );
+                }
                 let first = dated
                     .iter()
                     .filter_map(|task| task.start)
@@ -282,9 +303,10 @@ impl RenderOnce for DatabaseView {
                     .filter_map(|task| task.due)
                     .max()
                     .unwrap_or(today);
-                let months =
-                    ((last.year() - first.year()) * 12 + (last.month() - first.month()) as i16 + 1)
-                        .clamp(1, 24) as i8;
+                let months = ((i32::from(last.year()) - i32::from(first.year())) * 12
+                    + i32::from(last.month() - first.month())
+                    + 1)
+                .clamp(1, 24) as i8;
                 let lanes = Status::ALL.into_iter().filter_map(|status| {
                     let bars: Vec<Initiative> = dated
                         .iter()
@@ -299,7 +321,7 @@ impl RenderOnce for DatabaseView {
                         .collect();
                     (!bars.is_empty()).then_some((status.words(), bars))
                 });
-                let undated = self.tasks.len() - dated.len();
+                let undated = self.tasks.len() - both.len();
                 div()
                     .flex()
                     .flex_col()
@@ -313,6 +335,12 @@ impl RenderOnce for DatabaseView {
                             .text_size(theme.text_size(TextSize::Sm))
                             .text_color(theme.colors.fg_muted)
                             .child(format!("{undated} without a start and a due day"))
+                    }))
+                    .children((backward > 0).then(|| {
+                        div()
+                            .text_size(theme.text_size(TextSize::Sm))
+                            .text_color(theme.colors.fg_muted)
+                            .child(format!("{backward} due before they start"))
                     }))
                     .into_any_element()
             }

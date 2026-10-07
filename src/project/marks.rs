@@ -208,7 +208,12 @@ impl RenderOnce for AssigneePicker {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         if let Some(key) = &self.assignee {
             let known = self.people.iter().any(|person| person.key == *key);
-            assert!(known, "assignee picker {:?}: no person {key}", self.id);
+            if !known {
+                log::error!(
+                    "assignee picker {:?}: no person {key}; nobody shown",
+                    self.id
+                );
+            }
         }
         let nobody = Choice::new("", "No assignee").icon(IconName::User);
         let choices: Vec<Choice> = std::iter::once(nobody)

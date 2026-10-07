@@ -102,7 +102,10 @@ impl MilestoneProgress {
             target >= start,
             "a milestone's target comes after its start"
         );
-        assert!(total > 0 && done <= total, "{done} of {total} issues done");
+        assert!(total > 0, "{done} of no issues done");
+        if done > total {
+            log::error!("milestone: {done} of {total} issues done; all count as done");
+        }
         Self {
             id: id.into(),
             name: name.into(),
@@ -130,7 +133,8 @@ impl RenderOnce for MilestoneProgress {
                 clock_today("milestone progress")
             }
         };
-        let stands = standing(self.start, self.target, today, self.done, self.total);
+        let done = self.done.min(self.total);
+        let stands = standing(self.start, self.target, today, done, self.total);
         let theme = cx.theme();
         let colors = &theme.colors;
         let ink = stands.severity().color(colors);
@@ -141,7 +145,7 @@ impl RenderOnce for MilestoneProgress {
                 .text_color(colors.fg_muted)
                 .child(text)
         };
-        let share = self.done as f32 / self.total as f32;
+        let share = done as f32 / self.total as f32;
         div()
             .flex()
             .flex_col()
