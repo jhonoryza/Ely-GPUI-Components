@@ -2,8 +2,8 @@ use std::{ops::Range, rc::Rc};
 
 use gpui::{
     AnyElement, App, DragMoveEvent, ElementId, Entity, EntityId, FocusHandle, InteractiveElement,
-    IntoElement, MouseButton, ParentElement, SharedString, StatefulInteractiveElement, Styled,
-    Window, div, prelude::*, relative,
+    IntoElement, MouseButton, ParentElement, Role, SharedString, StatefulInteractiveElement,
+    Styled, Window, div, prelude::*, relative,
 };
 
 use super::{
@@ -171,6 +171,11 @@ fn row(rows: &Rows, ix: usize, window: &mut Window, cx: &mut App) -> AnyElement 
     };
     div()
         .id((rows.id.clone(), format!("node-{key}")))
+        .role(Role::TreeItem)
+        .aria_label(label.clone())
+        .aria_level(item.depth + 1)
+        .aria_selected(selected)
+        .when(opens, |row| row.aria_expanded(open))
         .relative()
         .w_full()
         .h(theme.control_height(ControlSize::Md))

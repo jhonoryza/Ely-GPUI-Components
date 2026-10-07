@@ -8,8 +8,8 @@ use std::{collections::HashSet, rc::Rc};
 
 use gpui::{
     App, Div, ElementId, EntityId, InteractiveElement, IntoElement, ParentElement, RenderOnce,
-    ScrollStrategy, SharedString, StyleRefinement, Styled, UniformListScrollHandle, Window, div,
-    uniform_list,
+    Role, ScrollStrategy, SharedString, StatefulInteractiveElement, StyleRefinement, Styled,
+    UniformListScrollHandle, Window, div, uniform_list,
 };
 
 pub(crate) use model::{Children, Shown, rows};
@@ -324,6 +324,7 @@ impl RenderOnce for Tree {
         .size_full();
         self.base
             .id(self.id)
+            .role(Role::Tree)
             .track_focus(&focus)
             .on_key_down(move |event, window, cx| {
                 if count == 0 || nav.read(cx).renaming.is_some() {
