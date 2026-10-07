@@ -6,7 +6,7 @@ cargo clippy --all-targets --features test-support -- -D warnings
 cargo test --lib --features test-support --quiet
 # Ely beside the newest GPUI Kit: a release that moves Kit's gpui pin fails to resolve here.
 kit="--manifest-path compat/kit/Cargo.toml"
-newest=$(cargo search gpui-kit --limit 1 | sed -n 's/^gpui-kit = "\([^"]*\)".*/\1/p')
+newest=$(cargo search gpui-kit --limit 1 --color never | sed -n 's/^gpui-kit = "\([^"]*\)".*/\1/p')
 [ -n "$newest" ] || { echo "crates.io named no gpui-kit release" >&2; exit 1; }
 cargo generate-lockfile $kit
 cargo update $kit -p gpui-kit --precise "$newest"
