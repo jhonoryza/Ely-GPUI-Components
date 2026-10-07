@@ -9,6 +9,7 @@ mod merge;
 mod merging;
 mod refs;
 mod review;
+mod rows;
 mod tags;
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
@@ -25,5 +26,6 @@ pub use merge::{ConflictResolver, ThreeWayMerge};
 pub use merging::{Conflict, Region, RegionKind, Take, conflicts, regions, resolve, result};
 pub use refs::{Branch, BranchList, BranchSelector};
 pub use review::{PullRequest, PullRequestCard, PullState, ReviewComment, ReviewNote};
+pub use rows::Place;
 pub use tags::{GitTag, Stash, StashAction, StashList, TagList};
 pub use viewer::{DiffLayout, DiffViewer};

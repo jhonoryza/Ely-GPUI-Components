@@ -1,21 +1,21 @@
-use std::{ops::Range, rc::Rc};
+use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, HighlightStyle, Hsla, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled,
-    StyledText, Window, div, prelude::*, relative, transparent_black, uniform_list,
+    AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, MouseButton,
+    ParentElement, RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled, Window, div,
+    prelude::*, relative, transparent_black, uniform_list,
 };
 
 use super::{
     badges::DiffStat,
-    diff::{DiffLine, LineKind, Stretch, diff, pair_places, side_numbers},
+    diff::{DiffLine, LineKind, Stretch, diff, side_numbers},
+    rows::{Place, Shown, code, shown, washes},
 };
 use crate::{
     buttons::{Button, ButtonVariant, SegmentedControl},
-    editor::{code_colors, stack},
     i18n,
     primitives::FocusRing,
-    theme::{ActiveTheme, ControlSize, Palette, TextSize},
+    theme::{ActiveTheme, ControlSize, TextSize},
     typography::LEADING,
 };
 
@@ -28,56 +28,6 @@ pub enum DiffLayout {
 
 /// Unchanged lines kept around each change.
 const CONTEXT: usize = 3;
-
-/// A line's place: its stretch, then its line there.
-pub type Place = (usize, usize);
-
-/// A row as the viewer draws it.
-#[derive(Clone)]
-enum Shown {
-    /// A hunk's header and its place among the stretches.
-    Header(usize, SharedString),
-    Line(Place, DiffLine),
-    Pair(Option<(Place, DiffLine)>, Option<(Place, DiffLine)>),
-    /// A folded stretch: its place among the stretches and how many lines it hides.
-    Fold(usize, usize),
-}
-
-fn shown(stretches: &[Stretch], layout: DiffLayout, open: &[usize]) -> Vec<Shown> {
-    let mut rows = Vec::new();
-    for (ix, stretch) in stretches.iter().enumerate() {
-        match stretch {
-            Stretch::Hunk { header, lines } => {
-                rows.push(Shown::Header(ix, header.clone()));
-                let at = |line: usize| ((ix, line), lines[line].clone());
-                match layout {
-                    DiffLayout::Unified => rows.extend((0..lines.len()).map(|line| {
-                        let (place, line) = at(line);
-                        Shown::Line(place, line)
-                    })),
-                    DiffLayout::Split => rows.extend(
-                        pair_places(lines)
-                            .into_iter()
-                            .map(|(left, right)| Shown::Pair(left.map(at), right.map(at))),
-                    ),
-                }
-            }
-            Stretch::Folded(lines) if open.contains(&ix) => {
-                rows.extend(lines.iter().enumerate().map(|(at, line)| {
-                    let place = (ix, at);
-                    match layout {
-                        DiffLayout::Unified => Shown::Line(place, line.clone()),
-                        DiffLayout::Split => {
-                            Shown::Pair(Some((place, line.clone())), Some((place, line.clone())))
-                        }
-                    }
-                }))
-            }
-            Stretch::Folded(lines) => rows.push(Shown::Fold(ix, lines.len())),
-        }
-    }
-    rows
-}
 
 type OnIndex = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 type OnLayout = Rc<dyn Fn(DiffLayout, &mut Window, &mut App)>;
@@ -163,7 +113,7 @@ impl DiffViewer {
         self
     }
 
-    /// A button on each hunk's header, given the hunk's place.
+    /// A button on each hunk header, given its place.
     pub fn hunk_action(
         mut self,
         label: impl Into<SharedString>,
@@ -202,38 +152,6 @@ impl DiffViewer {
         self.on_layout = Some(Rc::new(handler));
         self
     }
-}
-
-/// The wash behind a line, and behind its changed words.
-fn washes(kind: LineKind, colors: &Palette) -> (Option<Hsla>, Hsla) {
-    match kind {
-        LineKind::Same => (None, colors.hover),
-        LineKind::Added => (
-            Some(colors.success.opacity(0.08)),
-            colors.success.opacity(0.25),
-        ),
-        LineKind::Removed => (
-            Some(colors.danger.opacity(0.08)),
-            colors.danger.opacity(0.25),
-        ),
-    }
-}
-
-/// A line's code, colored as code, its changed words washed.
-fn code(line: &DiffLine, colors: &Palette, cx: &App) -> StyledText {
-    let (_, word) = washes(line.kind, colors);
-    let mut styles: Vec<(Range<usize>, HighlightStyle)> = code_colors(&line.text, cx);
-    styles.extend(line.words.iter().map(|range| {
-        (
-            range.clone(),
-            HighlightStyle {
-                background_color: Some(word),
-                ..HighlightStyle::default()
-            },
-        )
-    }));
-    styles.sort_by_key(|(range, _)| range.start);
-    StyledText::new(line.text.clone()).with_highlights(stack(styles))
 }
 
 impl RenderOnce for DiffViewer {

@@ -152,7 +152,7 @@ fn changed_lines_and_hunks_answer_presses(cx: &mut TestAppContext) {
         });
         settle(cx);
     };
-    // Past the two layout segments: the hunk's button, then its lines.
+    // Past two layout segments: hunk button, then lines.
     let next = |cx: &mut VisualTestContext| {
         cx.update(|window, cx| window.focus_next(cx));
         settle(cx);
@@ -213,7 +213,7 @@ fn a_row_says_which_section_it_is_in(cx: &mut TestAppContext) {
     cx.update(|window, _| window.activate_window());
     settle(cx);
     let mut rows = Vec::new();
-    // Each row is a stop; its icons stay hidden until hover.
+    // Each row is a stop; icons hide until hover.
     for _ in 0..12 {
         cx.update(|window, cx| window.focus_next(cx));
         settle(cx);

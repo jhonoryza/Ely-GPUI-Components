@@ -152,7 +152,7 @@ pub(crate) fn pair_places(lines: &[DiffLine]) -> Vec<(Option<usize>, Option<usiz
     out
 }
 
-/// A hunk's lines side by side: unchanged lines on both sides, each run of removals beside the additions after it.
+/// A hunk's lines side by side: removals beside following additions.
 pub fn pairs(lines: &[DiffLine]) -> Vec<(Option<&DiffLine>, Option<&DiffLine>)> {
     pair_places(lines)
         .into_iter()
@@ -160,7 +160,7 @@ pub fn pairs(lines: &[DiffLine]) -> Vec<(Option<&DiffLine>, Option<&DiffLine>)> 
         .collect()
 }
 
-/// Marks the words each removal and the addition beside it changed.
+/// Marks words changed between each removal and its addition.
 pub fn mark_words(lines: &mut [DiffLine]) {
     for (left, right) in pair_places(lines) {
         let (Some(left), Some(right)) = (left, right) else {
