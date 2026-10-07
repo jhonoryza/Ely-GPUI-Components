@@ -59,7 +59,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P42 Misc — `src/misc`
 - [x] P43 Library Tooling — `src/tooling`
 - [x] P44 Rendering — `src/rendering`
-- [ ] P45 Recount, acceptance table
+- [x] P45 Recount, acceptance table
 
 ## Log
 
@@ -110,3 +110,16 @@ One line per item: what changed, what stayed and why, review rounds.
 - P42: Captcha, CookieBanner, Poll, QrCodeScanner and Survey take their handlers in `new`; the macOS web view shows wry's build and load failures in its box and logs failed bounds, visibility and focus calls (checked by reading, as Windows cannot build that module; CI builds it); kept state fits lists that changed: cookie switches, export formats, licenses, poll picks and votes, survey sheets, import mappings, quiz and flashcard places; a picture with no frame reads no code. Kept: lists present, a question's right answer, counts per option, unit tables, places from their own choices, Vote behind a pick. Review: 2 rounds.
 - P43: a playground knob painted before the owner's knobs changed sets nothing. Kept: knobs present, unique and starting in range, the preview asking by its own names (code), fixed tables in the inspector, checker and tokens. Review: 1 round.
 - P44: the render surface logs an atlas that cannot free or paint a frame and skips that draw. Kept: one picture at the size asked (the host's contract). Review: 1 round.
+- P45: recounted in library code, tests aside, by the same scan as the start.
+
+## Result
+
+| Kind | At the start | Now | What stays |
+|---|---|---|---|
+| `panic!` | 158 | 40 | Lookups over Ely's own tables (units, methods, statuses, colors), i18n keys from code, builder misuse, gpui's own invariants. No handler panics remain. |
+| `assert!` | 477 | 404 | One value against itself or a constant, one list's own shape, an owner's static tables. |
+| `assert_eq!`, `assert_ne!` | 23 | 25 | One snapshot's shape and catalogs; the two added check a host's frame. |
+| `expect` | 343 | 296 | Facts by construction: lookups from one render, button-gated values, constant patterns. |
+| `unreachable!` | 14 | 12 | Arms a match rules out by construction. |
+
+Handlers a component needs are arguments of `new` in every chapter; live keys, places and indexes that a changed list leaves behind log and show none, start over or peg; outside failures (wry, gpui's atlas, an unknown time zone) log and show their state. Every item passed its review; P15 and P25 reached the five-round cap, and the next item's review passed their last fix.
