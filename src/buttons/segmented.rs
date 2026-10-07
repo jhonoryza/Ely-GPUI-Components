@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, FocusHandle, FontWeight,
-    InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, ScrollHandle,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, Role, ScrollHandle,
     SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
@@ -134,9 +134,17 @@ impl RenderOnce for SegmentedControl {
                 let fg = if on { colors.fg } else { colors.fg_muted };
                 let (focus, reveal) = stops.remove(0);
                 let (named, labeled) = (value.clone(), value.clone());
+                let spoken = if label.is_empty() {
+                    value.clone()
+                } else {
+                    label.clone()
+                };
                 let (change, measure) = (self.on_change.clone(), state.clone());
                 let segment = div()
                     .id(("segment", ix))
+                    .role(Role::RadioButton)
+                    .aria_toggled(on.into())
+                    .aria_label(spoken)
                     .relative()
                     .flex()
                     .flex_auto()
