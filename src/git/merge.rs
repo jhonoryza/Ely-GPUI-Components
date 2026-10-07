@@ -8,7 +8,7 @@ use gpui::{
 
 use similar::DiffableStr;
 
-use super::merging::{Region, RegionKind, Take, conflicts, resolve};
+use super::merging::{MARKER, Region, RegionKind, Take, conflicts, resolve};
 use crate::{
     buttons::{Button, ButtonVariant},
     i18n,
@@ -298,12 +298,12 @@ impl RenderOnce for ConflictResolver {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let found = conflicts(&self.text);
+        let found = conflicts(&self.text, MARKER);
         let text = self.text.to_string();
         let on_take: Option<OnTake> = self.on_resolve.map(|on_resolve| {
             Rc::new(
                 move |ix: usize, take: Take, window: &mut Window, cx: &mut App| {
-                    if let Some(settled) = resolve(&text, ix, take) {
+                    if let Some(settled) = resolve(&text, ix, take, MARKER) {
                         on_resolve(settled, window, cx)
                     }
                 },

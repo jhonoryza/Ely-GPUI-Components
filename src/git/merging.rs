@@ -136,18 +136,28 @@ pub struct Conflict {
     pub end: usize,
 }
 
-/// The conflicts marked in `text`, markers at line starts.
-pub fn conflicts(text: &str) -> Vec<Conflict> {
+/// Git's conflict marker width, unless `conflict-marker-size` says otherwise.
+pub const MARKER: usize = 7;
+
+/// A marker line: `size` of `mark` exactly, then a label if `labelled`.
+fn marker(line: &str, mark: char, size: usize, labelled: bool) -> bool {
+    let line = line.trim_end_matches(['\n', '\r']);
+    let run = line.chars().take_while(|c| *c == mark).count();
+    run == size && (line.len() == size || (labelled && line[size..].starts_with(' ')))
+}
+
+/// The conflicts marked in `text` with markers `size` wide.
+pub fn conflicts(text: &str, size: usize) -> Vec<Conflict> {
     let mut found = Vec::new();
     let (mut start, mut base, mut middle) = (None, None, None);
     for (ix, line) in text.tokenize_lines().into_iter().enumerate() {
-        if line.starts_with("<<<<<<<") {
+        if marker(line, '<', size, true) {
             (start, base, middle) = (Some(ix), None, None);
-        } else if line.starts_with("|||||||") && start.is_some() && middle.is_none() {
+        } else if marker(line, '|', size, true) && start.is_some() && middle.is_none() {
             base = Some(ix);
-        } else if line.starts_with("=======") && start.is_some() {
+        } else if marker(line, '=', size, false) && start.is_some() && middle.is_none() {
             middle = Some(ix);
-        } else if line.starts_with(">>>>>>>")
+        } else if marker(line, '>', size, true)
             && let (Some(start), Some(middle)) = (start.take(), middle.take())
         {
             found.push(Conflict {
@@ -162,7 +172,7 @@ pub fn conflicts(text: &str) -> Vec<Conflict> {
 }
 
 /// Regions as Git grouped marked `text`; base from diff3.
-pub fn marked(text: &str) -> Vec<Region> {
+pub fn marked(text: &str, size: usize) -> Vec<Region> {
     let lines: Vec<String> = text
         .tokenize_lines()
         .into_iter()
@@ -176,7 +186,7 @@ pub fn marked(text: &str) -> Vec<Region> {
     };
     let mut out = Vec::new();
     let mut at = 0;
-    for conflict in conflicts(text) {
+    for conflict in conflicts(text, size) {
         if conflict.start > at {
             out.push(same(at..conflict.start));
         }
@@ -198,8 +208,8 @@ pub fn marked(text: &str) -> Vec<Region> {
 }
 
 /// `text` with conflict `ix` settled; none if absent.
-pub fn resolve(text: &str, ix: usize, take: Take) -> Option<String> {
-    let Some(conflict) = conflicts(text).get(ix).copied() else {
+pub fn resolve(text: &str, ix: usize, take: Take, size: usize) -> Option<String> {
+    let Some(conflict) = conflicts(text, size).get(ix).copied() else {
         log::error!("no conflict {ix} to resolve in this text");
         return None;
     };
@@ -228,9 +238,21 @@ mod tests {
     use super::*;
 
     #[test]
+    fn markers_hold_their_width_and_whole_lines() {
+        let wide = "a\n<<<<<<<<<< ours\nmine\n==========\ntop\n======= literal\nend\n>>>>>>>>>> theirs\nz\n";
+        assert!(conflicts(wide, MARKER).is_empty(), "seven is not ten");
+        assert_eq!(
+            resolve(wide, 0, Take::Theirs, 10).as_deref(),
+            Some("a\ntop\n======= literal\nend\nz\n")
+        );
+        let five = "<<<<< ours\nx\n=====\ny\n>>>>> theirs\n";
+        assert_eq!(conflicts(five, 5).len(), 1);
+    }
+
+    #[test]
     fn marked_text_keeps_gits_grouping_and_its_base() {
         let text = "first\n<<<<<<< ours\nOURS a\nunchanged\nOURS b\n||||||| base\na\nunchanged\nb\n=======\nTHEIRS a\nunchanged\nTHEIRS b\n>>>>>>> theirs\nlast\n";
-        let found = marked(text);
+        let found = marked(text, MARKER);
         let kinds: Vec<RegionKind> = found.iter().map(|region| region.kind).collect();
         assert_eq!(
             kinds,
@@ -249,13 +271,13 @@ mod tests {
     #[test]
     fn a_diff3_conflict_leaves_its_base_out() {
         let text = "a\n<<<<<<< HEAD\nours\n||||||| base\nold\n=======\ntheirs\n>>>>>>> side\nz\n";
-        assert_eq!(conflicts(text)[0].base, Some(3));
+        assert_eq!(conflicts(text, MARKER)[0].base, Some(3));
         assert_eq!(
-            resolve(text, 0, Take::Ours).as_deref(),
+            resolve(text, 0, Take::Ours, MARKER).as_deref(),
             Some("a\nours\nz\n")
         );
         assert_eq!(
-            resolve(text, 0, Take::Both).as_deref(),
+            resolve(text, 0, Take::Both, MARKER).as_deref(),
             Some("a\nours\ntheirs\nz\n")
         );
     }
@@ -291,7 +313,7 @@ mod tests {
         assert_eq!(result(&bare, &[Some(Take::Both)]).0, "b\nc");
         let marked = "a\r\n<<<<<<< HEAD\r\nours\r\n=======\r\ntheirs\r\n>>>>>>> topic\r\nz";
         assert_eq!(
-            resolve(marked, 0, Take::Ours).as_deref(),
+            resolve(marked, 0, Take::Ours, MARKER).as_deref(),
             Some("a\r\nours\r\nz")
         );
     }
@@ -302,8 +324,15 @@ mod tests {
         assert_eq!(result(&changed, &[]).0, "a\rB\n");
         let held = result(&regions("a\r", "b\r", "c\r"), &[]).0;
         assert_eq!(held, "<<<<<<< ours\rb\r=======\rc\r>>>>>>> theirs\r");
-        assert_eq!(resolve(&held, 0, Take::Theirs).as_deref(), Some("c\r"));
-        assert_eq!(resolve("plain\n", 0, Take::Ours), None, "no conflict left");
+        assert_eq!(
+            resolve(&held, 0, Take::Theirs, MARKER).as_deref(),
+            Some("c\r")
+        );
+        assert_eq!(
+            resolve("plain\n", 0, Take::Ours, MARKER),
+            None,
+            "no conflict left"
+        );
     }
 
     #[test]
@@ -316,7 +345,7 @@ mod tests {
     fn markers_resolve_to_one_side_or_both() {
         let marked = "a\n<<<<<<< HEAD\nours\n=======\ntheirs\n>>>>>>> topic\nz\n";
         assert_eq!(
-            conflicts(marked),
+            conflicts(marked, MARKER),
             [Conflict {
                 start: 1,
                 base: None,
@@ -325,15 +354,15 @@ mod tests {
             }]
         );
         assert_eq!(
-            resolve(marked, 0, Take::Ours).as_deref(),
+            resolve(marked, 0, Take::Ours, MARKER).as_deref(),
             Some("a\nours\nz\n")
         );
         assert_eq!(
-            resolve(marked, 0, Take::Both).as_deref(),
+            resolve(marked, 0, Take::Both, MARKER).as_deref(),
             Some("a\nours\ntheirs\nz\n")
         );
         assert!(
-            conflicts("a\n=======\nb\n").is_empty(),
+            conflicts("a\n=======\nb\n", MARKER).is_empty(),
             "a rule alone is no conflict"
         );
     }

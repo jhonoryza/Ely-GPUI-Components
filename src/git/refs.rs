@@ -197,7 +197,6 @@ impl RenderOnce for BranchSelector {
     }
 }
 
-/// A row's name, detail, trailing words and hover actions.
 /// A pickable row: its spoken name, whether picked, the pick.
 pub(super) struct Pick {
     pub spoken: SharedString,
@@ -205,6 +204,7 @@ pub(super) struct Pick {
     pub run: Run,
 }
 
+/// A row's name, detail, trailing words and hover actions.
 pub(super) fn listed(
     id: ElementId,
     icon: IconName,
