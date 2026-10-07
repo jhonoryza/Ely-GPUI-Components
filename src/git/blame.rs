@@ -182,9 +182,14 @@ impl RenderOnce for BlameView {
                         .text_size(theme.text_size(TextSize::Xs));
                     let gutter = match blame.clone().filter(|_| head) {
                         Some(blame) => {
-                            let said: SharedString =
-                                format!("{}, {} · {}", blame.author, blame.when, blame.subject)
-                                    .into();
+                            // Empty parts, as for uncommitted lines, are left out.
+                            let said: SharedString = [&blame.author, &blame.when, &blame.subject]
+                                .into_iter()
+                                .filter(|part| !part.is_empty())
+                                .map(|part| part.as_ref())
+                                .collect::<Vec<&str>>()
+                                .join(", ")
+                                .into();
                             let pick = on_commit.clone();
                             let commit = blame.commit.clone();
                             gutter
