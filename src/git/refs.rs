@@ -356,23 +356,31 @@ impl RenderOnce for BranchList {
                             as Run
                     })
                 };
-                let actions = if branch.current {
+                // Only actions the owner handles are drawn.
+                let actions: Vec<AnyElement> = if branch.current {
                     Vec::new()
                 } else {
-                    vec![
-                        action(
-                            (self.id.clone(), format!("switch-{}", branch.name)).into(),
+                    [
+                        (
+                            "switch",
                             IconName::ArrowRight,
-                            i18n::text(cx, "palette.branch.switch", &[]),
+                            "palette.branch.switch",
                             bind(&self.on_switch),
                         ),
-                        action(
-                            (self.id.clone(), format!("delete-{}", branch.name)).into(),
+                        (
+                            "delete",
                             IconName::Trash2,
-                            i18n::text(cx, "palette.branch.delete", &[]),
+                            "palette.branch.delete",
                             bind(&self.on_delete),
                         ),
                     ]
+                    .into_iter()
+                    .filter_map(|(key, icon, words, run)| {
+                        let run = run?;
+                        let id = (self.id.clone(), format!("{key}-{}", branch.name)).into();
+                        Some(action(id, icon, i18n::text(cx, words, &[]), Some(run)))
+                    })
+                    .collect()
                 };
                 let trailing: Vec<SharedString> = distance(branch)
                     .into_iter()
