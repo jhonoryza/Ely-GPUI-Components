@@ -26,7 +26,7 @@ pub use graph::{GraphRow, Half, Stroke, lanes};
 pub use history::FileHistory;
 pub use merge::{ConflictResolver, ThreeWayMerge};
 pub use merging::{
-    Conflict, Region, RegionKind, Take, conflicts, marked, regions, resolve, result,
+    Conflict, MARKER, Region, RegionKind, Take, conflicts, marked, regions, resolve, result,
 };
 pub use refs::{Branch, BranchList, BranchSelector};
 pub use review::{PullRequest, PullRequestCard, PullState, ReviewComment, ReviewNote};
