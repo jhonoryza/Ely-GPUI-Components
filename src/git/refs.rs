@@ -232,6 +232,7 @@ pub(super) fn listed(
                 .when(pick.selected, |row| row.bg(colors.selection))
                 .on_click(move |_, window, cx| run(window, cx))
         })
+        .relative()
         .flex()
         .items_center()
         .gap_2()
@@ -240,33 +241,54 @@ pub(super) fn listed(
         .rounded(theme.radius(Radius::Sm))
         .hover(|row| row.bg(colors.hover))
         .child(Icon::new(icon).size(IconSize::Sm).color(colors.fg_muted))
-        .child(div().flex_none().child(name))
         .child(
             div()
                 .flex_1()
                 .min_w_0()
-                .text_color(colors.fg_subtle)
-                .child(Ellipsis::new(detail)),
+                .flex()
+                .flex_col()
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_2()
+                        // Narrow, the name gives way; the words stay.
+                        .child(
+                            div()
+                                .flex_1()
+                                .min_w_0()
+                                .overflow_hidden()
+                                .whitespace_nowrap()
+                                .child(name),
+                        )
+                        .child(
+                            div()
+                                .flex_none()
+                                .flex()
+                                .gap_2()
+                                .group_hover(group.clone(), |words| words.opacity(0.))
+                                .children(trailing.into_iter().map(|words| {
+                                    tabular(div().text_color(colors.fg_subtle)).child(words)
+                                })),
+                        ),
+                )
+                .when(!detail.is_empty(), |text| {
+                    text.child(
+                        div()
+                            .text_color(colors.fg_subtle)
+                            .child(Ellipsis::new(detail)),
+                    )
+                }),
         )
-        // Narrow, the trailing words give way before the actions.
+        // On hover the actions take the words' place.
         .child(
             div()
-                .flex_shrink(1.0)
-                .min_w_0()
-                .overflow_hidden()
-                .whitespace_nowrap()
+                .absolute()
+                .top_0()
+                .bottom_0()
+                .right_1()
                 .flex()
-                .gap_2()
-                .children(
-                    trailing
-                        .into_iter()
-                        .map(|words| tabular(div().text_color(colors.fg_subtle)).child(words)),
-                ),
-        )
-        .child(
-            div()
-                .flex_none()
-                .flex()
+                .items_center()
                 .opacity(0.)
                 .group_hover(group, |actions| actions.opacity(1.))
                 .children(actions),
