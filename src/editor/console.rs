@@ -52,10 +52,9 @@ impl OutputPanel {
     ) -> Self {
         let channels: Vec<SharedString> = channels.into_iter().map(Into::into).collect();
         let channel = channel.into();
-        assert!(
-            channels.contains(&channel),
-            "the shown channel is one of the channels"
-        );
+        if !channels.contains(&channel) {
+            log::error!("output panel: {channel} is not among {channels:?}; none chosen");
+        }
         Self {
             id: id.into(),
             channels,

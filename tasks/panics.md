@@ -31,7 +31,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P14 Tables — `src/tables`
 - [x] P15 Charts — `src/charts`
 - [x] P16 Finance — `src/finance`
-- [ ] P17 Code Editor — `src/editor`
+- [x] P17 Code Editor — `src/editor`
 - [ ] P18 Terminal — `src/terminal`
 - [ ] P19 Git — `src/git`
 - [ ] P20 Debug — `src/debug`
@@ -82,3 +82,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P15: chart values are finite and within ±`charts::LIMIT` (1e30), so sums and pixels stay in `f32`; scales work in halves and bound a share to ±1e4 ranges; chord and sankey size by shares; quartiles, weekday labels, flat tangents and a zero-width sankey's hover hold; notes, links, edges and waits past their lists are skipped. Review: 5 rounds, the cap; round 5's finding (points at one x) is fixed and tested, and P16's review checks it.
 - P16: crossed and locked books, empty sizes, leverage and margin past their bounds, stale range and interval keys, short layouts and comparisons, growth from zero, long QR addresses and grids too fine to draw all log and show; ladders mark their middle rung and key cells by row; every system-zone time goes through `datetime`; `nice_step` stays positive. Kept: one-snapshot shapes and one-value contracts. Review: 5 rounds, passed on the fifth; it also passed P15's last fix.
 - Noted for later items: `chat/params.rs` and `editor/settings.rs` pass `value.abs()` to `decimals`, which asserts a positive step.
+- P17: the editor keeps every owner offset on whole characters of its text (checked on intake, carried through edits by `editor::anchors`, cleared when the whole text changes); stale selections and edit batches are dropped; a painted row whose line the text lost takes no click, drag or IME query; the sticky header reads this frame; a glob too big to compile matches nothing; a missing font advance logs. Kept: owner contracts and construction. Review: 5 rounds, passed on the fifth.
