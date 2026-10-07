@@ -152,7 +152,9 @@ impl RenderOnce for MailboxList {
                 .iter()
                 .flat_map(|(_, boxes)| boxes)
                 .any(|mailbox| mailbox.key == *open);
-            assert!(listed, "no mailbox {open}");
+            if !listed {
+                log::error!("mailbox list: no mailbox {open}; none open");
+            }
         }
         let open: OnValue = {
             let (id, on_open) = (self.id.clone(), self.on_open.clone());

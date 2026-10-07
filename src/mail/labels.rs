@@ -120,7 +120,12 @@ impl RenderOnce for LabelPicker {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         for key in &self.selected {
             let known = self.labels.iter().any(|label| label.key == *key);
-            assert!(known, "label picker {:?}: no label {key}", self.id);
+            if !known {
+                log::error!(
+                    "label picker {:?}: no label {key}; it is not ticked",
+                    self.id
+                );
+            }
         }
         let finding = window.use_keyed_state(
             (self.id.clone(), "finding"),

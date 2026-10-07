@@ -43,7 +43,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P26 Media — `src/media`
 - [x] P27 Files — `src/files`
 - [x] P28 Messaging — `src/messaging`
-- [ ] P29 Mail — `src/mail`
+- [x] P29 Mail — `src/mail`
 - [ ] P30 Calendar — `src/calendar`
 - [ ] P31 Project — `src/project`
 - [ ] P32 Canvas & Design — `src/canvas`
@@ -94,3 +94,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P26: a live position past its media logs and sits at the end (`media::played`); loaded time, a trim and chapters past the length peg or stay out; a gone device or track, or a refused trim, leaves none and clears the last; a dropped root path shows whole; subtitle times no clock holds read as none; a rail layout left no width gives no share (`scrubber::along`), so hover, press and drag skip it; waveform buckets count in `u64`, which a 32-bit web `usize` outgrows. Kept: non-zero lengths, one-value contracts, one list's uniqueness and order, lookups by construction. Review: 4 rounds; it also passed P25's last fix.
 - P27: an owner's pick gone from a grid, an explorer folder or a directory listing logs and is kept as given, so it replaces a local pick and marks none (P13's listing now does the same); the columns mark a path name only while its parent holds it as a folder; moved bytes past a total log, the bar already capped; duplicate marks on no copy, or on every copy of a group, are dropped, so Remove never takes a group's last copy. Kept: one list's uniqueness, a snapshot's path and levels, items and downloads, lookups by construction, `datetime` with a constant pattern. Review: 3 rounds.
 - P28: an open chat or selected member no longer listed logs and marks none. Kept: one list's uniqueness and non-emptiness, one message's receipt and replies, constant `datetime` patterns, picks from lists without disabled rows, keys from the same render. Review: 1 round.
+- P29: an open mailbox, ticked label or selected mail no longer listed logs and marks none; a picked moment its zone cannot hold logs and reads as none, so the time dialog's action stays off. Kept: one list's uniqueness, day arithmetic from the owner's now, constant `datetime` patterns, the dialog's action behind its disabled button. Review: 1 round.

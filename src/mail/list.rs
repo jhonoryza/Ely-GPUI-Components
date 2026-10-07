@@ -284,7 +284,9 @@ impl RenderOnce for MailList {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         for key in &self.selected {
             let listed = self.mails.iter().any(|mail| mail.key == *key);
-            assert!(listed, "no mail {key}");
+            if !listed {
+                log::error!("mail list: no mail {key}; it is not selected");
+            }
         }
         let theme = cx.theme();
         if self.mails.is_empty() {

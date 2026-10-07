@@ -40,12 +40,15 @@ pub(super) fn named(name: &str, at: Timestamp, zone: &TimeZone) -> (String, Time
     (format!("{name} · {hour}"), at)
 }
 
-/// The moment `chosen` names in `zone`, once it lies after `now`.
+/// The moment `chosen` names in `zone`, once it lies after `now`; none past the times jiff holds.
 pub(super) fn ahead(chosen: DateTime, zone: &TimeZone, now: Timestamp) -> Option<Timestamp> {
-    let at = chosen
-        .to_zoned(zone.clone())
-        .expect("the zone holds the time")
-        .timestamp();
+    let at = match chosen.to_zoned(zone.clone()) {
+        Ok(at) => at.timestamp(),
+        Err(error) => {
+            log::error!("time dialog: {chosen} has no moment in its zone: {error}");
+            return None;
+        }
+    };
     (at > now).then_some(at)
 }
 
@@ -196,6 +199,12 @@ mod tests {
             ahead(day.at(10, 0, 0, 0), &tokyo, now),
             None,
             "10:00 in Tokyo is 01:00 here"
+        );
+        let west = TimeZone::fixed(offset(-9));
+        assert_eq!(
+            ahead(jiff::civil::DateTime::MAX, &west, now),
+            None,
+            "past what jiff holds"
         );
     }
 }

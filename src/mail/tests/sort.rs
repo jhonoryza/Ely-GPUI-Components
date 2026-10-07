@@ -128,12 +128,21 @@ fn a_label_name_is_listed_once() {
 }
 
 #[gpui::test]
-#[should_panic(expected = "no label ghost")]
-fn what_is_on_is_a_label(cx: &mut TestAppContext) {
+fn a_label_mail_or_box_that_left_draws_unmarked(cx: &mut TestAppContext) {
     let _ = mailing(
         |_| {
-            LabelPicker::new("labels", [Label::new("a", "A", 0)])
-                .selected(["ghost"])
+            let mail = crate::mail::Mail::new("m1", "Ada", "Plans", Timestamp::UNIX_EPOCH);
+            let inbox =
+                crate::mail::Mailbox::new("inbox", "Inbox", crate::primitives::IconName::Inbox);
+            div()
+                .w(px(480.0))
+                .child(LabelPicker::new("labels", [Label::new("a", "A", 0)]).selected(["ghost"]))
+                .child(crate::mail::MailList::new("mails", [mail]).selected(["gone"]))
+                .child(
+                    crate::mail::MailboxList::new("boxes")
+                        .section("Mail", [inbox])
+                        .open("gone"),
+                )
                 .into_any_element()
         },
         cx,
