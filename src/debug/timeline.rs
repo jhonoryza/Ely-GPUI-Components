@@ -187,13 +187,21 @@ impl RenderOnce for TimelineProfiler {
                         let (x, y) = (f64::from(f32::from(delta.x)), f64::from(f32::from(delta.y)));
                         cx.stop_propagation();
                         let width = f64::from(f32::from(bounds.size.width)).max(1.0);
-                        if x.abs() > y.abs() {
+                        let next = if x.abs() > y.abs() {
                             let shift = -x / width * length;
-                            on_range((from + shift, to + shift), window, cx);
+                            Some((from + shift, to + shift))
                         } else {
                             let pointer =
                                 f64::from(f32::from(event.position.x - bounds.origin.x)) / width;
-                            on_range(zoomed((from, to), pointer, (-y / ZOOM).exp()), window, cx);
+                            let factor = (-y / ZOOM).exp();
+                            (factor > 0.0 && factor.is_finite())
+                                .then(|| zoomed((from, to), pointer, factor))
+                        };
+                        let fits = |next: &(f64, f64)| {
+                            next.0.is_finite() && next.1.is_finite() && next.1 > next.0
+                        };
+                        if let Some(next) = next.filter(fits) {
+                            on_range(next, window, cx);
                         }
                     })
                     .children(self.tracks.iter().enumerate().map(|(track, name)| {

@@ -62,18 +62,26 @@ impl HexViewer {
         }
     }
 
-    /// The address of the first byte.
+    /// The address of the first byte; the last must fit an address too.
     pub fn base(mut self, base: u64) -> Self {
+        let last = self.bytes.len().saturating_sub(1) as u64;
+        assert!(
+            base.checked_add(last).is_some(),
+            "a dump at {base:#X} runs past the last address"
+        );
         self.base = base;
         self
     }
 
     pub fn selected(mut self, bytes: Range<usize>) -> Self {
-        assert!(
-            bytes.end <= self.bytes.len(),
-            "a selection lies inside the bytes"
-        );
-        self.selected = Some(bytes);
+        let inside = bytes.start < bytes.end && bytes.end <= self.bytes.len();
+        if !inside {
+            log::error!(
+                "hex viewer: no bytes {bytes:?} in {}; none selected",
+                self.bytes.len()
+            );
+        }
+        self.selected = inside.then_some(bytes);
         self
     }
 
@@ -90,9 +98,12 @@ impl RenderOnce for HexViewer {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let rows = self.bytes.len().div_ceil(WIDTH);
-        let digits = format!("{:X}", self.base + self.bytes.len() as u64)
-            .len()
-            .max(8);
+        let digits = format!(
+            "{:X}",
+            self.base + self.bytes.len().saturating_sub(1) as u64
+        )
+        .len()
+        .max(8);
         let reading = self
             .selected
             .as_ref()
@@ -197,6 +208,15 @@ impl RenderOnce for HexViewer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_selection_off_the_bytes_selects_none() {
+        let viewer = || HexViewer::new("hex", vec![1, 2, 3]);
+        let (inside, at_end, past) = (0..2, 3..3, 2..9);
+        assert_eq!(viewer().selected(inside.clone()).selected, Some(inside));
+        assert_eq!(viewer().selected(at_end).selected, None);
+        assert_eq!(viewer().selected(past).selected, None);
+    }
 
     #[test]
     fn bytes_read_as_numbers_and_text() {

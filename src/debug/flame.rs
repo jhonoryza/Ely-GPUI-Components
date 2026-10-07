@@ -37,11 +37,17 @@ pub struct Placed {
     pub samples: u64,
 }
 
-/// The frames under `focus`, a path of call indices, each spanning its share of the samples; `focus` fills the width and its callers stack above it, full width.
+/// The frames under `focus`, a path of call indices kept as far as the profile holds it, each spanning its share of the samples; `focus` fills the width and its callers stack above it, full width.
 pub fn place(root: &ProfileFrame, focus: &[usize]) -> Vec<Placed> {
     let mut out = Vec::new();
     let mut frame = root;
+    let mut kept = focus.len();
     for (depth, ix) in focus.iter().enumerate() {
+        let Some(call) = frame.calls.get(*ix) else {
+            log::error!("flame graph: focus {focus:?} leaves the profile at depth {depth}");
+            kept = depth;
+            break;
+        };
         out.push(Placed {
             path: focus[..depth].to_vec(),
             name: frame.name.clone(),
@@ -50,7 +56,7 @@ pub fn place(root: &ProfileFrame, focus: &[usize]) -> Vec<Placed> {
             end: 1.0,
             samples: frame.total(),
         });
-        frame = &frame.calls[*ix];
+        frame = call;
     }
     fn under(
         frame: &ProfileFrame,
@@ -78,7 +84,7 @@ pub fn place(root: &ProfileFrame, focus: &[usize]) -> Vec<Placed> {
             at += width;
         }
     }
-    under(frame, focus.to_vec(), focus.len(), 0.0, 1.0, &mut out);
+    under(frame, focus[..kept].to_vec(), kept, 0.0, 1.0, &mut out);
     out
 }
 
@@ -247,11 +253,17 @@ impl RenderOnce for Flamegraph {
                             move |bounds, _, window, cx| {
                                 let pixels = text_size.to_pixels(window.rem_size());
                                 let face = gpui::font(font.clone());
-                                let advance = window
-                                    .text_system()
-                                    .advance(window.text_system().resolve_font(&face), pixels, 'm')
-                                    .expect("the code font has an m")
-                                    .width;
+                                let resolved = window.text_system().resolve_font(&face);
+                                let advance =
+                                    match window.text_system().advance(resolved, pixels, 'm') {
+                                        Ok(advance) => advance.width,
+                                        Err(error) => {
+                                            log::error!(
+                                                "flame graph: no advance for its font: {error:#}"
+                                            );
+                                            pixels * 0.6
+                                        }
+                                    };
                                 for frame in paint_placed.iter() {
                                     let x0 = bounds.origin.x + bounds.size.width * frame.start;
                                     let width = bounds.size.width * (frame.end - frame.start);
@@ -287,7 +299,7 @@ impl RenderOnce for Flamegraph {
                                             underline: None,
                                             strikethrough: None,
                                         };
-                                        window
+                                        let painted = window
                                             .text_system()
                                             .shape_line(label.into(), pixels, &[run], None)
                                             .paint(
@@ -301,8 +313,12 @@ impl RenderOnce for Flamegraph {
                                                 None,
                                                 window,
                                                 cx,
-                                            )
-                                            .expect("a flame label paints");
+                                            );
+                                        if let Err(error) = painted {
+                                            log::error!(
+                                                "flame graph: a label failed to paint: {error:#}"
+                                            );
+                                        }
                                     }
                                 }
                             },

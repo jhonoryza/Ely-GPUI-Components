@@ -34,7 +34,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P17 Code Editor — `src/editor`
 - [x] P18 Terminal — `src/terminal`
 - [x] P19 Git — `src/git`
-- [ ] P20 Debug — `src/debug`
+- [x] P20 Debug — `src/debug`
 - [ ] P21 Documents — `src/documents`
 - [ ] P22 Collaboration — `src/collab`
 - [ ] P23 AI Chat — `src/chat`
@@ -85,3 +85,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P17: the editor keeps every owner offset on whole characters of its text (checked on intake, carried through edits by `editor::anchors`, cleared when the whole text changes); stale selections and edit batches are dropped; a painted row whose line the text lost takes no click, drag or IME query; the sticky header reads this frame; a glob too big to compile matches nothing; a missing font advance logs. Kept: owner contracts and construction. Review: 5 rounds, passed on the fifth.
 - P18: row paints and the font advance log gpui faults; a pty side caps at what ConPTY and alacritty's pixel sizes hold; a default shell past the list keeps the one before. Kept: constant regexes, captured matches, keyed rows, non-empty shells. Review: 2 rounds.
 - P19: a blame that lags its code draws every line, bare where no owner fits; `git::resolve` returns `Option` for a conflict gone from the text. Kept: diff groups, merge regions, similar's pinned resolutions. Review: 2 rounds.
+- P20: a hex selection off the bytes and a stack frame past the stack select none; a flame focus keeps what the profile holds; the timeline's wheel reports only finite, positive ranges from finite factors; a dump's last byte must have an address; flame paints log. Kept: disassembly patterns, `zoomed`'s contract. Review: 3 rounds.

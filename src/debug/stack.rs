@@ -71,10 +71,12 @@ impl CallStack {
     }
 
     pub fn current(mut self, frame: usize) -> Self {
-        assert!(
-            frame < self.frames.len(),
-            "the current frame is on the stack"
-        );
+        if frame >= self.frames.len() {
+            log::error!(
+                "call stack: no frame {frame} of {}; none marked",
+                self.frames.len()
+            );
+        }
         self.current = frame;
         self
     }
