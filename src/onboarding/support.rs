@@ -22,11 +22,15 @@ pub struct ContactSupport {
     topics: Vec<Choice>,
     busy: bool,
     address: Option<SharedString>,
-    on_send: Option<OnMessage>,
+    on_send: OnMessage,
 }
 
 impl ContactSupport {
-    pub fn new(id: impl Into<ElementId>, topics: impl IntoIterator<Item = Choice>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        topics: impl IntoIterator<Item = Choice>,
+        on_send: impl Fn(&SharedString, &str, &mut Window, &mut App) + 'static,
+    ) -> Self {
         let topics: Vec<Choice> = topics.into_iter().collect();
         assert!(!topics.is_empty(), "contact support needs a topic");
         Self {
@@ -34,7 +38,7 @@ impl ContactSupport {
             topics,
             busy: false,
             address: None,
-            on_send: None,
+            on_send: Rc::new(on_send),
         }
     }
 
@@ -49,30 +53,27 @@ impl ContactSupport {
         self.address = Some(address.into());
         self
     }
-
-    /// Runs with the topic's key and the message, trimmed.
-    pub fn on_send(
-        mut self,
-        handler: impl Fn(&SharedString, &str, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_send = Some(Rc::new(handler));
-        self
-    }
 }
 
 impl RenderOnce for ContactSupport {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_send = self
-            .on_send
-            .unwrap_or_else(|| panic!("contact support {id:?} has no on_send"));
+        let on_send = self.on_send;
         let topic = window.use_keyed_state((id.clone(), "topic"), cx, |_, _| None::<SharedString>);
         let message = window.use_keyed_state((id.clone(), "message"), cx, |window, cx| {
             TextInput::new(window, cx)
                 .multi_line(4, 8)
                 .placeholder("What happened, and what you expected")
         });
-        let chosen = topic.read(cx).clone();
+        let chosen = topic.read(cx).clone().filter(|key| {
+            let offered = self.topics.iter().any(|choice| choice.value == *key);
+            if !offered {
+                log::error!(
+                    "contact support {id:?}: topic {key} is no longer offered; none chosen"
+                );
+            }
+            offered
+        });
         let words = message.read(cx).text().trim().to_string();
         let ready = chosen.is_some() && !words.is_empty();
         let theme = cx.theme();

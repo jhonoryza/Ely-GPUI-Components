@@ -73,33 +73,25 @@ struct Draft {
 #[derive(IntoElement)]
 pub struct FeedbackWidget {
     id: ElementId,
-    on_send: Option<OnFeedback>,
+    on_send: OnFeedback,
 }
 
 impl FeedbackWidget {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on_send: impl Fn(Sentiment, &str, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
-            on_send: None,
+            on_send: Rc::new(on_send),
         }
-    }
-
-    /// Runs with the face picked and the note, trimmed.
-    pub fn on_send(
-        mut self,
-        handler: impl Fn(Sentiment, &str, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_send = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for FeedbackWidget {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_send = self
-            .on_send
-            .unwrap_or_else(|| panic!("feedback widget {id:?} has no on_send"));
+        let on_send = self.on_send;
         Popover::new(id.clone(), "Feedback", move |window, cx| {
             form(id, on_send, window, cx)
         })

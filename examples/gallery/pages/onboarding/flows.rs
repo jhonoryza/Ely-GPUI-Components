@@ -88,13 +88,17 @@ pub fn wizard(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     }),
             )
             .into_any_element(),
-        false => OnboardingWizard::new("onboarding-wizard", steps, step)
-            .content(content)
-            .ready(ready)
-            .on_step(move |to, _, cx| change(&walk, cx, |welcome| welcome.step = to))
-            .on_finish(move |_, cx| change(&finish, cx, |welcome| welcome.finished = true))
-            .on_skip(move |_, cx| change(&skip, cx, |welcome| welcome.finished = true))
-            .into_any_element(),
+        false => OnboardingWizard::new(
+            "onboarding-wizard",
+            steps,
+            step,
+            move |to, _, cx| change(&walk, cx, |welcome| welcome.step = to),
+            move |_, cx| change(&finish, cx, |welcome| welcome.finished = true),
+        )
+        .content(content)
+        .ready(ready)
+        .on_skip(move |_, cx| change(&skip, cx, |welcome| welcome.finished = true))
+        .into_any_element(),
     };
     section(
         "OnboardingWizard · WelcomeTour",
@@ -122,17 +126,15 @@ pub fn highlights(window: &mut Window, cx: &mut App) -> impl IntoElement + use<>
         .relative()
         .child(tool("onboarding-pin", IconName::Pin))
         .when(!spot_seen, |pin| {
-            pin.child(
-                div().absolute().top_neg_1p5().right_neg_1p5().child(probe(
+            pin.child(div().absolute().top_neg_1p5().right_neg_1p5().child(probe(
+                "onboarding-hotspot",
+                Hotspot::new(
                     "onboarding-hotspot",
-                    Hotspot::new(
-                        "onboarding-hotspot",
-                        "Pin a view",
-                        "Keep the views you use most one press away.",
-                    )
-                    .on_dismiss(move |_, cx| change(&spot, cx, |seen| seen.hotspot = true)),
-                )),
-            )
+                    "Pin a view",
+                    "Keep the views you use most one press away.",
+                    move |_, cx| change(&spot, cx, |seen| seen.hotspot = true),
+                ),
+            )))
         });
     let toolbar = div()
         .flex()
@@ -151,9 +153,9 @@ pub fn highlights(window: &mut Window, cx: &mut App) -> impl IntoElement + use<>
             IconName::Columns2,
             "Split view",
             "Work on two files side by side, each with its own history.",
+            |_, _| log::info!("gallery: split view tried"),
+            move |_, cx| change(&card, cx, |seen| seen.highlight = true),
         )
-        .on_try(|_, _| log::info!("gallery: split view tried"))
-        .on_dismiss(move |_, cx| change(&card, cx, |seen| seen.highlight = true))
     });
     let menu = List::new()
         .child(
@@ -247,16 +249,20 @@ pub fn checklist(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
                 })
             })
             .into_any_element(),
-        false => SetupChecklist::new("onboarding-setup", "Get started", tasks)
-            .on_start(move |key, _, cx| {
+        false => SetupChecklist::new(
+            "onboarding-setup",
+            "Get started",
+            tasks,
+            move |key, _, cx| {
                 let at = TASKS
                     .iter()
                     .position(|(each, _, _)| *each == key.as_ref())
                     .expect("a setup task");
                 change(&start, cx, |setup| setup.done[at] = true)
-            })
-            .on_dismiss(move |_, cx| change(&hide, cx, |setup| setup.hidden = true))
-            .into_any_element(),
+            },
+        )
+        .on_dismiss(move |_, cx| change(&hide, cx, |setup| setup.hidden = true))
+        .into_any_element(),
     };
     section(
         "Checklist (first-run tasks)",

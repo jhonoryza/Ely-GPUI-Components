@@ -22,8 +22,8 @@ pub struct FeatureHighlight {
     icon: IconName,
     title: SharedString,
     body: SharedString,
-    on_try: Option<Run>,
-    on_dismiss: Option<Run>,
+    on_try: Run,
+    on_dismiss: Run,
 }
 
 impl FeatureHighlight {
@@ -32,38 +32,25 @@ impl FeatureHighlight {
         icon: IconName,
         title: impl Into<SharedString>,
         body: impl Into<SharedString>,
+        on_try: impl Fn(&mut Window, &mut App) + 'static,
+        on_dismiss: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             icon,
             title: title.into(),
             body: body.into(),
-            on_try: None,
-            on_dismiss: None,
+            on_try: Rc::new(on_try),
+            on_dismiss: Rc::new(on_dismiss),
         }
-    }
-
-    pub fn on_try(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_try = Some(Rc::new(handler));
-        self
-    }
-
-    /// Runs on Not now; the owner stops showing it.
-    pub fn on_dismiss(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_dismiss = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for FeatureHighlight {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let try_it = self
-            .on_try
-            .unwrap_or_else(|| panic!("feature highlight {id:?} has no on_try"));
-        let dismiss = self
-            .on_dismiss
-            .unwrap_or_else(|| panic!("feature highlight {id:?} has no on_dismiss"));
+        let try_it = self.on_try;
+        let dismiss = self.on_dismiss;
         let theme = cx.theme();
         let title = self.title.clone();
         let actions = div()

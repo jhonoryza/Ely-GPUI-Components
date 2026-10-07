@@ -60,7 +60,7 @@ pub struct HelpPanel {
     articles: Vec<HelpArticle>,
     search: Entity<TextInput>,
     open: Option<SharedString>,
-    on_open: Option<OnOpen>,
+    on_open: OnOpen,
     on_close: Option<Run>,
     on_contact: Option<Run>,
     on_shortcuts: Option<Run>,
@@ -73,33 +73,24 @@ impl HelpPanel {
         articles: impl IntoIterator<Item = HelpArticle>,
         search: &Entity<TextInput>,
         open: Option<SharedString>,
+        on_open: impl Fn(Option<&SharedString>, &mut Window, &mut App) + 'static,
     ) -> Self {
         let articles: Vec<HelpArticle> = articles.into_iter().collect();
-        if let Some(key) = &open {
-            assert!(
-                articles.iter().any(|article| &article.key == key),
-                "help panel: no article {key}"
-            );
+        if let Some(key) = &open
+            && !articles.iter().any(|article| &article.key == key)
+        {
+            log::error!("help panel: no article {key}; none open");
         }
         Self {
             id: id.into(),
             articles,
             search: search.clone(),
             open,
-            on_open: None,
+            on_open: Rc::new(on_open),
             on_close: None,
             on_contact: None,
             on_shortcuts: None,
         }
-    }
-
-    /// Runs with the article to show, or none for the list.
-    pub fn on_open(
-        mut self,
-        handler: impl Fn(Option<&SharedString>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_open = Some(Rc::new(handler));
-        self
     }
 
     /// Shows a close button.
@@ -142,9 +133,7 @@ fn foot_button(
 impl RenderOnce for HelpPanel {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_open = self
-            .on_open
-            .unwrap_or_else(|| panic!("help panel {id:?} has no on_open"));
+        let on_open = self.on_open;
         let back_focus = tab_stop((id.clone(), "back").into(), true, window, cx);
         let back_handle = back_focus.clone();
         let search_focus = self.search.read(cx).focus().clone();

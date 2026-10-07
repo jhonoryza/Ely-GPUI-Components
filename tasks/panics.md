@@ -51,7 +51,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P34 Dashboard — `src/dashboard`
 - [x] P35 Settings — `src/settings`
 - [x] P36 Account — `src/account`
-- [ ] P37 Onboarding — `src/onboarding`
+- [x] P37 Onboarding — `src/onboarding`
 - [ ] P38 Interaction — `src/interaction`
 - [ ] P39 Theme — `src/theme`
 - [ ] P40 i18n & a11y — `src/i18n`
@@ -102,3 +102,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P34: the refresh interval selector, filter bar and dashboard grid take their handlers in `new`; `tiles::arranged` and `stepped` return `Option` for a tile gone from the grid, so a landing or step after the owner removed it moves nothing; tiles without cards and cards without tiles stay out. Kept: columns, cells, intervals offered, services and uptimes, lookups from one render. Review: 1 round.
 - P35: eighteen settings components take their handlers in `new`; a section or syntax theme not offered marks none; a font size or default outside its range pegs. Kept: options offered by construction, the proxy's Apply behind its read, drops that bring a file. Review: 1 round.
 - P36: seventeen account components take their handlers in `new`, the email step's `on_send` with them; a busy provider, a current account or workspace, and a role no longer listed mark none and log; an invitation waits for its role to be offered; an expiry year that overflows reads as unread. Kept: quotas, providers, one current session, roles to invite as, the card behind Save. Review: 2 rounds.
+- P37: seven onboarding components take their handlers in `new`, OnboardingWizard's `on_step` and `on_finish` among them; a help article no longer listed opens none; a wizard step past its last says so; a support topic no longer offered counts as none and holds Send. Kept: tasks, steps, releases and topics present, sentiments by construction, Send behind a pick. Review: 2 rounds.

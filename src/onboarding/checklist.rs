@@ -31,7 +31,7 @@ pub struct SetupChecklist {
     id: ElementId,
     title: SharedString,
     tasks: Vec<SetupTask>,
-    on_start: Option<OnKey>,
+    on_start: OnKey,
     on_dismiss: Option<Run>,
 }
 
@@ -40,6 +40,7 @@ impl SetupChecklist {
         id: impl Into<ElementId>,
         title: impl Into<SharedString>,
         tasks: impl IntoIterator<Item = SetupTask>,
+        on_start: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         let tasks: Vec<SetupTask> = tasks.into_iter().collect();
         assert!(
@@ -51,18 +52,9 @@ impl SetupChecklist {
             id: id.into(),
             title: title.into(),
             tasks,
-            on_start: None,
+            on_start: Rc::new(on_start),
             on_dismiss: None,
         }
-    }
-
-    /// Runs with the key of the task whose Start was pressed.
-    pub fn on_start(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_start = Some(Rc::new(handler));
-        self
     }
 
     /// Shows Hide once every task is done.
@@ -75,9 +67,7 @@ impl SetupChecklist {
 impl RenderOnce for SetupChecklist {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_start = self
-            .on_start
-            .unwrap_or_else(|| panic!("setup checklist {id:?} has no on_start"));
+        let on_start = self.on_start;
         let (done, all) = (
             self.tasks.iter().filter(|task| task.done).count(),
             self.tasks.len(),

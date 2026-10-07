@@ -56,7 +56,7 @@ pub struct Hotspot {
     id: ElementId,
     title: SharedString,
     body: SharedString,
-    on_dismiss: Option<Run>,
+    on_dismiss: Run,
 }
 
 impl Hotspot {
@@ -64,28 +64,21 @@ impl Hotspot {
         id: impl Into<ElementId>,
         title: impl Into<SharedString>,
         body: impl Into<SharedString>,
+        on_dismiss: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             title: title.into(),
             body: body.into(),
-            on_dismiss: None,
+            on_dismiss: Rc::new(on_dismiss),
         }
-    }
-
-    /// Runs on Got it, once the tip has closed and handed focus back; the owner stops showing the hotspot.
-    pub fn on_dismiss(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_dismiss = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for Hotspot {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         let id = self.id;
-        let dismiss = self
-            .on_dismiss
-            .unwrap_or_else(|| panic!("hotspot {id:?} has no on_dismiss"));
+        let dismiss = self.on_dismiss;
         let (dot, got_it) = ((id.clone(), "dot"), (id.clone(), "got-it"));
         let (title, body) = (self.title, self.body);
         Popover::with_opener(

@@ -29,8 +29,12 @@ fn panel(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
     div()
         .h(px(420.0))
         .child(
-            HelpPanel::new("help", articles, &bench.search, bench.open.clone())
-                .on_open(move |key, _, cx| {
+            HelpPanel::new(
+                "help",
+                articles,
+                &bench.search,
+                bench.open.clone(),
+                move |key, _, cx| {
                     let key = key.cloned();
                     opener.update(cx, |bench, cx| {
                         bench.said.push(format!(
@@ -40,10 +44,11 @@ fn panel(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
                         bench.open = key;
                         cx.notify();
                     })
-                })
-                .on_contact(move |_, cx| say(&contact, "contact".into(), cx))
-                .on_shortcuts(move |_, cx| say(&keys, "shortcuts".into(), cx))
-                .on_close(move |_, cx| say(&close, "close".into(), cx)),
+                },
+            )
+            .on_contact(move |_, cx| say(&contact, "contact".into(), cx))
+            .on_shortcuts(move |_, cx| say(&keys, "shortcuts".into(), cx))
+            .on_close(move |_, cx| say(&close, "close".into(), cx)),
         )
         .into_any_element()
 }
@@ -84,8 +89,12 @@ fn many(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
         .w(px(280.0))
         .h(px(300.0))
         .child(
-            HelpPanel::new("help", articles, &bench.search, bench.open.clone())
-                .on_open(move |key, _, cx| {
+            HelpPanel::new(
+                "help",
+                articles,
+                &bench.search,
+                bench.open.clone(),
+                move |key, _, cx| {
                     let key = key.cloned();
                     opener.update(cx, |bench, cx| {
                         bench.said.push(format!(
@@ -95,8 +104,9 @@ fn many(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
                         bench.open = key;
                         cx.notify();
                     })
-                })
-                .on_contact(move |_, cx| say(&contact, "contact".into(), cx)),
+                },
+            )
+            .on_contact(move |_, cx| say(&contact, "contact".into(), cx)),
         )
         .into_any_element()
 }
@@ -169,11 +179,10 @@ fn whats_new_lists_the_releases_and_got_it_closes(cx: &mut TestAppContext) {
 }
 
 fn feedback(_: &Bench, owner: Entity<Bench>) -> AnyElement {
-    FeedbackWidget::new("feedback")
-        .on_send(move |sentiment, note, _, cx| {
-            say(&owner, format!("{} {note}", sentiment.key()), cx)
-        })
-        .into_any_element()
+    FeedbackWidget::new("feedback", move |sentiment, note, _, cx| {
+        say(&owner, format!("{} {note}", sentiment.key()), cx)
+    })
+    .into_any_element()
 }
 
 /// Stops in the form: the four faces, the note, then Send once a face is picked.
@@ -207,11 +216,12 @@ fn support(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
         Choice::new("billing", "Billing"),
         Choice::new("bug", "Something broke"),
     ];
-    ContactSupport::new("support", topics)
-        .busy(bench.busy)
-        .address("help@example.com")
-        .on_send(move |topic, message, _, cx| say(&owner, format!("{topic}: {message}"), cx))
-        .into_any_element()
+    ContactSupport::new("support", topics, move |topic, message, _, cx| {
+        say(&owner, format!("{topic}: {message}"), cx)
+    })
+    .busy(bench.busy)
+    .address("help@example.com")
+    .into_any_element()
 }
 
 /// Stops: the topic, the message, then Send once both are given; the message empties once sent, with focus back in it.
@@ -261,11 +271,12 @@ fn long_address(_: &Bench, owner: Entity<Bench>) -> AnyElement {
     div()
         .w(px(280.0))
         .child(
-            ContactSupport::new("support", [Choice::new("bug", "Something broke")])
-                .address("support-and-billing-questions@example-company.com")
-                .on_send(move |topic, message, _, cx| {
-                    say(&owner, format!("{topic}: {message}"), cx)
-                }),
+            ContactSupport::new(
+                "support",
+                [Choice::new("bug", "Something broke")],
+                move |topic, message, _, cx| say(&owner, format!("{topic}: {message}"), cx),
+            )
+            .address("support-and-billing-questions@example-company.com"),
         )
         .into_any_element()
 }
@@ -294,4 +305,41 @@ fn inline_help_offers_more(cx: &mut TestAppContext) {
     tab(1, cx);
     tap("space", cx);
     assert_eq!(said(&host, cx), ["more"]);
+}
+
+#[gpui::test]
+fn an_article_that_left_draws(cx: &mut TestAppContext) {
+    let (host, cx) = bench(panel, cx);
+    host.update(cx, |bench, cx| {
+        bench.open = Some("gone".into());
+        cx.notify();
+    });
+    cx.run_until_parked();
+}
+
+/// Support topics, the second leaving once the bench hides it.
+fn dynamic_topics(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
+    let mut topics = vec![Choice::new("billing", "Billing")];
+    if !bench.hidden {
+        topics.push(Choice::new("bug", "Something broke"));
+    }
+    ContactSupport::new("support", topics, move |topic, message, _, cx| {
+        say(&owner, format!("{topic}: {message}"), cx)
+    })
+    .into_any_element()
+}
+
+#[gpui::test]
+fn a_topic_that_left_sends_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = bench(dynamic_topics, cx);
+    tab(1, cx);
+    for key in ["enter", "down", "enter"] {
+        tap(key, cx);
+    }
+    tab(2, cx);
+    write("It froze", cx);
+    edit(&host, cx, |bench| bench.hidden = true);
+    tab(3, cx);
+    tap("space", cx);
+    assert_eq!(said(&host, cx), Vec::<String>::new());
 }

@@ -1,6 +1,6 @@
 use gpui::{AnyElement, Entity, IntoElement, ParentElement, TestAppContext, div, px};
 
-use super::{Bench, bench, edit, said, say, tab, tap};
+use super::{Bench, bench, edit, said, say, settle, tab, tap};
 use crate::{
     buttons::Button,
     onboarding::{
@@ -16,19 +16,34 @@ fn wizard(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
         body: "A line on it".into(),
     });
     let [stepper, finisher, skipper] = [(); 3].map(|_| owner.clone());
-    OnboardingWizard::new("welcome", steps, bench.step)
-        .ready(bench.ready)
-        .content(div().child("Fields"))
-        .on_step(move |to, _, cx| {
+    OnboardingWizard::new(
+        "welcome",
+        steps,
+        bench.step,
+        move |to, _, cx| {
             stepper.update(cx, |bench, cx| {
                 bench.step = to;
                 bench.said.push(format!("step {to}"));
                 cx.notify();
             })
-        })
-        .on_finish(move |_, cx| say(&finisher, "finish".into(), cx))
-        .on_skip(move |_, cx| say(&skipper, "skip".into(), cx))
-        .into_any_element()
+        },
+        move |_, cx| say(&finisher, "finish".into(), cx),
+    )
+    .ready(bench.ready)
+    .content(div().child("Fields"))
+    .on_skip(move |_, cx| say(&skipper, "skip".into(), cx))
+    .into_any_element()
+}
+
+#[gpui::test]
+fn a_step_past_the_last_shows_none(cx: &mut TestAppContext) {
+    let (host, cx) = bench(wizard, cx);
+    host.update(cx, |bench, cx| {
+        bench.step = 9;
+        cx.notify();
+    });
+    settle(cx);
+    assert!(cx.debug_bounds("onboarding-No step of 3").is_some());
 }
 
 /// Stops: Skip, then Next on the first step; Skip, Back, then Next or Finish after it.
@@ -92,9 +107,13 @@ fn back_to_the_first_step_hands_focus_to_next(cx: &mut TestAppContext) {
 }
 
 fn hotspot(_: &Bench, owner: Entity<Bench>) -> AnyElement {
-    Hotspot::new("pins", "Pin a view", "Keep it one press away.")
-        .on_dismiss(move |_, cx| say(&owner, "seen".into(), cx))
-        .into_any_element()
+    Hotspot::new(
+        "pins",
+        "Pin a view",
+        "Keep it one press away.",
+        move |_, cx| say(&owner, "seen".into(), cx),
+    )
+    .into_any_element()
 }
 
 /// Stops: the dot; Enter opens the tip, where Got it is the one stop.
@@ -122,13 +141,18 @@ fn a_hotspot_opens_its_tip_from_the_keyboard_and_is_dismissed(cx: &mut TestAppCo
 fn hidden_hotspot(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
     let after = owner.clone();
     let spot = (!bench.hidden).then(|| {
-        Hotspot::new("pins", "Pin a view", "Keep it one press away.").on_dismiss(move |_, cx| {
-            owner.update(cx, |bench, cx| {
-                bench.said.push("seen".into());
-                bench.hidden = true;
-                cx.notify();
-            })
-        })
+        Hotspot::new(
+            "pins",
+            "Pin a view",
+            "Keep it one press away.",
+            move |_, cx| {
+                owner.update(cx, |bench, cx| {
+                    bench.said.push("seen".into());
+                    bench.hidden = true;
+                    cx.notify();
+                })
+            },
+        )
     });
     FocusScope::new(&bench.root)
         .root()
@@ -160,9 +184,9 @@ fn highlight(_: &Bench, owner: Entity<Bench>) -> AnyElement {
         IconName::Columns2,
         "Split view",
         "Work on two files side by side.",
+        move |_, cx| say(&owner, "try".into(), cx),
+        move |_, cx| say(&later, "later".into(), cx),
     )
-    .on_try(move |_, cx| say(&owner, "try".into(), cx))
-    .on_dismiss(move |_, cx| say(&later, "later".into(), cx))
     .into_any_element()
 }
 
@@ -193,8 +217,8 @@ fn checklist(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
             task("invite", false),
             task("connect", false),
         ],
+        move |key, _, cx| say(&owner, format!("start {key}"), cx),
     )
-    .on_start(move |key, _, cx| say(&owner, format!("start {key}"), cx))
     .on_dismiss(move |_, cx| say(&hidden, "hide".into(), cx))
     .into_any_element()
 }

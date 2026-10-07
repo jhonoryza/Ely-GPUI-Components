@@ -176,16 +176,21 @@ pub fn panel(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .border_color(theme.colors.border)
             .bg(theme.colors.surface)
             .child(
-                HelpPanel::new("onboarding-help-panel", articles(), &search, open)
-                    .on_open(move |key, _, cx| {
+                HelpPanel::new(
+                    "onboarding-help-panel",
+                    articles(),
+                    &search,
+                    open,
+                    move |key, _, cx| {
                         let key = key.cloned();
                         change(&opener, cx, |help| help.open = key)
-                    })
-                    .on_contact(|_, _| log::info!("gallery: contact support"))
-                    .on_shortcuts(move |_, cx| {
-                        change(&keys, cx, |help| help.dialog = Some(Dialog::Shortcuts))
-                    })
-                    .on_close(move |_, cx| change(&close, cx, |help| help.hidden = true)),
+                    },
+                )
+                .on_contact(|_, _| log::info!("gallery: contact support"))
+                .on_shortcuts(move |_, cx| {
+                    change(&keys, cx, |help| help.dialog = Some(Dialog::Shortcuts))
+                })
+                .on_close(move |_, cx| change(&close, cx, |help| help.hidden = true)),
             )
             .into_any_element(),
     };
@@ -290,8 +295,7 @@ pub fn feedback(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .gap_6()
             .child(probe(
                 "onboarding-feedback",
-                FeedbackWidget::new("onboarding-feedback")
-                    .on_send(|sentiment, note, _, _| log::info!("gallery: feedback {} {note}", sentiment.key())),
+                FeedbackWidget::new("onboarding-feedback", |sentiment, note, _, _| log::info!("gallery: feedback {} {note}", sentiment.key())),
             ))
             .child(
                 div()
@@ -300,12 +304,11 @@ pub fn feedback(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .flex_col()
                     .gap_3()
                     .child(
-                        ContactSupport::new("onboarding-support", topics)
-                            .address("help@example.com")
-                            .on_send(move |topic, _, _, cx| {
+                        ContactSupport::new("onboarding-support", topics, move |topic, _, _, cx| {
                                 log::info!("gallery: support about {topic}");
                                 change(&done, cx, |help| help.sent = true)
-                            }),
+                            })
+                            .address("help@example.com"),
                     )
                     .when(sent, |column| column.child(div().text_sm().child("Sent. We answer within a day."))),
             ),
