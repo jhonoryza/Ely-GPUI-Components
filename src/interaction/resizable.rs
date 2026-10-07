@@ -27,22 +27,30 @@ struct ResizeDrag {
     start: Size<Pixels>,
 }
 
-/// The size after moving `side` by `delta` from `start`, kept within `min` and `max`.
+/// `size` within `min` and `max`.
+fn fit(size: Size<Pixels>, (min, max): (Size<Pixels>, Size<Pixels>)) -> Size<Pixels> {
+    gpui::size(
+        size.width.clamp(min.width, max.width),
+        size.height.clamp(min.height, max.height),
+    )
+}
+
+/// The size after moving `side` by `delta` from `start`, both measures kept within the limits.
 fn resized(
     start: Size<Pixels>,
     side: Side,
     delta: Point<Pixels>,
-    (min, max): (Size<Pixels>, Size<Pixels>),
+    limits: (Size<Pixels>, Size<Pixels>),
 ) -> Size<Pixels> {
     let width = match side {
         Side::Bottom => start.width,
-        Side::Right | Side::Corner => (start.width + delta.x).clamp(min.width, max.width),
+        Side::Right | Side::Corner => start.width + delta.x,
     };
     let height = match side {
         Side::Right => start.height,
-        Side::Bottom | Side::Corner => (start.height + delta.y).clamp(min.height, max.height),
+        Side::Bottom | Side::Corner => start.height + delta.y,
     };
-    size(width, height)
+    fit(size(width, height), limits)
 }
 
 type OnResize = Rc<dyn Fn(Size<Pixels>, &mut Window, &mut App)>;
@@ -54,7 +62,7 @@ pub struct Resizable {
     size: Size<Pixels>,
     limits: (Size<Pixels>, Size<Pixels>),
     children: SmallVec<[AnyElement; 1]>,
-    on_resize: Option<OnResize>,
+    on_resize: OnResize,
 }
 
 impl Resizable {
@@ -64,37 +72,23 @@ impl Resizable {
         size: Size<Pixels>,
         min: Size<Pixels>,
         max: Size<Pixels>,
+        on_resize: impl Fn(Size<Pixels>, &mut Window, &mut App) + 'static,
     ) -> Self {
         let id = id.into();
         assert!(
-            min.width <= size.width && size.width <= max.width,
-            "resizable {id:?}: width {:?} is not within {:?} and {:?}",
-            size.width,
-            min.width,
-            max.width
+            min.width <= max.width && min.height <= max.height,
+            "resizable {id:?}: limits {min:?} to {max:?} run backwards"
         );
-        assert!(
-            min.height <= size.height && size.height <= max.height,
-            "resizable {id:?}: height {:?} is not within {:?} and {:?}",
-            size.height,
-            min.height,
-            max.height
-        );
+        if fit(size, (min, max)) != size {
+            log::error!("resizable {id:?}: size {size:?} outside {min:?} to {max:?}; pegged");
+        }
         Self {
             id,
             size,
             limits: (min, max),
             children: SmallVec::new(),
-            on_resize: None,
+            on_resize: Rc::new(on_resize),
         }
-    }
-
-    pub fn on_resize(
-        mut self,
-        handler: impl Fn(Size<Pixels>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_resize = Some(Rc::new(handler));
-        self
     }
 }
 
@@ -107,14 +101,17 @@ impl ParentElement for Resizable {
 impl RenderOnce for Resizable {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_resize = self
-            .on_resize
-            .unwrap_or_else(|| panic!("resizable {id:?} has no on_resize"));
+        let on_resize = self.on_resize;
         let limits = self.limits;
         let held = use_seeded((id.clone(), "size"), self.size, window, cx);
         let pressed =
             window.use_keyed_state((id.clone(), "press"), cx, |_, _| None::<Point<Pixels>>);
-        let (owner, now) = (held.entity_id(), held.read(cx).value);
+        let (owner, kept) = (held.entity_id(), held.read(cx).value);
+        let now = fit(kept, limits);
+        if now != kept {
+            log::info!("resizable: {kept:?} fits the limits at {now:?}");
+            held.update(cx, |held, _| held.value = now);
+        }
         let report: OnResize = Rc::new(move |next, window, cx| {
             log::info!("resizable: {:?} by {:?}", next.width, next.height);
             held.update(cx, |held, cx| {
@@ -153,7 +150,10 @@ impl RenderOnce for Resizable {
                     return;
                 }
                 let at = event.event.position;
-                let anchor = pressed.read(cx).expect("a resize starts from a press");
+                let Some(anchor) = *pressed.read(cx) else {
+                    log::error!("resizable: a drag with no press behind it");
+                    return;
+                };
                 let next = resized(drag.start, drag.side, at - anchor, limits);
                 if next != now {
                     dragged(next, window, cx);

@@ -162,15 +162,18 @@ pub fn shapes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let theme = cx.theme();
     let [resize, turn, pick, sort, double, press, long] = [(); 7].map(|_| state.clone());
     let tiles = (0..12).fold(
-        SelectionArea::new("interaction-tiles")
-            .w(px(300.))
-            .flex()
-            .flex_wrap()
-            .gap(px(8.))
-            .p_3()
-            .rounded_lg()
-            .border_1()
-            .border_color(theme.colors.border),
+        SelectionArea::new("interaction-tiles", move |keys, _, cx| {
+            let keys = keys.to_vec();
+            change(&pick, cx, |shapes| shapes.picked = keys)
+        })
+        .w(px(300.))
+        .flex()
+        .flex_wrap()
+        .gap(px(8.))
+        .p_3()
+        .rounded_lg()
+        .border_1()
+        .border_color(theme.colors.border),
         |area, ix| {
             area.item(
                 SharedString::from(format!("tile-{ix}")),
@@ -204,8 +207,7 @@ pub fn shapes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 "Resizable",
                 probe(
                     "interaction-resizable",
-                    Resizable::new("interaction-resizable", size_now, size(px(160.), px(96.)), size(px(360.), px(220.)))
-                        .on_resize(move |next, _, cx| change(&resize, cx, |shapes| shapes.size = next))
+                    Resizable::new("interaction-resizable", size_now, size(px(160.), px(96.)), size(px(360.), px(220.)), move |next, _, cx| change(&resize, cx, |shapes| shapes.size = next))
                         .child(
                             div()
                                 .size_full()
@@ -225,8 +227,7 @@ pub fn shapes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 "Rotatable",
                 probe(
                     "interaction-rotatable",
-                    Rotatable::new("interaction-rotatable", "icons/arrow-up.svg", px(120.), angle)
-                        .on_turn(move |next, _, cx| change(&turn, cx, |shapes| shapes.angle = next)),
+                    Rotatable::new("interaction-rotatable", "icons/arrow-up.svg", px(120.), angle, move |next, _, cx| change(&turn, cx, |shapes| shapes.angle = next)),
                 ),
                 cx,
             )),
@@ -237,10 +238,7 @@ pub fn shapes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 "SelectionArea",
                 probe(
                     "interaction-tiles",
-                    tiles.selected(picked).on_change(move |keys, _, cx| {
-                        let keys = keys.to_vec();
-                        change(&pick, cx, |shapes| shapes.picked = keys)
-                    }),
+                    tiles.selected(picked),
                 ),
                 cx,
             ))

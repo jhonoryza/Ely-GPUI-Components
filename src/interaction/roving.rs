@@ -35,31 +35,26 @@ pub struct RovingFocus {
     axis: Axis,
     base: Div,
     items: Vec<(SharedString, AnyElement)>,
-    on_press: Option<OnKey>,
+    on_press: OnKey,
 }
 
 impl RovingFocus {
-    pub fn new(id: impl Into<ElementId>, axis: Axis) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        axis: Axis,
+        on_press: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             axis,
             base: div(),
             items: Vec::new(),
-            on_press: None,
+            on_press: Rc::new(on_press),
         }
     }
 
     pub fn item(mut self, key: impl Into<SharedString>, content: impl IntoElement) -> Self {
         self.items.push((key.into(), content.into_any_element()));
-        self
-    }
-
-    /// Runs with the key of the item pressed.
-    pub fn on_press(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_press = Some(Rc::new(handler));
         self
     }
 }
@@ -73,9 +68,7 @@ impl Styled for RovingFocus {
 impl RenderOnce for RovingFocus {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_press = self
-            .on_press
-            .unwrap_or_else(|| panic!("roving focus {id:?} has no on_press"));
+        let on_press = self.on_press;
         assert!(!self.items.is_empty(), "roving focus {id:?} has no item");
         let stop = window.use_keyed_state((id.clone(), "stop"), cx, |_, _| 0usize);
         let count = self.items.len();

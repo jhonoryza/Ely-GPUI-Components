@@ -52,7 +52,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P35 Settings — `src/settings`
 - [x] P36 Account — `src/account`
 - [x] P37 Onboarding — `src/onboarding`
-- [ ] P38 Interaction — `src/interaction`
+- [x] P38 Interaction — `src/interaction`
 - [ ] P39 Theme — `src/theme`
 - [ ] P40 i18n & a11y — `src/i18n`
 - [ ] P41 Maps — `src/maps`
@@ -103,3 +103,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P35: eighteen settings components take their handlers in `new`; a section or syntax theme not offered marks none; a font size or default outside its range pegs. Kept: options offered by construction, the proxy's Apply behind its read, drops that bring a file. Review: 1 round.
 - P36: seventeen account components take their handlers in `new`, the email step's `on_send` with them; a busy provider, a current account or workspace, and a role no longer listed mark none and log; an invitation waits for its role to be offered; an expiry year that overflows reads as unread. Kept: quotas, providers, one current session, roles to invite as, the card behind Save. Review: 2 rounds.
 - P37: seven onboarding components take their handlers in `new`, OnboardingWizard's `on_step` and `on_finish` among them; a help article no longer listed opens none; a wizard step past its last says so; a support topic no longer offered counts as none and holds Send. Kept: tasks, steps, releases and topics present, sentiments by construction, Send behind a pick. Review: 2 rounds.
+- P38: Resizable, Rotatable, RovingFocus and SelectionArea take their handlers in `new`; a resize or band whose press state is gone moves nothing; Resizable keeps the owner's raw size as its seed and fits what it draws and reports to this frame's limits; ScrollSync's leader that left syncs nothing. Kept: finite angles, items and panes present. Review: 2 rounds.

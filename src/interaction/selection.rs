@@ -82,17 +82,20 @@ pub struct SelectionArea {
     base: Div,
     items: Vec<(SharedString, AnyElement)>,
     selected: Vec<SharedString>,
-    on_change: Option<OnSelect>,
+    on_change: OnSelect,
 }
 
 impl SelectionArea {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on_change: impl Fn(&[SharedString], &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             base: div(),
             items: Vec::new(),
             selected: Vec::new(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
     }
 
@@ -103,15 +106,6 @@ impl SelectionArea {
 
     pub fn selected(mut self, keys: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
         self.selected = keys.into_iter().map(Into::into).collect();
-        self
-    }
-
-    /// Gets the keys now selected, in the items' order.
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(&[SharedString], &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
         self
     }
 }
@@ -125,9 +119,7 @@ impl Styled for SelectionArea {
 impl RenderOnce for SelectionArea {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("selection area {id:?} has no on_change"));
+        let on_change = self.on_change;
         let area = window.use_keyed_state((id.clone(), "area"), cx, |_, _| Area::default());
         let owner = area.entity_id();
         let focus = tab_stop((id.clone(), "focus").into(), true, window, cx);
@@ -233,7 +225,10 @@ impl RenderOnce for SelectionArea {
                 }
                 let origin = event.bounds.origin;
                 let at = event.event.position - origin;
-                let press = moved.read(cx).press.expect("a band starts from a press");
+                let Some(press) = moved.read(cx).press else {
+                    log::error!("selection area: a band with no press behind it");
+                    return;
+                };
                 let start = press - origin;
                 let adding = match event.event.modifiers.platform || event.event.modifiers.shift {
                     true => drag.adding.clone(),

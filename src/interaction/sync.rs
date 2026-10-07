@@ -64,7 +64,10 @@ impl RenderOnce for ScrollSync {
         let sync = canvas(
             move |_, _, _| {
                 let Some(lead) = lead else { return };
-                let place = synced[lead].offset();
+                let Some(place) = synced.get(lead).map(|handle| handle.offset()) else {
+                    log::error!("scroll sync: leader pane {lead} of {} left", synced.len());
+                    return;
+                };
                 for (ix, handle) in synced.iter().enumerate() {
                     let now = handle.offset();
                     let next = along(now, place, axis);

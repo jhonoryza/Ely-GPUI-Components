@@ -7,6 +7,8 @@ use gpui::{
 use super::{Resizable, Rotatable, RovingFocus, ScrollSync, SelectionArea};
 use crate::{forms, primitives::FocusNext, theme::Theme};
 
+mod limits;
+
 type Part = fn(&Bench, Entity<Bench>) -> AnyElement;
 
 /// A view that shows one interaction part and holds what the owner decides: a size, an angle and a selection.
@@ -88,13 +90,13 @@ fn resizable(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
         bench.size,
         size(px(100.0), px(80.0)),
         size(px(300.0), px(200.0)),
+        move |next, _, cx| {
+            owner.update(cx, |bench, cx| {
+                bench.size = next;
+                cx.notify();
+            })
+        },
     )
-    .on_resize(move |next, _, cx| {
-        owner.update(cx, |bench, cx| {
-            bench.size = next;
-            cx.notify();
-        })
-    })
     .child(div().size_full())
     .into_any_element()
 }
@@ -136,6 +138,18 @@ fn a_box_resizes_from_its_grip_and_its_edge_within_its_limits(cx: &mut TestAppCo
 
 /// The grip and the edges' handles lie inside the box, the grip in its lower right corner.
 #[gpui::test]
+fn a_size_past_its_limits_pegs_and_draws(cx: &mut TestAppContext) {
+    let (host, cx) = bench(resizable, cx);
+    host.update(cx, |bench, cx| {
+        bench.size = size(px(900.0), px(10.0));
+        cx.notify();
+    });
+    settle(cx);
+    let shown = cx.debug_bounds("resizable-box").expect("the box");
+    assert_eq!(shown.size, size(px(300.0), px(80.0)));
+}
+
+#[gpui::test]
 fn the_grip_lies_inside_the_box(cx: &mut TestAppContext) {
     let (_, cx) = bench(resizable, cx);
     let (grip, frame) = (
@@ -150,14 +164,19 @@ fn the_grip_lies_inside_the_box(cx: &mut TestAppContext) {
 }
 
 fn rotatable(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
-    Rotatable::new("dial", "icons/arrow-up.svg", px(100.0), bench.angle)
-        .on_turn(move |next, _, cx| {
+    Rotatable::new(
+        "dial",
+        "icons/arrow-up.svg",
+        px(100.0),
+        bench.angle,
+        move |next, _, cx| {
             owner.update(cx, |bench, cx| {
                 bench.angle = next;
                 cx.notify();
             })
-        })
-        .into_any_element()
+        },
+    )
+    .into_any_element()
 }
 
 /// The ring is the one stop; Left and Right turn it a notch, round the circle.
@@ -206,21 +225,20 @@ fn area(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
     ["a", "b", "c"]
         .into_iter()
         .fold(
-            SelectionArea::new("tiles")
-                .flex()
-                .gap(px(10.0))
-                .p(px(20.0))
-                .w(px(300.0)),
+            SelectionArea::new("tiles", move |keys, _, cx| {
+                let keys = keys.to_vec();
+                owner.update(cx, |bench, cx| {
+                    bench.selected = keys;
+                    cx.notify();
+                })
+            })
+            .flex()
+            .gap(px(10.0))
+            .p(px(20.0))
+            .w(px(300.0)),
             |area, key| area.item(key, div().size(px(40.0))),
         )
         .selected(bench.selected.clone())
-        .on_change(move |keys, _, cx| {
-            let keys = keys.to_vec();
-            owner.update(cx, |bench, cx| {
-                bench.selected = keys;
-                cx.notify();
-            })
-        })
         .into_any_element()
 }
 
@@ -315,16 +333,16 @@ fn roving(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
     let _ = bench;
     ["a", "b", "c"]
         .into_iter()
-        .fold(RovingFocus::new("tools", Axis::Horizontal), |group, key| {
-            group.item(key, div().size(px(24.0)))
-        })
-        .on_press(move |key, _, cx| {
-            let key = key.clone();
-            owner.update(cx, |bench, cx| {
-                bench.selected.push(key);
-                cx.notify();
-            })
-        })
+        .fold(
+            RovingFocus::new("tools", Axis::Horizontal, move |key, _, cx| {
+                let key = key.clone();
+                owner.update(cx, |bench, cx| {
+                    bench.selected.push(key);
+                    cx.notify();
+                })
+            }),
+            |group, key| group.item(key, div().size(px(24.0))),
+        )
         .into_any_element()
 }
 

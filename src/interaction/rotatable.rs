@@ -35,7 +35,7 @@ pub struct Rotatable {
     path: SharedString,
     side: Pixels,
     angle: f32,
-    on_turn: Option<OnTurn>,
+    on_turn: OnTurn,
 }
 
 impl Rotatable {
@@ -45,6 +45,7 @@ impl Rotatable {
         path: impl Into<SharedString>,
         side: Pixels,
         angle: f32,
+        on_turn: impl Fn(f32, &mut Window, &mut App) + 'static,
     ) -> Self {
         assert!(
             angle.is_finite(),
@@ -55,23 +56,15 @@ impl Rotatable {
             path: path.into(),
             side,
             angle: angle.rem_euclid(360.0),
-            on_turn: None,
+            on_turn: Rc::new(on_turn),
         }
-    }
-
-    /// Runs with each new angle.
-    pub fn on_turn(mut self, handler: impl Fn(f32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_turn = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for Rotatable {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_turn = self
-            .on_turn
-            .unwrap_or_else(|| panic!("rotatable {id:?} has no on_turn"));
+        let on_turn = self.on_turn;
         let held = use_seeded((id.clone(), "angle"), self.angle, window, cx);
         let (owner, angle) = (held.entity_id(), held.read(cx).value);
         let turn: OnTurn = Rc::new(move |next, window, cx| {

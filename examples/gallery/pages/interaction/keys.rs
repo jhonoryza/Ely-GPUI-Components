@@ -246,12 +246,15 @@ pub fn focus(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         ("strike", IconName::Strikethrough),
     ];
     let toolbar = tools.into_iter().fold(
-        RovingFocus::new("interaction-tools", Axis::Horizontal)
-            .gap_0p5()
-            .p_0p5()
-            .rounded_lg()
-            .border_1()
-            .border_color(theme.colors.border),
+        RovingFocus::new("interaction-tools", Axis::Horizontal, move |key, _, cx| {
+            let key = key.clone();
+            change(&press, cx, |focusing| focusing.tool = key)
+        })
+        .gap_0p5()
+        .p_0p5()
+        .rounded_lg()
+        .border_1()
+        .border_color(theme.colors.border),
         |bar, (key, icon)| {
             let on = tool.as_ref() == key;
             bar.item(
@@ -308,10 +311,7 @@ pub fn focus(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 "RovingFocus",
                 probe(
                     "interaction-tools",
-                    toolbar.on_press(move |key, _, cx| {
-                        let key = key.clone();
-                        change(&press, cx, |focusing| focusing.tool = key)
-                    }),
+                    toolbar,
                 ),
                 cx,
             ))
