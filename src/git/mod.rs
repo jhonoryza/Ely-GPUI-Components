@@ -25,7 +25,9 @@ pub use diff::{DiffLine, LineKind, Stretch, diff, mark_words, pairs, stat};
 pub use graph::{GraphRow, Half, Stroke, lanes};
 pub use history::FileHistory;
 pub use merge::{ConflictResolver, ThreeWayMerge};
-pub use merging::{Conflict, Region, RegionKind, Take, conflicts, regions, resolve, result};
+pub use merging::{
+    Conflict, Region, RegionKind, Take, conflicts, marked, regions, resolve, result,
+};
 pub use refs::{Branch, BranchList, BranchSelector};
 pub use review::{PullRequest, PullRequestCard, PullState, ReviewComment, ReviewNote};
 pub use rows::Place;

@@ -161,6 +161,42 @@ pub fn conflicts(text: &str) -> Vec<Conflict> {
     found
 }
 
+/// Regions as Git grouped them in marked `text`; base from diff3 sections.
+pub fn marked(text: &str) -> Vec<Region> {
+    let lines: Vec<String> = text
+        .tokenize_lines()
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    let same = |range: std::ops::Range<usize>| Region {
+        kind: RegionKind::Unchanged,
+        base: lines[range.clone()].to_vec(),
+        ours: lines[range.clone()].to_vec(),
+        theirs: lines[range].to_vec(),
+    };
+    let mut out = Vec::new();
+    let mut at = 0;
+    for conflict in conflicts(text) {
+        if conflict.start > at {
+            out.push(same(at..conflict.start));
+        }
+        let ours_end = conflict.base.unwrap_or(conflict.middle);
+        out.push(Region {
+            kind: RegionKind::Conflict,
+            ours: lines[conflict.start + 1..ours_end].to_vec(),
+            base: conflict
+                .base
+                .map_or_else(Vec::new, |base| lines[base + 1..conflict.middle].to_vec()),
+            theirs: lines[conflict.middle + 1..conflict.end].to_vec(),
+        });
+        at = conflict.end + 1;
+    }
+    if at < lines.len() {
+        out.push(same(at..lines.len()));
+    }
+    out
+}
+
 /// `text` with conflict `ix` settled; none if absent.
 pub fn resolve(text: &str, ix: usize, take: Take) -> Option<String> {
     let Some(conflict) = conflicts(text).get(ix).copied() else {
@@ -190,6 +226,25 @@ pub fn resolve(text: &str, ix: usize, take: Take) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn marked_text_keeps_gits_grouping_and_its_base() {
+        let text = "first\n<<<<<<< ours\nOURS a\nunchanged\nOURS b\n||||||| base\na\nunchanged\nb\n=======\nTHEIRS a\nunchanged\nTHEIRS b\n>>>>>>> theirs\nlast\n";
+        let found = marked(text);
+        let kinds: Vec<RegionKind> = found.iter().map(|region| region.kind).collect();
+        assert_eq!(
+            kinds,
+            [
+                RegionKind::Unchanged,
+                RegionKind::Conflict,
+                RegionKind::Unchanged
+            ],
+            "one block, as Git wrote it"
+        );
+        assert_eq!(found[1].base, ["a\n", "unchanged\n", "b\n"]);
+        assert_eq!(found[1].ours.len(), 3);
+        assert_eq!(found[2].ours, ["last\n"]);
+    }
 
     #[test]
     fn a_diff3_conflict_leaves_its_base_out() {
