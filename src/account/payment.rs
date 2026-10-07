@@ -97,11 +97,12 @@ pub fn expiry(text: &str, now: (i32, i8)) -> Result<(i8, i32), ExpiryError> {
         .trim()
         .parse::<i8>()
         .map_err(|_| ExpiryError::Unread)?;
-    let year = 2000
-        + year
-            .trim()
-            .parse::<i32>()
-            .map_err(|_| ExpiryError::Unread)?;
+    let year = year
+        .trim()
+        .parse::<i32>()
+        .ok()
+        .and_then(|year| year.checked_add(2000))
+        .ok_or(ExpiryError::Unread)?;
     if !(1..=12).contains(&month) {
         return Err(ExpiryError::NoMonth(month));
     }
@@ -146,16 +147,19 @@ pub struct PaymentMethodForm {
     id: ElementId,
     error: Option<SharedString>,
     busy: bool,
-    on_submit: Option<OnCard>,
+    on_submit: OnCard,
 }
 
 impl PaymentMethodForm {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on_submit: impl Fn(&CardDetails, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             error: None,
             busy: false,
-            on_submit: None,
+            on_submit: Rc::new(on_submit),
         }
     }
 
@@ -170,22 +174,12 @@ impl PaymentMethodForm {
         self.busy = busy;
         self
     }
-
-    pub fn on_submit(
-        mut self,
-        handler: impl Fn(&CardDetails, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_submit = Some(Rc::new(handler));
-        self
-    }
 }
 
 impl RenderOnce for PaymentMethodForm {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_submit = self
-            .on_submit
-            .unwrap_or_else(|| panic!("payment method form {id:?} has no on_submit"));
+        let on_submit = self.on_submit;
         let number = field(&id, "number", "", false, window, cx);
         let until = field(&id, "expiry", "", false, window, cx);
         let code = field(&id, "cvc", "", false, window, cx);
@@ -315,6 +309,11 @@ mod tests {
             "this month still counts"
         );
         assert_eq!(expiry("12/31", now), Ok((12, 2031)));
+        assert_eq!(
+            expiry("12/2147483647", now),
+            Err(ExpiryError::Unread),
+            "a year past any clock"
+        );
         assert_eq!(expiry("08/26", now), Err(ExpiryError::Passed));
         assert_eq!(expiry("13/30", now), Err(ExpiryError::NoMonth(13)));
         assert_eq!(expiry("1230", now), Err(ExpiryError::Unread));

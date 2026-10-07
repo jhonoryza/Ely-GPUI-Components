@@ -68,7 +68,7 @@ pub fn plan(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 ),
             )
             .child(div().w(px(360.)).flex().flex_col().gap_3().child(
-                PaymentMethodForm::new("account-card-form").on_submit(move |card, _, cx| {
+                PaymentMethodForm::new("account-card-form", move |card, _, cx| {
                     let saved_as: SharedString = format!("{} ending {}", card.brand.name(), &card.number[card.number.len() - 4..]).into();
                     change(&saved, cx, move |plan| plan.card = Some(saved_as))
                 }),
@@ -116,18 +116,16 @@ pub fn history(_: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .flex_col()
                     .gap_4()
                     .child(
-                        UpgradePrompt::new("account-nudge", "9 of 10 projects used")
+                        UpgradePrompt::new("account-nudge", "9 of 10 projects used", |_, _| log::info!("gallery: upgrade"))
                             .body("Pro has no limit on projects.")
-                            .on_upgrade(|_, _| log::info!("gallery: upgrade"))
                             .on_dismiss(|_, _| log::info!("gallery: not now")),
                     )
                     .child(
-                        UpgradePrompt::new("account-wall", "Version history is on Pro")
+                        UpgradePrompt::new("account-wall", "Version history is on Pro", |_, _| log::info!("gallery: upgrade"))
                             .body("See and restore every version of a document.")
                             .benefit("Every version, kept a year")
                             .benefit("Restore with one press")
                             .benefit("Compare any two")
-                            .on_upgrade(|_, _| log::info!("gallery: upgrade"))
                             .on_dismiss(|_, _| log::info!("gallery: not now")),
                     ),
             ),
@@ -207,27 +205,22 @@ pub fn members(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .gap_6()
             .w(px(640.))
             .child(
-                TeamMemberTable::new("account-members", members, roles())
-                    .on_role(move |key, next, _, cx| {
+                TeamMemberTable::new("account-members", members, roles(), move |key, next, _, cx| {
                         let (key, next) = (key.clone(), next.clone());
                         change(&role, cx, move |team| team.members.iter_mut().filter(|member| member.key == key).for_each(|member| member.role = next.clone()))
-                    })
-                    .on_remove(move |key, _, cx| {
+                    }, move |key, _, cx| {
                         let key = key.clone();
                         change(&removed, cx, move |team| team.members.retain(|member| member.key != key))
                     }),
             )
             .child(
-                InvitationList::new("account-invites", invitations, roles())
-                    .on_invite(move |email, role, _, cx| {
+                InvitationList::new("account-invites", invitations, roles(), move |email, role, _, cx| {
                         let (email, role) = (email.clone(), role.clone());
                         change(&invited, cx, move |team| {
                             team.sent += 1;
                             team.invitations.insert(0, Invitation { key: format!("new-{}", team.sent).into(), email, role, sent: "Sent just now".into(), expired: false });
                         })
-                    })
-                    .on_resend(|key, _, _| log::info!("gallery: resend {key}"))
-                    .on_revoke(move |key, _, cx| {
+                    }, |key, _, _| log::info!("gallery: resend {key}"), move |key, _, cx| {
                         let key = key.clone();
                         change(&revoked, cx, move |team| team.invitations.retain(|each| each.key != key))
                     }),

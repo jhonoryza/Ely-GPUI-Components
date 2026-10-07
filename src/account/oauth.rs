@@ -14,7 +14,7 @@ pub struct OAuthButtons {
     id: ElementId,
     providers: Vec<(SharedString, SharedString)>,
     busy: Option<SharedString>,
-    on_pick: Option<OnKey>,
+    on_pick: OnKey,
 }
 
 impl OAuthButtons {
@@ -22,6 +22,7 @@ impl OAuthButtons {
     pub fn new(
         id: impl Into<ElementId>,
         providers: impl IntoIterator<Item = (impl Into<SharedString>, impl Into<SharedString>)>,
+        on_pick: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         let id = id.into();
         let providers: Vec<_> = providers
@@ -33,26 +34,19 @@ impl OAuthButtons {
             id,
             providers,
             busy: None,
-            on_pick: None,
+            on_pick: Rc::new(on_pick),
         }
     }
 
     /// The provider on its way.
     pub fn busy(mut self, key: impl Into<SharedString>) -> Self {
         let key = key.into();
-        assert!(
-            self.providers.iter().any(|(each, _)| *each == key),
-            "oauth buttons: no provider {key}"
-        );
+        if !self.providers.iter().any(|(each, _)| *each == key) {
+            log::error!("oauth buttons: no provider {key}; none busy");
+            self.busy = None;
+            return self;
+        }
         self.busy = Some(key);
-        self
-    }
-
-    pub fn on_pick(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_pick = Some(Rc::new(handler));
         self
     }
 }
@@ -60,9 +54,7 @@ impl OAuthButtons {
 impl RenderOnce for OAuthButtons {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_pick = self
-            .on_pick
-            .unwrap_or_else(|| panic!("oauth buttons {id:?} have no on_pick"));
+        let on_pick = self.on_pick;
         let busy = self.busy;
         div()
             .flex()

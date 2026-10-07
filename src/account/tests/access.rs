@@ -21,8 +21,8 @@ fn accounts(_: &Bench, owner: Entity<Bench>) -> AnyElement {
             account("home", "Ada", "ada@home.com"),
         ],
         "ada",
+        move |key, _, cx| say(&owner, key.to_string(), cx),
     )
-    .on_select(move |key, _, cx| say(&owner, key.to_string(), cx))
     .into_any_element()
 }
 
@@ -48,10 +48,13 @@ fn sessions(_: &Bench, owner: Entity<Bench>) -> AnyElement {
         current,
     };
     let everyone = owner.clone();
-    SessionList::new("sessions", [session("phone", false), session("mac", true)])
-        .on_sign_out(move |key, _, cx| say(&owner, format!("out {key}"), cx))
-        .on_sign_out_others(move |_, cx| say(&everyone, "others".into(), cx))
-        .into_any_element()
+    SessionList::new(
+        "sessions",
+        [session("phone", false), session("mac", true)],
+        move |key, _, cx| say(&owner, format!("out {key}"), cx),
+    )
+    .on_sign_out_others(move |_, cx| say(&everyone, "others".into(), cx))
+    .into_any_element()
 }
 
 /// Stops: the phone's Sign out, then Sign out of all other devices; this device has none.
@@ -81,10 +84,13 @@ fn keys(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
         used: "Never used".into(),
     };
     let [made, revoked, done] = [(); 3].map(|_| owner.clone());
-    let manager = ApiKeyManager::new("keys", [key])
-        .on_create(move |name, _, cx| say(&made, format!("make {name}"), cx))
-        .on_revoke(move |key, _, cx| say(&revoked, format!("revoke {key}"), cx))
-        .on_dismiss(move |_, cx| say(&done, "done".into(), cx));
+    let manager = ApiKeyManager::new(
+        "keys",
+        [key],
+        move |name, _, cx| say(&made, format!("make {name}"), cx),
+        move |key, _, cx| say(&revoked, format!("revoke {key}"), cx),
+        move |_, cx| say(&done, "done".into(), cx),
+    );
     match bench.sent {
         true => manager.secret("sk_live_0123456789").into_any_element(),
         false => manager.into_any_element(),
@@ -138,11 +144,10 @@ fn profile() -> Profile {
 }
 
 fn editor(_: &Bench, owner: Entity<Bench>) -> AnyElement {
-    ProfileEditor::new("profile", profile())
-        .on_save(move |profile, _, cx| {
-            say(&owner, format!("{} {}", profile.name, profile.email), cx)
-        })
-        .into_any_element()
+    ProfileEditor::new("profile", profile(), move |profile, _, cx| {
+        say(&owner, format!("{} {}", profile.name, profile.email), cx)
+    })
+    .into_any_element()
 }
 
 /// Stops: the picture, name, username, email, about, location; Discard and Save once changed.
@@ -167,10 +172,11 @@ fn a_profile_saves_only_what_changed_and_discard_puts_it_back(cx: &mut TestAppCo
 
 fn menu(_: &Bench, owner: Entity<Bench>) -> AnyElement {
     let [profile, out] = [(); 2].map(|_| owner.clone());
-    UserMenu::new("user", "Ada", "ada@example.com")
-        .item(MenuItem::new("Profile").on_click(move |_, cx| say(&profile, "profile".into(), cx)))
-        .on_sign_out(move |_, cx| say(&out, "out".into(), cx))
-        .into_any_element()
+    UserMenu::new("user", "Ada", "ada@example.com", move |_, cx| {
+        say(&out, "out".into(), cx)
+    })
+    .item(MenuItem::new("Profile").on_click(move |_, cx| say(&profile, "profile".into(), cx)))
+    .into_any_element()
 }
 
 /// Stops: the avatar; the menu's rows are Profile, then Sign out.
@@ -191,10 +197,14 @@ fn workspaces(_: &Bench, owner: Entity<Bench>) -> AnyElement {
         detail: "Pro".into(),
     };
     let made = owner.clone();
-    WorkspaceSwitcher::new("spaces", [space("north"), space("south")], "south")
-        .on_select(move |key, _, cx| say(&owner, key.to_string(), cx))
-        .on_create(move |_, cx| say(&made, "create".into(), cx))
-        .into_any_element()
+    WorkspaceSwitcher::new(
+        "spaces",
+        [space("north"), space("south")],
+        "south",
+        move |key, _, cx| say(&owner, key.to_string(), cx),
+    )
+    .on_create(move |_, cx| say(&made, "create".into(), cx))
+    .into_any_element()
 }
 
 /// Stops: the switcher; its rows are north, south, then Create workspace.
@@ -222,10 +232,11 @@ fn alone(_: &Bench, owner: Entity<Bench>) -> AnyElement {
         current: true,
     };
     let everyone = owner.clone();
-    SessionList::new("sessions", [here])
-        .on_sign_out(move |key, _, cx| say(&owner, format!("out {key}"), cx))
-        .on_sign_out_others(move |_, cx| say(&everyone, "others".into(), cx))
-        .into_any_element()
+    SessionList::new("sessions", [here], move |key, _, cx| {
+        say(&owner, format!("out {key}"), cx)
+    })
+    .on_sign_out_others(move |_, cx| say(&everyone, "others".into(), cx))
+    .into_any_element()
 }
 
 /// With this device alone there is nothing to sign out, so the list has no stop.

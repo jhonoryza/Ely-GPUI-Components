@@ -20,18 +20,22 @@ pub struct UpgradePrompt {
     title: SharedString,
     body: Option<SharedString>,
     benefits: Vec<SharedString>,
-    on_upgrade: Option<Run>,
+    on_upgrade: Run,
     on_dismiss: Option<Run>,
 }
 
 impl UpgradePrompt {
-    pub fn new(id: impl Into<ElementId>, title: impl Into<SharedString>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        title: impl Into<SharedString>,
+        on_upgrade: impl Fn(&mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             title: title.into(),
             body: None,
             benefits: Vec::new(),
-            on_upgrade: None,
+            on_upgrade: Rc::new(on_upgrade),
             on_dismiss: None,
         }
     }
@@ -47,11 +51,6 @@ impl UpgradePrompt {
         self
     }
 
-    pub fn on_upgrade(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_upgrade = Some(Rc::new(handler));
-        self
-    }
-
     /// Shows "Not now".
     pub fn on_dismiss(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_dismiss = Some(Rc::new(handler));
@@ -62,9 +61,7 @@ impl UpgradePrompt {
 impl RenderOnce for UpgradePrompt {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let upgrade = self
-            .on_upgrade
-            .unwrap_or_else(|| panic!("upgrade prompt {id:?} has no on_upgrade"));
+        let upgrade = self.on_upgrade;
         let theme = cx.theme();
         let wall = !self.benefits.is_empty();
         let actions = div()

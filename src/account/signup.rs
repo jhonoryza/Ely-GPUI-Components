@@ -40,18 +40,21 @@ pub struct SignupForm {
     terms: Option<SharedString>,
     error: Option<SharedString>,
     busy: bool,
-    on_submit: Option<OnSignup>,
+    on_submit: OnSignup,
     on_sign_in: Option<Run>,
 }
 
 impl SignupForm {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on_submit: impl Fn(&Signup, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             terms: None,
             error: None,
             busy: false,
-            on_submit: None,
+            on_submit: Rc::new(on_submit),
             on_sign_in: None,
         }
     }
@@ -71,11 +74,6 @@ impl SignupForm {
     /// While the owner works: Create account spins and rests.
     pub fn busy(mut self, busy: bool) -> Self {
         self.busy = busy;
-        self
-    }
-
-    pub fn on_submit(mut self, handler: impl Fn(&Signup, &mut Window, &mut App) + 'static) -> Self {
-        self.on_submit = Some(Rc::new(handler));
         self
     }
 
@@ -105,9 +103,7 @@ impl RenderOnce for SignupForm {
             && rules.iter().all(|(_, kept)| *kept)
             && (self.terms.is_none() || agreed)
             && !self.busy;
-        let on_submit = self
-            .on_submit
-            .unwrap_or_else(|| panic!("sign-up form {id:?} has no on_submit"));
+        let on_submit = self.on_submit;
         let submit: Run = Rc::new(move |window, cx| {
             log::info!("sign-up form: create account");
             on_submit(&signup, window, cx);

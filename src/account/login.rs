@@ -67,18 +67,21 @@ pub struct LoginForm {
     id: ElementId,
     error: Option<SharedString>,
     busy: bool,
-    on_submit: Option<OnLogin>,
+    on_submit: OnLogin,
     on_forgot: Option<Run>,
     on_sign_up: Option<Run>,
 }
 
 impl LoginForm {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on_submit: impl Fn(&Login, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             error: None,
             busy: false,
-            on_submit: None,
+            on_submit: Rc::new(on_submit),
             on_forgot: None,
             on_sign_up: None,
         }
@@ -93,11 +96,6 @@ impl LoginForm {
     /// While the owner checks: Sign in spins and rests.
     pub fn busy(mut self, busy: bool) -> Self {
         self.busy = busy;
-        self
-    }
-
-    pub fn on_submit(mut self, handler: impl Fn(&Login, &mut Window, &mut App) + 'static) -> Self {
-        self.on_submit = Some(Rc::new(handler));
         self
     }
 
@@ -127,9 +125,7 @@ impl RenderOnce for LoginForm {
         };
         let remembered = login.remember;
         let ready = is_email(&login.email) && !login.password.is_empty() && !self.busy;
-        let on_submit = self
-            .on_submit
-            .unwrap_or_else(|| panic!("login form {id:?} has no on_submit"));
+        let on_submit = self.on_submit;
         let submit: Run = Rc::new(move |window, cx| {
             log::info!("login form: sign in");
             on_submit(&login, window, cx);

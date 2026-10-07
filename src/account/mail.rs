@@ -33,7 +33,7 @@ struct Step {
     words: Words,
     sent: bool,
     busy: bool,
-    on_send: Option<OnText>,
+    on_send: OnText,
     back: Way,
     other: Way,
 }
@@ -52,7 +52,6 @@ fn email_step(step: Step, window: &mut Window, cx: &mut App) -> AnyElement {
     let email = field(&id, "email", "name@example.com", false, window, cx);
     let address: SharedString = email.read(cx).text().trim().to_string().into();
     let ready = is_email(&address) && !busy;
-    let on_send = on_send.unwrap_or_else(|| panic!("email step {id:?} has no on_send"));
     let send: Run = {
         let address = address.clone();
         Rc::new(move |window, cx| {
@@ -151,17 +150,20 @@ pub struct MagicLinkForm {
     id: ElementId,
     sent: bool,
     busy: bool,
-    on_send: Option<OnText>,
+    on_send: OnText,
     on_other: Option<Run>,
 }
 
 impl MagicLinkForm {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on_send: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             sent: false,
             busy: false,
-            on_send: None,
+            on_send: Rc::new(on_send),
             on_other: None,
         }
     }
@@ -175,15 +177,6 @@ impl MagicLinkForm {
     /// While the owner sends.
     pub fn busy(mut self, busy: bool) -> Self {
         self.busy = busy;
-        self
-    }
-
-    /// Runs with the address, for the first link and each one after.
-    pub fn on_send(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_send = Some(Rc::new(handler));
         self
     }
 
@@ -224,17 +217,20 @@ pub struct ForgotPassword {
     id: ElementId,
     sent: bool,
     busy: bool,
-    on_send: Option<OnText>,
+    on_send: OnText,
     on_back: Option<Run>,
 }
 
 impl ForgotPassword {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on_send: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             sent: false,
             busy: false,
-            on_send: None,
+            on_send: Rc::new(on_send),
             on_back: None,
         }
     }
@@ -248,15 +244,6 @@ impl ForgotPassword {
     /// While the owner sends.
     pub fn busy(mut self, busy: bool) -> Self {
         self.busy = busy;
-        self
-    }
-
-    /// Runs with the address, for the first link and each one after.
-    pub fn on_send(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_send = Some(Rc::new(handler));
         self
     }
 

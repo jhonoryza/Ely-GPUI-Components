@@ -6,16 +6,15 @@ use crate::account::{
 };
 
 fn login(_: &Bench, owner: Entity<Bench>) -> AnyElement {
-    LoginForm::new("login")
-        .on_submit(move |login, _, cx| {
-            say(
-                &owner,
-                format!("{} {} {}", login.email, login.password, login.remember),
-                cx,
-            )
-        })
-        .on_forgot(|_, _| {})
-        .into_any_element()
+    LoginForm::new("login", move |login, _, cx| {
+        say(
+            &owner,
+            format!("{} {} {}", login.email, login.password, login.remember),
+            cx,
+        )
+    })
+    .on_forgot(|_, _| {})
+    .into_any_element()
 }
 
 /// Stops: email, password, its eye, the box, the forgotten password, Sign in.
@@ -41,16 +40,15 @@ fn sign_in_waits_for_an_address_and_a_password_and_enter_sends(cx: &mut TestAppC
 }
 
 fn signup(_: &Bench, owner: Entity<Bench>) -> AnyElement {
-    SignupForm::new("signup")
-        .terms("I agree to the terms")
-        .on_submit(move |signup, _, cx| {
-            say(
-                &owner,
-                format!("{} {} {}", signup.name, signup.email, signup.password),
-                cx,
-            )
-        })
-        .into_any_element()
+    SignupForm::new("signup", move |signup, _, cx| {
+        say(
+            &owner,
+            format!("{} {} {}", signup.name, signup.email, signup.password),
+            cx,
+        )
+    })
+    .terms("I agree to the terms")
+    .into_any_element()
 }
 
 /// Stops: name, email, password, its eye, the terms, then Create account once it holds.
@@ -80,8 +78,11 @@ fn sign_up_waits_for_every_rule_and_the_terms(cx: &mut TestAppContext) {
 }
 
 fn providers(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
-    let buttons = OAuthButtons::new("oauth", [("github", "GitHub"), ("google", "Google")])
-        .on_pick(move |key, _, cx| say(&owner, key.to_string(), cx));
+    let buttons = OAuthButtons::new(
+        "oauth",
+        [("github", "GitHub"), ("google", "Google")],
+        move |key, _, cx| say(&owner, key.to_string(), cx),
+    );
     match bench.sent {
         true => buttons.busy("github").into_any_element(),
         false => buttons.into_any_element(),
@@ -113,19 +114,18 @@ fn a_provider_hands_its_key_and_rests_while_one_is_on_its_way(cx: &mut TestAppCo
 
 fn magic(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
     let other = owner.clone();
-    MagicLinkForm::new("magic")
-        .sent(bench.sent)
-        .on_send(move |address, _, cx| {
-            say(&owner, format!("send {address}"), cx);
-            owner.update(cx, |bench, _| bench.sent = true);
+    MagicLinkForm::new("magic", move |address, _, cx| {
+        say(&owner, format!("send {address}"), cx);
+        owner.update(cx, |bench, _| bench.sent = true);
+    })
+    .sent(bench.sent)
+    .on_other(move |_, cx| {
+        other.update(cx, |bench, cx| {
+            bench.sent = false;
+            cx.notify();
         })
-        .on_other(move |_, cx| {
-            other.update(cx, |bench, cx| {
-                bench.sent = false;
-                cx.notify();
-            })
-        })
-        .into_any_element()
+    })
+    .into_any_element()
 }
 
 /// Stops: email, then the link button; once sent, Send again and Use another email.
@@ -151,11 +151,12 @@ fn a_link_goes_to_the_address_and_again_on_request(cx: &mut TestAppContext) {
 
 fn forgot(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
     let back = owner.clone();
-    ForgotPassword::new("forgot")
-        .sent(bench.sent)
-        .on_send(move |address, _, cx| say(&owner, format!("reset {address}"), cx))
-        .on_back(move |_, cx| say(&back, "back".into(), cx))
-        .into_any_element()
+    ForgotPassword::new("forgot", move |address, _, cx| {
+        say(&owner, format!("reset {address}"), cx)
+    })
+    .sent(bench.sent)
+    .on_back(move |_, cx| say(&back, "back".into(), cx))
+    .into_any_element()
 }
 
 /// Stops: email, then Back to sign in while the send rests.
@@ -172,10 +173,11 @@ fn a_reset_waits_for_an_address_and_offers_the_way_back(cx: &mut TestAppContext)
 }
 
 fn factor(bench: &Bench, owner: Entity<Bench>) -> AnyElement {
-    TwoFactorInput::new("factor")
-        .failed(bench.failed)
-        .on_code(move |code, _, cx| say(&owner, code.to_string(), cx))
-        .into_any_element()
+    TwoFactorInput::new("factor", move |code, _, cx| {
+        say(&owner, code.to_string(), cx)
+    })
+    .failed(bench.failed)
+    .into_any_element()
 }
 
 /// Stops: the code.
@@ -207,10 +209,11 @@ fn sign_in_waits_for_a_password(cx: &mut TestAppContext) {
 }
 
 fn busy_login(_: &Bench, owner: Entity<Bench>) -> AnyElement {
-    LoginForm::new("login")
-        .busy(true)
-        .on_submit(move |login, _, cx| say(&owner, login.email.to_string(), cx))
-        .into_any_element()
+    LoginForm::new("login", move |login, _, cx| {
+        say(&owner, login.email.to_string(), cx)
+    })
+    .busy(true)
+    .into_any_element()
 }
 
 /// Stops: email, password, its eye, the box; Sign in rests while busy, so a fifth Tab wraps to the email.
@@ -248,12 +251,13 @@ fn sign_up_waits_for_a_name(cx: &mut TestAppContext) {
 
 fn busy_sent(_: &Bench, owner: Entity<Bench>) -> AnyElement {
     let other = owner.clone();
-    MagicLinkForm::new("magic")
-        .sent(true)
-        .busy(true)
-        .on_send(move |address, _, cx| say(&owner, format!("send {address}"), cx))
-        .on_other(move |_, cx| say(&other, "other".into(), cx))
-        .into_any_element()
+    MagicLinkForm::new("magic", move |address, _, cx| {
+        say(&owner, format!("send {address}"), cx)
+    })
+    .sent(true)
+    .busy(true)
+    .on_other(move |_, cx| say(&other, "other".into(), cx))
+    .into_any_element()
 }
 
 /// While a link is on its way Send again rests, so the first stop is Use another email.

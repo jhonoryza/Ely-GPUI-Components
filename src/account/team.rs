@@ -25,11 +25,13 @@ pub struct Role {
     pub description: SharedString,
 }
 
-fn role_named<'a>(roles: &'a [Role], key: &SharedString, owner: &str) -> &'a Role {
-    roles
-        .iter()
-        .find(|role| role.key == *key)
-        .unwrap_or_else(|| panic!("{owner}: no role {key}"))
+/// The role of `key`; none, logged for `owner`, when the roles lost it.
+fn role_named<'a>(roles: &'a [Role], key: &SharedString, owner: &str) -> Option<&'a Role> {
+    let role = roles.iter().find(|role| role.key == *key);
+    if role.is_none() {
+        log::error!("{owner}: no role {key}; none shown");
+    }
+    role
 }
 
 /// A role to pick, each with what it may do beneath its name.
@@ -39,7 +41,7 @@ pub struct RoleSelector {
     roles: Vec<Role>,
     selected: SharedString,
     disabled: bool,
-    on_change: Option<OnKey>,
+    on_change: OnKey,
 }
 
 impl RoleSelector {
@@ -47,6 +49,7 @@ impl RoleSelector {
         id: impl Into<ElementId>,
         roles: impl IntoIterator<Item = Role>,
         selected: impl Into<SharedString>,
+        on_change: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         let (roles, selected): (Vec<_>, SharedString) =
             (roles.into_iter().collect(), selected.into());
@@ -56,7 +59,7 @@ impl RoleSelector {
             roles,
             selected,
             disabled: false,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
     }
 
@@ -64,22 +67,12 @@ impl RoleSelector {
         self.disabled = disabled;
         self
     }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
-    }
 }
 
 impl RenderOnce for RoleSelector {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("role selector {id:?} has no on_change"));
+        let on_change = self.on_change;
         let choices = self
             .roles
             .into_iter()
@@ -113,8 +106,8 @@ pub struct TeamMemberTable {
     id: ElementId,
     members: Vec<Member>,
     roles: Vec<Role>,
-    on_role: Option<OnPair>,
-    on_remove: Option<OnKey>,
+    on_role: OnPair,
+    on_remove: OnKey,
 }
 
 impl TeamMemberTable {
@@ -122,48 +115,26 @@ impl TeamMemberTable {
         id: impl Into<ElementId>,
         members: impl IntoIterator<Item = Member>,
         roles: impl IntoIterator<Item = Role>,
+        on_role: impl Fn(&SharedString, &SharedString, &mut Window, &mut App) + 'static,
+        on_remove: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         let (members, roles): (Vec<Member>, Vec<Role>) =
             (members.into_iter().collect(), roles.into_iter().collect());
-        for member in members.iter().filter(|member| !member.owner) {
-            role_named(&roles, &member.role, "team member table");
-        }
         Self {
             id: id.into(),
             members,
             roles,
-            on_role: None,
-            on_remove: None,
+            on_role: Rc::new(on_role),
+            on_remove: Rc::new(on_remove),
         }
-    }
-
-    /// Runs with a member's key and their new role's.
-    pub fn on_role(
-        mut self,
-        handler: impl Fn(&SharedString, &SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_role = Some(Rc::new(handler));
-        self
-    }
-
-    pub fn on_remove(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_remove = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for TeamMemberTable {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_role = self
-            .on_role
-            .unwrap_or_else(|| panic!("team member table {id:?} has no on_role"));
-        let on_remove = self
-            .on_remove
-            .unwrap_or_else(|| panic!("team member table {id:?} has no on_remove"));
+        let on_role = self.on_role;
+        let on_remove = self.on_remove;
         let theme = cx.theme();
         let rows = self.members.into_iter().enumerate().map(|(ix, member)| {
             let mut avatar = Avatar::new(
@@ -189,8 +160,8 @@ impl RenderOnce for TeamMemberTable {
                         (id.clone(), format!("role-{}", member.key)),
                         self.roles.clone(),
                         member.role.clone(),
-                    )
-                    .on_change(move |role, window, cx| set(&changed, role, window, cx));
+                        move |role, window, cx| set(&changed, role, window, cx),
+                    );
                     let button = ConfirmButton::new(
                         (id.clone(), format!("remove-{}", member.key)),
                         "Remove",
@@ -272,9 +243,9 @@ pub struct InvitationList {
     id: ElementId,
     invitations: Vec<Invitation>,
     roles: Vec<Role>,
-    on_invite: Option<OnPair>,
-    on_resend: Option<OnKey>,
-    on_revoke: Option<OnKey>,
+    on_invite: OnPair,
+    on_resend: OnKey,
+    on_revoke: OnKey,
 }
 
 impl InvitationList {
@@ -282,63 +253,32 @@ impl InvitationList {
         id: impl Into<ElementId>,
         invitations: impl IntoIterator<Item = Invitation>,
         roles: impl IntoIterator<Item = Role>,
+        on_invite: impl Fn(&SharedString, &SharedString, &mut Window, &mut App) + 'static,
+        on_resend: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+        on_revoke: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         let (invitations, roles): (Vec<Invitation>, Vec<Role>) = (
             invitations.into_iter().collect(),
             roles.into_iter().collect(),
         );
         assert!(!roles.is_empty(), "invitation list: no role to invite as");
-        for invitation in &invitations {
-            role_named(&roles, &invitation.role, "invitation list");
-        }
         Self {
             id: id.into(),
             invitations,
             roles,
-            on_invite: None,
-            on_resend: None,
-            on_revoke: None,
+            on_invite: Rc::new(on_invite),
+            on_resend: Rc::new(on_resend),
+            on_revoke: Rc::new(on_revoke),
         }
-    }
-
-    /// Runs with the address and the role's key.
-    pub fn on_invite(
-        mut self,
-        handler: impl Fn(&SharedString, &SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_invite = Some(Rc::new(handler));
-        self
-    }
-
-    pub fn on_resend(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_resend = Some(Rc::new(handler));
-        self
-    }
-
-    pub fn on_revoke(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_revoke = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for InvitationList {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_invite = self
-            .on_invite
-            .unwrap_or_else(|| panic!("invitation list {id:?} has no on_invite"));
-        let on_resend = self
-            .on_resend
-            .unwrap_or_else(|| panic!("invitation list {id:?} has no on_resend"));
-        let on_revoke = self
-            .on_revoke
-            .unwrap_or_else(|| panic!("invitation list {id:?} has no on_revoke"));
+        let on_invite = self.on_invite;
+        let on_resend = self.on_resend;
+        let on_revoke = self.on_revoke;
         let email = field(&id, "email", "name@example.com", false, window, cx);
         let first = self.roles[0].key.clone();
         let role = window.use_keyed_state((id.clone(), "role"), cx, move |_, _| first);
@@ -346,7 +286,8 @@ impl RenderOnce for InvitationList {
             email.read(cx).text().trim().to_string().into(),
             role.read(cx).clone(),
         );
-        let ready = is_email(&address);
+        let offered = self.roles.iter().any(|role| role.key == chosen);
+        let ready = is_email(&address) && offered;
         let clear = email.clone();
         let invite = Rc::new(move |window: &mut Window, cx: &mut App| {
             log::info!("invitation list: invite as {chosen}");
@@ -358,8 +299,7 @@ impl RenderOnce for InvitationList {
         let rows =
             self.invitations.iter().map(|invitation| {
                 let named = role_named(&self.roles, &invitation.role, "invitation list")
-                    .name
-                    .clone();
+                    .map_or_else(|| SharedString::from("No role"), |role| role.name.clone());
                 let [again, gone] = [(); 2].map(|_| invitation.key.clone());
                 let (resend, revoke) = (on_resend.clone(), on_revoke.clone());
                 div()
@@ -448,21 +388,17 @@ impl RenderOnce for InvitationList {
                             .min_w(theme.label_width())
                             .child(EmailInput::new(&email)),
                     )
-                    .child(
-                        div().w(theme.label_width()).child(
-                            RoleSelector::new(
-                                (id.clone(), "invite-role"),
-                                self.roles.clone(),
-                                role.read(cx).clone(),
-                            )
-                            .on_change(move |key, _, cx| {
-                                picked.update(cx, |role, cx| {
-                                    *role = key.clone();
-                                    cx.notify();
-                                })
-                            }),
-                        ),
-                    )
+                    .child(div().w(theme.label_width()).child(RoleSelector::new(
+                        (id.clone(), "invite-role"),
+                        self.roles.clone(),
+                        role.read(cx).clone(),
+                        move |key, _, cx| {
+                            picked.update(cx, |role, cx| {
+                                *role = key.clone();
+                                cx.notify();
+                            })
+                        },
+                    )))
                     .child(
                         Button::new((id.clone(), "invite"), "Invite")
                             .variant(ButtonVariant::Primary)

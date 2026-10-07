@@ -33,20 +33,26 @@ pub struct ApiKeyManager {
     id: ElementId,
     keys: Vec<ApiKey>,
     secret: Option<SharedString>,
-    on_create: Option<OnKey>,
-    on_revoke: Option<OnKey>,
-    on_dismiss: Option<Run>,
+    on_create: OnKey,
+    on_revoke: OnKey,
+    on_dismiss: Run,
 }
 
 impl ApiKeyManager {
-    pub fn new(id: impl Into<ElementId>, keys: impl IntoIterator<Item = ApiKey>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        keys: impl IntoIterator<Item = ApiKey>,
+        on_create: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+        on_revoke: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+        on_dismiss: impl Fn(&mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             keys: keys.into_iter().collect(),
             secret: None,
-            on_create: None,
-            on_revoke: None,
-            on_dismiss: None,
+            on_create: Rc::new(on_create),
+            on_revoke: Rc::new(on_revoke),
+            on_dismiss: Rc::new(on_dismiss),
         }
     }
 
@@ -55,40 +61,13 @@ impl ApiKeyManager {
         self.secret = Some(secret.into());
         self
     }
-
-    /// Runs with the new key's name.
-    pub fn on_create(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_create = Some(Rc::new(handler));
-        self
-    }
-
-    pub fn on_revoke(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_revoke = Some(Rc::new(handler));
-        self
-    }
-
-    /// Runs on Done under a secret; the owner clears it.
-    pub fn on_dismiss(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_dismiss = Some(Rc::new(handler));
-        self
-    }
 }
 
 impl RenderOnce for ApiKeyManager {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_create = self
-            .on_create
-            .unwrap_or_else(|| panic!("api key manager {id:?} has no on_create"));
-        let on_revoke = self
-            .on_revoke
-            .unwrap_or_else(|| panic!("api key manager {id:?} has no on_revoke"));
+        let on_create = self.on_create;
+        let on_revoke = self.on_revoke;
         let name = field(&id, "name", "A name, such as Deploys", false, window, cx);
         let named: SharedString = name.read(cx).text().trim().to_string().into();
         let ready = !named.is_empty();
@@ -102,9 +81,7 @@ impl RenderOnce for ApiKeyManager {
         let theme = cx.theme();
         let mono = theme.mono_family.clone();
         let secret = self.secret.map(|secret| {
-            let dismiss = self.on_dismiss.clone().unwrap_or_else(|| {
-                panic!("api key manager {id:?} shows a secret with no on_dismiss")
-            });
+            let dismiss = self.on_dismiss.clone();
             Callout::new(Severity::Warning)
                 .title("Copy this key now. It will not show again.")
                 .child(

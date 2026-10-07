@@ -33,12 +33,16 @@ pub struct Session {
 pub struct SessionList {
     id: ElementId,
     sessions: Vec<Session>,
-    on_sign_out: Option<OnKey>,
+    on_sign_out: OnKey,
     on_sign_out_others: Option<Run>,
 }
 
 impl SessionList {
-    pub fn new(id: impl Into<ElementId>, sessions: impl IntoIterator<Item = Session>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        sessions: impl IntoIterator<Item = Session>,
+        on_sign_out: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
         let mut sessions: Vec<_> = sessions.into_iter().collect();
         assert!(
             sessions.iter().filter(|session| session.current).count() <= 1,
@@ -48,17 +52,9 @@ impl SessionList {
         Self {
             id: id.into(),
             sessions,
-            on_sign_out: None,
+            on_sign_out: Rc::new(on_sign_out),
             on_sign_out_others: None,
         }
-    }
-
-    pub fn on_sign_out(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_sign_out = Some(Rc::new(handler));
-        self
     }
 
     /// Shows "Sign out of all other devices" while there are others.
@@ -71,9 +67,7 @@ impl SessionList {
 impl RenderOnce for SessionList {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_sign_out = self
-            .on_sign_out
-            .unwrap_or_else(|| panic!("session list {id:?} has no on_sign_out"));
+        let on_sign_out = self.on_sign_out;
         let others = self.sessions.iter().any(|session| !session.current);
         let theme = cx.theme();
         let rows = self.sessions.into_iter().enumerate().map(|(ix, session)| {

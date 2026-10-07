@@ -212,30 +212,27 @@ fn savable(edited: &Profile, seed: &Profile) -> bool {
 pub struct ProfileEditor {
     id: ElementId,
     profile: Profile,
-    on_save: Option<OnProfile>,
+    on_save: OnProfile,
 }
 
 impl ProfileEditor {
-    pub fn new(id: impl Into<ElementId>, profile: Profile) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        profile: Profile,
+        on_save: impl Fn(&Profile, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             profile,
-            on_save: None,
+            on_save: Rc::new(on_save),
         }
-    }
-
-    pub fn on_save(mut self, handler: impl Fn(&Profile, &mut Window, &mut App) + 'static) -> Self {
-        self.on_save = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for ProfileEditor {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let (id, profile) = (self.id, self.profile);
-        let on_save = self
-            .on_save
-            .unwrap_or_else(|| panic!("profile editor {id:?} has no on_save"));
+        let on_save = self.on_save;
         let fields = window.use_keyed_state((id.clone(), "fields"), cx, |window, cx| {
             Fields::filled(&profile, window, cx)
         });

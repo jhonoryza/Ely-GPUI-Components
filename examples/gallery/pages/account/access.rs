@@ -73,23 +73,20 @@ pub fn switchers(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
             .gap_6()
             .child(
                 div().w(px(260.)).flex().flex_col().gap_2().child(
-                    WorkspaceSwitcher::new("account-workspaces", workspaces, workspace)
-                        .on_select(move |key, _, cx| change(&to_workspace, cx, |places| places.workspace = key.clone()))
+                    WorkspaceSwitcher::new("account-workspaces", workspaces, workspace, move |key, _, cx| change(&to_workspace, cx, |places| places.workspace = key.clone()))
                         .on_create(|_, _| log::info!("gallery: create workspace")),
                 )
                 .child(
-                    AccountSwitcher::new("account-accounts", accounts, account)
-                        .on_select(move |key, _, cx| change(&to_account, cx, |places| places.account = key.clone()))
+                    AccountSwitcher::new("account-accounts", accounts, account, move |key, _, cx| change(&to_account, cx, |places| places.account = key.clone()))
                         .on_add(|_, _| log::info!("gallery: add account")),
                 ),
             )
             .child(probe(
                 "account-user",
-                UserMenu::new("account-user", "Ada Lovelace", "ada@atlas.dev")
+                UserMenu::new("account-user", "Ada Lovelace", "ada@atlas.dev", |_, _| log::info!("gallery: sign out"))
                     .presence(Presence::Online)
                     .item(MenuItem::new("Profile").icon(IconName::User).on_click(|_, _| log::info!("gallery: profile")))
-                    .item(MenuItem::new("Settings").icon(IconName::Settings).on_click(|_, _| log::info!("gallery: settings")))
-                    .on_sign_out(|_, _| log::info!("gallery: sign out")),
+                    .item(MenuItem::new("Settings").icon(IconName::Settings).on_click(|_, _| log::info!("gallery: settings"))),
             )),
     )
 }
@@ -133,7 +130,7 @@ pub fn profile(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                         .action(Button::new("account-card-profile", "View profile")),
                 ),
             )
-            .child(div().w(px(400.)).child(ProfileEditor::new("account-editor", now).on_save(move |profile, _, cx| {
+            .child(div().w(px(400.)).child(ProfileEditor::new("account-editor", now, move |profile, _, cx| {
                 let profile = profile.clone();
                 change(&saved, cx, move |now| *now = profile)
             }))),
@@ -215,8 +212,10 @@ pub fn security_page(window: &mut Window, cx: &mut App) -> impl IntoElement + us
     let now = state.read(cx);
     let (sessions, keys, secret) = (now.sessions.clone(), now.keys.clone(), now.secret.clone());
     let [out, others, made, revoked, done] = [(); 5].map(|_| state.clone());
-    let mut manager = ApiKeyManager::new("account-keys", keys)
-        .on_create(move |name, _, cx| {
+    let mut manager = ApiKeyManager::new(
+        "account-keys",
+        keys,
+        move |name, _, cx| {
             let name = name.clone();
             change(&made, cx, move |security| {
                 security.made += 1;
@@ -233,14 +232,15 @@ pub fn security_page(window: &mut Window, cx: &mut App) -> impl IntoElement + us
                 );
                 security.secret = Some("ely_live_5f1c0a9e2b7d4c8a3e6f7d3e".into());
             })
-        })
-        .on_revoke(move |key, _, cx| {
+        },
+        move |key, _, cx| {
             let key = key.clone();
             change(&revoked, cx, move |security| {
                 security.keys.retain(|each| each.key != key)
             })
-        })
-        .on_dismiss(move |_, cx| change(&done, cx, |security| security.secret = None));
+        },
+        move |_, cx| change(&done, cx, |security| security.secret = None),
+    );
     if let Some(secret) = secret {
         manager = manager.secret(secret);
     }
@@ -256,8 +256,7 @@ pub fn security_page(window: &mut Window, cx: &mut App) -> impl IntoElement + us
             .items_start()
             .gap_8()
             .child(div().w(px(380.)).child(
-                SessionList::new("account-sessions", sessions)
-                    .on_sign_out(move |key, _, cx| {
+                SessionList::new("account-sessions", sessions, move |key, _, cx| {
                         let key = key.clone();
                         change(&out, cx, move |security| security.sessions.retain(|each| each.key != key))
                     })

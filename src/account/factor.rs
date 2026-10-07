@@ -24,17 +24,20 @@ pub struct TwoFactorInput {
     id: ElementId,
     failed: usize,
     busy: bool,
-    on_code: Option<OnText>,
+    on_code: OnText,
     on_recovery: Option<Run>,
 }
 
 impl TwoFactorInput {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on_code: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             failed: 0,
             busy: false,
-            on_code: None,
+            on_code: Rc::new(on_code),
             on_recovery: None,
         }
     }
@@ -51,14 +54,6 @@ impl TwoFactorInput {
         self
     }
 
-    pub fn on_code(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_code = Some(Rc::new(handler));
-        self
-    }
-
     /// Shows "Use a recovery code".
     pub fn on_recovery(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
         self.on_recovery = Some(Rc::new(handler));
@@ -69,9 +64,7 @@ impl TwoFactorInput {
 impl RenderOnce for TwoFactorInput {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_code = self
-            .on_code
-            .unwrap_or_else(|| panic!("two-factor input {id:?} has no on_code"));
+        let on_code = self.on_code;
         let theme = cx.theme();
         let note = match (self.busy, self.failed) {
             (true, _) => Some(

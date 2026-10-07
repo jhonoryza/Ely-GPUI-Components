@@ -30,19 +30,18 @@ pub fn sign_in(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             ("google", "Google"),
             ("apple", "Apple"),
         ],
-    )
-    .on_pick(move |key, _, cx| change(&picked, cx, |state| state.provider = Some(key.clone())));
+        move |key, _, cx| change(&picked, cx, |state| state.provider = Some(key.clone())),
+    );
     if let Some(provider) = provider {
         providers = providers.busy(provider);
     }
-    let mut form = LoginForm::new("account-login")
-        .on_submit(move |_, _, cx| {
-            change(&tried, cx, |state| {
-                state.error = Some("No account uses that email and password.".into())
-            })
+    let mut form = LoginForm::new("account-login", move |_, _, cx| {
+        change(&tried, cx, |state| {
+            state.error = Some("No account uses that email and password.".into())
         })
-        .on_forgot(|_, _| log::info!("gallery: forgot password"))
-        .on_sign_up(|_, _| log::info!("gallery: sign up"));
+    })
+    .on_forgot(|_, _| log::info!("gallery: forgot password"))
+    .on_sign_up(|_, _| log::info!("gallery: sign up"));
     if let Some(error) = error {
         form = form.error(error);
     }
@@ -71,13 +70,12 @@ pub fn sign_up(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
     let state = keep("account-sign-up", SignUp::default, window, cx);
     let error = state.read(cx).error.clone();
     let tried = state.clone();
-    let mut form = SignupForm::new("account-signup")
-        .terms("I agree to the terms of service")
-        .on_submit(move |signup, _, cx| {
-            let taken = format!("An account already uses {}.", signup.email);
-            change(&tried, cx, |state| state.error = Some(taken.into()))
-        })
-        .on_sign_in(|_, _| log::info!("gallery: sign in"));
+    let mut form = SignupForm::new("account-signup", move |signup, _, cx| {
+        let taken = format!("An account already uses {}.", signup.email);
+        change(&tried, cx, |state| state.error = Some(taken.into()))
+    })
+    .terms("I agree to the terms of service")
+    .on_sign_in(|_, _| log::info!("gallery: sign in"));
     if let Some(error) = error {
         form = form.error(error);
     }
@@ -115,9 +113,8 @@ pub fn by_email(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 "account-magic",
                 div().w(px(360.)).child(
                     Card::new().header(CardHeader::new("Sign in by email")).child(
-                        MagicLinkForm::new("account-magic")
+                        MagicLinkForm::new("account-magic", move |_, _, cx| change(&sent, cx, |state| state.magic = true))
                             .sent(magic)
-                            .on_send(move |_, _, cx| change(&sent, cx, |state| state.magic = true))
                             .on_other(move |_, cx| change(&other, cx, |state| state.magic = false)),
                     ),
                 ),
@@ -125,9 +122,8 @@ pub fn by_email(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .child(
                 div().w(px(360.)).child(
                     Card::new().header(CardHeader::new("Reset your password")).child(
-                        ForgotPassword::new("account-forgot")
+                        ForgotPassword::new("account-forgot", move |_, _, cx| change(&asked, cx, |state| state.reset = true))
                             .sent(reset)
-                            .on_send(move |_, _, cx| change(&asked, cx, |state| state.reset = true))
                             .on_back(move |_, cx| change(&back, cx, |state| state.reset = false)),
                     ),
                 ),
@@ -161,14 +157,13 @@ pub fn second_factor(window: &mut Window, cx: &mut App) -> impl IntoElement + us
             Card::new()
                 .header(CardHeader::new("Two-step sign-in"))
                 .child(
-                    TwoFactorInput::new("account-factor")
-                        .failed(failed)
-                        .on_code(move |code, _, cx| {
+                    TwoFactorInput::new("account-factor", move |code, _, cx| {
                             change(&checked, cx, |state| match code.as_ref() == CODE {
                                 true => state.passed = true,
                                 false => state.failed += 1,
                             })
                         })
+                        .failed(failed)
                         .on_recovery(|_, _| log::info!("gallery: recovery code")),
                 )
                 .children(passed.then(|| InlineMessage::new(Severity::Success, "Signed in."))),

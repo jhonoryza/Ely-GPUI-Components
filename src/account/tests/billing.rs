@@ -51,23 +51,22 @@ fn a_plan_cancels_on_the_second_press_and_comes_back(cx: &mut TestAppContext) {
 }
 
 fn card(_: &Bench, owner: Entity<Bench>) -> AnyElement {
-    PaymentMethodForm::new("card")
-        .on_submit(move |card, _, cx| {
-            say(
-                &owner,
-                format!(
-                    "{} {} {}/{} {} {}",
-                    card.brand.name(),
-                    card.number,
-                    card.month,
-                    card.year,
-                    card.cvc,
-                    card.name
-                ),
-                cx,
-            )
-        })
-        .into_any_element()
+    PaymentMethodForm::new("card", move |card, _, cx| {
+        say(
+            &owner,
+            format!(
+                "{} {} {}/{} {} {}",
+                card.brand.name(),
+                card.number,
+                card.month,
+                card.year,
+                card.cvc,
+                card.name
+            ),
+            cx,
+        )
+    })
+    .into_any_element()
 }
 
 /// Stops: number, expiry, code, name, then Save once the card reads.
@@ -116,11 +115,15 @@ fn invites(_: &Bench, owner: Entity<Bench>) -> AnyElement {
         expired: false,
     };
     let [invited, again, gone] = [(); 3].map(|_| owner.clone());
-    InvitationList::new("invites", [sent], roles())
-        .on_invite(move |email, role, _, cx| say(&invited, format!("invite {email} {role}"), cx))
-        .on_resend(move |key, _, cx| say(&again, format!("resend {key}"), cx))
-        .on_revoke(move |key, _, cx| say(&gone, format!("revoke {key}"), cx))
-        .into_any_element()
+    InvitationList::new(
+        "invites",
+        [sent],
+        roles(),
+        move |email, role, _, cx| say(&invited, format!("invite {email} {role}"), cx),
+        move |key, _, cx| say(&again, format!("resend {key}"), cx),
+        move |key, _, cx| say(&gone, format!("revoke {key}"), cx),
+    )
+    .into_any_element()
 }
 
 /// Stops: the address, the role, then Resend and Revoke while Invite rests.
@@ -149,10 +152,14 @@ fn team(_: &Bench, owner: Entity<Bench>) -> AnyElement {
         owner,
     };
     let removed = owner.clone();
-    TeamMemberTable::new("team", [member("ada", true), member("bo", false)], roles())
-        .on_role(move |key, role, _, cx| say(&owner, format!("{key} {role}"), cx))
-        .on_remove(move |key, _, cx| say(&removed, format!("remove {key}"), cx))
-        .into_any_element()
+    TeamMemberTable::new(
+        "team",
+        [member("ada", true), member("bo", false)],
+        roles(),
+        move |key, role, _, cx| say(&owner, format!("{key} {role}"), cx),
+        move |key, _, cx| say(&removed, format!("remove {key}"), cx),
+    )
+    .into_any_element()
 }
 
 /// Stops: bo's role, then bo's Remove; the owner has neither.
@@ -167,11 +174,12 @@ fn a_member_leaves_on_the_second_press_and_the_owner_stays(cx: &mut TestAppConte
 
 fn wall(_: &Bench, owner: Entity<Bench>) -> AnyElement {
     let later = owner.clone();
-    UpgradePrompt::new("wall", "Unlock history")
-        .benefit("Every message, kept")
-        .on_upgrade(move |_, cx| say(&owner, "upgrade".into(), cx))
-        .on_dismiss(move |_, cx| say(&later, "later".into(), cx))
-        .into_any_element()
+    UpgradePrompt::new("wall", "Unlock history", move |_, cx| {
+        say(&owner, "upgrade".into(), cx)
+    })
+    .benefit("Every message, kept")
+    .on_dismiss(move |_, cx| say(&later, "later".into(), cx))
+    .into_any_element()
 }
 
 /// Stops: Upgrade, then Not now.
@@ -186,10 +194,11 @@ fn a_paywall_upgrades_or_waits(cx: &mut TestAppContext) {
 }
 
 fn busy_card(_: &Bench, owner: Entity<Bench>) -> AnyElement {
-    PaymentMethodForm::new("card")
-        .busy(true)
-        .on_submit(move |card, _, cx| say(&owner, card.number.to_string(), cx))
-        .into_any_element()
+    PaymentMethodForm::new("card", move |card, _, cx| {
+        say(&owner, card.number.to_string(), cx)
+    })
+    .busy(true)
+    .into_any_element()
 }
 
 /// Stops: number, expiry, code, name; Save rests while the owner checks the card.
@@ -354,9 +363,10 @@ fn a_quota_past_its_limit_draws_full(cx: &mut TestAppContext) {
 }
 
 fn line(_: &Bench, owner: Entity<Bench>) -> AnyElement {
-    UpgradePrompt::new("line", "Unlock history")
-        .on_upgrade(move |_, cx| say(&owner, "upgrade".into(), cx))
-        .into_any_element()
+    UpgradePrompt::new("line", "Unlock history", move |_, cx| {
+        say(&owner, "upgrade".into(), cx)
+    })
+    .into_any_element()
 }
 
 /// With benefits the prompt is a paywall that lists them.
@@ -371,4 +381,108 @@ fn a_paywall_lists_its_benefits(cx: &mut TestAppContext) {
 fn a_prompt_without_benefits_stands_as_a_line(cx: &mut TestAppContext) {
     let (_, cx) = bench(line, cx);
     assert!(cx.debug_bounds("paywall-benefits").is_none());
+}
+
+/// Accounts, workspaces, a provider and roles that left their lists.
+fn departed(_: &Bench, _: Entity<Bench>) -> AnyElement {
+    let account = crate::account::Account {
+        key: "ada".into(),
+        name: "Ada".into(),
+        email: "ada@work.com".into(),
+        image: None,
+    };
+    let space = crate::account::Workspace {
+        key: "north".into(),
+        name: "North".into(),
+        detail: "Pro".into(),
+    };
+    let invitation = Invitation {
+        key: "bo".into(),
+        email: "bo@example.com".into(),
+        role: "gone".into(),
+        sent: "Sent 2 days ago".into(),
+        expired: false,
+    };
+    let member = Member {
+        key: "bo".into(),
+        name: "Bo".into(),
+        email: "bo@example.com".into(),
+        role: "gone".into(),
+        seen: "Active today".into(),
+        image: None,
+        owner: false,
+    };
+    div()
+        .w(px(360.0))
+        .child(crate::account::AccountSwitcher::new(
+            "accounts",
+            [account],
+            "gone",
+            |_, _, _| {},
+        ))
+        .child(crate::account::WorkspaceSwitcher::new(
+            "spaces",
+            [space],
+            "gone",
+            |_, _, _| {},
+        ))
+        .child(
+            crate::account::OAuthButtons::new("oauth", [("github", "GitHub")], |_, _, _| {})
+                .busy("gone"),
+        )
+        .child(InvitationList::new(
+            "invites",
+            [invitation],
+            roles(),
+            |_, _, _, _| {},
+            |_, _, _| {},
+            |_, _, _| {},
+        ))
+        .child(TeamMemberTable::new(
+            "team",
+            [member],
+            roles(),
+            |_, _, _, _| {},
+            |_, _, _| {},
+        ))
+        .into_any_element()
+}
+
+#[gpui::test]
+fn accounts_workspaces_and_roles_that_left_draw(cx: &mut TestAppContext) {
+    let (_, cx) = bench(departed, cx);
+    settle(cx);
+}
+
+/// Invitations whose first role leaves once the bench says sent.
+fn departing_role(state: &Bench, owner: Entity<Bench>) -> AnyElement {
+    let offered: Vec<Role> = roles()
+        .into_iter()
+        .filter(|role| !state.sent || role.key != "member")
+        .collect();
+    InvitationList::new(
+        "invites",
+        [],
+        offered,
+        move |email, role, _, cx| say(&owner, format!("invite {email} {role}"), cx),
+        |_, _, _| {},
+        |_, _, _| {},
+    )
+    .into_any_element()
+}
+
+#[gpui::test]
+fn an_invitation_as_a_role_that_left_sends_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = bench(departing_role, cx);
+    tab(1, cx);
+    write("cy@example.com", cx);
+    host.update(cx, |state, cx| {
+        state.sent = true;
+        cx.notify();
+    });
+    settle(cx);
+    tap("enter", cx);
+    tab(3, cx);
+    tap("space", cx);
+    assert_eq!(said(&host, cx), Vec::<String>::new());
 }
