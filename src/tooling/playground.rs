@@ -86,12 +86,12 @@ impl Settings {
         }
     }
 
+    /// Sets the knob named `name`; a knob painted before the owner's knobs changed sets nothing.
     fn set(&mut self, name: &str, setting: Setting) {
-        let slot = self
-            .0
-            .iter_mut()
-            .find(|(each, _)| each.as_ref() == name)
-            .unwrap_or_else(|| panic!("playground: no knob named {name}"));
+        let Some(slot) = self.0.iter_mut().find(|(each, _)| each.as_ref() == name) else {
+            log::error!("playground: no knob named {name} now; {setting:?} is dropped");
+            return;
+        };
         log::info!("playground: {name} is {setting:?}");
         slot.1 = setting;
     }
@@ -280,6 +280,9 @@ mod tests {
         assert_eq!(settings.picked("size").as_ref(), "Md");
         settings.set("share", Setting::Number(0.7));
         assert_eq!(settings.number("share"), 0.7);
+        let before = settings.clone();
+        settings.set("gone", Setting::On(true));
+        assert_eq!(settings, before, "a knob no longer there sets nothing");
     }
 
     #[test]
