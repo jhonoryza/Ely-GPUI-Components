@@ -14,7 +14,7 @@ use crate::{
     typography::Ellipsis,
 };
 
-/// A commit as lists show it: id, parents first-parent first, subject, author, when, and the refs on it.
+/// A commit as lists show it; first parent first.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Commit {
     pub id: SharedString,
@@ -27,7 +27,7 @@ pub struct Commit {
 
 type OnPick = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
-/// One commit in a row: its author's initials, its subject and the refs on it, its short id, and when.
+/// One commit in a row: author, subject, refs, id, when.
 #[derive(IntoElement)]
 pub struct CommitItem {
     id: ElementId,
@@ -67,10 +67,15 @@ impl RenderOnce for CommitItem {
         let commit = self.commit;
         let short: String = commit.id.chars().take(7).collect();
         let (pick, picked) = (self.on_pick, commit.id.clone());
+        // Refs are tags drawn only; the name carries them.
+        let spoken: SharedString = match commit.refs.is_empty() {
+            true => commit.subject.clone(),
+            false => format!("{} ({})", commit.subject, commit.refs.join(", ")).into(),
+        };
         div()
             .id(self.id.clone())
             .role(Role::ListItem)
-            .aria_label(commit.subject.clone())
+            .aria_label(spoken)
             .aria_selected(self.selected)
             .tab_index(0)
             .focus_ring(cx)
@@ -185,7 +190,7 @@ impl CommitList {
 /// Rows from the end that ask for more.
 const NEAR_END: usize = 20;
 
-/// Paints one row's lanes, `span` lanes wide so every row lines up: strokes into and out of its commit, lanes passing it, and the commit's dot.
+/// Paints one row's lanes, `span` wide so rows line up.
 fn lanes_cell(
     row: GraphRow,
     span: usize,

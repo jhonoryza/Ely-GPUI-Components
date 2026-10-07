@@ -1,6 +1,6 @@
 use gpui::{
     AnyElement, App, ElementId, FontWeight, InteractiveElement, IntoElement, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
 use crate::{
@@ -9,10 +9,11 @@ use crate::{
     theme::{ActiveTheme, ControlSize, TextSize},
 };
 
-/// Labels and their values, one pair a row with the labels in a quiet column, or stacked with each label above its value. A value short of room drops under its label.
+/// Labels and their values, side by side or stacked.
 #[derive(IntoElement, Default)]
 pub struct DescriptionList {
-    items: Vec<(SharedString, AnyElement)>,
+    /// Label, value, and the value as words when text.
+    items: Vec<(SharedString, AnyElement, Option<SharedString>)>,
     stacked: bool,
     lined: bool,
 }
@@ -22,9 +23,18 @@ impl DescriptionList {
         Self::default()
     }
 
-    /// A label, and its value: text, or any element such as a badge.
+    /// A label and its value, any element.
     pub fn item(mut self, label: impl Into<SharedString>, value: impl IntoElement) -> Self {
-        self.items.push((label.into(), value.into_any_element()));
+        self.items
+            .push((label.into(), value.into_any_element(), None));
+        self
+    }
+
+    /// A label and its text, both spoken.
+    pub fn text(mut self, label: impl Into<SharedString>, value: impl Into<SharedString>) -> Self {
+        let value = value.into();
+        self.items
+            .push((label.into(), value.clone().into_any_element(), Some(value)));
         self
     }
 
@@ -54,9 +64,16 @@ impl RenderOnce for DescriptionList {
                 self.items
                     .into_iter()
                     .enumerate()
-                    .map(|(ix, (label, value))| {
+                    .map(|(ix, (label, value, spoken))| {
+                        let said =
+                            spoken.map(|spoken| SharedString::from(format!("{label}: {spoken}")));
                         let label = div().text_color(colors.fg_muted).child(label);
                         div()
+                            .id(ElementId::Name(
+                                said.clone()
+                                    .unwrap_or_else(|| format!("description-{ix}").into()),
+                            ))
+                            .when_some(said, |row, said| row.role(Role::Label).aria_label(said))
                             .flex()
                             .when(stacked, |row| row.flex_col().gap_0p5())
                             .when(!stacked, |row| {
@@ -114,7 +131,7 @@ impl PropertyGroup {
     }
 }
 
-/// An inspector's table: groups that fold, each row a name and its editor. The owner supplies the editors and keeps the values.
+/// An inspector's table of folding groups of named editors.
 #[derive(IntoElement)]
 pub struct PropertyGrid {
     id: ElementId,

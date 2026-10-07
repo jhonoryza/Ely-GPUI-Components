@@ -16,7 +16,7 @@ use crate::{
     typography::{Ellipsis, tabular},
 };
 
-/// A changed file: its path, its status, and the lines it added and removed.
+/// A changed file: path, status, and lines changed.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Changed {
     pub path: SharedString,
@@ -37,7 +37,7 @@ pub enum ChangeAction {
 type OnAction = Rc<dyn Fn(&SharedString, ChangeSection, ChangeAction, &mut Window, &mut App)>;
 type OnAll = Rc<dyn Fn(bool, &mut Window, &mut App)>;
 
-/// Which part of the work tree a file is listed in.
+/// The part of the work tree listing a file.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ChangeSection {
     Conflicted,
@@ -59,7 +59,7 @@ impl ChangeSection {
     }
 }
 
-/// Files changed in the work tree, kept apart as conflicted, staged, changed, untracked and ignored: each with its status, its folder and what it changed; open, discard, stage or unstage it, or all at once.
+/// Work tree files in five sections, each with its actions.
 #[derive(IntoElement)]
 pub struct ChangesList {
     id: ElementId,
@@ -98,7 +98,7 @@ impl ChangesList {
         self
     }
 
-    /// Files Git does not track yet; staged or discarded one by one.
+    /// Untracked files, staged one by one.
     pub fn untracked(mut self, files: impl IntoIterator<Item = Changed>) -> Self {
         self.untracked = files.into_iter().collect();
         self
@@ -124,7 +124,7 @@ impl ChangesList {
         self
     }
 
-    /// Called with true to stage every change, false to unstage every staged one.
+    /// True stages every change; false unstages every staged one.
     pub fn on_all(mut self, handler: impl Fn(bool, &mut Window, &mut App) + 'static) -> Self {
         self.on_all = Some(Rc::new(handler));
         self
@@ -330,12 +330,12 @@ impl RenderOnce for ChangesList {
     }
 }
 
-/// Characters a subject reads well within, and the most it should take.
+/// A subject's comfortable length, and its most.
 const SUBJECT: (usize, usize) = (50, 72);
 
 type Run = Rc<dyn Fn(&mut Window, &mut App)>;
 
-/// A commit message: its subject counted against fifty, a body, and the commit button, which waits for a subject and something staged. Cmd-Enter commits; amend takes the last commit's place.
+/// A commit message, its counted subject, body, and button.
 #[derive(IntoElement)]
 pub struct CommitInput {
     id: ElementId,

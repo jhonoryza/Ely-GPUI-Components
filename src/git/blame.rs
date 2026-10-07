@@ -14,7 +14,7 @@ use crate::{
     typography::{Ellipsis, LEADING},
 };
 
-/// Who last changed lines: the commit, its author, when and its subject, and its age from 0, newest, to 1, oldest.
+/// Who last changed lines; age 0 newest, 1 oldest.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Blame {
     pub commit: SharedString,
@@ -24,7 +24,7 @@ pub struct Blame {
     pub age: f32,
 }
 
-/// Consecutive lines from one change, as the change's index and the lines.
+/// Consecutive lines from one change, with that change's index.
 pub(crate) fn runs(owners: &[Option<usize>]) -> Vec<(Option<usize>, Range<usize>)> {
     let mut out: Vec<(Option<usize>, Range<usize>)> = Vec::new();
     for (line, owner) in owners.iter().enumerate() {
@@ -36,7 +36,7 @@ pub(crate) fn runs(owners: &[Option<usize>]) -> Vec<(Option<usize>, Range<usize>
     out
 }
 
-/// Who last changed a line, set after its code in quiet words: the author, when, and the subject.
+/// Who last changed a line, quietly after its code.
 #[derive(IntoElement)]
 pub struct GitBlameAnnotation {
     blame: Blame,
@@ -65,7 +65,7 @@ impl RenderOnce for GitBlameAnnotation {
 
 type OnCommit = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
-/// Code with who last changed each run of lines beside it: author, when and subject on a run's first line, a bar that fades with age. The current line shows its annotation; a press on a run picks its commit.
+/// Code beside each run's last author; a press picks it.
 #[derive(IntoElement)]
 pub struct BlameView {
     id: ElementId,
@@ -77,7 +77,7 @@ pub struct BlameView {
 }
 
 impl BlameView {
-    /// `owners` holds, for each line of `code`, its entry in `blames`.
+    /// `owners`: each line's entry in `blames`.
     pub fn new(
         id: impl Into<ElementId>,
         code: impl Into<SharedString>,
