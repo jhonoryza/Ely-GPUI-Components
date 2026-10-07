@@ -52,7 +52,7 @@ impl RenderOnce for ButtonGroup {
     }
 }
 
-/// One choice in a toggle: a label, an icon, or both.
+/// A toggle choice: a label, an icon, or both.
 #[derive(Clone)]
 pub struct ToggleItem {
     value: SharedString,
@@ -215,7 +215,7 @@ impl RenderOnce for ToggleButton {
 
 type OnChange = Rc<dyn Fn(&[SharedString], &mut Window, &mut App)>;
 
-/// Toggles side by side, wrapping onto more lines when narrow. One is chosen, or several with `multiple`.
+/// Wrapping toggles; one chosen, or several with `multiple`.
 #[derive(IntoElement)]
 pub struct ToggleGroup {
     id: ElementId,
