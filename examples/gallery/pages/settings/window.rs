@@ -259,14 +259,13 @@ pub fn settings(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .flex()
             .flex_col()
             .gap_6()
-            .child(div().w(px(360.)).child(SettingsSearch::new("settings-search", entries, &search).on_pick(
+            .child(div().w(px(360.)).child(SettingsSearch::new("settings-search", entries, &search, 
                 move |key, _, cx| change(&found, cx, |prefs| prefs.section = home(key).into()),
             )))
             .child(probe(
                 "settings-layout",
                 div().w(px(880.)).child(
-                    SettingsLayout::new("settings-layout", SECTIONS, selected)
-                        .on_select(move |key, _, cx| change(&picked, cx, |prefs| prefs.section = key.clone()))
+                    SettingsLayout::new("settings-layout", SECTIONS, selected, move |key, _, cx| change(&picked, cx, |prefs| prefs.section = key.clone()))
                         .page(page),
                 ),
             )),

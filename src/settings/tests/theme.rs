@@ -14,18 +14,17 @@ use crate::{
 };
 
 fn editor(_: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
-    ThemeEditor::new("editor", ThemeDraft::of(cx.theme()))
-        .on_change(move |draft, _, cx| {
-            say(
-                &owner,
-                format!(
-                    "{:?} contrast {} still {}",
-                    draft.density, draft.high_contrast, draft.reduced_motion
-                ),
-                cx,
-            )
-        })
-        .into_any_element()
+    ThemeEditor::new("editor", ThemeDraft::of(cx.theme()), move |draft, _, cx| {
+        say(
+            &owner,
+            format!(
+                "{:?} contrast {} still {}",
+                draft.density, draft.high_contrast, draft.reduced_motion
+            ),
+            cx,
+        )
+    })
+    .into_any_element()
 }
 
 /// Stops: the three densities, corners, text size, high contrast, reduced motion, then the colors. A switch hands on a draft with its own flag turned and the rest as it stood.
@@ -47,12 +46,11 @@ fn a_switch_turns_its_own_flag(cx: &mut TestAppContext) {
 }
 
 fn colors(_: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
-    ThemeEditor::new("editor", ThemeDraft::of(cx.theme()))
-        .on_change(move |draft, _, cx| {
-            let background = gpui::Rgba::from(draft.colors.bg);
-            say(&owner, crate::forms::hex(background), cx)
-        })
-        .into_any_element()
+    ThemeEditor::new("editor", ThemeDraft::of(cx.theme()), move |draft, _, cx| {
+        let background = gpui::Rgba::from(draft.colors.bg);
+        say(&owner, crate::forms::hex(background), cx)
+    })
+    .into_any_element()
 }
 
 /// The first color is the eighth stop; Enter opens its picker, where the hex field follows the eyedropper, a stop on macOS alone, and takes a new background.
@@ -71,15 +69,14 @@ fn a_color_well_sets_its_own_color(cx: &mut TestAppContext) {
 }
 
 fn look(_: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
-    ThemeEditor::new("editor", ThemeDraft::of(cx.theme()))
-        .on_change(move |draft, _, cx| {
-            let words = format!(
-                "{:?} corners {} text {}",
-                draft.density, draft.radius_scale, draft.font_scale
-            );
-            say(&owner, words, cx)
-        })
-        .into_any_element()
+    ThemeEditor::new("editor", ThemeDraft::of(cx.theme()), move |draft, _, cx| {
+        let words = format!(
+            "{:?} corners {} text {}",
+            draft.density, draft.radius_scale, draft.font_scale
+        );
+        say(&owner, words, cx)
+    })
+    .into_any_element()
 }
 
 /// Stops: Compact, Standard, Comfortable, corners, text size. Compact picks the density alone, and Right on each slider moves its own measure a step.
@@ -157,9 +154,10 @@ fn the_thumb_covers_the_chosen_segment(cx: &mut TestAppContext) {
 }
 
 fn syntax(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
-    SyntaxThemePicker::new("syntax", syntax_themes(), "Ely")
-        .on_change(move |name, _, cx| say(&owner, name.to_string(), cx))
-        .into_any_element()
+    SyntaxThemePicker::new("syntax", syntax_themes(), "Ely", move |name, _, cx| {
+        say(&owner, name.to_string(), cx)
+    })
+    .into_any_element()
 }
 
 /// Stops: a card for each code palette; Space on the third picks Paper.

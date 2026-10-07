@@ -21,7 +21,7 @@ pub fn importing(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
         specimens()
             .child(specimen(
                 "ThemeImporter",
-                div().w(px(360.)).child(ThemeImporter::new("theme-importer").on_apply(|read, _, cx| {
+                div().w(px(360.)).child(ThemeImporter::new("theme-importer", |read, _, cx| {
                     Theme::set_palette(read.mode, Some(read.colors.clone()), cx);
                     Theme::set_mode(read.mode, cx);
                 })),
@@ -29,7 +29,7 @@ pub fn importing(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> 
             ))
             .child(specimen(
                 "SyntaxThemePicker",
-                div().w(px(360.)).child(SyntaxThemePicker::new("theme-syntax", syntax_themes(), name).on_change(
+                div().w(px(360.)).child(SyntaxThemePicker::new("theme-syntax", syntax_themes(), name, 
                     move |picked, _, cx| {
                         let theme = syntax_themes()
                             .into_iter()

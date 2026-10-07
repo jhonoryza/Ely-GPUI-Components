@@ -57,7 +57,7 @@ pub struct SyntaxThemePicker {
     id: ElementId,
     themes: Vec<SyntaxTheme>,
     selected: SharedString,
-    on_change: Option<OnName>,
+    on_change: OnName,
 }
 
 impl SyntaxThemePicker {
@@ -66,36 +66,26 @@ impl SyntaxThemePicker {
         id: impl Into<ElementId>,
         themes: impl IntoIterator<Item = SyntaxTheme>,
         selected: impl Into<SharedString>,
+        on_change: impl Fn(&'static str, &mut Window, &mut App) + 'static,
     ) -> Self {
         let themes: Vec<SyntaxTheme> = themes.into_iter().collect();
         let selected = selected.into();
-        assert!(
-            themes.iter().any(|theme| theme.name == selected.as_ref()),
-            "syntax theme picker: no theme {selected}"
-        );
+        if !themes.iter().any(|theme| theme.name == selected.as_ref()) {
+            log::error!("syntax theme picker: no theme {selected}; none chosen");
+        }
         Self {
             id: id.into(),
             themes,
             selected,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(&'static str, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for SyntaxThemePicker {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("syntax theme picker {id:?} has no on_change"));
+        let on_change = self.on_change;
         let mode: Mode = cx.theme().mode();
         let cards = self.themes.iter().map(|theme| {
             let (pick, name) = (on_change.clone(), theme.name);

@@ -54,21 +54,20 @@ type OnProxy = Rc<dyn Fn(Proxy, &mut Window, &mut App)>;
 pub struct ProxySettings {
     id: ElementId,
     proxy: Proxy,
-    on_apply: Option<OnProxy>,
+    on_apply: OnProxy,
 }
 
 impl ProxySettings {
-    pub fn new(id: impl Into<ElementId>, proxy: Proxy) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        proxy: Proxy,
+        on_apply: impl Fn(Proxy, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             proxy,
-            on_apply: None,
+            on_apply: Rc::new(on_apply),
         }
-    }
-
-    pub fn on_apply(mut self, handler: impl Fn(Proxy, &mut Window, &mut App) + 'static) -> Self {
-        self.on_apply = Some(Rc::new(handler));
-        self
     }
 }
 
@@ -129,9 +128,7 @@ impl RenderOnce for ProxySettings {
             "manual" => manual(&text(&host), &text(&port), &text(&bypass)),
             other => panic!("proxy settings: no way named {other}"),
         };
-        let on_apply = self
-            .on_apply
-            .unwrap_or_else(|| panic!("proxy settings {id:?} has no on_apply"));
+        let on_apply = self.on_apply;
         let switched = fields.clone();
         div()
             .flex()

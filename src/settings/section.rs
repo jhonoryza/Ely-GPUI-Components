@@ -20,7 +20,7 @@ pub struct SettingsLayout {
     sections: Vec<(SharedString, SharedString, IconName)>,
     selected: SharedString,
     page: Option<AnyElement>,
-    on_select: Option<OnKey>,
+    on_select: OnKey,
 }
 
 impl SettingsLayout {
@@ -29,22 +29,22 @@ impl SettingsLayout {
         id: impl Into<ElementId>,
         sections: impl IntoIterator<Item = (impl Into<SharedString>, impl Into<SharedString>, IconName)>,
         selected: impl Into<SharedString>,
+        on_select: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         let sections: Vec<_> = sections
             .into_iter()
             .map(|(key, name, icon)| (key.into(), name.into(), icon))
             .collect();
         let selected = selected.into();
-        assert!(
-            sections.iter().any(|(key, _, _)| *key == selected),
-            "settings layout: no section {selected}"
-        );
+        if !sections.iter().any(|(key, _, _)| *key == selected) {
+            log::error!("settings layout: no section {selected}; none open");
+        }
         Self {
             id: id.into(),
             sections,
             selected,
             page: None,
-            on_select: None,
+            on_select: Rc::new(on_select),
         }
     }
 
@@ -53,21 +53,11 @@ impl SettingsLayout {
         self.page = Some(page.into_any_element());
         self
     }
-
-    pub fn on_select(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_select = Some(Rc::new(handler));
-        self
-    }
 }
 
 impl RenderOnce for SettingsLayout {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_select = self
-            .on_select
-            .unwrap_or_else(|| panic!("settings layout {:?} has no on_select", self.id));
+        let on_select = self.on_select;
         let theme = cx.theme();
         let muted = theme.colors.fg_muted;
         let list = self.sections.iter().fold(

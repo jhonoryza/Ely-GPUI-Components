@@ -49,7 +49,7 @@ pub fn editor(_: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .flex()
             .flex_col()
             .gap_4()
-            .child(ThemeEditor::new("theme-editor", draft).on_change(|draft, _, cx| apply(draft, cx)))
+            .child(ThemeEditor::new("theme-editor", draft, |draft, _, cx| apply(draft, cx)))
             .child(
                 div().flex().child(
                     Button::new("theme-restore", "Back to Ely's theme")

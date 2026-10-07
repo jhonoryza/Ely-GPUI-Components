@@ -96,8 +96,8 @@ fn search(window: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement 
             entry("size", "Font size", &["zoom"]),
         ],
         &field,
+        move |key, _, cx| say(&owner, format!("go {key}"), cx),
     )
-    .on_pick(move |key, _, cx| say(&owner, format!("go {key}"), cx))
     .into_any_element()
 }
 
@@ -121,10 +121,13 @@ fn reset(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
         default: "off".into(),
     };
     let (one, all) = (owner.clone(), owner);
-    ResetToDefault::new("reset", [changed("a"), changed("b")])
-        .on_reset(move |key, _, cx| say(&one, format!("reset {key}"), cx))
-        .on_reset_all(move |_, cx| say(&all, "reset all".into(), cx))
-        .into_any_element()
+    ResetToDefault::new(
+        "reset",
+        [changed("a"), changed("b")],
+        move |key, _, cx| say(&one, format!("reset {key}"), cx),
+        move |_, cx| say(&all, "reset all".into(), cx),
+    )
+    .into_any_element()
 }
 
 /// Stops: each row's way back, then Reset all, which asks twice.
@@ -149,9 +152,13 @@ fn flags(window: &mut Window, cx: &mut App, owner: Entity<Desk>) -> AnyElement {
         stage: Stage::Beta,
         on,
     };
-    FeatureFlags::new("flags", [flag("tabs", false), flag("sync", true)], &field)
-        .on_toggle(move |key, on, _, cx| say(&owner, format!("{key} {on}"), cx))
-        .into_any_element()
+    FeatureFlags::new(
+        "flags",
+        [flag("tabs", false), flag("sync", true)],
+        &field,
+        move |key, on, _, cx| say(&owner, format!("{key} {on}"), cx),
+    )
+    .into_any_element()
 }
 
 /// Stops: the search, then each flag's switch.
@@ -170,11 +177,10 @@ fn notices(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
         on: vec![("mention".into(), "App".into())],
         quiet: false,
     };
-    NotificationSettings::new("notices", notices)
-        .on_change(move |notices, _, cx| {
-            say(&owner, format!("{:?} {}", notices.on, notices.quiet), cx)
-        })
-        .into_any_element()
+    NotificationSettings::new("notices", notices, move |notices, _, cx| {
+        say(&owner, format!("{:?} {}", notices.on, notices.quiet), cx)
+    })
+    .into_any_element()
 }
 
 /// Stops: Do not disturb, then a box per channel.
@@ -211,8 +217,8 @@ fn storage(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
                 clearable: false,
             },
         ],
+        move |key, _, cx| say(&owner, format!("clear {key}"), cx),
     )
-    .on_clear(move |key, _, cx| say(&owner, format!("clear {key}"), cx))
     .into_any_element()
 }
 
@@ -227,9 +233,10 @@ fn a_store_clears_on_the_second_press(cx: &mut TestAppContext) {
 }
 
 fn size(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
-    FontSizeControl::new("size", 18.0, 14.0, (12.0, 24.0))
-        .on_change(move |size, _, cx| say(&owner, format!("size {size}"), cx))
-        .into_any_element()
+    FontSizeControl::new("size", 18.0, 14.0, (12.0, 24.0), move |size, _, cx| {
+        say(&owner, format!("size {size}"), cx)
+    })
+    .into_any_element()
 }
 
 /// Stops: the slider, then the way back.
@@ -242,9 +249,10 @@ fn the_way_back_gives_the_default_size(cx: &mut TestAppContext) {
 }
 
 fn theme(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
-    ThemeSelector::new("theme", Appearance::Light)
-        .on_change(move |appearance, _, cx| say(&owner, format!("{appearance:?}"), cx))
-        .into_any_element()
+    ThemeSelector::new("theme", Appearance::Light, move |appearance, _, cx| {
+        say(&owner, format!("{appearance:?}"), cx)
+    })
+    .into_any_element()
 }
 
 /// Stops: a segment each.
@@ -262,9 +270,10 @@ fn proxy(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
         port: 8080,
         bypass: vec!["localhost".into()],
     };
-    ProxySettings::new("proxy", proxy)
-        .on_apply(move |proxy, _, cx| say(&owner, format!("{proxy:?}"), cx))
-        .into_any_element()
+    ProxySettings::new("proxy", proxy, move |proxy, _, cx| {
+        say(&owner, format!("{proxy:?}"), cx)
+    })
+    .into_any_element()
 }
 
 /// Apply is the last stop, so a step back from nothing reaches it.
@@ -291,8 +300,8 @@ fn layout(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
             ("b", "Network", IconName::Globe),
         ],
         "a",
+        move |key, _, cx| say(&owner, format!("open {key}"), cx),
     )
-    .on_select(move |key, _, cx| say(&owner, format!("open {key}"), cx))
     .page(div())
     .into_any_element()
 }
@@ -313,9 +322,10 @@ fn privacy(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
         personalization: false,
         history: true,
     };
-    PrivacySettings::new("privacy", privacy)
-        .on_change(move |next, _, cx| say(&owner, format!("{next:?}"), cx))
-        .into_any_element()
+    PrivacySettings::new("privacy", privacy, move |next, _, cx| {
+        say(&owner, format!("{next:?}"), cx)
+    })
+    .into_any_element()
 }
 
 /// Stops: a switch per field, telemetry first.
@@ -339,15 +349,14 @@ fn quiet(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
         on: vec![("replies".into(), "App".into())],
         quiet: false,
     };
-    NotificationSettings::new("notices", notices)
-        .on_change(move |next, _, cx| {
-            say(
-                &owner,
-                format!("quiet {} on {}", next.quiet, next.on.len()),
-                cx,
-            )
-        })
-        .into_any_element()
+    NotificationSettings::new("notices", notices, move |next, _, cx| {
+        say(
+            &owner,
+            format!("quiet {} on {}", next.quiet, next.on.len()),
+            cx,
+        )
+    })
+    .into_any_element()
 }
 
 /// Stops: Do not disturb, then a box per kind and channel.
@@ -370,8 +379,8 @@ fn startup(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
         "startup",
         startup,
         [Choice::new("last", "Where I left off")],
+        move |next, _, cx| say(&owner, format!("login {}", next.at_login), cx),
     )
-    .on_change(move |next, _, cx| say(&owner, format!("login {}", next.at_login), cx))
     .into_any_element()
 }
 
@@ -385,9 +394,10 @@ fn open_at_login_turns_on(cx: &mut TestAppContext) {
 }
 
 fn developer(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
-    DeveloperModeToggle::new("developer", false)
-        .on_change(move |on, _, cx| say(&owner, format!("developer {on}"), cx))
-        .into_any_element()
+    DeveloperModeToggle::new("developer", false, move |on, _, cx| {
+        say(&owner, format!("developer {on}"), cx)
+    })
+    .into_any_element()
 }
 
 /// Stops: the switch.
@@ -400,10 +410,12 @@ fn developer_mode_turns_on(cx: &mut TestAppContext) {
 }
 
 fn files(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
-    ImportExportSettings::new("files")
-        .on_export(move |_, cx| say(&owner, "export".into(), cx))
-        .on_import(|_, _, _| {})
-        .into_any_element()
+    ImportExportSettings::new(
+        "files",
+        move |_, cx| say(&owner, "export".into(), cx),
+        |_, _, _| {},
+    )
+    .into_any_element()
 }
 
 /// Stops: Export first.
@@ -421,9 +433,10 @@ fn bad_port(_: &mut Window, _: &mut App, owner: Entity<Desk>) -> AnyElement {
         port: 0,
         bypass: Vec::new(),
     };
-    ProxySettings::new("proxy", proxy)
-        .on_apply(move |proxy, _, cx| say(&owner, format!("{proxy:?}"), cx))
-        .into_any_element()
+    ProxySettings::new("proxy", proxy, move |proxy, _, cx| {
+        say(&owner, format!("{proxy:?}"), cx)
+    })
+    .into_any_element()
 }
 
 /// With port 0 Apply rests, so a step back from nothing lands on the field before it.

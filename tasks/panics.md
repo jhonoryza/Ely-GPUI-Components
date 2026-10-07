@@ -49,7 +49,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P32 Canvas & Design — `src/canvas`
 - [x] P33 DB & Dev Tools — `src/devtools`
 - [x] P34 Dashboard — `src/dashboard`
-- [ ] P35 Settings — `src/settings`
+- [x] P35 Settings — `src/settings`
 - [ ] P36 Account — `src/account`
 - [ ] P37 Onboarding — `src/onboarding`
 - [ ] P38 Interaction — `src/interaction`
@@ -100,3 +100,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P32: the eight design panels take their handlers in `new` (AGENTS.md says so); edges, links, wires, links in progress, resizes, restacks, topics and whiteboard edits that name a node, port, shape, layer or topic gone from this frame log and change nothing; a wire's release fits its source as it now stands; `Topic::adding`, `removing` and `renaming` return `Option`; a mind map's selection, a palette's tool and a history position no longer held mark none. Kept: one-value contracts (alignment counts, frames, zoom, polygon sides, brush hues and type weights among the theme's tables), lookups over the panels' own option tables, button-gated expects. Review: 2 rounds.
 - P33: six devtools take their handlers in `new` (contrast checker, environment selector, GraphQL explorer, WebSocket console, structure editor, index manager); `collection::moved` returns `Option` for a gone key or target or a drop into a request; a gone environment shows none chosen; an ER table without a place stays out. Kept: readings, costs, lookups over the components' own tables, button-gated expects, JSON that read writes back. Review: 1 round.
 - P34: the refresh interval selector, filter bar and dashboard grid take their handlers in `new`; `tiles::arranged` and `stepped` return `Option` for a tile gone from the grid, so a landing or step after the owner removed it moves nothing; tiles without cards and cards without tiles stay out. Kept: columns, cells, intervals offered, services and uptimes, lookups from one render. Review: 1 round.
+- P35: eighteen settings components take their handlers in `new`; a section or syntax theme not offered marks none; a font size or default outside its range pegs. Kept: options offered by construction, the proxy's Apply behind its read, drops that bring a file. Review: 1 round.

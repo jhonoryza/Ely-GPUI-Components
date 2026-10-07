@@ -38,36 +38,36 @@ fn appearance(prefs: &Entity<Prefs>, fields: &Fields, cx: &App) -> AnyElement {
     let [theme, accent, size, density, font] = [(); 5].map(|_| prefs.clone());
     SettingsSection::new("Appearance")
         .description("How the app looks.")
-        .row(
-            SettingsRow::new("Theme").control(
-                ThemeSelector::new("settings-theme", now.appearance).on_change(
-                    move |next, _, cx| change(&theme, cx, |prefs| prefs.appearance = next),
-                ),
-            ),
-        )
+        .row(SettingsRow::new("Theme").control(ThemeSelector::new(
+            "settings-theme",
+            now.appearance,
+            move |next, _, cx| change(&theme, cx, |prefs| prefs.appearance = next),
+        )))
         .row(
             SettingsRow::new("Accent color")
                 .description("Buttons, links and what is chosen.")
-                .control(
-                    AccentColorPicker::new("settings-accent", now.accent, presets).on_change(
-                        move |next, _, cx| change(&accent, cx, |prefs| prefs.accent = next),
-                    ),
-                ),
+                .control(AccentColorPicker::new(
+                    "settings-accent",
+                    now.accent,
+                    presets,
+                    move |next, _, cx| change(&accent, cx, |prefs| prefs.accent = next),
+                )),
         )
-        .row(
-            SettingsRow::new("Font size").control(
-                FontSizeControl::new("settings-size", now.size, SIZE, (11.0, 20.0))
-                    .on_change(move |next, _, cx| change(&size, cx, |prefs| prefs.size = next)),
-            ),
-        )
+        .row(SettingsRow::new("Font size").control(FontSizeControl::new(
+            "settings-size",
+            now.size,
+            SIZE,
+            (11.0, 20.0),
+            move |next, _, cx| change(&size, cx, |prefs| prefs.size = next),
+        )))
         .row(
             SettingsRow::new("Density")
                 .description("How close things sit.")
-                .control(
-                    DensitySelector::new("settings-density", now.density).on_change(
-                        move |next, _, cx| change(&density, cx, |prefs| prefs.density = next),
-                    ),
-                ),
+                .control(DensitySelector::new(
+                    "settings-density",
+                    now.density,
+                    move |next, _, cx| change(&density, cx, |prefs| prefs.density = next),
+                )),
         )
         .row(
             SettingsRow::new("Font")
@@ -126,25 +126,32 @@ fn keyboard(prefs: &Entity<Prefs>, fields: &Fields, cx: &App) -> AnyElement {
 fn network(prefs: &Entity<Prefs>, cx: &App) -> AnyElement {
     let proxy = prefs.clone();
     SettingsSection::new("Network")
-        .row(
-            ProxySettings::new("settings-proxy", prefs.read(cx).proxy.clone())
-                .on_apply(move |next, _, cx| change(&proxy, cx, |prefs| prefs.proxy = next)),
-        )
+        .row(ProxySettings::new(
+            "settings-proxy",
+            prefs.read(cx).proxy.clone(),
+            move |next, _, cx| change(&proxy, cx, |prefs| prefs.proxy = next),
+        ))
         .into_any_element()
 }
 
 fn privacy(prefs: &Entity<Prefs>, cx: &App) -> AnyElement {
     let privacy = prefs.clone();
-    PrivacySettings::new("settings-privacy", prefs.read(cx).privacy)
-        .on_change(move |next, _, cx| change(&privacy, cx, |prefs| prefs.privacy = next))
-        .into_any_element()
+    PrivacySettings::new(
+        "settings-privacy",
+        prefs.read(cx).privacy,
+        move |next, _, cx| change(&privacy, cx, |prefs| prefs.privacy = next),
+    )
+    .into_any_element()
 }
 
 fn notifications(prefs: &Entity<Prefs>, cx: &App) -> AnyElement {
     let notices = prefs.clone();
-    NotificationSettings::new("settings-notices", prefs.read(cx).notices.clone())
-        .on_change(move |next, _, cx| change(&notices, cx, |prefs| prefs.notices = next))
-        .into_any_element()
+    NotificationSettings::new(
+        "settings-notices",
+        prefs.read(cx).notices.clone(),
+        move |next, _, cx| change(&notices, cx, |prefs| prefs.notices = next),
+    )
+    .into_any_element()
 }
 
 fn startup(prefs: &Entity<Prefs>, cx: &App) -> AnyElement {
@@ -154,9 +161,13 @@ fn startup(prefs: &Entity<Prefs>, cx: &App) -> AnyElement {
         Choice::new("home", "The home page"),
         Choice::new("blank", "A blank window"),
     ];
-    StartupSettings::new("settings-startup", prefs.read(cx).startup.clone(), pages)
-        .on_change(move |next, _, cx| change(&startup, cx, |prefs| prefs.startup = next))
-        .into_any_element()
+    StartupSettings::new(
+        "settings-startup",
+        prefs.read(cx).startup.clone(),
+        pages,
+        move |next, _, cx| change(&startup, cx, |prefs| prefs.startup = next),
+    )
+    .into_any_element()
 }
 
 fn storage(prefs: &Entity<Prefs>, cx: &App) -> AnyElement {
@@ -175,37 +186,36 @@ fn storage(prefs: &Entity<Prefs>, cx: &App) -> AnyElement {
         .child(
             SettingsSection::new("Storage")
                 .description("What the app keeps on this device.")
-                .row(
-                    StorageSettings::new("settings-storage", now.stores.clone()).on_clear(
-                        move |key, _, cx| {
-                            change(&cleared, cx, |prefs| {
-                                prefs
-                                    .stores
-                                    .iter_mut()
-                                    .filter(|store| store.key == *key)
-                                    .for_each(|store| store.bytes = 0)
-                            })
-                        },
-                    ),
-                ),
+                .row(StorageSettings::new(
+                    "settings-storage",
+                    now.stores.clone(),
+                    move |key, _, cx| {
+                        change(&cleared, cx, |prefs| {
+                            prefs
+                                .stores
+                                .iter_mut()
+                                .filter(|store| store.key == *key)
+                                .for_each(|store| store.bytes = 0)
+                        })
+                    },
+                )),
         )
         .child(
-            SettingsSection::new("Import and export").row(
-                ImportExportSettings::new("settings-files")
-                    .on_export(|_, _| log::info!("gallery: settings exported"))
-                    .on_import(|path, _, _| {
-                        log::info!("gallery: settings imported from {}", path.display())
-                    }),
-            ),
+            SettingsSection::new("Import and export").row(ImportExportSettings::new(
+                "settings-files",
+                |_, _| log::info!("gallery: settings exported"),
+                |path, _, _| log::info!("gallery: settings imported from {}", path.display()),
+            )),
         )
         .child(
             SettingsSection::new("Defaults")
                 .description("A larger font size shows here.")
-                .row(
-                    ResetToDefault::new("settings-reset", changed)
-                        .on_reset(move |_, _, cx| change(&reset, cx, |prefs| prefs.size = SIZE))
-                        .on_reset_all(move |_, cx| change(&all, cx, |prefs| prefs.size = SIZE)),
-                ),
+                .row(ResetToDefault::new(
+                    "settings-reset",
+                    changed,
+                    move |_, _, cx| change(&reset, cx, |prefs| prefs.size = SIZE),
+                    move |_, cx| change(&all, cx, |prefs| prefs.size = SIZE),
+                )),
         )
         .into_any_element()
 }
@@ -220,22 +230,25 @@ fn advanced(prefs: &Entity<Prefs>, fields: &Fields, cx: &App) -> AnyElement {
         .child(
             SettingsSection::new("Features")
                 .description("AdvancedSettings / FeatureFlags")
-                .row(
-                    FeatureFlags::new("settings-flags", now.flags.clone(), &fields.flags)
-                        .on_toggle(move |key, on, _, cx| {
-                            change(&toggled, cx, |prefs| {
-                                prefs
-                                    .flags
-                                    .iter_mut()
-                                    .filter(|flag| flag.key == *key)
-                                    .for_each(|flag| flag.on = on)
-                            })
-                        }),
-                ),
+                .row(FeatureFlags::new(
+                    "settings-flags",
+                    now.flags.clone(),
+                    &fields.flags,
+                    move |key, on, _, cx| {
+                        change(&toggled, cx, |prefs| {
+                            prefs
+                                .flags
+                                .iter_mut()
+                                .filter(|flag| flag.key == *key)
+                                .for_each(|flag| flag.on = on)
+                        })
+                    },
+                )),
         )
-        .child(
-            DeveloperModeToggle::new("settings-developer", now.developer)
-                .on_change(move |on, _, cx| change(&developer, cx, |prefs| prefs.developer = on)),
-        )
+        .child(DeveloperModeToggle::new(
+            "settings-developer",
+            now.developer,
+            move |on, _, cx| change(&developer, cx, |prefs| prefs.developer = on),
+        ))
         .into_any_element()
 }

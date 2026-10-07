@@ -46,32 +46,25 @@ pub(super) type OnTheme = Rc<dyn Fn(&VsCodeTheme, &mut Window, &mut App)>;
 #[derive(IntoElement)]
 pub struct ThemeImporter {
     id: ElementId,
-    on_apply: Option<OnTheme>,
+    on_apply: OnTheme,
 }
 
 impl ThemeImporter {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on_apply: impl Fn(&VsCodeTheme, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
-            on_apply: None,
+            on_apply: Rc::new(on_apply),
         }
-    }
-
-    pub fn on_apply(
-        mut self,
-        handler: impl Fn(&VsCodeTheme, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_apply = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for ThemeImporter {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_apply = self
-            .on_apply
-            .unwrap_or_else(|| panic!("theme importer {id:?} has no on_apply"));
+        let on_apply = self.on_apply;
         let last = window.use_keyed_state((id.clone(), "read"), cx, |_, _| None::<Read>);
         let took = last.clone();
         let zone = DropZone::new((id.clone(), "zone"))

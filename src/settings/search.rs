@@ -46,7 +46,7 @@ pub struct SettingsSearch {
     id: ElementId,
     entries: Vec<SettingEntry>,
     search: Entity<TextInput>,
-    on_pick: Option<OnKey>,
+    on_pick: OnKey,
 }
 
 impl SettingsSearch {
@@ -55,29 +55,20 @@ impl SettingsSearch {
         id: impl Into<ElementId>,
         entries: impl IntoIterator<Item = SettingEntry>,
         search: &Entity<TextInput>,
+        on_pick: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             entries: entries.into_iter().collect(),
             search: search.clone(),
-            on_pick: None,
+            on_pick: Rc::new(on_pick),
         }
-    }
-
-    pub fn on_pick(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_pick = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for SettingsSearch {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_pick = self
-            .on_pick
-            .unwrap_or_else(|| panic!("settings search {:?} has no on_pick", self.id));
+        let on_pick = self.on_pick;
         let query = self.search.read(cx).text().trim().to_string();
         let theme = cx.theme();
         let found = if query.is_empty() {

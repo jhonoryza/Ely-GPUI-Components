@@ -26,29 +26,26 @@ pub struct Privacy {
 pub struct PrivacySettings {
     id: ElementId,
     privacy: Privacy,
-    on_change: Option<OnEdit<Privacy>>,
+    on_change: OnEdit<Privacy>,
 }
 
 impl PrivacySettings {
-    pub fn new(id: impl Into<ElementId>, privacy: Privacy) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        privacy: Privacy,
+        on_change: impl Fn(Privacy, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             privacy,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(mut self, handler: impl Fn(Privacy, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for PrivacySettings {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("privacy settings {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (id, privacy, on_change) = (self.id, self.privacy, &on_change);
         let row = |key: &'static str,
                    title: &'static str,
@@ -108,29 +105,26 @@ pub struct Notices {
 pub struct NotificationSettings {
     id: ElementId,
     notices: Notices,
-    on_change: Option<OnEdit<Notices>>,
+    on_change: OnEdit<Notices>,
 }
 
 impl NotificationSettings {
-    pub fn new(id: impl Into<ElementId>, notices: Notices) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        notices: Notices,
+        on_change: impl Fn(Notices, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             notices,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(mut self, handler: impl Fn(Notices, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for NotificationSettings {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("notification settings {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (id, notices, on_change) = (self.id, self.notices, &on_change);
         let theme = cx.theme();
         let rows = notices.kinds.iter().map(|(kind, name)| {
@@ -209,7 +203,7 @@ pub struct StartupSettings {
     id: ElementId,
     startup: Startup,
     pages: Vec<Choice>,
-    on_change: Option<OnEdit<Startup>>,
+    on_change: OnEdit<Startup>,
 }
 
 impl StartupSettings {
@@ -217,26 +211,20 @@ impl StartupSettings {
         id: impl Into<ElementId>,
         startup: Startup,
         pages: impl IntoIterator<Item = Choice>,
+        on_change: impl Fn(Startup, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             startup,
             pages: pages.into_iter().collect(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(mut self, handler: impl Fn(Startup, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for StartupSettings {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("startup settings {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (id, startup, on_change) = (self.id, self.startup, &on_change);
         let switch = |key: &'static str, on: bool, set: fn(&mut Startup, bool)| {
             Switch::new((id.clone(), key), on)

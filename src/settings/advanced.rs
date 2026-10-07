@@ -40,7 +40,7 @@ pub struct FeatureFlags {
     id: ElementId,
     flags: Vec<Flag>,
     search: Entity<TextInput>,
-    on_toggle: Option<OnFlag>,
+    on_toggle: OnFlag,
 }
 
 impl FeatureFlags {
@@ -49,21 +49,14 @@ impl FeatureFlags {
         id: impl Into<ElementId>,
         flags: impl IntoIterator<Item = Flag>,
         search: &Entity<TextInput>,
+        on_toggle: impl Fn(&SharedString, bool, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             flags: flags.into_iter().collect(),
             search: search.clone(),
-            on_toggle: None,
+            on_toggle: Rc::new(on_toggle),
         }
-    }
-
-    pub fn on_toggle(
-        mut self,
-        handler: impl Fn(&SharedString, bool, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_toggle = Some(Rc::new(handler));
-        self
     }
 }
 
@@ -83,9 +76,7 @@ fn kept_flags<'a>(flags: &'a [Flag], query: &str) -> Vec<&'a Flag> {
 
 impl RenderOnce for FeatureFlags {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_toggle = self
-            .on_toggle
-            .unwrap_or_else(|| panic!("feature flags {:?} has no on_toggle", self.id));
+        let on_toggle = self.on_toggle;
         let query = self.search.read(cx).text().to_string();
         let theme = cx.theme();
         let rows = kept_flags(&self.flags, &query).into_iter().map(|flag| {
@@ -134,29 +125,26 @@ type OnBool = Rc<dyn Fn(bool, &mut Window, &mut App)>;
 pub struct DeveloperModeToggle {
     id: ElementId,
     on: bool,
-    on_change: Option<OnBool>,
+    on_change: OnBool,
 }
 
 impl DeveloperModeToggle {
-    pub fn new(id: impl Into<ElementId>, on: bool) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on: bool,
+        on_change: impl Fn(bool, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             on,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(mut self, handler: impl Fn(bool, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for DeveloperModeToggle {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("developer mode toggle {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let on_change = on_change;
         div()
             .flex()

@@ -58,33 +58,27 @@ type OnDraft = Rc<dyn Fn(&ThemeDraft, &mut Window, &mut App)>;
 pub struct ThemeEditor {
     id: ElementId,
     draft: ThemeDraft,
-    on_change: Option<OnDraft>,
+    on_change: OnDraft,
 }
 
 impl ThemeEditor {
-    pub fn new(id: impl Into<ElementId>, draft: ThemeDraft) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        draft: ThemeDraft,
+        on_change: impl Fn(&ThemeDraft, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             draft,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(&ThemeDraft, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for ThemeEditor {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("theme editor {id:?} has no on_change"));
+        let on_change = self.on_change;
         let draft = Rc::new(self.draft);
         let edit = {
             let (draft, on_change) = (draft.clone(), on_change);
@@ -104,11 +98,14 @@ impl RenderOnce for ThemeEditor {
         let look = SettingsSection::new("Look")
             .row(row(
                 "Density",
-                DensitySelector::new((id.clone(), "density"), draft.density)
-                    .on_change(move |next, window, cx| {
+                DensitySelector::new(
+                    (id.clone(), "density"),
+                    draft.density,
+                    move |next, window, cx| {
                         density(&|d: &mut ThemeDraft| d.density = next, window, cx)
-                    })
-                    .into_any_element(),
+                    },
+                )
+                .into_any_element(),
             ))
             .row(row(
                 "Corners",

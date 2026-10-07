@@ -45,32 +45,26 @@ type OnAppearance = Rc<dyn Fn(Appearance, &mut Window, &mut App)>;
 pub struct ThemeSelector {
     id: ElementId,
     appearance: Appearance,
-    on_change: Option<OnAppearance>,
+    on_change: OnAppearance,
 }
 
 impl ThemeSelector {
-    pub fn new(id: impl Into<ElementId>, appearance: Appearance) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        appearance: Appearance,
+        on_change: impl Fn(Appearance, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             appearance,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(Appearance, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for ThemeSelector {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("theme selector {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (_, words, _) = Appearance::ALL
             .iter()
             .find(|(each, _, _)| *each == self.appearance)
@@ -100,7 +94,7 @@ pub struct AccentColorPicker {
     id: ElementId,
     color: Hsla,
     presets: Vec<(SharedString, Hsla)>,
-    on_change: Option<OnColor>,
+    on_change: OnColor,
 }
 
 impl AccentColorPicker {
@@ -108,6 +102,7 @@ impl AccentColorPicker {
         id: impl Into<ElementId>,
         color: impl Into<Hsla>,
         presets: impl IntoIterator<Item = (impl Into<SharedString>, impl Into<Hsla>)>,
+        on_change: impl Fn(Hsla, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
@@ -116,21 +111,14 @@ impl AccentColorPicker {
                 .into_iter()
                 .map(|(name, color)| (name.into(), color.into()))
                 .collect(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(mut self, handler: impl Fn(Hsla, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for AccentColorPicker {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("accent color picker {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (picked, custom) = (on_change.clone(), on_change);
         let report = |on_change: OnColor| {
             move |color: Hsla, window: &mut Window, cx: &mut App| {
@@ -169,38 +157,38 @@ pub struct FontSizeControl {
     size: f32,
     default: f32,
     range: (f32, f32),
-    on_change: Option<OnSize>,
+    on_change: OnSize,
 }
 
 impl FontSizeControl {
     /// `size` and `default` lie within `range`, in pixels.
-    pub fn new(id: impl Into<ElementId>, size: f32, default: f32, range: (f32, f32)) -> Self {
-        assert!(
-            range.0 < range.1
-                && (range.0..=range.1).contains(&size)
-                && (range.0..=range.1).contains(&default),
-            "font size {size} and default {default} outside {range:?}"
-        );
+    pub fn new(
+        id: impl Into<ElementId>,
+        size: f32,
+        default: f32,
+        range: (f32, f32),
+        on_change: impl Fn(f32, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        assert!(range.0 < range.1, "font sizes {range:?} run backwards");
+        let held = |what: &str, value: f32| {
+            if !(range.0..=range.1).contains(&value) {
+                log::error!("font size control: {what} {value} outside {range:?}; pegged");
+            }
+            value.clamp(range.0, range.1)
+        };
         Self {
             id: id.into(),
-            size,
-            default,
+            size: held("size", size),
+            default: held("default", default),
             range,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(mut self, handler: impl Fn(f32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for FontSizeControl {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("font size control {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let theme = cx.theme();
         let (slid, reset, default) = (on_change.clone(), on_change, self.default);
         let (low, high) = self.range;
@@ -258,7 +246,7 @@ type OnDensity = Rc<dyn Fn(Density, &mut Window, &mut App)>;
 pub struct DensitySelector {
     id: ElementId,
     density: Density,
-    on_change: Option<OnDensity>,
+    on_change: OnDensity,
 }
 
 const DENSITIES: [(Density, &str); 3] = [
@@ -268,25 +256,22 @@ const DENSITIES: [(Density, &str); 3] = [
 ];
 
 impl DensitySelector {
-    pub fn new(id: impl Into<ElementId>, density: Density) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        density: Density,
+        on_change: impl Fn(Density, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             density,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(mut self, handler: impl Fn(Density, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for DensitySelector {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("density selector {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (_, words) = DENSITIES
             .iter()
             .find(|(each, _)| *each == self.density)

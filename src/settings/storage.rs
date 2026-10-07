@@ -29,32 +29,26 @@ type OnKey = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 pub struct StorageSettings {
     id: ElementId,
     stores: Vec<Store>,
-    on_clear: Option<OnKey>,
+    on_clear: OnKey,
 }
 
 impl StorageSettings {
-    pub fn new(id: impl Into<ElementId>, stores: impl IntoIterator<Item = Store>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        stores: impl IntoIterator<Item = Store>,
+        on_clear: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             stores: stores.into_iter().collect(),
-            on_clear: None,
+            on_clear: Rc::new(on_clear),
         }
-    }
-
-    pub fn on_clear(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_clear = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for StorageSettings {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_clear = self
-            .on_clear
-            .unwrap_or_else(|| panic!("storage settings {:?} has no on_clear", self.id));
+        let on_clear = self.on_clear;
         let theme = cx.theme();
         let total: u64 = self.stores.iter().map(|store| store.bytes).sum();
         let bar = self.stores.iter().fold(
@@ -134,42 +128,30 @@ type Run = Rc<dyn Fn(&mut Window, &mut App)>;
 pub struct ResetToDefault {
     id: ElementId,
     changed: Vec<Changed>,
-    on_reset: Option<OnKey>,
-    on_reset_all: Option<Run>,
+    on_reset: OnKey,
+    on_reset_all: Run,
 }
 
 impl ResetToDefault {
-    pub fn new(id: impl Into<ElementId>, changed: impl IntoIterator<Item = Changed>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        changed: impl IntoIterator<Item = Changed>,
+        on_reset: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+        on_reset_all: impl Fn(&mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             changed: changed.into_iter().collect(),
-            on_reset: None,
-            on_reset_all: None,
+            on_reset: Rc::new(on_reset),
+            on_reset_all: Rc::new(on_reset_all),
         }
-    }
-
-    pub fn on_reset(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_reset = Some(Rc::new(handler));
-        self
-    }
-
-    pub fn on_reset_all(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_reset_all = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for ResetToDefault {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_reset = self
-            .on_reset
-            .unwrap_or_else(|| panic!("reset to default {:?} has no on_reset", self.id));
-        let on_reset_all = self
-            .on_reset_all
-            .unwrap_or_else(|| panic!("reset to default {:?} has no on_reset_all", self.id));
+        let on_reset = self.on_reset;
+        let on_reset_all = self.on_reset_all;
         let theme = cx.theme();
         if self.changed.is_empty() {
             return div()
@@ -249,38 +231,28 @@ type OnFile = Rc<dyn Fn(PathBuf, &mut Window, &mut App)>;
 #[derive(IntoElement)]
 pub struct ImportExportSettings {
     id: ElementId,
-    on_export: Option<Run>,
-    on_import: Option<OnFile>,
+    on_export: Run,
+    on_import: OnFile,
 }
 
 impl ImportExportSettings {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        on_export: impl Fn(&mut Window, &mut App) + 'static,
+        on_import: impl Fn(PathBuf, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
-            on_export: None,
-            on_import: None,
+            on_export: Rc::new(on_export),
+            on_import: Rc::new(on_import),
         }
-    }
-
-    pub fn on_export(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_export = Some(Rc::new(handler));
-        self
-    }
-
-    pub fn on_import(mut self, handler: impl Fn(PathBuf, &mut Window, &mut App) + 'static) -> Self {
-        self.on_import = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for ImportExportSettings {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        let on_export = self
-            .on_export
-            .unwrap_or_else(|| panic!("import export settings {:?} has no on_export", self.id));
-        let on_import = self
-            .on_import
-            .unwrap_or_else(|| panic!("import export settings {:?} has no on_import", self.id));
+        let on_export = self.on_export;
+        let on_import = self.on_import;
         let (on_export, on_import) = (on_export, on_import);
         div()
             .flex()
