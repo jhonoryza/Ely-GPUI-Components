@@ -33,7 +33,7 @@ type OnIndex = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 type OnLayout = Rc<dyn Fn(DiffLayout, &mut Window, &mut App)>;
 type OnLine = Rc<dyn Fn(Place, bool, &mut Window, &mut App)>;
 
-/// A file's changes, unified or side by side; fills its box.
+/// A file's changes, unified or split; fills its box.
 #[derive(IntoElement)]
 pub struct DiffViewer {
     id: ElementId,
