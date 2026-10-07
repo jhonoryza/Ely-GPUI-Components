@@ -216,12 +216,8 @@ impl ChangesList {
             )
             .child(
                 div()
-                    .id("actions")
-                    .focusable()
-                    .in_focus(|actions| actions.opacity(1.))
+                    .flex_none()
                     .flex()
-                    .opacity(0.)
-                    .group_hover(group, |actions| actions.opacity(1.))
                     .child(action(
                         "open",
                         IconName::FileText,

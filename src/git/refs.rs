@@ -217,10 +217,8 @@ pub(super) fn listed(
 ) -> AnyElement {
     let theme = cx.theme();
     let colors = theme.colors.clone();
-    let group = SharedString::from(format!("{id:?}"));
     div()
         .id(id)
-        .group(group.clone())
         .when_some(pick, |row, pick| {
             let run = pick.run;
             row.role(Role::ListItem)
@@ -234,7 +232,6 @@ pub(super) fn listed(
                 .when(pick.selected, |row| row.bg(colors.selection))
                 .on_click(move |_, window, cx| run(window, cx))
         })
-        .relative()
         .flex()
         .items_center()
         .gap_2()
@@ -249,12 +246,12 @@ pub(super) fn listed(
                 .min_w_0()
                 .flex()
                 .flex_col()
+                // Narrow, the name gives way; actions stay in reach.
                 .child(
                     div()
                         .flex()
                         .items_center()
-                        .gap_2()
-                        // Narrow, the name gives way; the words stay.
+                        .gap_1()
                         .child(
                             div()
                                 .flex_1()
@@ -263,38 +260,22 @@ pub(super) fn listed(
                                 .whitespace_nowrap()
                                 .child(name),
                         )
-                        .child(
-                            div()
-                                .flex_none()
-                                .flex()
-                                .gap_2()
-                                .group_hover(group.clone(), |words| words.opacity(0.))
-                                .children(trailing.into_iter().map(|words| {
-                                    tabular(div().text_color(colors.fg_subtle)).child(words)
-                                })),
-                        ),
+                        .child(div().flex_none().flex().children(actions)),
                 )
-                .when(!detail.is_empty(), |text| {
+                .when(!detail.is_empty() || !trailing.is_empty(), |text| {
                     text.child(
                         div()
+                            .flex()
+                            .gap_2()
                             .text_color(colors.fg_subtle)
-                            .child(Ellipsis::new(detail)),
+                            .child(div().flex_1().min_w_0().child(Ellipsis::new(detail)))
+                            .children(
+                                trailing
+                                    .into_iter()
+                                    .map(|words| tabular(div().flex_none()).child(words)),
+                            ),
                     )
                 }),
-        )
-        // Hover or keyboard focus shows the actions.
-        .child(
-            div()
-                .id("actions")
-                .focusable()
-                .in_focus(|actions| actions.opacity(1.))
-                .absolute()
-                .top_0p5()
-                .right_1()
-                .flex()
-                .opacity(0.)
-                .group_hover(group, |actions| actions.opacity(1.))
-                .children(actions),
         )
         .into_any_element()
 }
