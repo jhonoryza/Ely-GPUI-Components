@@ -146,11 +146,16 @@ fn marker(line: &str, mark: char, size: usize, labelled: bool) -> bool {
     run == size && (line.len() == size || (labelled && line[size..].starts_with(' ')))
 }
 
+/// Lines as Git splits them: at LF only.
+fn git_lines(text: &str) -> Vec<&str> {
+    text.split_inclusive('\n').collect()
+}
+
 /// The conflicts marked in `text` with markers `size` wide.
 pub fn conflicts(text: &str, size: usize) -> Vec<Conflict> {
     let mut found = Vec::new();
     let (mut start, mut base, mut middle) = (None, None, None);
-    for (ix, line) in text.tokenize_lines().into_iter().enumerate() {
+    for (ix, line) in git_lines(text).into_iter().enumerate() {
         if marker(line, '<', size, true) {
             (start, base, middle) = (Some(ix), None, None);
         } else if marker(line, '|', size, true) && start.is_some() && middle.is_none() {
@@ -173,11 +178,7 @@ pub fn conflicts(text: &str, size: usize) -> Vec<Conflict> {
 
 /// Regions as Git grouped marked `text`; base from diff3.
 pub fn marked(text: &str, size: usize) -> Vec<Region> {
-    let lines: Vec<String> = text
-        .tokenize_lines()
-        .into_iter()
-        .map(str::to_string)
-        .collect();
+    let lines: Vec<String> = git_lines(text).into_iter().map(str::to_string).collect();
     let same = |range: std::ops::Range<usize>| Region {
         kind: RegionKind::Unchanged,
         base: lines[range.clone()].to_vec(),
@@ -213,7 +214,7 @@ pub fn resolve(text: &str, ix: usize, take: Take, size: usize) -> Option<String>
         log::error!("no conflict {ix} to resolve in this text");
         return None;
     };
-    let lines = text.tokenize_lines();
+    let lines = git_lines(text);
     // A diff3 conflict's base section is neither side.
     let ours = lines[conflict.start + 1..conflict.base.unwrap_or(conflict.middle)].concat();
     let theirs = lines[conflict.middle + 1..conflict.end].concat();
@@ -325,14 +326,24 @@ mod tests {
         let held = result(&regions("a\r", "b\r", "c\r"), &[]).0;
         assert_eq!(held, "<<<<<<< ours\rb\r=======\rc\r>>>>>>> theirs\r");
         assert_eq!(
-            resolve(&held, 0, Take::Theirs, MARKER).as_deref(),
-            Some("c\r")
-        );
-        assert_eq!(
             resolve("plain\n", 0, Take::Ours, MARKER),
             None,
             "no conflict left"
         );
+    }
+
+    #[test]
+    fn git_markers_split_at_lf_only() {
+        let text = "<<<<<<< HEAD\nprefix\r=======\rOURS_END\n=======\nTHEIRS\n>>>>>>> side\n";
+        assert_eq!(
+            resolve(text, 0, Take::Theirs, MARKER).as_deref(),
+            Some("THEIRS\n")
+        );
+        assert_eq!(
+            marked(text, MARKER)[0].ours,
+            ["prefix\r=======\rOURS_END\n"]
+        );
+        assert!(conflicts("<<<<<<< a\rb\r=======\rc\r>>>>>>> d\r", MARKER).is_empty());
     }
 
     #[test]
