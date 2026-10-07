@@ -41,8 +41,7 @@ A window opens with a counter and a Press button. From a clone of the repository
 
 | Symptom | Cause and fix |
 | --- | --- |
-| `init` error: `` ely: pass `ely_gpui_component::Assets` to `Application::with_assets` `` | `init` found no Ely assets. Start the app with `gpui_platform::application().with_assets(Assets)`. |
-| `init` error: `ely: asset source failed` | The app's asset source returned an error. The error carries it. |
+| `init` error: `ely: the asset source lacks N of Ely's files, first <path>: <reason>` | The app's source cannot load every file Ely bundles. Pass `Assets`, or `Assets::before(yours)` when the app has a source of its own. |
 | `init` error: `ely: embedded fonts failed to register` | GPUI's text system refused Ely's fonts. File a bug with the log. |
 | Windows open with no text on macOS | `gpui_platform` lacks the `font-kit` feature. |
 | `mismatched types`, with the note ``there are multiple different versions of crate `gpui` in the dependency graph`` | `gpui` names another snapshot or a git source. Use `gpui-pre` at `=0.3.8`. |

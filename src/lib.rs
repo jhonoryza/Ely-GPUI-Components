@@ -45,22 +45,23 @@ pub mod theme;
 pub mod tooling;
 pub mod typography;
 
-pub use assets::Assets;
+pub use assets::{Assets, Before};
 
 use anyhow::Context as _;
 use gpui::{App, KeyBinding};
 
-use crate::primitives::{FOCUS_CONTEXT, FocusNext, FocusPrev, IconName};
+use crate::primitives::{FOCUS_CONTEXT, FocusNext, FocusPrev};
 
 /// Loads fonts and the theme, binds Tab and text keys. Call once, first.
 pub fn init(cx: &mut App) -> anyhow::Result<()> {
-    match cx.asset_source().load(IconName::Check.path()) {
-        Ok(Some(_)) => {}
-        Ok(None) => {
-            anyhow::bail!("ely: pass `ely_gpui_component::Assets` to `Application::with_assets`")
-        }
-        Err(error) => return Err(error.context("ely: asset source failed")),
+    let missing = assets::missing(cx.asset_source().as_ref());
+    if let Some(first) = missing.first() {
+        anyhow::bail!(
+            "ely: the asset source lacks {} of Ely's files, first {first}; pass `ely_gpui_component::Assets`, or `Assets::before` your own, to `Application::with_assets`",
+            missing.len()
+        );
     }
+    log::info!("assets: the app's source loads all of Ely's files");
     assets::load_fonts(cx).context("ely: embedded fonts failed to register")?;
     setup(cx);
     Ok(())

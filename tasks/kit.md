@@ -15,7 +15,7 @@ Rules: the work order follows dependencies, since the PRD has no chapter for it.
 
 - [x] K01 gpui from `gpui-pre =0.3.8`, Kit's pin: crate, gallery, web build, docs, CI
 - [x] K02 Tab and Shift-Tab bound under `FocusScope`'s own context, so a deeper context's Tab wins whatever the order of `init`
-- [ ] K03 Assets: `init` checks every embedded file through the app's source; one source serves Ely's files and another's
+- [x] K03 Assets: `init` checks every embedded file through the app's source; one source serves Ely's files and another's
 - [ ] K04 `compat/kit`: a crate on the newest Kit that runs both libraries in one window, in `scripts/check.sh` and CI
 - [ ] K05 `gpui-fast`: Ely builds and tests on Kit's other engine, or the item records why not
 - [ ] K06 Docs: README, the site's guide, AGENTS.md
@@ -26,3 +26,4 @@ Rules: the work order follows dependencies, since the PRD has no chapter for it.
 One line per item: what changed, what stayed and why, review rounds.
 - K01: gpui, gpui_platform and gpui_web come from `gpui-pre` `=0.3.8`; the lock holds no git source and one copy of each. `gpui-pre` split leak detection from `test-support`, so this crate's `test-support` turns on `gpui/leak-detection`, and a test that leaks on purpose proves it. The check, the wasm check, the web build (20.0 MB), a headless Chromium shot and the site build pass. README and the install guide name the snapshot. Review: 2 rounds.
 - K02: `FocusScope` sets the key context `ElyFocus`, and `init` binds Tab and Shift-Tab under it. A host's Tab in a deeper context wins whatever the order of `init` (a test binds the host's first, the order that lost: 0 indents before, 1 after); Ely's terminal, editor, traps and the inspector's scope behave as before. Review: 1 round.
+- K03: `init` loads every file Ely bundles (318, Plex among them) through the app's source and fails naming the first it cannot; an icons-only source like Kit's passed the old one-icon check and fails now. `Assets::before(other)` serves Ely's paths first and the rest from `other`, its errors passing through. Docs and AGENTS.md say so. Review: 1 round.

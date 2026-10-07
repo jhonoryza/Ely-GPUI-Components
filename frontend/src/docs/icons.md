@@ -1,6 +1,6 @@
 # Icons, fonts and assets
 
-`Assets` embeds Ely's icons and fonts in the binary. Pass it to `with_assets`; `init` registers the fonts and checks that `icons/check.svg` loads.
+`Assets` embeds Ely's icons and fonts in the binary. Pass it to `with_assets`, or `Assets::before(other)` to serve Ely's files first and every other path from another source; `init` checks that each of Ely's files loads through the app's source, then registers the fonts.
 
 ## Icons
 
@@ -42,7 +42,7 @@ A name rule beats an extension rule, and both beat Ely's map.
 
 ## An app's own assets
 
-GPUI takes one asset source. An app with files of its own writes an `AssetSource` that answers its own paths and hands every other path to `Assets`. `init` returns an error unless `icons/check.svg` loads through it.
+GPUI takes one asset source. An app with files of its own, or another library's, passes `Assets::before(theirs)`: Ely's paths load from Ely, every other path from `theirs`, whose errors pass through. `init` returns an error naming the first of Ely's files the source cannot load.
 
 Use `Icon::from_path("app-icons/mark.svg")` to draw one of those SVG assets with Ely's themed sizing and color. It also accepts an owned `String` or `SharedString`. Paths are asset keys resolved by `AssetSource`; a path it lacks logs an error on first draw and shows a red broken-picture icon. SVGs render as single-color masks; `IconName` and `IconPicker` continue to list the bundled icons.
 
