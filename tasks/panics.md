@@ -37,7 +37,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P20 Debug — `src/debug`
 - [x] P21 Documents — `src/documents`
 - [x] P22 Collaboration — `src/collab`
-- [ ] P23 AI Chat — `src/chat`
+- [x] P23 AI Chat — `src/chat`
 - [ ] P24 Agent — `src/agent`
 - [ ] P25 Generative — `src/generative`
 - [ ] P26 Media — `src/media`
