@@ -8,19 +8,19 @@
 
 ## Add the dependencies
 
-Ely is not on crates.io. Depend on it by git, with GPUI from Zed's repository at the revision Ely pins:
+Ely is not on crates.io. Depend on it by git, with GPUI at the snapshot Ely pins. `gpui-pre` republishes Zed's GPUI on crates.io, and GPUI Kit pins the same one:
 
 ```toml
 [dependencies]
 ely-gpui-component = { git = "https://github.com/ZacharyZhang-NY/Ely-GPUI-Components" }
-gpui = { git = "https://github.com/zed-industries/zed", rev = "1a28cff4b409169bac058bca40dfbfeb7621d19b" }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1a28cff4b409169bac058bca40dfbfeb7621d19b", features = ["font-kit"] }
+gpui = { package = "gpui-pre", version = "=0.3.8" }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.8", features = ["font-kit"] }
 ```
 
 | Line | Why |
 | --- | --- |
 | `ely-gpui-component` | The library. `Cargo.lock` records the commit; add `rev = "<commit>"` to hold it in `Cargo.toml` as well. |
-| `gpui` | The same revision as Ely's. Another revision builds a second GPUI, and its types do not match the ones Ely takes. |
+| `gpui` | The same snapshot as Ely's, under the name `gpui`. Another builds a second GPUI, and its types do not match the ones Ely takes. |
 | `gpui_platform` | Opens windows on each platform. Without `font-kit`, macOS falls back to GPUI's no-op text system and draws no text. |
 
 ## Shaders
@@ -45,5 +45,5 @@ A window opens with a counter and a Press button. From a clone of the repository
 | `init` error: `ely: asset source failed` | The app's asset source returned an error. The error carries it. |
 | `init` error: `ely: embedded fonts failed to register` | GPUI's text system refused Ely's fonts. File a bug with the log. |
 | Windows open with no text on macOS | `gpui_platform` lacks the `font-kit` feature. |
-| `mismatched types`, with the note ``there are multiple different versions of crate `gpui` in the dependency graph`` | `gpui` points at a revision other than Ely's. Use `1a28cff4b409169bac058bca40dfbfeb7621d19b`. |
+| `mismatched types`, with the note ``there are multiple different versions of crate `gpui` in the dependency graph`` | `gpui` names another snapshot or a git source. Use `gpui-pre` at `=0.3.8`. |
 | `metal shader compilation failed` | Default features are off and Xcode's Metal compiler is missing. Keep `runtime_shaders`. |

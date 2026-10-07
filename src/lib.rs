@@ -85,3 +85,14 @@ fn setup(cx: &mut App) {
     terminal::bind_keys(cx);
     documents::bind_keys(cx);
 }
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests {
+    use gpui::{AppContext, TestAppContext};
+
+    #[gpui::test]
+    #[should_panic(expected = "leaked handles")]
+    fn a_leaked_entity_fails_its_test(cx: &mut TestAppContext) {
+        std::mem::forget(cx.new(|_| ()));
+    }
+}

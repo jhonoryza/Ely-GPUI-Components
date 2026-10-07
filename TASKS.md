@@ -188,6 +188,7 @@ Per-component lines live in `tasks/`. Tags there:
 - [x] T51 Showcase · an apps page fed by a public repo — `tasks/showcase.md`
 - [x] T52 Logo · an isometric mark for the header, favicon and OG image — `tasks/logo.md`
 - [x] T53 Panics · handlers move into `new`, live states log and show, asserts audited — `tasks/panics.md`
+- [ ] T54 GPUI Kit · Ely and Kit share one app and one window — `tasks/kit.md`
 
 ## T00 detail
 
