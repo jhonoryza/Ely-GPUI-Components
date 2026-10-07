@@ -34,8 +34,8 @@ pub struct RefreshIntervalSelector {
     every: Option<u32>,
     last: Timestamp,
     now: Timestamp,
-    on_change: Option<OnInterval>,
-    on_refresh: Option<Run>,
+    on_change: OnInterval,
+    on_refresh: Run,
 }
 
 impl RefreshIntervalSelector {
@@ -45,6 +45,8 @@ impl RefreshIntervalSelector {
         every: Option<u32>,
         last: Timestamp,
         now: Timestamp,
+        on_change: impl Fn(Option<u32>, &mut Window, &mut App) + 'static,
+        on_refresh: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
         if let Some(every) = every {
             assert!(
@@ -59,22 +61,9 @@ impl RefreshIntervalSelector {
             every,
             last,
             now,
-            on_change: None,
-            on_refresh: None,
+            on_change: Rc::new(on_change),
+            on_refresh: Rc::new(on_refresh),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(Option<u32>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
-    }
-
-    pub fn on_refresh(mut self, handler: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_refresh = Some(Rc::new(handler));
-        self
     }
 }
 
@@ -88,12 +77,8 @@ impl RenderOnce for RefreshIntervalSelector {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let id = self.id;
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("refresh interval selector {id:?} has no on_change"));
-        let on_refresh = self
-            .on_refresh
-            .unwrap_or_else(|| panic!("refresh interval selector {id:?} has no on_refresh"));
+        let on_change = self.on_change;
+        let on_refresh = self.on_refresh;
         div()
             .flex()
             .flex_wrap()
@@ -195,8 +180,8 @@ pub struct DashboardFilterBar {
     id: ElementId,
     window: TimeWindow,
     filters: Vec<DashboardFilter>,
-    on_window: Option<OnWindow>,
-    on_filter: Option<OnFilter>,
+    on_window: OnWindow,
+    on_filter: OnFilter,
 }
 
 impl DashboardFilterBar {
@@ -204,31 +189,16 @@ impl DashboardFilterBar {
         id: impl Into<ElementId>,
         window: TimeWindow,
         filters: impl IntoIterator<Item = DashboardFilter>,
+        on_window: impl Fn(TimeWindow, &mut Window, &mut App) + 'static,
+        on_filter: impl Fn(&SharedString, Option<SharedString>, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             window,
             filters: filters.into_iter().collect(),
-            on_window: None,
-            on_filter: None,
+            on_window: Rc::new(on_window),
+            on_filter: Rc::new(on_filter),
         }
-    }
-
-    pub fn on_window(
-        mut self,
-        handler: impl Fn(TimeWindow, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_window = Some(Rc::new(handler));
-        self
-    }
-
-    /// Gets a filter's key and what is picked in it now; Clear sends none for each one picked.
-    pub fn on_filter(
-        mut self,
-        handler: impl Fn(&SharedString, Option<SharedString>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_filter = Some(Rc::new(handler));
-        self
     }
 }
 
@@ -236,12 +206,8 @@ impl RenderOnce for DashboardFilterBar {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
         let theme = cx.theme();
-        let on_window = self
-            .on_window
-            .unwrap_or_else(|| panic!("dashboard filter bar {id:?} has no on_window"));
-        let on_filter = self
-            .on_filter
-            .unwrap_or_else(|| panic!("dashboard filter bar {id:?} has no on_filter"));
+        let on_window = self.on_window;
+        let on_filter = self.on_filter;
         let picked: Vec<SharedString> = self
             .filters
             .iter()

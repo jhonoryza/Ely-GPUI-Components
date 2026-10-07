@@ -27,7 +27,7 @@ impl Render for Wall {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let owner = cx.entity();
         let grid = self.tiles.iter().fold(
-            DashboardGrid::new("grid", 12, self.tiles.clone()).on_change(move |tiles, _, cx| {
+            DashboardGrid::new("grid", 12, self.tiles.clone(), move |tiles, _, cx| {
                 owner.update(cx, |wall, cx| {
                     wall.tiles = tiles.clone();
                     wall.heard.push(tiles);
@@ -269,9 +269,9 @@ fn filters(_: &Board, owner: Entity<Board>) -> AnyElement {
         "filters",
         TimeWindow::ALL[0],
         [filter("region"), filter("env")],
+        |_, _, _| {},
+        move |key, value, _, cx| say(&owner, format!("{key} {value:?}"), cx),
     )
-    .on_window(|_, _, _| {})
-    .on_filter(move |key, value, _, cx| say(&owner, format!("{key} {value:?}"), cx))
     .into_any_element()
 }
 
@@ -308,4 +308,29 @@ fn a_narrow_grid_stacks_its_tiles_in_reading_order(cx: &mut TestAppContext) {
         "a, b, then c: {a:?} {b:?} {c:?}"
     );
     assert_eq!(a.size.width, px(300.0), "each fills the width");
+}
+
+/// A grid at `width` whose tile b has no card and whose card c has no tile.
+struct Mismatched(f32);
+
+impl Render for Mismatched {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let tiles = [
+            Tile::new("a", (0, 0), (6, 2)),
+            Tile::new("b", (6, 0), (6, 2)),
+        ];
+        let grid = DashboardGrid::new("grid", 12, tiles, |_, _, _| {})
+            .card("a", DashboardCard::new("A"))
+            .card("c", DashboardCard::new("C"));
+        div().w(px(self.0)).child(grid)
+    }
+}
+
+#[gpui::test]
+fn tiles_and_cards_that_do_not_match_are_left_out(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    for width in [960.0, 320.0] {
+        let (_, cx) = cx.add_window_view(move |_, _| Mismatched(width));
+        settle(cx);
+    }
 }

@@ -58,14 +58,16 @@ fn compacted(mut tiles: Vec<Tile>) -> Vec<Tile> {
     out
 }
 
-/// The tiles once `to` takes the place of the tile of its key: it goes where it was put, the tiles it lands on move down below it, then every tile, it too, rises as far as the ones above allow.
-pub fn arranged(tiles: &[Tile], to: Tile, columns: u32) -> Vec<Tile> {
+/// The tiles once `to` takes the place of the tile of its key: it goes where it was put, the tiles it lands on move down below it, then every tile, it too, rises as far as the ones above allow. None, logged, when the grid lost that tile.
+pub fn arranged(tiles: &[Tile], to: Tile, columns: u32) -> Option<Vec<Tile>> {
     assert!(columns > 0, "a grid of no columns");
-    assert!(
-        tiles.iter().any(|tile| tile.key == to.key),
-        "no tile {} on the grid",
-        to.key
-    );
+    if !tiles.iter().any(|tile| tile.key == to.key) {
+        log::error!(
+            "dashboard grid: no tile {} on the grid; nothing moves",
+            to.key
+        );
+        return None;
+    }
     let mut placed = vec![to.clone().fitted(columns)];
     let mut rest: Vec<Tile> = tiles
         .iter()
@@ -79,15 +81,15 @@ pub fn arranged(tiles: &[Tile], to: Tile, columns: u32) -> Vec<Tile> {
         }
         placed.push(tile);
     }
-    compacted(placed)
+    Some(compacted(placed))
 }
 
 /// Where a tile goes on a step down or up: below the next tile under it, or into the place of the next one above; none at the edge. Both overlap its columns.
 pub fn stepped(tiles: &[Tile], key: &str, down: bool) -> Option<Tile> {
-    let tile = tiles
-        .iter()
-        .find(|tile| tile.key == key)
-        .unwrap_or_else(|| panic!("no tile {key} on the grid"));
+    let Some(tile) = tiles.iter().find(|tile| tile.key == key) else {
+        log::error!("dashboard grid: no tile {key} on the grid");
+        return None;
+    };
     let beside = |other: &&Tile| {
         other.key != tile.key && other.x < tile.x + tile.w && tile.x < other.x + other.w
     };
@@ -132,8 +134,16 @@ mod tests {
     }
 
     #[test]
+    fn a_tile_gone_from_the_grid_moves_nothing() {
+        let gone = Tile::new("gone", (0, 0), (6, 2));
+        assert_eq!(arranged(&grid(), gone, 12), None);
+        assert_eq!(stepped(&grid(), "gone", true), None);
+    }
+
+    #[test]
     fn a_tile_dropped_on_another_pushes_it_below() {
-        let moved = arranged(&grid(), Tile::new("b", (0, 0), (6, 2)), 12);
+        let moved =
+            arranged(&grid(), Tile::new("b", (0, 0), (6, 2)), 12).expect("a tile of the grid");
         assert_eq!(at(&moved, "b"), (0, 0, 6, 2), "the dropped tile stays");
         assert_eq!(at(&moved, "a"), (0, 2, 6, 2), "a goes below b");
         assert_eq!(at(&moved, "c"), (0, 4, 12, 3), "and c below a");
@@ -141,20 +151,23 @@ mod tests {
 
     #[test]
     fn tiles_rise_into_the_gap_a_tile_leaves() {
-        let moved = arranged(&grid(), Tile::new("a", (0, 9), (6, 2)), 12);
+        let moved =
+            arranged(&grid(), Tile::new("a", (0, 9), (6, 2)), 12).expect("a tile of the grid");
         assert_eq!(at(&moved, "c"), (0, 2, 12, 3), "c keeps below b");
         assert_eq!(at(&moved, "a"), (0, 5, 6, 2), "a rises to rest on c");
     }
 
     #[test]
     fn a_tile_stays_inside_the_grid() {
-        let moved = arranged(&grid(), Tile::new("a", (10, 0), (6, 2)), 12);
+        let moved =
+            arranged(&grid(), Tile::new("a", (10, 0), (6, 2)), 12).expect("a tile of the grid");
         assert_eq!(
             at(&moved, "a"),
             (6, 0, 6, 2),
             "pulled back from the right edge"
         );
-        let wide = arranged(&grid(), Tile::new("b", (0, 0), (20, 1)), 12);
+        let wide =
+            arranged(&grid(), Tile::new("b", (0, 0), (20, 1)), 12).expect("a tile of the grid");
         assert_eq!(at(&wide, "b"), (0, 0, 12, 1), "no wider than the grid");
     }
 
@@ -162,12 +175,12 @@ mod tests {
     fn a_step_down_passes_the_tile_under_and_a_step_up_takes_its_place() {
         let down = stepped(&grid(), "a", true).expect("c lies under a");
         assert_eq!((down.x, down.y), (0, 5), "a steps under the bottom of c");
-        let moved = arranged(&grid(), down, 12);
+        let moved = arranged(&grid(), down, 12).expect("a tile of the grid");
         assert_eq!(at(&moved, "c"), (0, 2, 12, 3), "c rests under b");
         assert_eq!(at(&moved, "a"), (0, 5, 6, 2), "a rests under c");
         let up = stepped(&moved, "a", false).expect("c lies over a");
         assert_eq!(
-            at(&arranged(&moved, up, 12), "a"),
+            at(&arranged(&moved, up, 12).expect("a tile of the grid"), "a"),
             (0, 0, 6, 2),
             "back on top"
         );

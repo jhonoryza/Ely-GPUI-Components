@@ -41,7 +41,7 @@ pub struct DashboardGrid {
     columns: u32,
     tiles: Vec<Tile>,
     cards: Vec<(SharedString, AnyElement)>,
-    on_change: Option<OnTiles>,
+    on_change: OnTiles,
 }
 
 impl DashboardGrid {
@@ -49,6 +49,7 @@ impl DashboardGrid {
         id: impl Into<ElementId>,
         columns: u32,
         tiles: impl IntoIterator<Item = Tile>,
+        on_change: impl Fn(Vec<Tile>, &mut Window, &mut App) + 'static,
     ) -> Self {
         assert!(columns > 0, "a grid of no columns");
         Self {
@@ -56,21 +57,13 @@ impl DashboardGrid {
             columns,
             tiles: tiles.into_iter().collect(),
             cards: Vec::new(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
     }
 
     /// What the tile of `key` shows.
     pub fn card(mut self, key: impl Into<SharedString>, card: impl IntoElement) -> Self {
         self.cards.push((key.into(), card.into_any_element()));
-        self
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(Vec<Tile>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
         self
     }
 }
@@ -124,24 +117,28 @@ fn stacked(
     tiles.sort_by_key(|tile| (tile.y, tile.x));
     let column: Vec<_> = tiles
         .into_iter()
-        .map(|tile| {
-            let at = cards
-                .iter()
-                .position(|(key, _)| *key == tile.key)
-                .unwrap_or_else(|| panic!("dashboard grid {id:?}: no card for tile {}", tile.key));
+        .filter_map(|tile| {
+            let Some(at) = cards.iter().position(|(key, _)| *key == tile.key) else {
+                log::error!(
+                    "dashboard grid {id:?}: no card for tile {}; left out",
+                    tile.key
+                );
+                return None;
+            };
             let card = cards.remove(at).1;
             let key = tile.key.clone();
-            div()
-                .debug_selector(move || format!("stacked-{key}"))
-                .h((sizes.row + sizes.gap) * tile.h as f32 - sizes.gap)
-                .child(card)
+            Some(
+                div()
+                    .debug_selector(move || format!("stacked-{key}"))
+                    .h((sizes.row + sizes.gap) * tile.h as f32 - sizes.gap)
+                    .child(card),
+            )
         })
         .collect();
-    assert!(
-        cards.is_empty(),
-        "dashboard grid: cards with no tile: {:?}",
-        cards.iter().map(|(key, _)| key).collect::<Vec<_>>()
-    );
+    if !cards.is_empty() {
+        let keys: Vec<_> = cards.iter().map(|(key, _)| key).collect();
+        log::error!("dashboard grid: cards with no tile {keys:?}; left out");
+    }
     div()
         .id(id)
         .relative()
@@ -172,26 +169,27 @@ impl RenderOnce for DashboardGrid {
         let cell = ((width + gap) / columns as f32, row + gap);
         let landing = board.read(cx).landing.clone();
         let shown = match &landing {
-            Some(tile) => arranged(&self.tiles, tile.clone(), columns),
+            Some(tile) => {
+                arranged(&self.tiles, tile.clone(), columns).unwrap_or_else(|| self.tiles.clone())
+            }
             None => self.tiles.clone(),
         };
         let height = shown.iter().map(|tile| tile.y + tile.h).max().unwrap_or(0) as f32 * cell.1;
         let tiles = Rc::new(self.tiles);
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("dashboard grid {id:?} has no on_change"));
+        let on_change = self.on_change;
         let (colors, radius) = (theme.colors.clone(), theme.radius(Radius::Lg));
         let grip = theme.control_height(crate::theme::ControlSize::Sm);
         let mut cards = self.cards;
         let placed: Vec<AnyElement> = shown
             .iter()
-            .map(|tile| {
-                let at = cards
-                    .iter()
-                    .position(|(key, _)| *key == tile.key)
-                    .unwrap_or_else(|| {
-                        panic!("dashboard grid {id:?}: no card for tile {}", tile.key)
-                    });
+            .filter_map(|tile| {
+                let Some(at) = cards.iter().position(|(key, _)| *key == tile.key) else {
+                    log::error!(
+                        "dashboard grid {id:?}: no card for tile {}; left out",
+                        tile.key
+                    );
+                    return None;
+                };
                 let card = cards.remove(at).1;
                 let focus = tab_stop(
                     (id.clone(), format!("tile-{}", tile.key)).into(),
@@ -217,92 +215,97 @@ impl RenderOnce for DashboardGrid {
                 };
                 let (keys, keyed_tiles, keyed_change, own) =
                     (key.clone(), tiles.clone(), on_change.clone(), focus.clone());
-                div()
-                    .id((id.clone(), format!("tile-{}", tile.key)))
-                    .track_focus(&focus)
-                    .absolute()
-                    .left(Pixels::from(tile.x as f32 * cell.0))
-                    .top(Pixels::from(tile.y as f32 * cell.1))
-                    .w(Pixels::from(tile.w as f32 * cell.0 - gap))
-                    .h(Pixels::from(tile.h as f32 * cell.1 - gap))
-                    .rounded(radius)
-                    .border_1()
-                    .border_color(if focused {
-                        colors.focus
-                    } else {
-                        gpui::transparent_black()
-                    })
-                    .on_key_down(move |event, window, cx| {
-                        if !own.is_focused(window) {
-                            return;
-                        }
-                        let grow = event.keystroke.modifiers.shift;
-                        let key = event.keystroke.key.as_str();
-                        let (dx, dy): (i64, i64) = match key {
-                            "left" => (-1, 0),
-                            "right" => (1, 0),
-                            "up" => (0, -1),
-                            "down" => (0, 1),
-                            _ => return,
-                        };
-                        cx.stop_propagation();
-                        let tile = keyed_tiles
-                            .iter()
-                            .find(|tile| tile.key == keys)
-                            .expect("a tile of the grid");
-                        let to = match (grow, dy) {
-                            (false, 0) => pulled(tile, Grip::Move, (dx as f32, 0.0), (1.0, 1.0)),
-                            (false, _) => match stepped(&keyed_tiles, &keys, dy > 0) {
-                                Some(to) => to,
-                                None => return,
-                            },
-                            (true, _) => {
-                                pulled(tile, Grip::Size, (dx as f32, dy as f32), (1.0, 1.0))
+                Some(
+                    div()
+                        .id((id.clone(), format!("tile-{}", tile.key)))
+                        .track_focus(&focus)
+                        .absolute()
+                        .left(Pixels::from(tile.x as f32 * cell.0))
+                        .top(Pixels::from(tile.y as f32 * cell.1))
+                        .w(Pixels::from(tile.w as f32 * cell.0 - gap))
+                        .h(Pixels::from(tile.h as f32 * cell.1 - gap))
+                        .rounded(radius)
+                        .border_1()
+                        .border_color(if focused {
+                            colors.focus
+                        } else {
+                            gpui::transparent_black()
+                        })
+                        .on_key_down(move |event, window, cx| {
+                            if !own.is_focused(window) {
+                                return;
                             }
-                        };
-                        log::info!("dashboard grid: {} to {to:?}", keys);
-                        keyed_change(arranged(&keyed_tiles, to, columns), window, cx);
-                    })
-                    .child(div().size_full().child(card))
-                    .child(
-                        div()
-                            .id((id.clone(), format!("move-{}", tile.key)))
-                            .absolute()
-                            .top_0()
-                            .left_0()
-                            .right(grip)
-                            .h(grip)
-                            .cursor_grab()
-                            .on_mouse_down(MouseButton::Left, start(Grip::Move))
-                            .on_drag(Pull { owner }, |_, _, _, cx| cx.new(|_| EmptyView)),
-                    )
-                    .child(
-                        div()
-                            .id((id.clone(), format!("size-{}", tile.key)))
-                            .absolute()
-                            .bottom_0()
-                            .right_0()
-                            .size(grip)
-                            .flex()
-                            .items_end()
-                            .justify_end()
-                            .cursor(gpui::CursorStyle::ResizeUpLeftDownRight)
-                            .on_mouse_down(MouseButton::Left, start(Grip::Size))
-                            .on_drag(Pull { owner }, |_, _, _, cx| cx.new(|_| EmptyView))
-                            .child(
-                                Icon::new(IconName::GripHorizontal)
-                                    .size(IconSize::Xs)
-                                    .color(colors.fg_subtle),
-                            ),
-                    )
-                    .into_any_element()
+                            let grow = event.keystroke.modifiers.shift;
+                            let key = event.keystroke.key.as_str();
+                            let (dx, dy): (i64, i64) = match key {
+                                "left" => (-1, 0),
+                                "right" => (1, 0),
+                                "up" => (0, -1),
+                                "down" => (0, 1),
+                                _ => return,
+                            };
+                            cx.stop_propagation();
+                            let tile = keyed_tiles
+                                .iter()
+                                .find(|tile| tile.key == keys)
+                                .expect("a tile of the grid");
+                            let to = match (grow, dy) {
+                                (false, 0) => {
+                                    pulled(tile, Grip::Move, (dx as f32, 0.0), (1.0, 1.0))
+                                }
+                                (false, _) => match stepped(&keyed_tiles, &keys, dy > 0) {
+                                    Some(to) => to,
+                                    None => return,
+                                },
+                                (true, _) => {
+                                    pulled(tile, Grip::Size, (dx as f32, dy as f32), (1.0, 1.0))
+                                }
+                            };
+                            log::info!("dashboard grid: {} to {to:?}", keys);
+                            if let Some(tiles) = arranged(&keyed_tiles, to, columns) {
+                                keyed_change(tiles, window, cx);
+                            }
+                        })
+                        .child(div().size_full().child(card))
+                        .child(
+                            div()
+                                .id((id.clone(), format!("move-{}", tile.key)))
+                                .absolute()
+                                .top_0()
+                                .left_0()
+                                .right(grip)
+                                .h(grip)
+                                .cursor_grab()
+                                .on_mouse_down(MouseButton::Left, start(Grip::Move))
+                                .on_drag(Pull { owner }, |_, _, _, cx| cx.new(|_| EmptyView)),
+                        )
+                        .child(
+                            div()
+                                .id((id.clone(), format!("size-{}", tile.key)))
+                                .absolute()
+                                .bottom_0()
+                                .right_0()
+                                .size(grip)
+                                .flex()
+                                .items_end()
+                                .justify_end()
+                                .cursor(gpui::CursorStyle::ResizeUpLeftDownRight)
+                                .on_mouse_down(MouseButton::Left, start(Grip::Size))
+                                .on_drag(Pull { owner }, |_, _, _, cx| cx.new(|_| EmptyView))
+                                .child(
+                                    Icon::new(IconName::GripHorizontal)
+                                        .size(IconSize::Xs)
+                                        .color(colors.fg_subtle),
+                                ),
+                        )
+                        .into_any_element(),
+                )
             })
             .collect();
-        assert!(
-            cards.is_empty(),
-            "dashboard grid: cards with no tile: {:?}",
-            cards.iter().map(|(key, _)| key).collect::<Vec<_>>()
-        );
+        if !cards.is_empty() {
+            let keys: Vec<_> = cards.iter().map(|(key, _)| key).collect();
+            log::error!("dashboard grid: cards with no tile {keys:?}; left out");
+        }
         let ghost = landing.as_ref().map(|tile| {
             div()
                 .absolute()
@@ -334,7 +337,9 @@ impl RenderOnce for DashboardGrid {
             });
             if let Some(to) = landing {
                 log::info!("dashboard grid: {} lands at {to:?}", to.key);
-                on_change(arranged(tiles, to, columns), window, cx);
+                if let Some(tiles) = arranged(tiles, to, columns) {
+                    on_change(tiles, window, cx);
+                }
             }
         };
         let end = Rc::new(end);

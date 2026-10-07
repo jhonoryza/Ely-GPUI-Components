@@ -48,7 +48,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P31 Project — `src/project`
 - [x] P32 Canvas & Design — `src/canvas`
 - [x] P33 DB & Dev Tools — `src/devtools`
-- [ ] P34 Dashboard — `src/dashboard`
+- [x] P34 Dashboard — `src/dashboard`
 - [ ] P35 Settings — `src/settings`
 - [ ] P36 Account — `src/account`
 - [ ] P37 Onboarding — `src/onboarding`
@@ -99,3 +99,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P31: a gone assignee logs and shows nobody; a milestone past its count fills, the text real; a roadmap past jiff's range ends inclusively on its last day; the database timeline leaves out and counts tasks due before they start and counts months in `i32`, and its calendar keeps to days `calendar::within` holds; the board's drag and drop take only columns, cards and places this frame holds. Kept: one list's uniqueness, an initiative's and a milestone's own order, shares, month counts, pomodoro lengths, issue keys, lookups over the components' own tables. Review: 3 rounds.
 - P32: the eight design panels take their handlers in `new` (AGENTS.md says so); edges, links, wires, links in progress, resizes, restacks, topics and whiteboard edits that name a node, port, shape, layer or topic gone from this frame log and change nothing; a wire's release fits its source as it now stands; `Topic::adding`, `removing` and `renaming` return `Option`; a mind map's selection, a palette's tool and a history position no longer held mark none. Kept: one-value contracts (alignment counts, frames, zoom, polygon sides, brush hues and type weights among the theme's tables), lookups over the panels' own option tables, button-gated expects. Review: 2 rounds.
 - P33: six devtools take their handlers in `new` (contrast checker, environment selector, GraphQL explorer, WebSocket console, structure editor, index manager); `collection::moved` returns `Option` for a gone key or target or a drop into a request; a gone environment shows none chosen; an ER table without a place stays out. Kept: readings, costs, lookups over the components' own tables, button-gated expects, JSON that read writes back. Review: 1 round.
+- P34: the refresh interval selector, filter bar and dashboard grid take their handlers in `new`; `tiles::arranged` and `stepped` return `Option` for a tile gone from the grid, so a landing or step after the owner removed it moves nothing; tiles without cards and cards without tiles stay out. Kept: columns, cells, intervals offered, services and uptimes, lookups from one render. Review: 1 round.

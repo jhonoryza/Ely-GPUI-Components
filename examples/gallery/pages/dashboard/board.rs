@@ -82,50 +82,51 @@ pub fn grid(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             picked: service,
         },
     ];
-    let grid = DashboardGrid::new("dashboard-grid", 12, tiles)
-        .card(
-            "requests",
-            DashboardCard::new("Requests").subtitle("per minute").body(
-                Statistic::new("dashboard-requests", "This hour", 12_400.0)
-                    .trend(TrendIndicator::new(0.082)),
-            ),
-        )
-        .card(
-            "errors",
-            DashboardCard::new("Errors").subtitle("5xx share").body(
-                Statistic::new("dashboard-errors", "This hour", 0.42)
-                    .decimals(2)
-                    .suffix("%")
-                    .trend(TrendIndicator::new(-0.12)),
-            ),
-        )
-        .card(
-            "cpu",
-            DashboardCard::new("CPU").body(Gauge::new(
-                "dashboard-cpu",
-                "percent busy",
-                62.0,
-                0.0,
-                100.0,
-            )),
-        )
-        .card(
-            "latency",
-            DashboardCard::new("Latency")
-                .subtitle("p95, milliseconds")
-                .body(LineChart::new("dashboard-latency", hours).series(latency)),
-        )
-        .card(
-            "saturation",
-            DashboardCard::new("Saturation").body(Gauge::new(
-                "dashboard-memory",
-                "memory in use",
-                81.0,
-                0.0,
-                100.0,
-            )),
-        )
-        .on_change(move |next, _, cx| change(&moved, cx, |wall| wall.tiles = next));
+    let grid = DashboardGrid::new("dashboard-grid", 12, tiles, move |next, _, cx| {
+        change(&moved, cx, |wall| wall.tiles = next)
+    })
+    .card(
+        "requests",
+        DashboardCard::new("Requests").subtitle("per minute").body(
+            Statistic::new("dashboard-requests", "This hour", 12_400.0)
+                .trend(TrendIndicator::new(0.082)),
+        ),
+    )
+    .card(
+        "errors",
+        DashboardCard::new("Errors").subtitle("5xx share").body(
+            Statistic::new("dashboard-errors", "This hour", 0.42)
+                .decimals(2)
+                .suffix("%")
+                .trend(TrendIndicator::new(-0.12)),
+        ),
+    )
+    .card(
+        "cpu",
+        DashboardCard::new("CPU").body(Gauge::new(
+            "dashboard-cpu",
+            "percent busy",
+            62.0,
+            0.0,
+            100.0,
+        )),
+    )
+    .card(
+        "latency",
+        DashboardCard::new("Latency")
+            .subtitle("p95, milliseconds")
+            .body(LineChart::new("dashboard-latency", hours).series(latency)),
+    )
+    .card(
+        "saturation",
+        DashboardCard::new("Saturation").body(Gauge::new(
+            "dashboard-memory",
+            "memory in use",
+            81.0,
+            0.0,
+            100.0,
+        )),
+    );
     section(
         "Dashboard Grid · Widget / DashboardCard · RefreshIntervalSelector · DashboardFilterBar · StatCard → data_display::Statistic · MetricsChart → charts::LineChart · ResourceGauge → data_display::Gauge",
         "Widgets on a grid of twelve columns: a tile's top strip drags it and its corner resizes it, a cell at a time, while the others make room and rise to fill gaps; a focused tile steps with the arrows. Over it, the window of time and the filters, and how often it refreshes.",
@@ -143,9 +144,7 @@ pub fn grid(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .justify_between()
                     .gap_3()
                     .child(
-                        DashboardFilterBar::new("dashboard-filters", time, filters)
-                            .on_window(move |next, _, cx| change(&windowed, cx, |wall| wall.window = next))
-                            .on_filter(move |key, value, _, cx| {
+                        DashboardFilterBar::new("dashboard-filters", time, filters, move |next, _, cx| change(&windowed, cx, |wall| wall.window = next), move |key, value, _, cx| {
                                 change(&filtered, cx, |wall| match key.as_ref() {
                                     "environment" => wall.environment = value,
                                     _ => wall.service = value,
@@ -153,9 +152,7 @@ pub fn grid(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                             }),
                     )
                     .child(
-                        RefreshIntervalSelector::new("dashboard-refresh", every, clock - jiff::SignedDuration::from_secs(since), clock)
-                            .on_change(move |next, _, cx| change(&timed, cx, |wall| wall.every = next))
-                            .on_refresh(move |_, cx| change(&refreshed, cx, |wall| wall.since = 0)),
+                        RefreshIntervalSelector::new("dashboard-refresh", every, clock - jiff::SignedDuration::from_secs(since), clock, move |next, _, cx| change(&timed, cx, |wall| wall.every = next), move |_, cx| change(&refreshed, cx, |wall| wall.since = 0)),
                     ),
             )
             .child(div().w(px(900.)).child(grid)),
