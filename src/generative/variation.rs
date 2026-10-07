@@ -21,7 +21,7 @@ pub struct VariationPicker {
     id: ElementId,
     pictures: Vec<SharedString>,
     ratio: f32,
-    chosen: usize,
+    chosen: Option<usize>,
     on_choose: Option<Pick>,
     on_vary: Option<OnFlag>,
     on_upscale: Option<Run>,
@@ -36,16 +36,18 @@ impl VariationPicker {
         chosen: usize,
     ) -> Self {
         let pictures: Vec<SharedString> = pictures.into_iter().map(Into::into).collect();
-        assert!(
-            chosen < pictures.len(),
-            "variation {chosen} of {}",
-            pictures.len()
-        );
+        let held = chosen < pictures.len();
+        if !held {
+            log::error!(
+                "variations: variation {chosen} of {}; none chosen",
+                pictures.len()
+            );
+        }
         Self {
             id: id.into(),
             pictures,
             ratio: checked_ratio(ratio),
-            chosen,
+            chosen: held.then_some(chosen),
             on_choose: None,
             on_vary: None,
             on_upscale: None,
@@ -89,45 +91,50 @@ impl RenderOnce for VariationPicker {
         let (large, small) = (theme.radius(Radius::Lg), theme.radius(Radius::Md));
         let thumb = theme.avatar_size(AvatarSize::Xl);
         let length = motion::duration(motion::BASE, cx);
-        let picture = Image::new(
-            (self.id.clone(), format!("large-{}", self.chosen)),
-            source(&self.pictures[self.chosen]),
-        )
-        .size_full()
-        .rounded(large);
-        let shown = match turn {
-            0 => picture.into_any_element(),
-            _ => div()
-                .size_full()
-                .child(picture)
-                .with_animation(
-                    (self.id.clone(), format!("fade-{turn}")),
-                    Animation::new(length).with_easing(motion::ease_out_cubic),
-                    |shown, t| shown.opacity(0.4 + 0.6 * t),
-                )
-                .into_any_element(),
-        };
+        let shown = self.chosen.map(|chosen| {
+            let picture = Image::new(
+                (self.id.clone(), format!("large-{chosen}")),
+                source(&self.pictures[chosen]),
+            )
+            .size_full()
+            .rounded(large);
+            match turn {
+                0 => picture.into_any_element(),
+                _ => div()
+                    .size_full()
+                    .child(picture)
+                    .with_animation(
+                        (self.id.clone(), format!("fade-{turn}")),
+                        Animation::new(length).with_easing(motion::ease_out_cubic),
+                        |shown, t| shown.opacity(0.4 + 0.6 * t),
+                    )
+                    .into_any_element(),
+            }
+        });
         let vary = |strong: bool, label: &'static str| {
-            self.on_vary.clone().map(|vary| {
-                Button::new((self.id.clone(), label), label)
-                    .variant(ButtonVariant::Secondary)
-                    .size(ControlSize::Sm)
-                    .icon(IconName::Shuffle)
-                    .on_click(move |_, window, cx| {
-                        log::info!("variation picker: vary, strong {strong}");
-                        vary(strong, window, cx)
-                    })
-            })
+            self.on_vary
+                .clone()
+                .filter(|_| self.chosen.is_some())
+                .map(|vary| {
+                    Button::new((self.id.clone(), label), label)
+                        .variant(ButtonVariant::Secondary)
+                        .size(ControlSize::Sm)
+                        .icon(IconName::Shuffle)
+                        .on_click(move |_, window, cx| {
+                            log::info!("variation picker: vary, strong {strong}");
+                            vary(strong, window, cx)
+                        })
+                })
         };
         div()
             .flex()
             .flex_col()
             .gap_3()
-            .child(framed(self.ratio, cx).rounded(large).child(shown))
+            .child(framed(self.ratio, cx).rounded(large).children(shown))
             .child(div().flex().flex_wrap().gap_2().children(
                 self.pictures.iter().zip(thumbs).enumerate().map(
                     |(ix, (picture, (focus, focused)))| {
-                        let chosen = ix == self.chosen;
+                        let chosen = self.chosen == Some(ix);
                         let choose = self.on_choose.clone();
                         div()
                             .id((self.id.clone(), format!("thumb-{ix}")))
@@ -176,16 +183,21 @@ impl RenderOnce for VariationPicker {
                     .gap_2()
                     .children(vary(false, "Vary subtly"))
                     .children(vary(true, "Vary strongly"))
-                    .children(self.on_upscale.clone().map(|upscale| {
-                        Button::new((self.id.clone(), "upscale"), "Upscale")
-                            .variant(ButtonVariant::Secondary)
-                            .size(ControlSize::Sm)
-                            .icon(IconName::Maximize2)
-                            .on_click(move |_, window, cx| {
-                                log::info!("variation picker: upscale");
-                                upscale(window, cx)
-                            })
-                    })),
+                    .children(
+                        self.on_upscale
+                            .clone()
+                            .filter(|_| self.chosen.is_some())
+                            .map(|upscale| {
+                                Button::new((self.id.clone(), "upscale"), "Upscale")
+                                    .variant(ButtonVariant::Secondary)
+                                    .size(ControlSize::Sm)
+                                    .icon(IconName::Maximize2)
+                                    .on_click(move |_, window, cx| {
+                                        log::info!("variation picker: upscale");
+                                        upscale(window, cx)
+                                    })
+                            }),
+                    ),
             )
     }
 }

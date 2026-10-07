@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use gpui::{App, ElementId, Entity, IntoElement, RenderOnce, Window};
+use gpui::{App, ElementId, Entity, EntityId, IntoElement, RenderOnce, Window};
 
 use crate::{
     buttons::IconButton,
@@ -43,22 +43,31 @@ impl SeedInput {
         }
     }
 
-    /// The seed in `field`; none while it is empty.
+    /// The seed in `field`, read after a `SeedInput` drew it; none while it is empty.
     pub fn read(field: &Entity<TextInput>, cx: &App) -> Option<u32> {
-        let text = field.read(cx).text();
+        let text = field.read(cx).committed();
         (!text.is_empty()).then(|| text.parse().expect("a seed field holds digits"))
     }
 }
 
 impl RenderOnce for SeedInput {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let fitted = window.use_keyed_state((self.id.clone(), "fitted"), cx, |_, _| false);
-        if !*fitted.read(cx) {
-            fitted.update(cx, |fitted, _| *fitted = true);
+        let fitted =
+            window.use_keyed_state((self.id.clone(), "fitted"), cx, |_, _| None::<EntityId>);
+        let field_id = self.field.entity_id();
+        if *fitted.read(cx) != Some(field_id) {
+            fitted.update(cx, |fitted, _| *fitted = Some(field_id));
             self.field.update(cx, |input, cx| {
-                input.set_fit(Rc::new(digits));
                 let text = input.text().to_string();
-                input.set_text(text, cx);
+                let kept = match text.is_empty() || text.parse::<u32>().is_ok() {
+                    true => text,
+                    false => {
+                        log::error!("seed input: {text:?} is no seed; cleared");
+                        String::new()
+                    }
+                };
+                input.set_fit(Rc::new(digits));
+                input.set_text(kept, cx);
                 input.set_placeholder("Random", cx);
             });
         }

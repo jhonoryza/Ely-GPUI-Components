@@ -63,14 +63,22 @@ impl EmbeddingVisualizer {
         for (ix, name) in groups.iter().enumerate() {
             assert!(!groups[..ix].contains(name), "group {name} named twice");
         }
+        let points: Vec<Embedded> = points
+            .into_iter()
+            .filter(|point| {
+                let held = point.group < groups.len();
+                if !held {
+                    log::error!(
+                        "embedding: point {} in group {} of {}; left out",
+                        point.key,
+                        point.group,
+                        groups.len()
+                    );
+                }
+                held
+            })
+            .collect();
         for point in &points {
-            assert!(
-                point.group < groups.len(),
-                "point {} in group {} of {}",
-                point.key,
-                point.group,
-                groups.len()
-            );
             assert!(
                 point.at.iter().all(|axis| (-1.0..=1.0).contains(axis)),
                 "point {} sits outside -1 to 1",

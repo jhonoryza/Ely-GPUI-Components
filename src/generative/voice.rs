@@ -80,14 +80,11 @@ impl TTSVoicePicker {
 
 impl RenderOnce for TTSVoicePicker {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let known = |key: &Option<SharedString>| {
-            key.as_ref()
-                .is_none_or(|key| self.voices.iter().any(|voice| &voice.key == key))
-        };
-        assert!(
-            known(&self.selected) && known(&self.playing),
-            "a voice named is not listed"
-        );
+        for key in [&self.selected, &self.playing].into_iter().flatten() {
+            if !self.voices.iter().any(|voice| &voice.key == key) {
+                log::error!("voice picker: voice {key} is not listed; none marked");
+            }
+        }
         let pickable = self.on_select.is_some();
         let focuses: Vec<_> = self
             .voices

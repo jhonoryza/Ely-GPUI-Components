@@ -38,12 +38,13 @@ impl AspectRatioPicker {
         selected: (u32, u32),
     ) -> Self {
         let ratios: Vec<(u32, u32)> = ratios.into_iter().collect();
-        assert!(
-            ratios.contains(&selected),
-            "ratio {}:{} is not among the ratios",
-            selected.0,
-            selected.1
-        );
+        if !ratios.contains(&selected) {
+            log::error!(
+                "aspect ratio: {}:{} is not among the ratios; none selected",
+                selected.0,
+                selected.1
+            );
+        }
         Self {
             id: id.into(),
             ratios,

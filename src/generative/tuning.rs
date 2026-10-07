@@ -71,11 +71,16 @@ impl FineTuneJobCard {
         data: impl Into<SharedString>,
         phase: TunePhase,
     ) -> Self {
-        if let TunePhase::Running(epoch, epochs, share) = phase {
+        let mut phase = phase;
+        if let TunePhase::Running(epoch, epochs, share) = &mut phase {
             assert!(
-                (1..=epochs).contains(&epoch) && (0.0..=1.0).contains(&share),
+                *epochs > 0 && (0.0..=1.0).contains(share),
                 "epoch {epoch} of {epochs} at {share}"
             );
+            if !(1..=*epochs).contains(epoch) {
+                log::error!("fine-tuning: epoch {epoch} of {epochs}; pegged");
+                *epoch = (*epoch).clamp(1, *epochs);
+            }
         }
         Self {
             id: id.into(),

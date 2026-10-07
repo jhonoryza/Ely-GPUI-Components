@@ -93,9 +93,11 @@ impl VideoGenerationTimeline {
 
 impl RenderOnce for VideoGenerationTimeline {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let named = (self.selected.as_ref())
-            .is_none_or(|key| self.shots.iter().any(|shot| &shot.key == key));
-        assert!(named, "the chosen shot is not listed");
+        if let Some(key) = &self.selected
+            && !self.shots.iter().any(|shot| &shot.key == key)
+        {
+            log::error!("video timeline: shot {key} is not listed; none selected");
+        }
         let pickable = self.on_select.is_some();
         let scroll = window
             .use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| ScrollHandle::new())

@@ -39,7 +39,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P22 Collaboration — `src/collab`
 - [x] P23 AI Chat — `src/chat`
 - [x] P24 Agent — `src/agent`
-- [ ] P25 Generative — `src/generative`
+- [x] P25 Generative — `src/generative`
 - [ ] P26 Media — `src/media`
 - [ ] P27 Files — `src/files`
 - [ ] P28 Messaging — `src/messaging`
@@ -90,3 +90,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P22: annotations and suggestions outside their text log and stay out, picks and decisions keeping the owner's index; `accept` returns `Option`; a gone pick, active thread or followed peer logs; yours at no count comes off; a masked field clamps a stale offset, so remote cursors and selections draw. Kept: a thread's comments, presence max, one list's order, empty marks, constant role and mode tables. Review: 3 rounds.
 - P23: a branch version past its total logs and shows a dash, its arrows off; a parameter outside its range logs and pegs; a passage's matches outside it log and stay out. Kept: one-value contracts (progress, scores, shapes, peaks, levels, limits, prices, capacity, format, hour), the composer's trigger rows and stream reveal by construction; `places` skips zero, so `decimals` meets no zero step. Review: 2 rounds.
 - P24: a checkpoint or browser frame past its list logs and marks none; progress past its total and memory past its limit log and fill their bars, the text keeping the real counts; three `should_panic` tests became render tests. Kept: the artifact's preview-or-source builder check, one-value contracts (cost, cpu, pointer, totals and limits above zero), registry lookups over a constant table. Review: 1 round.
+- P25: a verdict, ratio, style, shot, voice, variation or prompt version gone from its list logs and marks none (no picture, no Vary or Upscale, no diff); embedding points in a gone group stay out; an epoch and GPU memory past their whole log and peg. A seed field holds a seed: each field handed in is fitted, and text that is no seed clears; in `TextInput`, a fit starts a fresh undo history, undo keeps and `set_text` fits against the committed text, never an input method's unfinished one (`committed`), and a lifted mask stroke stays on its picture. Kept: one-value contracts, unique group names, one snapshot's loss lists, two to four sides, the legend's lookup. Review: 5 rounds, the cap; round 5's finding (`set_text` over a composition) is fixed and tested, and P26's review checks it.

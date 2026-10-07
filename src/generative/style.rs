@@ -39,10 +39,9 @@ impl StylePresetPicker {
     ) -> Self {
         let (presets, selected): (Vec<StylePreset>, SharedString) =
             (presets.into_iter().collect(), selected.into());
-        assert!(
-            presets.iter().any(|preset| preset.key == selected),
-            "style {selected} is not among the presets"
-        );
+        if !presets.iter().any(|preset| preset.key == selected) {
+            log::error!("style presets: {selected} is not among the presets; none selected");
+        }
         Self {
             id: id.into(),
             presets,

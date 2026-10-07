@@ -5,7 +5,7 @@ use gpui::{Context, IntoElement, ParentElement, Render, Styled, TestAppContext, 
 use super::{press, settle, setup, tab};
 use crate::generative::{
     Download, DownloadState, FineTuneJobCard, HardwareMonitor, ModelCard, ModelDownloadManager,
-    ModelState, ModelStatus, Reading, TunePhase,
+    Reading, TunePhase,
 };
 
 type Heard = Rc<RefCell<Vec<String>>>;
@@ -118,12 +118,6 @@ fn cards_offer_what_their_state_allows(cx: &mut TestAppContext) {
         ["use", "cancel", "open"],
         "a model in use offers no Use"
     );
-}
-
-#[test]
-#[should_panic(expected = "GPU memory 5 of 4")]
-fn memory_past_the_card_fails_loud() {
-    let _ = ModelStatus::new("model", "Orchid", ModelState::Ready).memory(5, 4);
 }
 
 #[test]

@@ -118,7 +118,7 @@ pub struct PromptVersion {
 pub struct PromptVersionHistory {
     id: ElementId,
     versions: Vec<PromptVersion>,
-    chosen: usize,
+    chosen: Option<usize>,
     on_choose: Option<Pick>,
     on_restore: Option<Pick>,
 }
@@ -131,15 +131,17 @@ impl PromptVersionHistory {
         chosen: usize,
     ) -> Self {
         let versions: Vec<PromptVersion> = versions.into_iter().collect();
-        assert!(
-            chosen < versions.len(),
-            "version {chosen} of {}",
-            versions.len()
-        );
+        let held = chosen < versions.len();
+        if !held {
+            log::error!(
+                "prompt versions: version {chosen} of {}; none chosen",
+                versions.len()
+            );
+        }
         Self {
             id: id.into(),
             versions,
-            chosen,
+            chosen: held.then_some(chosen),
             on_choose: None,
             on_restore: None,
         }
@@ -175,13 +177,18 @@ impl RenderOnce for PromptVersionHistory {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let chosen = self.chosen;
-        let (heading, before) = compared(&self.versions, chosen);
-        let shown = &self.versions[chosen];
-        let restore = self
-            .on_restore
-            .clone()
-            .filter(|_| chosen > 0)
-            .map(|restore| {
+        let diff = chosen.map(|chosen| {
+            let (heading, before) = compared(&self.versions, chosen);
+            (heading, before, self.versions[chosen].text.clone())
+        });
+        let heading: SharedString = match &diff {
+            Some((heading, ..)) => heading.clone(),
+            None => "No version is chosen".into(),
+        };
+        let restore = chosen
+            .filter(|chosen| *chosen > 0)
+            .zip(self.on_restore.clone())
+            .map(|(chosen, restore)| {
                 Button::new((self.id.clone(), "restore"), "Restore")
                     .variant(ButtonVariant::Secondary)
                     .size(ControlSize::Sm)
@@ -192,7 +199,7 @@ impl RenderOnce for PromptVersionHistory {
             });
         let rows = self.versions.iter().zip(focuses).enumerate().map(
             |(ix, (version, (focus, focused)))| {
-                let on = ix == chosen;
+                let on = chosen == Some(ix);
                 let choose = self.on_choose.clone();
                 div()
                     .id((self.id.clone(), format!("version-{ix}")))
@@ -291,7 +298,7 @@ impl RenderOnce for PromptVersionHistory {
                             )
                             .children(restore),
                     )
-                    .child(PromptDiff::new(before, shown.text.clone())),
+                    .children(diff.map(|(_, before, text)| PromptDiff::new(before, text))),
             )
     }
 }

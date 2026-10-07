@@ -80,12 +80,16 @@ impl RenderOnce for ABCompareView {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let count = self.sides.len();
         assert!((2..=4).contains(&count), "a comparison of {count} sides");
-        if let Some(Verdict::Side(ix)) = self.verdict {
-            assert!(ix < count, "verdict for side {ix} of {count}");
-        }
+        let verdict = match self.verdict {
+            Some(Verdict::Side(ix)) if ix >= count => {
+                log::error!("comparison: verdict for side {ix} of {count}; none given");
+                None
+            }
+            verdict => verdict,
+        };
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let decided = self.verdict.is_some();
+        let decided = verdict.is_some();
         let judge = |verdict: Verdict, label: SharedString, key: String| {
             self.on_verdict.clone().map(|judge| {
                 Button::new((self.id.clone(), key), label)
@@ -103,7 +107,7 @@ impl RenderOnce for ABCompareView {
             .into_iter()
             .enumerate()
             .map(|(ix, (name, answer))| {
-                let won = self.verdict == Some(Verdict::Side(ix));
+                let won = verdict == Some(Verdict::Side(ix));
                 let title = heading(ix, &name, self.blind, decided);
                 titles.push(title.clone());
                 div()
@@ -147,7 +151,7 @@ impl RenderOnce for ABCompareView {
                     )
             })
             .collect();
-        let verdicts = match self.verdict {
+        let verdicts = match verdict {
             Some(Verdict::Tie) => vec![div().child("Called a tie").into_any_element()],
             Some(Verdict::Side(_)) => Vec::new(),
             None => titles

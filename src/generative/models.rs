@@ -203,7 +203,10 @@ impl ModelStatus {
 
     /// GPU memory it holds and the card's whole, in bytes.
     pub fn memory(mut self, used: u64, total: u64) -> Self {
-        assert!(total > 0 && used <= total, "GPU memory {used} of {total}");
+        assert!(total > 0, "GPU memory {used} of none");
+        if used > total {
+            log::error!("model status: GPU memory {used} past {total}; the meter fills");
+        }
         self.memory = Some((used, total));
         self
     }
@@ -247,7 +250,7 @@ impl RenderOnce for ModelStatus {
                 Meter::new(
                     (self.id.clone(), "memory"),
                     "GPU memory",
-                    used as f32 / total as f32,
+                    used.min(total) as f32 / total as f32,
                 )
                 .detail(format!(
                     "{} of {}",

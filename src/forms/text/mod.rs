@@ -180,6 +180,13 @@ impl TextInput {
         &self.text
     }
 
+    /// The text as committed: while an input method composes, the text before it began.
+    pub(crate) fn committed(&self) -> &str {
+        self.composing
+            .as_ref()
+            .map_or(&self.text, |start| &start.text)
+    }
+
     pub fn is_empty(&self) -> bool {
         self.text.is_empty()
     }
@@ -245,7 +252,10 @@ impl TextInput {
     pub fn set_text(&mut self, text: impl Into<String>, cx: &mut Context<Self>) {
         let text = self.admit(&text.into(), 0);
         let text = match &self.fit {
-            Some(fit) => fit(&self.text, 0..self.text.len(), &text).0,
+            Some(fit) => {
+                let base = self.committed();
+                fit(base, 0..base.len(), &text).0
+            }
             None => text,
         };
         self.selection = text.len()..text.len();
@@ -256,9 +266,10 @@ impl TextInput {
         cx.notify();
     }
 
-    /// Reshapes every edit, as a mask does: text, replaced range and typed text in; text and caret out.
+    /// Reshapes every edit, as a mask does: text, replaced range and typed text in; text and caret out. Undo starts afresh, since earlier text need not fit.
     pub(crate) fn set_fit(&mut self, fit: Fit) {
         self.fit = Some(fit);
+        self.history = History::default();
     }
 
     /// Replaces the selection, as typing would. An undo step.
@@ -353,11 +364,12 @@ impl TextInput {
         }
     }
 
+    /// The state as committed, so undo never keeps an input method's text before it commits.
     fn snapshot(&self) -> Snapshot {
-        Snapshot {
+        self.composing.clone().unwrap_or_else(|| Snapshot {
             text: self.text.clone(),
             selection: self.selection.clone(),
-        }
+        })
     }
 
     pub(crate) fn restore(&mut self, snapshot: Snapshot, cx: &mut Context<Self>) {

@@ -225,13 +225,16 @@ fn shaped(
     }
 }
 
-/// `at` as shares of `bounds`.
+/// `at` as shares of `bounds`, kept on the picture as the pen keeps its points in the pad; a canvas that shrank mid-stroke ends the stroke at its edge.
 fn share(bounds: Bounds<Pixels>, at: Point<Pixels>) -> (f32, f32) {
     let (width, height) = (
         f32::from(bounds.size.width).max(1.0),
         f32::from(bounds.size.height).max(1.0),
     );
-    (f32::from(at.x) / width, f32::from(at.y) / height)
+    (
+        (f32::from(at.x) / width).clamp(0.0, 1.0),
+        (f32::from(at.y) / height).clamp(0.0, 1.0),
+    )
 }
 
 impl RenderOnce for InpaintCanvas {

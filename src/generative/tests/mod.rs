@@ -8,6 +8,7 @@ mod models;
 mod results;
 mod settings;
 mod sound;
+mod stale;
 
 fn settle(cx: &mut VisualTestContext) {
     cx.run_until_parked();
