@@ -85,7 +85,7 @@ pub fn changes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .child(
                 div().w(px(420.)).child(
                     ChangesList::new("git-changes", now_staged, now_unstaged)
-                        .on_action(move |path, action, _, cx| {
+                        .on_action(move |path, _, action, _, cx| {
                             let (from, to) = match action {
                                 ChangeAction::Stage => (&act_unstaged, &act_staged),
                                 ChangeAction::Unstage => (&act_staged, &act_unstaged),

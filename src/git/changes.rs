@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, Entity, FontWeight, InteractiveElement, IntoElement, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
 use super::badges::GitStatusBadge;
@@ -11,7 +11,7 @@ use crate::{
     forms::{Checkbox, Input, Submit, TextInput},
     i18n,
     lists::GitStatus,
-    primitives::IconName,
+    primitives::{FocusRing, IconName},
     theme::{ActiveTheme, ControlSize, Radius, TextSize},
     typography::{Ellipsis, tabular},
 };
@@ -34,12 +34,12 @@ pub enum ChangeAction {
     Open,
 }
 
-type OnAction = Rc<dyn Fn(&SharedString, ChangeAction, &mut Window, &mut App)>;
+type OnAction = Rc<dyn Fn(&SharedString, ChangeSection, ChangeAction, &mut Window, &mut App)>;
 type OnAll = Rc<dyn Fn(bool, &mut Window, &mut App)>;
 
 /// Which part of the work tree a file is listed in.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Section {
+pub enum ChangeSection {
     Conflicted,
     Staged,
     Unstaged,
@@ -47,7 +47,7 @@ enum Section {
     Ignored,
 }
 
-impl Section {
+impl ChangeSection {
     fn key(self) -> &'static str {
         match self {
             Self::Conflicted => "git.changes.conflicted",
@@ -70,6 +70,7 @@ pub struct ChangesList {
     ignored: Vec<Changed>,
     on_action: Option<OnAction>,
     on_all: Option<OnAll>,
+    selected: Option<(ChangeSection, SharedString)>,
 }
 
 impl ChangesList {
@@ -87,6 +88,7 @@ impl ChangesList {
             ignored: Vec::new(),
             on_action: None,
             on_all: None,
+            selected: None,
         }
     }
 
@@ -108,9 +110,15 @@ impl ChangesList {
         self
     }
 
+    /// The file shown as current, in its section.
+    pub fn selected(mut self, section: ChangeSection, path: impl Into<SharedString>) -> Self {
+        self.selected = Some((section, path.into()));
+        self
+    }
+
     pub fn on_action(
         mut self,
-        handler: impl Fn(&SharedString, ChangeAction, &mut Window, &mut App) + 'static,
+        handler: impl Fn(&SharedString, ChangeSection, ChangeAction, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.on_action = Some(Rc::new(handler));
         self
@@ -124,7 +132,7 @@ impl ChangesList {
 }
 
 impl ChangesList {
-    fn row(&self, file: &Changed, section: Section, cx: &App) -> AnyElement {
+    fn row(&self, file: &Changed, section: ChangeSection, cx: &App) -> AnyElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
         let (folder, name) = match file.path.rsplit_once('/') {
@@ -145,14 +153,24 @@ impl ChangesList {
             .when_some(on_action, |button, on_action| {
                 button.on_click(move |_, window, cx| {
                     cx.stop_propagation();
-                    on_action(&path, act, window, cx)
+                    on_action(&path, section, act, window, cx)
                 })
             })
         };
         let (open, path) = (self.on_action.clone(), file.path.clone());
+        let picked = self
+            .selected
+            .as_ref()
+            .is_some_and(|(at, chosen)| *at == section && *chosen == file.path);
         div()
             .id((self.id.clone(), format!("row-{section:?}-{}", file.path)))
             .group(group.clone())
+            .role(Role::ListItem)
+            .aria_label(file.path.clone())
+            .aria_selected(picked)
+            .tab_index(0)
+            .focus_ring(cx)
+            .when(picked, |row| row.bg(colors.selection))
             .flex()
             .items_center()
             .gap_2()
@@ -162,7 +180,9 @@ impl ChangesList {
             .cursor_pointer()
             .hover(|row| row.bg(colors.hover))
             .when_some(open, |row, open| {
-                row.on_click(move |_, window, cx| open(&path, ChangeAction::Open, window, cx))
+                row.on_click(move |_, window, cx| {
+                    open(&path, section, ChangeAction::Open, window, cx)
+                })
             })
             .child(GitStatusBadge::new(
                 (self.id.clone(), format!("status-{section:?}-{}", file.path)),
@@ -204,7 +224,7 @@ impl ChangesList {
                         ChangeAction::Open,
                     ))
                     .when(
-                        matches!(section, Section::Unstaged | Section::Untracked),
+                        matches!(section, ChangeSection::Unstaged | ChangeSection::Untracked),
                         |actions| {
                             actions.child(action(
                                 "discard",
@@ -214,7 +234,7 @@ impl ChangesList {
                             ))
                         },
                     )
-                    .when(section == Section::Staged, |actions| {
+                    .when(section == ChangeSection::Staged, |actions| {
                         actions.child(action(
                             "unstage",
                             IconName::Minus,
@@ -223,7 +243,7 @@ impl ChangesList {
                         ))
                     })
                     .when(
-                        matches!(section, Section::Unstaged | Section::Untracked),
+                        matches!(section, ChangeSection::Unstaged | ChangeSection::Untracked),
                         |actions| {
                             actions.child(action(
                                 "stage",
@@ -241,7 +261,7 @@ impl ChangesList {
             .into_any_element()
     }
 
-    fn section(&self, section: Section, files: &[Changed], cx: &App) -> Option<AnyElement> {
+    fn section(&self, section: ChangeSection, files: &[Changed], cx: &App) -> Option<AnyElement> {
         if files.is_empty() {
             return None;
         }
@@ -249,8 +269,8 @@ impl ChangesList {
         let colors = theme.colors.clone();
         // Only staged and changed files move all at once.
         let all = match section {
-            Section::Staged => Some((IconName::Minus, "git.changes.unstage_all", false)),
-            Section::Unstaged => Some((IconName::Plus, "git.changes.stage_all", true)),
+            ChangeSection::Staged => Some((IconName::Minus, "git.changes.unstage_all", false)),
+            ChangeSection::Unstaged => Some((IconName::Plus, "git.changes.stage_all", true)),
             _ => None,
         };
         let on_all = self.on_all.clone();
@@ -295,11 +315,11 @@ impl RenderOnce for ChangesList {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let sections = [
-            self.section(Section::Conflicted, &self.conflicted, cx),
-            self.section(Section::Staged, &self.staged, cx),
-            self.section(Section::Unstaged, &self.unstaged, cx),
-            self.section(Section::Untracked, &self.untracked, cx),
-            self.section(Section::Ignored, &self.ignored, cx),
+            self.section(ChangeSection::Conflicted, &self.conflicted, cx),
+            self.section(ChangeSection::Staged, &self.staged, cx),
+            self.section(ChangeSection::Unstaged, &self.unstaged, cx),
+            self.section(ChangeSection::Untracked, &self.untracked, cx),
+            self.section(ChangeSection::Ignored, &self.ignored, cx),
         ];
         div()
             .flex()

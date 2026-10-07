@@ -173,3 +173,70 @@ fn changed_lines_and_hunks_answer_presses(cx: &mut TestAppContext) {
         "removed, then added"
     );
 }
+
+/// Rows pressed, with their sections.
+#[derive(Default)]
+struct Rows {
+    pressed: Vec<(String, super::ChangeSection, super::ChangeAction)>,
+}
+
+impl Render for Rows {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        use crate::lists::GitStatus;
+        let view = cx.entity();
+        let file = |path: &str| super::Changed {
+            path: path.to_string().into(),
+            status: GitStatus::Modified,
+            lines: Some((1, 0)),
+        };
+        div().w(px(420.0)).child(
+            super::ChangesList::new("rows", [file("a.rs")], [file("a.rs")])
+                .selected(super::ChangeSection::Unstaged, "a.rs")
+                .on_action(move |path, section, action, _, cx| {
+                    view.update(cx, |rows, _| {
+                        rows.pressed.push((path.to_string(), section, action))
+                    })
+                }),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_row_says_which_section_it_is_in(cx: &mut TestAppContext) {
+    use super::{ChangeAction, ChangeSection};
+    cx.update(|cx| {
+        Theme::init(cx);
+        forms::bind_keys(cx);
+        cx.bind_keys([KeyBinding::new("tab", FocusNext, None)]);
+    });
+    let (view, cx) = cx.add_window_view(|_, _| Rows::default());
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    let mut rows = Vec::new();
+    // Each row is a stop; its icons stay hidden until hover.
+    for _ in 0..12 {
+        cx.update(|window, cx| window.focus_next(cx));
+        settle(cx);
+        cx.simulate_keystrokes("enter");
+        settle(cx);
+        cx.simulate_event(KeyUpEvent {
+            keystroke: Keystroke::parse("enter").expect("a key"),
+        });
+        settle(cx);
+        rows = view.read_with(cx, |rows, _| rows.pressed.clone());
+        if rows
+            .iter()
+            .any(|(_, section, _)| *section == ChangeSection::Unstaged)
+        {
+            break;
+        }
+    }
+    assert!(
+        rows.contains(&("a.rs".into(), ChangeSection::Staged, ChangeAction::Open)),
+        "{rows:?}"
+    );
+    assert!(
+        rows.contains(&("a.rs".into(), ChangeSection::Unstaged, ChangeAction::Open)),
+        "{rows:?}"
+    );
+}
