@@ -21,7 +21,7 @@ use crate::{
 pub struct Changed {
     pub path: SharedString,
     pub status: GitStatus,
-    /// Added and removed; None when not counted, as for a binary file or a folder.
+    /// Added and removed lines; None when not counted.
     pub lines: Option<(usize, usize)>,
 }
 
