@@ -54,7 +54,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P37 Onboarding — `src/onboarding`
 - [x] P38 Interaction — `src/interaction`
 - [x] P39 Theme — `src/theme`
-- [ ] P40 i18n & a11y — `src/i18n`
+- [x] P40 i18n & a11y — `src/i18n`
 - [ ] P41 Maps — `src/maps`
 - [ ] P42 Misc — `src/misc`
 - [ ] P43 Library Tooling — `src/tooling`
@@ -105,3 +105,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P37: seven onboarding components take their handlers in `new`, OnboardingWizard's `on_step` and `on_finish` among them; a help article no longer listed opens none; a wizard step past its last says so; a support topic no longer offered counts as none and holds Send. Kept: tasks, steps, releases and topics present, sentiments by construction, Send behind a pick. Review: 2 rounds.
 - P38: Resizable, Rotatable, RovingFocus and SelectionArea take their handlers in `new`; a resize or band whose press state is gone moves nothing; Resizable keeps the owner's raw size as its seed and fits what it draws and reports to this frame's limits; ScrollSync's leader that left syncs nothing. Kept: finite angles, items and panes present. Review: 2 rounds.
 - P39: no change. Kept: palette and syntax tokens named from constant tables, chart hues checked against the fixed eight (the owner's contract). Review: 1 round.
+- P40: no change. Kept, as AGENTS.md says: catalogs checked against each other at construction, message keys and arguments from code, Ely's locale table, the owner's switch over its own catalogs, constant date patterns. Review: 1 round.
