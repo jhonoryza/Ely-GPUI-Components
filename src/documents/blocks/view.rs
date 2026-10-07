@@ -54,7 +54,9 @@ impl BlockEditor {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let ix = self.index(key);
+        let Some(ix) = self.index(key) else {
+            return;
+        };
         let empty = self.blocks[ix]
             .fields
             .first()
@@ -216,7 +218,10 @@ impl Render for BlockEditor {
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener(move |editor, _, window, cx| {
-                        let end = editor.blocks[editor.index(key)]
+                        let Some(ix) = editor.index(key) else {
+                            return;
+                        };
+                        let end = editor.blocks[ix]
                             .fields
                             .first()
                             .map(|field| field.read(cx).text().len());

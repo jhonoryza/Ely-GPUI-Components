@@ -10,12 +10,16 @@ use crate::{
     theme::ControlSize,
 };
 
-/// A table's shape: columns, rows, and the cells that fold into their left neighbor.
-fn shape(kind: &BlockKind, fields: usize) -> (usize, usize, &[(usize, usize)]) {
+/// Columns, rows, and the cells folded into their left neighbor.
+type Shape<'a> = (usize, usize, &'a [(usize, usize)]);
+
+/// A table's shape; none once the block is no table.
+fn shape(kind: &BlockKind, fields: usize) -> Option<Shape<'_>> {
     let BlockKind::Table { columns, merged } = kind else {
-        unreachable!("a table block is a table")
+        log::error!("block editor: a {} block is no table now", kind.label());
+        return None;
     };
-    (*columns, fields / columns, merged)
+    Some((*columns, fields / columns, merged))
 }
 
 /// How many columns the cell at `(row, column)` spans: itself and every cell folded into it.
@@ -55,8 +59,13 @@ pub(crate) fn without_row(merged: &[(usize, usize)], row: usize) -> Vec<(usize, 
 impl BlockEditor {
     /// Adds a row of empty cells at the table's foot.
     pub(crate) fn add_row(&mut self, key: u64, window: &mut Window, cx: &mut Context<Self>) {
-        let ix = self.index(key);
-        let (columns, _, _) = shape(&self.blocks[ix].kind, self.blocks[ix].fields.len());
+        let Some(ix) = self.index(key) else {
+            return;
+        };
+        let Some((columns, _, _)) = shape(&self.blocks[ix].kind, self.blocks[ix].fields.len())
+        else {
+            return;
+        };
         self.before_change(cx);
         for _ in 0..columns {
             self.add_field(key, None, window, cx);
@@ -67,8 +76,14 @@ impl BlockEditor {
 
     /// Adds a column of empty cells at the table's right.
     pub(crate) fn add_column(&mut self, key: u64, window: &mut Window, cx: &mut Context<Self>) {
-        let ix = self.index(key);
-        let (columns, rows, merged) = shape(&self.blocks[ix].kind, self.blocks[ix].fields.len());
+        let Some(ix) = self.index(key) else {
+            return;
+        };
+        let Some((columns, rows, merged)) =
+            shape(&self.blocks[ix].kind, self.blocks[ix].fields.len())
+        else {
+            return;
+        };
         let merged = merged.to_vec();
         self.before_change(cx);
         for row in (0..rows).rev() {
@@ -90,8 +105,18 @@ impl BlockEditor {
         column: bool,
         cx: &mut Context<Self>,
     ) {
-        let ix = self.index(key);
-        let (columns, rows, merged) = shape(&self.blocks[ix].kind, self.blocks[ix].fields.len());
+        let Some(ix) = self.index(key) else {
+            return;
+        };
+        let Some((columns, rows, merged)) =
+            shape(&self.blocks[ix].kind, self.blocks[ix].fields.len())
+        else {
+            return;
+        };
+        if cell >= self.blocks[ix].fields.len() {
+            log::error!("table {key}: cell {cell} left the table");
+            return;
+        }
         let merged = merged.to_vec();
         let (row, at) = (cell / columns, cell % columns);
         if (column && columns == 1) || (!column && rows <= 2) {
@@ -129,8 +154,17 @@ impl BlockEditor {
 
     /// Folds the cell right of `cell` into it, moving its text over; or, when already merged, parts them again.
     pub(crate) fn merge_right(&mut self, key: u64, cell: usize, cx: &mut Context<Self>) {
-        let ix = self.index(key);
-        let (columns, _, merged) = shape(&self.blocks[ix].kind, self.blocks[ix].fields.len());
+        let Some(ix) = self.index(key) else {
+            return;
+        };
+        let Some((columns, _, merged)) = shape(&self.blocks[ix].kind, self.blocks[ix].fields.len())
+        else {
+            return;
+        };
+        if cell >= self.blocks[ix].fields.len() {
+            log::error!("table {key}: cell {cell} left the table");
+            return;
+        }
         let (row, column) = (cell / columns, cell % columns);
         let spanned = span(merged, columns, row, column);
         if column + spanned >= columns && spanned == 1 {
@@ -168,7 +202,8 @@ pub(super) fn table(
     window: &mut Window,
     cx: &mut Context<BlockEditor>,
 ) -> AnyElement {
-    let (columns, rows, merged) = shape(&block.kind, block.fields.len());
+    let (columns, rows, merged) =
+        shape(&block.kind, block.fields.len()).expect("a table block draws as a table");
     let merged = merged.to_vec();
     let (key, id) = (block.key, BlockEditor::id(cx));
     let focused = editor

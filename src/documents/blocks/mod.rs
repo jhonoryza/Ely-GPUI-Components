@@ -228,7 +228,9 @@ impl BlockEditor {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let ix = self.index(key);
+        let Some(ix) = self.index(key) else {
+            return;
+        };
         let field = Self::field(&self.blocks[ix].kind, "", window, cx);
         let watched = Self::watch(key, &field, window, cx);
         let block = &mut self.blocks[ix];
@@ -238,17 +240,12 @@ impl BlockEditor {
     }
 
     pub(crate) fn remove_field(&mut self, key: u64, field: usize) {
-        let ix = self.index(key);
+        let Some(ix) = self.index(key) else {
+            return;
+        };
         let block = &mut self.blocks[ix];
         block.fields.remove(field);
         drop(block._changes.remove(field));
-    }
-
-    pub(crate) fn index(&self, key: u64) -> usize {
-        self.blocks
-            .iter()
-            .position(|block| block.key == key)
-            .unwrap_or_else(|| panic!("block {key} left the editor"))
     }
 
     fn on_field(
@@ -259,7 +256,9 @@ impl BlockEditor {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let ix = self.index(key);
+        let Some(ix) = self.index(key) else {
+            return;
+        };
         match event {
             InputEvent::Changed => {
                 let typed = field.focus_handle(cx).is_focused(window);
@@ -342,8 +341,10 @@ impl BlockEditor {
         window: &mut Window,
         cx: &mut App,
     ) {
-        let block = &self.blocks[self.index(key)];
-        let Some(field) = block.fields.get(field) else {
+        let Some(ix) = self.index(key) else {
+            return;
+        };
+        let Some(field) = self.blocks[ix].fields.get(field) else {
             return;
         };
         if let Some(at) = at {
@@ -360,10 +361,15 @@ impl BlockEditor {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> u64 {
+        let at = match after {
+            None => 0,
+            Some(after) => self
+                .found(after, "insert after")
+                .map_or(self.blocks.len(), |ix| ix + 1),
+        };
         self.before_change(cx);
         let key = self.fresh_key();
         let block = self.build(data, key, window, cx);
-        let at = after.map_or(0, |after| self.index(after) + 1);
         log::info!("block editor: {} block at {at}", block.kind.label());
         let end = block
             .fields
@@ -383,8 +389,10 @@ impl BlockEditor {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        let Some(ix) = self.found(key, "turn") else {
+            return;
+        };
         self.before_change(cx);
-        let ix = self.index(key);
         let first = self.blocks[ix]
             .fields
             .first()
@@ -403,7 +411,9 @@ impl BlockEditor {
 
     /// Changes a block's kind in place, as a to-do's box or a toggle's state does.
     pub fn set_kind(&mut self, key: u64, kind: BlockKind, cx: &mut Context<Self>) {
-        let ix = self.index(key);
+        let Some(ix) = self.found(key, "set the kind of") else {
+            return;
+        };
         assert!(
             kind.accepts(self.blocks[ix].fields.len()),
             "set_kind keeps the fields; turn_into changes them"
@@ -414,8 +424,10 @@ impl BlockEditor {
     }
 
     pub fn remove(&mut self, key: u64, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(ix) = self.found(key, "remove") else {
+            return;
+        };
         self.before_change(cx);
-        let ix = self.index(key);
         log::info!("block editor: block {key} removed");
         self.blocks.remove(ix);
         self.after_change(cx);
@@ -430,13 +442,22 @@ impl BlockEditor {
     }
 
     pub fn duplicate(&mut self, key: u64, window: &mut Window, cx: &mut Context<Self>) {
-        let ix = self.index(key);
+        let Some(ix) = self.found(key, "duplicate") else {
+            return;
+        };
         let data = self.snapshot(cx).blocks[ix].1.clone();
         self.insert(Some(key), data, window, cx);
     }
 
     /// Moves the block at `from` to place `to`.
     pub fn move_block(&mut self, from: usize, to: usize, cx: &mut Context<Self>) {
+        if from >= self.blocks.len() {
+            log::error!(
+                "block editor: no block at {from} of {} to move",
+                self.blocks.len()
+            );
+            return;
+        }
         self.before_change(cx);
         log::info!("block editor: block moved from {from} to {to}");
         let block = self.blocks.remove(from);

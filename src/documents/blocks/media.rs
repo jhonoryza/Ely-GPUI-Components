@@ -43,28 +43,44 @@ pub(crate) fn share(align: Align, column: Bounds<Pixels>, x: Pixels) -> f32 {
     (reach / width).clamp(NARROWEST, 1.0)
 }
 
-fn media_of(kind: &mut BlockKind) -> &mut Media {
+/// A media block's media; a block turned into something else since its controls painted has none.
+fn media_of(kind: &mut BlockKind) -> Option<&mut Media> {
     match kind {
-        BlockKind::Image(media) | BlockKind::Video(media) | BlockKind::Embed(media) => media,
-        other => unreachable!("{} holds no media", other.label()),
+        BlockKind::Image(media) | BlockKind::Video(media) | BlockKind::Embed(media) => Some(media),
+        other => {
+            log::error!("block editor: a {} block holds no media now", other.label());
+            None
+        }
     }
 }
 
 impl BlockEditor {
     /// Sets a picture's width while its edge is dragged; the drag's start records undo.
-    fn resize(&mut self, key: u64, width: f32, first: bool, cx: &mut Context<Self>) {
+    pub(super) fn resize(&mut self, key: u64, width: f32, first: bool, cx: &mut Context<Self>) {
+        let Some(ix) = self.index(key) else {
+            return;
+        };
+        let mut kind = self.blocks[ix].kind.clone();
+        let Some(media) = media_of(&mut kind) else {
+            return;
+        };
+        media.width = width;
         if first {
             self.before_change(cx);
         }
-        let ix = self.index(key);
-        media_of(&mut self.blocks[ix].kind).width = width;
+        self.blocks[ix].kind = kind;
         self.after_change(cx);
     }
 
     pub(crate) fn align(&mut self, key: u64, align: Align, cx: &mut Context<Self>) {
-        let ix = self.index(key);
+        let Some(ix) = self.index(key) else {
+            return;
+        };
         let mut kind = self.blocks[ix].kind.clone();
-        media_of(&mut kind).align = align;
+        let Some(media) = media_of(&mut kind) else {
+            return;
+        };
+        media.align = align;
         self.set_kind(key, kind, cx);
     }
 }

@@ -146,11 +146,12 @@ impl VersionHistory {
         selected: usize,
     ) -> Self {
         let versions: Vec<Version> = versions.into_iter().collect();
-        assert!(
-            selected < versions.len(),
-            "version {selected} of {}",
-            versions.len()
-        );
+        if selected >= versions.len() {
+            log::error!(
+                "version history: version {selected} of {}; none selected",
+                versions.len()
+            );
+        }
         assert!(
             versions.windows(2).all(|pair| pair[0].at >= pair[1].at),
             "versions come newest first"
@@ -181,8 +182,8 @@ impl RenderOnce for VersionHistory {
         let showing_changes = *changes.read(cx);
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let version = &self.versions[self.selected];
-        let before = self.versions.get(self.selected + 1);
+        let version = self.versions.get(self.selected);
+        let before = version.and_then(|_| self.versions.get(self.selected + 1));
         let list = self.versions.iter().enumerate().map(|(ix, version)| {
             let pick = self.on_select.clone();
             let lit = ix == self.selected;
@@ -248,7 +249,7 @@ impl RenderOnce for VersionHistory {
         let restore = self
             .on_restore
             .clone()
-            .filter(|_| self.selected > 0)
+            .filter(|_| self.selected > 0 && version.is_some())
             .map(|restore| {
                 let at = self.selected;
                 Button::new((self.id.clone(), "restore"), "Restore this version")
@@ -259,16 +260,20 @@ impl RenderOnce for VersionHistory {
                         restore(at, window, cx)
                     })
             });
-        let body = match (showing_changes, before) {
-            (true, Some(before)) => {
+        let body = match (version, showing_changes, before) {
+            (None, ..) => div()
+                .text_color(colors.fg_subtle)
+                .child("No version is selected.")
+                .into_any_element(),
+            (Some(version), true, Some(before)) => {
                 PageHistoryDiff::new(before.markdown.clone(), version.markdown.clone())
                     .into_any_element()
             }
-            (true, None) => div()
+            (Some(_), true, None) => div()
                 .text_color(colors.fg_subtle)
                 .child("The first version; nothing came before it.")
                 .into_any_element(),
-            (false, _) => MarkdownRenderer::new(
+            (Some(version), false, _) => MarkdownRenderer::new(
                 (self.id.clone(), format!("text-{}", self.selected)),
                 version.markdown.clone(),
             )

@@ -253,3 +253,51 @@ fn escape_leaves_zen_turned_on_from_outside_and_hands_focus_back(cx: &mut TestAp
     let back = cx.update(|window, cx| zen.read(cx).outside.focus_handle(cx).is_focused(window));
     assert!(back, "focus returns to where it was");
 }
+
+#[gpui::test]
+fn hits_past_the_pages_are_left_and_the_current_follows(cx: &mut TestAppContext) {
+    let (reader, _, cx) = open_with(400.0, None, cx);
+    reader.update(cx, |reader, cx| {
+        reader.hits = vec![hit(7), hit(2), hit(9), hit(1)];
+        reader.current = Some(3);
+        cx.notify();
+    });
+    settle(cx);
+    reader.update(cx, |reader, cx| {
+        reader.current = Some(12);
+        cx.notify();
+    });
+    settle(cx);
+    let (_, _, cx) = open_with(400.0, Some(usize::MAX), cx);
+    settle(cx);
+}
+
+/// Versions whose selected one left with a shorter history.
+struct Versions(Vec<super::Version>, usize);
+
+impl Render for Versions {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div().size_full().child(super::VersionHistory::new(
+            "history",
+            self.0.clone(),
+            self.1,
+        ))
+    }
+}
+
+#[gpui::test]
+fn a_selected_version_past_the_history_selects_none(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let version = super::Version {
+        at: jiff::Timestamp::UNIX_EPOCH,
+        author: "Ann".into(),
+        markdown: "# Plan".into(),
+    };
+    let (view, cx) = cx.add_window_view(|_, _| Versions(vec![version], 4));
+    settle(cx);
+    view.update(cx, |view, cx| {
+        *view = Versions(Vec::new(), usize::MAX);
+        cx.notify();
+    });
+    settle(cx);
+}

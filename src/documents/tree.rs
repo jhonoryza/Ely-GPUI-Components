@@ -63,7 +63,7 @@ struct Builder {
     inline: Inline,
     open: Vec<(usize, Style)>,
     link: Vec<(usize, String)>,
-    image: Option<(String, String)>,
+    image: Vec<(String, String)>,
     code: Option<(Option<String>, String)>,
     head: Vec<Inline>,
     row: Vec<Inline>,
@@ -189,10 +189,10 @@ pub fn parse(markdown: &str) -> Vec<Node> {
             Event::Rule => push(&mut built, &mut out, Node::Rule),
             Event::DisplayMath(math) => push(&mut built, &mut out, Node::Math(math.to_string())),
             Event::Start(Tag::Image { dest_url, .. }) => {
-                built.image = Some((String::new(), dest_url.to_string()))
+                built.image.push((String::new(), dest_url.to_string()))
             }
             Event::End(TagEnd::Image) => {
-                let (alt, url) = built.image.take().expect("an image was open");
+                let (alt, url) = built.image.pop().expect("an image closes after it opens");
                 push(&mut built, &mut out, Node::Image { alt, url });
             }
             Event::Start(Tag::Strong) => built.open.push((built.inline.text.len(), Style::Strong)),
@@ -216,7 +216,7 @@ pub fn parse(markdown: &str) -> Vec<Node> {
                 built.inline.styles.push((range.clone(), Style::Link));
                 built.inline.links.push((range, url));
             }
-            Event::Text(text) => match (&mut built.code, &mut built.image) {
+            Event::Text(text) => match (&mut built.code, built.image.last_mut()) {
                 (Some((_, code)), _) => code.push_str(&text),
                 (None, Some((alt, _))) => alt.push_str(&text),
                 (None, None) => built.inline.text.push_str(&text),
@@ -294,6 +294,19 @@ mod tests {
             }
         );
         assert_eq!(nodes[5], Node::Rule);
+    }
+
+    #[test]
+    fn an_image_inside_an_image_keeps_both() {
+        let nodes = parse("![outer ![inner](inner.png)](outer.png)");
+        let urls: Vec<&str> = nodes
+            .iter()
+            .filter_map(|node| match node {
+                Node::Image { url, .. } => Some(url.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(urls, ["inner.png", "outer.png"], "{nodes:?}");
     }
 
     #[test]

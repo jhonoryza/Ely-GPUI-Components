@@ -61,7 +61,12 @@ impl BlockEditor {
                 let check = Checkbox::new((id.clone(), format!("todo-{key}")), done).on_change(
                     move |on, _, cx| {
                         entity.update(cx, |editor, cx| {
-                            editor.set_kind(key, BlockKind::Todo(on), cx)
+                            if editor
+                                .kind_of(key)
+                                .is_some_and(|kind| matches!(kind, BlockKind::Todo(_)))
+                            {
+                                editor.set_kind(key, BlockKind::Todo(on), cx)
+                            }
                         })
                     },
                 );
@@ -106,7 +111,9 @@ impl BlockEditor {
                     .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
                     .on_click(move |_, _, cx| {
                         entity.update(cx, |editor, cx| {
-                            editor.set_kind(key, BlockKind::Toggle(!open), cx)
+                            if editor.kind_of(key) == Some(&BlockKind::Toggle(open)) {
+                                editor.set_kind(key, BlockKind::Toggle(!open), cx)
+                            }
                         })
                     })
                     .child(Disclosure::new(

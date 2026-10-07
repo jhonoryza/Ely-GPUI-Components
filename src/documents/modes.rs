@@ -49,8 +49,9 @@ impl MarkdownMode {
 
 type OnMode = Rc<dyn Fn(MarkdownMode, &mut Window, &mut App)>;
 
-/// The block open as its source: where it came from, its own field, and whether it adds a block at the end.
+/// The block open as its source: the document it opened in, where, its own field, and whether it adds a block at the end.
 struct Open {
+    document: String,
     range: Range<usize>,
     input: Entity<TextInput>,
     append: bool,
@@ -85,7 +86,7 @@ fn joint(document: &str) -> &'static str {
     }
 }
 
-/// Writes the open block back over its range as one undo step, and closes it; the range replaced and the bytes written.
+/// Writes the open block back over its range as one undo step, and closes it; the range replaced and the bytes written, none when the text left the range.
 fn commit(
     state: &Entity<Visual>,
     field: &Entity<TextInput>,
@@ -97,6 +98,13 @@ fn commit(
     })?;
     let written = open.input.read(cx).text().to_string();
     let document = field.read(cx).text().to_string();
+    if document != open.document {
+        log::error!(
+            "markdown editor: the text changed under block {:?}; its edit is dropped",
+            open.range
+        );
+        return None;
+    }
     let written = match open.append {
         true if written.is_empty() => return Some((open.range, 0)),
         true => format!("{}{written}", joint(&document)),
@@ -122,7 +130,8 @@ fn open(
     window: &mut Window,
     cx: &mut App,
 ) {
-    let source = field.read(cx).text()[range.clone()].to_string();
+    let document = field.read(cx).text().to_string();
+    let source = document[range.clone()].to_string();
     log::info!("markdown editor: block {range:?} opens");
     let input = cx.new(|cx| {
         TextInput::new(window, cx)
@@ -146,6 +155,7 @@ fn open(
     };
     state.update(cx, |visual, cx| {
         visual.open = Some(Open {
+            document,
             range,
             input,
             append,
@@ -262,7 +272,7 @@ fn visual(
             theme.text_size(TextSize::Xs),
         )
     };
-    let document = editor.field.read(cx).text().to_string();
+    let document = SharedString::from(editor.field.read(cx).text().to_string());
     let blocks = block_ranges(&document);
     let opened = state
         .read(cx)
@@ -296,7 +306,12 @@ fn visual(
             rows.push(source(input, window, cx));
             continue;
         }
-        let (state, field, pressed) = (state.clone(), field.clone(), range.clone());
+        let (state, field, pressed, painted) = (
+            state.clone(),
+            field.clone(),
+            range.clone(),
+            document.clone(),
+        );
         rows.push(
             div()
                 .id((editor.id.clone(), format!("block-{ix}")))
@@ -308,6 +323,12 @@ fn visual(
                 .on_mouse_down(MouseButton::Left, move |_, window, cx| {
                     window.prevent_default();
                     cx.stop_propagation();
+                    if field.read(cx).text() != painted.as_ref() {
+                        log::error!(
+                            "markdown editor: block {pressed:?} left with the text; press dropped"
+                        );
+                        return;
+                    }
                     let range = match commit(&state, &field, cx) {
                         Some((replaced, written)) => shifted(pressed.clone(), &replaced, written),
                         None => pressed.clone(),
@@ -376,7 +397,7 @@ fn visual(
     };
     let (up, down) = (edges(false), edges(true));
     let (escape_state, escape_field) = (state.clone(), field.clone());
-    let text = SharedString::from(document);
+    let text = document;
     div()
         .id(editor.id.clone())
         .flex()
@@ -444,24 +465,4 @@ fn visual(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{joint, shifted};
-
-    #[test]
-    fn later_blocks_move_by_what_an_edit_wrote() {
-        assert_eq!(shifted(10..14, &(2..6), 9), 15..19);
-        assert_eq!(
-            shifted(0..2, &(2..6), 9),
-            0..2,
-            "a block before the edit stays"
-        );
-    }
-
-    #[test]
-    fn a_block_at_the_end_starts_a_paragraph() {
-        assert_eq!(
-            (joint(""), joint("a"), joint("a\n"), joint("a\n\n")),
-            ("", "\n\n", "\n", "")
-        );
-    }
-}
+mod tests;

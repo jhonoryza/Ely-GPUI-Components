@@ -78,6 +78,10 @@ impl FindWidget {
         current: Option<usize>,
         total: usize,
     ) -> Self {
+        if current.is_some_and(|current| current >= total) {
+            log::error!("find: match {current:?} of {total}; none current");
+        }
+        let current = current.filter(|current| *current < total);
         Self {
             id: id.into(),
             find: find.clone(),

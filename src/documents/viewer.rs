@@ -141,15 +141,18 @@ impl DocumentViewer {
 
     /// The owner's find box, floating over the pages; the owner searches them, and `hits` light where they are, the current one scrolled into view.
     pub fn find(mut self, widget: FindWidget, hits: Vec<PageHit>, current: Option<usize>) -> Self {
-        assert!(
-            current.is_none_or(|current| current < hits.len()),
-            "hit {current:?} of {}",
-            hits.len()
-        );
-        assert!(
-            hits.iter().all(|hit| hit.page < self.pages.len()),
-            "a hit lies past the last page"
-        );
+        let pages = self.pages.len();
+        let on_page = |hit: &PageHit| hit.page < pages;
+        if current.is_some_and(|current| current >= hits.len()) || !hits.iter().all(on_page) {
+            log::error!(
+                "document viewer: hit {current:?} of {}, some past {pages} pages; those left",
+                hits.len()
+            );
+        }
+        let current = current
+            .filter(|current| hits.get(*current).is_some_and(on_page))
+            .map(|current| hits[..current].iter().filter(|hit| on_page(hit)).count());
+        let hits: Vec<PageHit> = hits.into_iter().filter(on_page).collect();
         self.find = Some(Find {
             widget,
             hits,

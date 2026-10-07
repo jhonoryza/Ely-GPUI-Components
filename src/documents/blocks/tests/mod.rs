@@ -3,6 +3,8 @@ use gpui::{AppContext as _, Entity, Focusable, TestAppContext, VisualTestContext
 use super::{BlockData, BlockEditor, BlockKind};
 use crate::{forms, theme::Theme};
 
+mod stale;
+
 fn open(
     blocks: Vec<BlockData>,
     cx: &mut TestAppContext,

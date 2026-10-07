@@ -7,7 +7,9 @@ use super::{Block, BlockData, BlockEditor, BlockEvent, BlockKind, Snapshot};
 impl BlockEditor {
     /// Splits a prose block at the caret: the text after it moves to a new block of the kind that follows.
     pub(crate) fn split(&mut self, key: u64, window: &mut Window, cx: &mut Context<Self>) {
-        let ix = self.index(key);
+        let Some(ix) = self.index(key) else {
+            return;
+        };
         let kind = self.blocks[ix].kind.clone();
         let field = self.blocks[ix].fields[0].clone();
         if field.read(cx).is_empty()
@@ -43,7 +45,9 @@ impl BlockEditor {
 
     /// Backspace at a prose block's start: another kind turns back into text; text joins the prose above, or an empty block goes.
     pub(crate) fn join(&mut self, key: u64, window: &mut Window, cx: &mut Context<Self>) {
-        let ix = self.index(key);
+        let Some(ix) = self.index(key) else {
+            return;
+        };
         if self.blocks[ix].kind != BlockKind::Paragraph {
             self.turn_into(key, BlockKind::Paragraph, window, cx);
             return;
