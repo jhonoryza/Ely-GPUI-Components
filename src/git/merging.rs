@@ -161,7 +161,7 @@ pub fn conflicts(text: &str) -> Vec<Conflict> {
     found
 }
 
-/// Regions as Git grouped them in marked `text`; base from diff3 sections.
+/// Regions as Git grouped marked `text`; base from diff3.
 pub fn marked(text: &str) -> Vec<Region> {
     let lines: Vec<String> = text
         .tokenize_lines()
