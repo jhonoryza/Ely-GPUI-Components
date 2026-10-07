@@ -276,6 +276,10 @@ impl RenderOnce for DiffViewer {
             .len()
             .max(2);
         let (id, on_open) = (self.id.clone(), self.on_open.clone());
+        let (button, button_height) = (
+            self.hunk_action.is_some(),
+            theme.control_height(ControlSize::Sm),
+        );
         let (selected, on_line, hunk_action) = (
             self.selected.clone(),
             self.on_line.clone(),
@@ -342,7 +346,9 @@ impl RenderOnce for DiffViewer {
                     let element = div()
                         .flex_1()
                         .min_w_0()
+                        .h_full()
                         .flex()
+                        .items_center()
                         .gap_2()
                         .overflow_hidden()
                         .when_some(wash, |side, wash| side.bg(wash))
@@ -366,7 +372,9 @@ impl RenderOnce for DiffViewer {
                             .border_1()
                             .border_color(transparent_black())
                             .whitespace_nowrap()
-                            .line_height(relative(LEADING));
+                            .line_height(relative(LEADING))
+                            // Rows share one height; the hunk button sets it.
+                            .when(button, |row| row.h(button_height).items_center());
                         match &rows[ix] {
                             Shown::Header(stretch, header) => {
                                 let action = hunk_action.clone().map(|(label, run)| {
