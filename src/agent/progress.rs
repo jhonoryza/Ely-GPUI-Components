@@ -262,7 +262,10 @@ impl AgentProgress {
         done: usize,
         total: usize,
     ) -> Self {
-        assert!(total > 0 && done <= total, "progress of {done} in {total}");
+        assert!(total > 0, "progress of {done} in none");
+        if done > total {
+            log::error!("agent progress: {done} done of {total}; the bar fills");
+        }
         Self {
             id: id.into(),
             current: current.into(),
@@ -308,7 +311,10 @@ impl RenderOnce for AgentProgress {
                     })),
             )
             .child({
-                let bar = ProgressBar::new((self.id, "bar"), self.done as f32 / self.total as f32);
+                let bar = ProgressBar::new(
+                    (self.id, "bar"),
+                    self.done.min(self.total) as f32 / self.total as f32,
+                );
                 if self.total >= 2 {
                     bar.segments(self.total)
                 } else {

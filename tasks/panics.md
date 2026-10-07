@@ -38,7 +38,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P21 Documents — `src/documents`
 - [x] P22 Collaboration — `src/collab`
 - [x] P23 AI Chat — `src/chat`
-- [ ] P24 Agent — `src/agent`
+- [x] P24 Agent — `src/agent`
 - [ ] P25 Generative — `src/generative`
 - [ ] P26 Media — `src/media`
 - [ ] P27 Files — `src/files`
@@ -89,3 +89,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P21: block editor listeners painted for a block, field, cell or kind since gone log and change nothing, a dropped picture drag leaves undo alone; a visual block press or edit over text the owner replaced is dropped; nested images parse; a version or find hit past its list selects none. Review: 4 rounds.
 - P22: annotations and suggestions outside their text log and stay out, picks and decisions keeping the owner's index; `accept` returns `Option`; a gone pick, active thread or followed peer logs; yours at no count comes off; a masked field clamps a stale offset, so remote cursors and selections draw. Kept: a thread's comments, presence max, one list's order, empty marks, constant role and mode tables. Review: 3 rounds.
 - P23: a branch version past its total logs and shows a dash, its arrows off; a parameter outside its range logs and pegs; a passage's matches outside it log and stay out. Kept: one-value contracts (progress, scores, shapes, peaks, levels, limits, prices, capacity, format, hour), the composer's trigger rows and stream reveal by construction; `places` skips zero, so `decimals` meets no zero step. Review: 2 rounds.
+- P24: a checkpoint or browser frame past its list logs and marks none; progress past its total and memory past its limit log and fill their bars, the text keeping the real counts; three `should_panic` tests became render tests. Kept: the artifact's preview-or-source builder check, one-value contracts (cost, cpu, pointer, totals and limits above zero), registry lookups over a constant table. Review: 1 round.

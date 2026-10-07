@@ -129,13 +129,7 @@ fn the_prompt_walks_deny_always_then_once(cx: &mut TestAppContext) {
     );
 }
 
-#[test]
-#[should_panic(expected = "progress of 6 in 5")]
-fn progress_past_its_total_fails_loud() {
-    let _ = AgentProgress::new("progress", "Writing", 6, 5);
-}
-
-/// A progress bar for a task of one step, `done` or not.
+/// A progress bar for a task of one step, `done` or not; live counts may run past it.
 struct Single {
     done: usize,
 }
@@ -146,6 +140,13 @@ impl Render for Single {
             .w_full()
             .child(AgentProgress::new("single", "The one step", self.done, 1))
     }
+}
+
+#[gpui::test]
+fn progress_past_its_total_fills_the_bar(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Single { done: 6 });
+    settle(cx);
 }
 
 #[gpui::test]

@@ -52,10 +52,25 @@ fn a_frame_shows_from_the_keyboard(cx: &mut TestAppContext) {
     );
 }
 
-#[test]
-#[should_panic(expected = "frame 3 of 3")]
-fn a_frame_past_the_last_fails_loud() {
-    let _ = BrowserPreview::new("browser", "localhost", ["a.png", "b.png", "c.png"], 3);
+/// A browser asked to show a frame it no longer holds.
+struct Past;
+
+impl Render for Past {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div().w(px(480.0)).child(BrowserPreview::new(
+            "browser",
+            "localhost",
+            ["a.png", "b.png", "c.png"],
+            3,
+        ))
+    }
+}
+
+#[gpui::test]
+fn a_frame_past_the_last_shows_none(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Past);
+    settle(cx);
 }
 
 #[test]

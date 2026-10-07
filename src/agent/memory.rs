@@ -166,7 +166,7 @@ pub struct Checkpoint {
 pub struct CheckpointList {
     id: ElementId,
     checkpoints: Vec<Checkpoint>,
-    current: usize,
+    current: Option<usize>,
     on_rewind: Option<Pick>,
 }
 
@@ -178,15 +178,17 @@ impl CheckpointList {
         current: usize,
     ) -> Self {
         let checkpoints: Vec<Checkpoint> = checkpoints.into_iter().collect();
-        assert!(
-            current < checkpoints.len(),
-            "checkpoint {current} of {}",
-            checkpoints.len()
-        );
+        let held = current < checkpoints.len();
+        if !held {
+            log::error!(
+                "checkpoints: checkpoint {current} of {}; none current",
+                checkpoints.len()
+            );
+        }
         Self {
             id: id.into(),
             checkpoints,
-            current,
+            current: held.then_some(current),
             on_rewind: None,
         }
     }
@@ -210,7 +212,7 @@ impl RenderOnce for CheckpointList {
                 let rewind = self
                     .on_rewind
                     .clone()
-                    .filter(|_| ix != current)
+                    .filter(|_| current != Some(ix))
                     .map(|rewind| {
                         Button::new((self.id.clone(), format!("rewind-{ix}")), "Rewind to here")
                             .variant(ButtonVariant::Ghost)
@@ -233,12 +235,12 @@ impl RenderOnce for CheckpointList {
                             .items_center()
                             .gap_x_2()
                             .child(plural(point.files as u64, "file", "files"))
-                            .when(ix == current, |meta| {
+                            .when(current == Some(ix), |meta| {
                                 meta.child(div().text_color(colors.accent).child("Here now"))
                             })
                             .children(rewind),
                     );
-                timeline.item(if ix == current {
+                timeline.item(if current == Some(ix) {
                     item.tone(Tone::Accent)
                 } else {
                     item

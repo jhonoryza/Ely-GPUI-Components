@@ -163,10 +163,29 @@ fn every_checkpoint_but_the_current_rewinds(cx: &mut TestAppContext) {
     );
 }
 
-#[test]
-#[should_panic(expected = "memory 5 of 4")]
-fn memory_past_its_limit_fails_loud() {
-    let _ = SandboxStatus::new("box", "python", SandboxState::Ready).memory(5, 4);
+/// A sandbox past its memory limit and checkpoints whose current one left.
+struct Overrun;
+
+impl Render for Overrun {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let point = Checkpoint {
+            key: "one".into(),
+            label: "One".into(),
+            at: Timestamp::UNIX_EPOCH,
+            files: 1,
+        };
+        div()
+            .w(px(360.0))
+            .child(SandboxStatus::new("box", "python", SandboxState::Ready).memory(5, 4))
+            .child(CheckpointList::new("points", [point], 4))
+    }
+}
+
+#[gpui::test]
+fn memory_past_its_limit_and_a_gone_checkpoint_draw(cx: &mut TestAppContext) {
+    setup(cx);
+    let (_, cx) = cx.add_window_view(|_, _| Overrun);
+    settle(cx);
 }
 
 #[test]

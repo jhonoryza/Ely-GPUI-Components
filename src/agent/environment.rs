@@ -99,7 +99,10 @@ impl SandboxStatus {
 
     /// Memory in use and its limit, in bytes.
     pub fn memory(mut self, used: u64, limit: u64) -> Self {
-        assert!(limit > 0 && used <= limit, "memory {used} of {limit}");
+        assert!(limit > 0, "memory {used} of no limit");
+        if used > limit {
+            log::error!("environment: memory {used} past its limit {limit}; the meter fills");
+        }
         self.memory = Some((used, limit));
         self
     }
@@ -173,7 +176,7 @@ impl RenderOnce for SandboxStatus {
                 Meter::new(
                     (self.id.clone(), "memory"),
                     "Memory",
-                    used as f32 / limit as f32,
+                    used.min(limit) as f32 / limit as f32,
                 )
                 .detail(format!(
                     "{} of {}",

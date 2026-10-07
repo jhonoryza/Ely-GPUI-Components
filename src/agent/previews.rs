@@ -71,7 +71,7 @@ pub struct BrowserPreview {
     id: ElementId,
     url: SharedString,
     frames: Vec<SharedString>,
-    shown: usize,
+    shown: Option<usize>,
     ratio: f32,
     loading: bool,
     on_show: Option<Pick>,
@@ -86,12 +86,18 @@ impl BrowserPreview {
         shown: usize,
     ) -> Self {
         let frames: Vec<SharedString> = frames.into_iter().map(Into::into).collect();
-        assert!(shown < frames.len(), "frame {shown} of {}", frames.len());
+        let held = shown < frames.len();
+        if !held {
+            log::error!(
+                "browser preview: frame {shown} of {}; none shown",
+                frames.len()
+            );
+        }
         Self {
             id: id.into(),
             url: url.into(),
             frames,
-            shown,
+            shown: held.then_some(shown),
             ratio: FRAME,
             loading: false,
             on_show: None,
@@ -170,7 +176,7 @@ impl RenderOnce for BrowserPreview {
                         .h(thumb)
                         .rounded(theme.radius(Radius::Sm))
                         .border_1()
-                        .border_color(if ix == shown {
+                        .border_color(if shown == Some(ix) {
                             colors.accent
                         } else {
                             colors.border
@@ -205,7 +211,7 @@ impl RenderOnce for BrowserPreview {
                     .when(strip.is_none(), |frame| {
                         frame.rounded_b(theme.radius(Radius::Lg))
                     })
-                    .child({
+                    .children(shown.map(|shown| {
                         let image =
                             Image::new((self.id.clone(), "frame"), source(&self.frames[shown]))
                                 .size_full();
@@ -214,7 +220,7 @@ impl RenderOnce for BrowserPreview {
                         } else {
                             image
                         }
-                    }),
+                    })),
             )
             .children(strip)
     }
