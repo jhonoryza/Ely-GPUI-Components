@@ -42,7 +42,6 @@ fn places(ticks: &[f64]) -> usize {
 
 /// How a candle's time reads: the month and year for monthly candles, the day for daily, the hour within a day.
 fn stamp(candle: &Candle, interval: i64, zone: &TimeZone, full: bool) -> String {
-    let zoned = candle.time.to_zoned(zone.clone());
     let pattern = match (interval, full) {
         (seconds, _) if seconds >= 86_400 * 28 => "%b %Y",
         (seconds, true) if seconds >= 86_400 => "%a %b %-d, %Y",
@@ -50,7 +49,7 @@ fn stamp(candle: &Candle, interval: i64, zone: &TimeZone, full: bool) -> String 
         (_, true) => "%b %-d %H:%M",
         (_, false) => "%H:%M",
     };
-    zoned.strftime(pattern).to_string()
+    format::datetime(candle.time, zone, pattern).expect("a fixed pattern")
 }
 
 /// Price alerts with their words, and the last price with whether it rose.
@@ -198,7 +197,10 @@ pub(crate) fn labels(
             );
         }
         if let Some(name) = &axes.compare {
-            readout = readout.child(text(format!("vs {name}"), colors.fg_muted));
+            readout = readout.child(
+                text(format!("vs {name}"), colors.fg_muted)
+                    .debug_selector(|| "chart-compared".into()),
+            );
         }
         out.push(readout);
         for ((pane, _, _), drawn) in axes.panes.iter().skip(1).zip(studies) {
@@ -366,6 +368,8 @@ mod tests {
         assert_eq!(stamp(&candle, 86_400, &utc, false), "May 28");
         assert_eq!(stamp(&candle, 3_600, &utc, false), "20:26");
         assert_eq!(stamp(&candle, 86_400 * 30, &utc, false), "May 2026");
+        let unknown = TimeZone::unknown();
+        assert_eq!(stamp(&candle, 3_600, &unknown, false), "20:26 UTC");
         assert_eq!(places(&[100.0, 105.0]), 2, "prices keep cents");
         assert_eq!(places(&[0.001, 0.002]), 3);
     }

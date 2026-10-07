@@ -86,7 +86,10 @@ impl RenderOnce for EconomicCalendar {
                         .text_size(theme.text_size(TextSize::Xs))
                         .font_weight(FontWeight::MEDIUM)
                         .text_color(colors.fg_muted)
-                        .child(zoned.strftime("%A, %B %-d").to_string())
+                        .child(
+                            format::datetime(release.time, &zone, "%A, %B %-d")
+                                .expect("a fixed pattern"),
+                        )
                         .into_any_element(),
                 );
             }
@@ -129,7 +132,10 @@ impl RenderOnce for EconomicCalendar {
                         tabular(div())
                             .w(theme.label_width() * 0.3)
                             .text_color(colors.fg_muted)
-                            .child(zoned.strftime("%H:%M").to_string()),
+                            .child(
+                                format::datetime(release.time, &zone, "%H:%M")
+                                    .expect("a fixed pattern"),
+                            ),
                     )
                     .child(div().child(flag(&release.region)))
                     .child(
@@ -327,11 +333,8 @@ impl RenderOnce for NewsFeed {
                     None => colors.border_strong,
                 };
                 let open = self.on_open.clone();
-                let when = story
-                    .time
-                    .to_zoned(zone.clone())
-                    .strftime("%b %-d, %H:%M")
-                    .to_string();
+                let when =
+                    format::datetime(story.time, &zone, "%b %-d, %H:%M").expect("a fixed pattern");
                 div()
                     .id((self.id.clone(), format!("story-{ix}")))
                     .flex()

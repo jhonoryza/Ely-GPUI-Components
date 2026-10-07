@@ -18,8 +18,8 @@ pub struct SpreadIndicator {
 impl SpreadIndicator {
     pub fn new(bid: f64, ask: f64) -> Self {
         assert!(
-            bid.is_finite() && ask.is_finite() && bid < ask,
-            "a spread needs a bid below its ask"
+            bid.is_finite() && ask.is_finite(),
+            "a spread needs finite prices"
         );
         Self {
             bid,
@@ -89,10 +89,7 @@ pub struct BidAskBar {
 impl BidAskBar {
     /// The size waiting on each side.
     pub fn new(bids: f64, asks: f64) -> Self {
-        assert!(
-            bids >= 0.0 && asks >= 0.0 && bids + asks > 0.0,
-            "a balance needs some size"
-        );
+        assert!(bids >= 0.0 && asks >= 0.0, "sizes are zero or more");
         Self {
             bids,
             asks,
@@ -110,11 +107,16 @@ impl RenderOnce for BidAskBar {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let (rise, fall) = moves(self.red_up, cx);
         let theme = cx.theme();
-        let share = self.bids / (self.bids + self.asks);
+        let total = self.bids + self.asks;
+        let share = if total > 0.0 { self.bids / total } else { 0.5 };
         let words = |name: &'static str, value: f64| {
+            let shown = match total > 0.0 {
+                true => format::percent(value, 0, false),
+                false => "—".to_string(),
+            };
             tabular(div())
                 .text_color(theme.colors.fg_muted)
-                .child(format!("{name} {}", format::percent(value, 0, false)))
+                .child(format!("{name} {shown}"))
         };
         let part = |grow: f64, ink| {
             let mut part = div().h_full().flex_basis(relative(0.0)).bg(ink);

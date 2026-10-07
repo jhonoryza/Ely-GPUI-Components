@@ -30,7 +30,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P13 Lists & Trees — `src/lists`
 - [x] P14 Tables — `src/tables`
 - [x] P15 Charts — `src/charts`
-- [ ] P16 Finance — `src/finance`
+- [x] P16 Finance — `src/finance`
 - [ ] P17 Code Editor — `src/editor`
 - [ ] P18 Terminal — `src/terminal`
 - [ ] P19 Git — `src/git`
@@ -80,3 +80,5 @@ One line per item: what changed, what stayed and why, review rounds.
 - P13: a directory listing's selected name gone from its entries picks none. Kept: one-value contracts; activation, folder split, single-select sections and tree rows hold by construction. Review: 1 round.
 - P14: a pivot field missing from its data draws an error line; a gone group-by column leaves the table ungrouped; a merge past the sheet is skipped; each logs. Kept: row shapes of one snapshot, one-value contracts, builder misuse, construction. Review: 1 round.
 - P15: chart values are finite and within ±`charts::LIMIT` (1e30), so sums and pixels stay in `f32`; scales work in halves and bound a share to ±1e4 ranges; chord and sankey size by shares; quartiles, weekday labels, flat tangents and a zero-width sankey's hover hold; notes, links, edges and waits past their lists are skipped. Review: 5 rounds, the cap; round 5's finding (points at one x) is fixed and tested, and P16's review checks it.
+- P16: crossed and locked books, empty sizes, leverage and margin past their bounds, stale range and interval keys, short layouts and comparisons, growth from zero, long QR addresses and grids too fine to draw all log and show; ladders mark their middle rung and key cells by row; every system-zone time goes through `datetime`; `nice_step` stays positive. Kept: one-snapshot shapes and one-value contracts. Review: 5 rounds, passed on the fifth; it also passed P15's last fix.
+- Noted for later items: `chat/params.rs` and `editor/settings.rs` pass `value.abs()` to `decimals`, which asserts a positive step.

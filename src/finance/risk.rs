@@ -41,7 +41,7 @@ pub struct LeverageSlider {
 impl LeverageSlider {
     pub fn new(id: impl Into<ElementId>, value: f64, max: f64) -> Self {
         assert!(
-            max > 1.0 && max.fract() == 0.0 && (1.0..=max).contains(&value),
+            max > 1.0 && max.fract() == 0.0 && value.is_finite(),
             "leverage runs in whole steps from one up to its most"
         );
         Self {
@@ -62,7 +62,15 @@ impl RenderOnce for LeverageSlider {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let share = (self.value - 1.0) / (self.max - 1.0);
+        if !(1.0..=self.max).contains(&self.value) {
+            log::error!(
+                "leverage {:?}: {} is outside 1..={}",
+                self.id,
+                self.value,
+                self.max
+            );
+        }
+        let share = ((self.value - 1.0) / (self.max - 1.0)).clamp(0.0, 1.0);
         let ink = if share >= 0.5 {
             colors.danger
         } else if share >= 0.2 {
@@ -131,8 +139,8 @@ pub struct MarginIndicator {
 impl MarginIndicator {
     pub fn new(id: impl Into<ElementId>, used: f64, equity: f64) -> Self {
         assert!(
-            equity > 0.0 && used >= 0.0,
-            "margin needs equity and a use of zero or more"
+            equity.is_finite() && used.is_finite() && used >= 0.0,
+            "margin needs finite equity and a use of zero or more"
         );
         Self {
             id: id.into(),
@@ -144,7 +152,10 @@ impl MarginIndicator {
 
 impl RenderOnce for MarginIndicator {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        let share = (self.used / self.equity) as f32;
+        let share = match self.equity > 0.0 {
+            true => (self.used / self.equity) as f32,
+            false => 1.0,
+        };
         let detail = format!(
             "${} of ${} · ${} free",
             price(self.used, 0),

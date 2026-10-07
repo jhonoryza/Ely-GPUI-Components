@@ -42,10 +42,9 @@ impl TimeRangeSelector {
     /// `selected` is one of `RANGES`.
     pub fn new(id: impl Into<ElementId>, selected: impl Into<SharedString>) -> Self {
         let selected = selected.into();
-        assert!(
-            RANGES.contains(&selected.as_ref()),
-            "{selected} is not a range"
-        );
+        if !RANGES.contains(&selected.as_ref()) {
+            log::error!("time range selector: {selected} is not a range; none marked");
+        }
         Self {
             id: id.into(),
             selected,
@@ -89,10 +88,9 @@ impl IntervalSelector {
     /// `selected` is one of the keys of `INTERVALS`.
     pub fn new(id: impl Into<ElementId>, selected: impl Into<SharedString>) -> Self {
         let selected = selected.into();
-        assert!(
-            INTERVALS.iter().any(|(key, _)| *key == selected.as_ref()),
-            "{selected} is not an interval"
-        );
+        if !INTERVALS.iter().any(|(key, _)| *key == selected.as_ref()) {
+            log::error!("interval selector: {selected} is not an interval; none chosen");
+        }
         Self {
             id: id.into(),
             selected,
@@ -267,12 +265,13 @@ impl MultiChartLayout {
 impl RenderOnce for MultiChartLayout {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let wanted = self.arrangement.cells();
-        assert!(
-            self.cells.len() >= wanted,
-            "{:?} holds {wanted} charts; {} were given",
-            self.arrangement,
-            self.cells.len()
-        );
+        if self.cells.len() < wanted {
+            log::error!(
+                "multi-chart layout: {:?} holds {wanted} charts; {} given, the rest empty",
+                self.arrangement,
+                self.cells.len()
+            );
+        }
         let theme = cx.theme();
         let key = Arrangement::ALL
             .iter()
@@ -298,7 +297,11 @@ impl RenderOnce for MultiChartLayout {
         let border = theme.colors.border;
         let cell = |child: AnyElement| div().flex_1().min_w_0().min_h_0().p_2().child(child);
         let mut cells = self.cells.into_iter().take(wanted).map(cell);
-        let mut next = || cells.next().expect("counted above");
+        let mut next = || {
+            cells
+                .next()
+                .unwrap_or_else(|| cell(div().into_any_element()))
+        };
         let grid = match self.arrangement {
             Arrangement::One => div().flex().child(next()),
             Arrangement::Across => div()

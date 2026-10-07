@@ -95,9 +95,9 @@ impl Styled for PayoffDiagram {
 
 impl RenderOnce for PayoffDiagram {
     fn render(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let step = nice_step(self.range.1 - self.range.0, 6);
-        let ((start, end), _) = nice(self.range.0, self.range.1, 6);
-        let samples = ((end - start) / step).round() as usize * PER_STEP + 1;
+        let ((start, end), ticks) = nice(self.range.0, self.range.1, 6);
+        let step = nice_step(end - start, 6);
+        let samples = ticks.len().saturating_sub(1).max(1) * PER_STEP + 1;
         let prices: Vec<f64> = (0..samples)
             .map(|ix| start + (end - start) * ix as f64 / (samples - 1) as f64)
             .collect();

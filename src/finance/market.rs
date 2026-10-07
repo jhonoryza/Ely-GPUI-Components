@@ -17,7 +17,7 @@ use super::{
     tools::{Drawing, Tool},
 };
 use crate::{
-    charts::{Linear, Rect, measure},
+    charts::{LIMIT, Linear, Rect, measure},
     theme::ActiveTheme,
     typography::format::system_zone,
 };
@@ -160,13 +160,17 @@ impl CandlestickChart {
         name: impl Into<SharedString>,
         candles: impl Into<Rc<Vec<Candle>>>,
     ) -> Self {
-        let candles = candles.into();
-        assert_eq!(
-            candles.len(),
-            self.candles.len(),
-            "a compared symbol needs a candle for each period"
-        );
-        self.compare = Some((name.into(), candles));
+        let (name, candles) = (name.into(), candles.into());
+        if candles.len() != self.candles.len() {
+            log::error!(
+                "market chart: {name} has {} candles for {} periods; not compared",
+                candles.len(),
+                self.candles.len()
+            );
+            self.compare = None;
+            return self;
+        }
+        self.compare = Some((name, candles));
         self
     }
 
@@ -285,12 +289,17 @@ impl RenderOnce for CandlestickChart {
         let compare = self.compare.as_ref().and_then(|(_, other)| {
             let first = range.clone().next()?;
             let ratio = self.candles[first].close / other[first].close;
-            Some(
-                other
-                    .iter()
-                    .map(|candle| Some(candle.close * ratio))
-                    .collect::<Vec<_>>(),
-            )
+            let closes: Vec<f64> = other.iter().map(|candle| candle.close * ratio).collect();
+            if !closes
+                .iter()
+                .all(|close| close.is_finite() && close.abs() <= LIMIT)
+            {
+                log::error!(
+                    "market chart: the comparison scaled by {ratio} leaves what a chart draws"
+                );
+                return None;
+            }
+            Some(closes.into_iter().map(Some).collect::<Vec<_>>())
         });
         let in_view = &shown[range.clone()];
         let mut reach = in_view.iter().fold(None::<(f64, f64)>, |reach, candle| {
@@ -385,7 +394,10 @@ impl RenderOnce for CandlestickChart {
             row,
             zone: zone.clone(),
             title: self.title.clone(),
-            compare: self.compare.as_ref().map(|(name, _)| name.clone()),
+            compare: compare
+                .as_ref()
+                .and(self.compare.as_ref())
+                .map(|(name, _)| name.clone()),
             drawings: marks.clone(),
         };
         let words = labels(
@@ -442,5 +454,30 @@ impl RenderOnce for CandlestickChart {
             .child(drawing(scene))
             .children(words)
             .child(measure(stage, |stage| &mut stage.bounds))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::rc::Rc;
+
+    use jiff::Timestamp;
+
+    use super::{Candle, CandlestickChart};
+
+    fn days(count: i64) -> Rc<Vec<Candle>> {
+        let candle = |ix: i64| {
+            let time = Timestamp::from_second(ix * 86_400).expect("a day");
+            Candle::new(time, (10.0, 11.0, 9.0, 10.0), 1.0)
+        };
+        Rc::new((0..count).map(candle).collect())
+    }
+
+    #[test]
+    fn a_comparison_that_lags_clears_the_one_before() {
+        let chart = CandlestickChart::new("chart", days(2))
+            .compare("one", days(2))
+            .compare("two", days(1));
+        assert!(chart.compare.is_none());
     }
 }

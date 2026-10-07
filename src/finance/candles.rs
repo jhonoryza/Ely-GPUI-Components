@@ -73,6 +73,26 @@ pub(crate) struct Brick {
     pub at: usize,
 }
 
+/// Most boxes of one size a chart draws; finer ones cannot be told apart.
+const MOST_BOXES: f64 = 1e5;
+
+/// Whether boxes of `size` grid the candles: few enough by their travel, and exact in whole steps.
+pub(crate) fn griddable(candles: &[Candle], size: f64) -> bool {
+    let travel: f64 = candles
+        .iter()
+        .map(|candle| candle.high - candle.low)
+        .sum::<f64>()
+        + candles
+            .windows(2)
+            .map(|pair| (pair[1].close - pair[0].close).abs())
+            .sum::<f64>();
+    let reach = candles
+        .iter()
+        .map(|candle| candle.high.abs().max(candle.low.abs()))
+        .fold(0.0, f64::max);
+    travel / size <= MOST_BOXES && reach / size < 2f64.powi(53)
+}
+
 /// Renko bricks of `size`: one each time the close moves a whole brick past the last brick's far side, so turning takes two.
 pub(crate) fn renko(candles: &[Candle], size: f64) -> Vec<Brick> {
     assert!(size > 0.0, "a brick needs a size");
@@ -191,6 +211,21 @@ pub(crate) fn profile(
             )
         })
         .collect()
+}
+
+#[cfg(test)]
+mod grid {
+    use jiff::Timestamp;
+
+    use super::{Candle, griddable};
+
+    #[test]
+    fn boxes_too_fine_for_their_prices_do_not_grid() {
+        let candle = Candle::new(Timestamp::UNIX_EPOCH, (10.0, 11.0, 9.0, 10.0), 1.0);
+        assert!(griddable(&[candle], 1.0));
+        assert!(!griddable(&[candle], 1e-18), "past exact steps");
+        assert!(!griddable(&[candle], 1e-5), "past the boxes a chart draws");
+    }
 }
 
 #[cfg(test)]

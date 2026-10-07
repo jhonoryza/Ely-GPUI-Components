@@ -208,9 +208,17 @@ impl RenderOnce for CryptoWalletCard {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         let colors = theme.colors.clone();
-        let code = QrCode::new(self.address.as_bytes())
-            .expect("an address fits a code")
-            .size(theme.qr_code() * 0.6);
+        let code = match QrCode::new(self.address.as_bytes()) {
+            Ok(code) => code.size(theme.qr_code() * 0.6).into_any_element(),
+            Err(error) => {
+                log::error!("wallet card: no code for its address: {error:?}");
+                div()
+                    .text_size(theme.text_size(TextSize::Xs))
+                    .text_color(colors.danger)
+                    .child("Address too long for a code")
+                    .into_any_element()
+            }
+        };
         let address = self.address.clone();
         div()
             .flex()
@@ -403,11 +411,8 @@ impl RenderOnce for TransactionList {
                                     .text_size(theme.text_size(TextSize::Xs))
                                     .text_color(colors.fg_muted)
                                     .child(
-                                        transfer
-                                            .time
-                                            .to_zoned(zone.clone())
-                                            .strftime("%b %-d, %H:%M")
-                                            .to_string(),
+                                        format::datetime(transfer.time, &zone, "%b %-d, %H:%M")
+                                            .expect("a fixed pattern"),
                                     ),
                             ),
                     )

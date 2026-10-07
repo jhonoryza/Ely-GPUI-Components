@@ -180,11 +180,8 @@ impl RenderOnce for OrderTable {
                 } else {
                     order.price.into()
                 };
-                let time: SharedString = working
-                    .time
-                    .to_zoned(zone.clone())
-                    .strftime("%H:%M:%S")
-                    .to_string()
+                let time: SharedString = format::datetime(working.time, &zone, "%H:%M:%S")
+                    .expect("a fixed pattern")
                     .into();
                 let filled = working.filled / order.quantity;
                 Row::new(
@@ -270,11 +267,8 @@ impl RenderOnce for TradeHistoryTable {
             .map(|(ix, fill)| {
                 let signed = if fill.side == Side::Buy { -1.0 } else { 1.0 };
                 let total = signed * fill.quantity * fill.price - fill.fee;
-                let time: SharedString = fill
-                    .time
-                    .to_zoned(zone.clone())
-                    .strftime("%b %-d %H:%M")
-                    .to_string()
+                let time: SharedString = format::datetime(fill.time, &zone, "%b %-d %H:%M")
+                    .expect("a fixed pattern")
                     .into();
                 Row::new(
                     format!("fill-{ix}"),

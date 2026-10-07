@@ -78,15 +78,6 @@ impl DepthChart {
             fine(&bids) && fine(&asks) && !bids.is_empty() && !asks.is_empty(),
             "a book needs levels with positive sizes on both sides"
         );
-        let best_bid = bids
-            .iter()
-            .map(|(price, _)| *price)
-            .fold(f64::MIN, f64::max);
-        let best_ask = asks
-            .iter()
-            .map(|(price, _)| *price)
-            .fold(f64::MAX, f64::min);
-        assert!(best_bid < best_ask, "the best bid sits below the best ask");
         Self {
             base: div(),
             id: id.into(),
@@ -117,7 +108,11 @@ impl RenderOnce for DepthChart {
         let (bids, asks) = depth(&self.bids, &self.asks);
         let (best_bid, best_ask) = (bids[0].0, asks[0].0);
         let mid = (best_bid + best_ask) / 2.0;
-        let reach = (mid - bids.last().expect("bids").0).max(asks.last().expect("asks").0 - mid);
+        let reach = bids
+            .iter()
+            .chain(&asks)
+            .map(|(price, _)| (price - mid).abs())
+            .fold(0.0, f64::max);
         let most = bids
             .last()
             .expect("bids")

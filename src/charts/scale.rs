@@ -58,7 +58,12 @@ pub(crate) fn nice_step(span: f64, count: usize) -> f64 {
     } else {
         10.0
     };
-    nice * power
+    let step = nice * power;
+    if step > 0.0 && step.is_finite() {
+        step
+    } else {
+        raw
+    }
 }
 
 /// A domain widened to round steps that hold `low..=high`, and the ticks along it.

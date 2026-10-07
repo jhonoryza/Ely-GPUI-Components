@@ -15,7 +15,7 @@ use crate::{
     motion::Flash,
     theme::{ActiveTheme, Density, TextSize},
     typography::{
-        format::{decimals, system_zone},
+        format::{datetime, decimals, system_zone},
         tabular,
     },
 };
@@ -85,11 +85,7 @@ impl RenderOnce for TimeAndSales {
             .enumerate()
             .map(|(ix, trade)| {
                 let ink = if trade.side == Side::Buy { rise } else { fall };
-                let time = trade
-                    .time
-                    .to_zoned(zone.clone())
-                    .strftime("%H:%M:%S")
-                    .to_string();
+                let time = datetime(trade.time, &zone, "%H:%M:%S").expect("a fixed pattern");
                 let row = div()
                     .flex()
                     .items_center()
@@ -187,12 +183,17 @@ impl DomLadder {
     }
 }
 
-/// The prices a ladder shows around `last`, highest first, each on a whole step.
+/// The prices a ladder shows around `last`, highest first, each on a whole step when the step can say it.
 fn rungs(last: f64, tick: f64, rows: usize) -> Vec<f64> {
-    let middle = (last / tick).round() as i64;
-    let above = rows as i64 / 2;
-    (0..rows as i64)
-        .map(|ix| (middle + above - ix) as f64 * tick)
+    let steps = (last / tick).round();
+    let middle = if steps.is_finite() {
+        steps * tick
+    } else {
+        last
+    };
+    let above = (rows / 2) as f64;
+    (0..rows)
+        .map(|ix| middle + (above - ix as f64) * tick)
         .collect()
 }
 
@@ -204,7 +205,7 @@ impl RenderOnce for DomLadder {
         let colors = theme.colors.clone();
         let near = |side: &[(f64, f64)], at: f64| {
             side.iter()
-                .find(|(level, _)| (level - at).abs() < self.tick / 2.0)
+                .find(|(level, _)| (level - at).abs() <= self.tick / 2.0)
                 .map(|(_, size)| *size)
         };
         let deepest = self
@@ -213,13 +214,14 @@ impl RenderOnce for DomLadder {
             .chain(&self.asks)
             .map(|(_, size)| *size)
             .fold(0.0, f64::max);
-        let last = (self.last / self.tick).round() * self.tick;
+        let middle = self.rows / 2;
         let rows = rungs(self.last, self.tick, self.rows)
             .into_iter()
-            .map(|at| {
+            .enumerate()
+            .map(|(ix, at)| {
                 let (bid, ask) = (near(&self.bids, at), near(&self.asks, at));
                 let side_cell = |size: Option<f64>, side: Side, ink: Hsla| {
-                    let key = format!("{}-{:?}", at, side);
+                    let key = format!("{at}-{ix}-{side:?}");
                     let body = level(
                         size.unwrap_or(0.0) / deepest.max(f64::EPSILON),
                         ink,
@@ -231,6 +233,7 @@ impl RenderOnce for DomLadder {
                     let trade = self.on_trade.clone();
                     div()
                         .id((self.id.clone(), SharedString::from(key)))
+                        .debug_selector(move || format!("ladder-cell-{ix}-{side:?}"))
                         .flex_1()
                         .cursor_pointer()
                         .hover(|style| style.bg(colors.hover))
@@ -243,7 +246,7 @@ impl RenderOnce for DomLadder {
                         })
                         .child(body)
                 };
-                let marked = (at - last).abs() < self.tick / 2.0;
+                let marked = ix == middle;
                 div()
                     .flex()
                     .items_center()
@@ -257,6 +260,7 @@ impl RenderOnce for DomLadder {
                             .text_size(theme.text_size(TextSize::Sm))
                             .when(marked, |price| {
                                 price
+                                    .debug_selector(|| "ladder-last".into())
                                     .bg(colors.active)
                                     .text_color(colors.fg)
                                     .font_weight(FontWeight::SEMIBOLD)
@@ -280,6 +284,18 @@ impl RenderOnce for DomLadder {
 #[cfg(test)]
 mod tests {
     use super::rungs;
+
+    #[test]
+    fn a_tick_finer_than_the_price_repeats_rungs() {
+        for tick in [1e-18, 1e-310] {
+            let prices = rungs(10.0, tick, 15);
+            assert_eq!(prices.len(), 15);
+            assert!(
+                prices.iter().all(|price| (price - 10.0).abs() < 1e-9),
+                "{prices:?}"
+            );
+        }
+    }
 
     #[test]
     fn rungs_step_around_the_last() {

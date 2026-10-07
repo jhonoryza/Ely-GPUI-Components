@@ -259,7 +259,7 @@ pub struct QuickTradeButtons {
 
 impl QuickTradeButtons {
     pub fn new(id: impl Into<ElementId>, bid: f64, ask: f64) -> Self {
-        assert!(bid < ask, "a bid sits below its ask");
+        assert!(bid.is_finite() && ask.is_finite(), "quotes are finite");
         Self {
             id: id.into(),
             bid,

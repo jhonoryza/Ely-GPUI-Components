@@ -4,10 +4,10 @@ use gpui::{
 use jiff::civil::Date;
 
 use crate::{
-    charts::{AreaChart, LineChart, Series},
+    charts::{AreaChart, LIMIT, LineChart, Series},
     data_display::{KpiCard, Statistic, Tone, TrendIndicator, UsageBar},
     tables::{Cell, Column, DataTable, Row, TreeRow, TreeTable},
-    theme::ActiveTheme,
+    theme::{ActiveTheme, TextSize},
     typography::format,
 };
 
@@ -103,14 +103,14 @@ pub(crate) fn drawdown(values: &[f64]) -> Vec<f64> {
         .collect()
 }
 
-/// Each value as a share gained since the first.
-fn growth(values: &[f64]) -> Vec<f64> {
-    let first = values
-        .first()
-        .copied()
-        .filter(|first| *first != 0.0)
-        .expect("growth runs from a first value other than zero");
-    values.iter().map(|value| value / first - 1.0).collect()
+/// Each value as a share gained since the first; none from zero or past what a chart draws.
+fn growth(values: &[f64]) -> Option<Vec<f64>> {
+    let first = *values.first()?;
+    let grown: Vec<f64> = values.iter().map(|value| value / first - 1.0).collect();
+    grown
+        .iter()
+        .all(|share| share.is_finite() && share.abs() <= LIMIT)
+        .then_some(grown)
 }
 
 /// How a portfolio grew against a benchmark, both from the same start, and below it how far it fell from each high.
@@ -149,35 +149,63 @@ impl PerformanceChart {
         name: impl Into<SharedString>,
         values: impl IntoIterator<Item = f64>,
     ) -> Self {
-        let values: Vec<f64> = values.into_iter().collect();
-        assert_eq!(
-            values.len(),
-            self.labels.len(),
-            "a benchmark needs a value per label"
-        );
-        self.benchmark = Some((name.into(), values));
+        let (name, values) = (name.into(), values.into_iter().collect::<Vec<f64>>());
+        if values.len() != self.labels.len() {
+            log::error!(
+                "performance chart: {name} has {} values for {} labels; left out",
+                values.len(),
+                self.labels.len()
+            );
+            self.benchmark = None;
+            return self;
+        }
+        self.benchmark = Some((name, values));
         self
     }
 }
 
 impl RenderOnce for PerformanceChart {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let height = cx.theme().chart().height;
+        let theme = cx.theme();
+        let height = theme.chart().height;
         let percent = |value: f64| format::percent(value, 0, true);
+        let falls = drawdown(&self.equity);
+        let drawn = falls
+            .iter()
+            .all(|fall| fall.is_finite() && fall.abs() <= LIMIT);
+        let Some(grown) = growth(&self.equity).filter(|_| drawn) else {
+            log::error!(
+                "performance chart {:?}: no growth from {:?}",
+                self.id,
+                self.equity.first()
+            );
+            return div()
+                .text_size(theme.text_size(TextSize::Sm))
+                .text_color(theme.colors.danger)
+                .child("No growth to draw from this first value")
+                .into_any_element();
+        };
         let curve = LineChart::new((self.id.clone(), "growth"), self.labels.clone())
-            .series(Series::new("Portfolio", growth(&self.equity)));
+            .series(Series::new("Portfolio", grown));
         let curve = match &self.benchmark {
-            Some((name, values)) => curve.series(Series::new(name.clone(), growth(values))),
+            Some((name, values)) => match growth(values) {
+                Some(grown) => curve.series(Series::new(name.clone(), grown)),
+                None => {
+                    log::error!("performance chart {:?}: no growth for {name}", self.id);
+                    curve
+                }
+            },
             None => curve,
         };
         let falls = AreaChart::new((self.id.clone(), "drawdown"), self.labels)
-            .series(Series::new("Drawdown", drawdown(&self.equity)));
+            .series(Series::new("Drawdown", falls));
         div()
             .flex()
             .flex_col()
             .gap_2()
             .child(curve.format(percent).h(height * 0.8))
             .child(falls.format(percent).h(height * 0.4))
+            .into_any_element()
     }
 }
 
@@ -338,7 +366,15 @@ impl RenderOnce for FinancialStatementTable {
 
 #[cfg(test)]
 mod tests {
-    use super::{drawdown, growth};
+    use super::{PerformanceChart, drawdown, growth};
+
+    #[test]
+    fn a_benchmark_that_lags_clears_the_one_before() {
+        let chart = PerformanceChart::new("perf", ["a", "b"], [1.0, 2.0])
+            .benchmark("index", [1.0, 2.0])
+            .benchmark("index", [1.0]);
+        assert!(chart.benchmark.is_none());
+    }
 
     #[test]
     fn falls_read_from_each_high_and_growth_from_the_start() {
@@ -346,7 +382,8 @@ mod tests {
             drawdown(&[100.0, 120.0, 90.0, 130.0]),
             [0.0, 0.0, -0.25, 0.0]
         );
-        let grown = growth(&[100.0, 110.0, 90.0]);
+        assert_eq!(growth(&[0.0, 10.0]), None, "no growth from zero");
+        let grown = growth(&[100.0, 110.0, 90.0]).expect("growth from a hundred");
         assert!(
             grown
                 .iter()

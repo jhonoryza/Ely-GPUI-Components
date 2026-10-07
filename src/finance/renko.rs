@@ -1,14 +1,15 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Div, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, PathBuilder,
-    Pixels, Refineable, RenderOnce, StyleRefinement, Styled, Window, canvas, div, fill,
+    AnyElement, App, Div, ElementId, Entity, InteractiveElement, IntoElement, ParentElement,
+    PathBuilder, Pixels, Refineable, RenderOnce, StyleRefinement, Styled, Window, canvas, div,
+    fill,
 };
 
 use jiff::tz::TimeZone;
 
 use super::{
-    candles::{Candle, point_and_figure, renko},
+    candles::{Candle, griddable, point_and_figure, renko},
     quotes::moves,
     stage::fit,
 };
@@ -18,7 +19,7 @@ use crate::{
     },
     theme::{ActiveTheme, TextSize},
     typography::{
-        format::{self, decimals, system_zone},
+        format::{self, datetime, decimals, system_zone},
         tabular,
     },
 };
@@ -30,6 +31,17 @@ struct Mark {
     rose: bool,
     title: String,
     reading: String,
+}
+
+/// A box size too fine for the candles: logged, and said in the chart's place.
+fn too_fine(id: &ElementId, size: f64, cx: &App) -> AnyElement {
+    log::error!("{id:?}: boxes of {size} are too fine for these prices");
+    let theme = cx.theme();
+    div()
+        .text_size(theme.text_size(TextSize::Sm))
+        .text_color(theme.colors.danger)
+        .child(format!("Boxes of {size} are too fine for these prices"))
+        .into_any_element()
 }
 
 /// What both price-only charts share: a slot per mark along the bottom, prices at the right, and a tooltip for the mark under the pointer.
@@ -176,7 +188,7 @@ fn board(
                         ink
                     };
                     let gap = wide * 0.12;
-                    let Some(side) = box_px else {
+                    let Some(side) = box_px.filter(|side| *side >= 1.0) else {
                         let brick = Rect {
                             x: rect.x + gap,
                             y: rect.y,
@@ -271,15 +283,15 @@ impl RenderOnce for RenkoChart {
             .zone
             .clone()
             .unwrap_or_else(|| system_zone("RenkoChart"));
+        if !griddable(&self.candles, self.size) {
+            return too_fine(&self.id, self.size, cx);
+        }
         let marks = renko(&self.candles, self.size)
             .into_iter()
             .enumerate()
             .map(|(slot, brick)| {
-                let day = self.candles[brick.at]
-                    .time
-                    .to_zoned(zone.clone())
-                    .strftime("%b %-d, %Y")
-                    .to_string();
+                let day = datetime(self.candles[brick.at].time, &zone, "%b %-d, %Y")
+                    .expect("a fixed pattern");
                 let reading = format!(
                     "{} → {}",
                     format::number(brick.from, 2, format::Separators::EN),
@@ -302,6 +314,7 @@ impl RenderOnce for RenkoChart {
             window,
             cx,
         )
+        .into_any_element()
     }
 }
 
@@ -353,6 +366,9 @@ impl Styled for PointFigureChart {
 impl RenderOnce for PointFigureChart {
     fn render(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let size = self.size;
+        if !griddable(&self.candles, size) {
+            return too_fine(&self.id, size, cx);
+        }
         let marks = point_and_figure(&self.candles, size, self.reversal)
             .into_iter()
             .enumerate()
@@ -385,5 +401,6 @@ impl RenderOnce for PointFigureChart {
             window,
             cx,
         )
+        .into_any_element()
     }
 }
