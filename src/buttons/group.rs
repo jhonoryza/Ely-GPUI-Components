@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     App, ElementId, FontWeight, InteractiveElement, IntoElement, MouseButton, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
 };
 
 use super::{
@@ -107,8 +107,16 @@ fn toggle_face(
     let (text, icon_size) = label_size(size);
     let fg = if on { colors.fg } else { colors.fg_muted };
     let (hover, value) = (colors.hover, item.value.clone());
+    let name = item
+        .label
+        .clone()
+        .or_else(|| item.tooltip.clone())
+        .unwrap_or_else(|| item.value.clone());
     div()
         .id(id)
+        .role(Role::Button)
+        .aria_label(name)
+        .aria_toggled(on.into())
         .debug_selector(move || format!("toggle {value}"))
         .flex()
         .flex_none()
