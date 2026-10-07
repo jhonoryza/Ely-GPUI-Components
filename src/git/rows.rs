@@ -23,7 +23,7 @@ pub(super) enum Shown {
     Header(usize, SharedString),
     Line(Place, DiffLine),
     Pair(Option<(Place, DiffLine)>, Option<(Place, DiffLine)>),
-    /// A folded stretch: its place among the stretches and how many lines it hides.
+    /// A folded stretch: its place and how many lines.
     Fold(usize, usize),
 }
 
