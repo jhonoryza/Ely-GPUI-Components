@@ -284,11 +284,9 @@ pub(super) fn listed(
         .child(
             div()
                 .absolute()
-                .top_0()
-                .bottom_0()
+                .top_0p5()
                 .right_1()
                 .flex()
-                .items_center()
                 .opacity(0.)
                 .group_hover(group, |actions| actions.opacity(1.))
                 .children(actions),
