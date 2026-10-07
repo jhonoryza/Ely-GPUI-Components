@@ -232,13 +232,19 @@ impl DocumentChunkPreview {
         text: impl Into<SharedString>,
         matched: Vec<Range<usize>>,
     ) -> Self {
-        let text = text.into();
-        assert!(
-            matched.iter().all(|range| range.end <= text.len()
-                && text.is_char_boundary(range.start)
-                && text.is_char_boundary(range.end)),
-            "a match lies outside the passage"
-        );
+        let text: SharedString = text.into();
+        let matched: Vec<Range<usize>> = matched
+            .into_iter()
+            .filter(|range| {
+                let inside = text.get(range.clone()).is_some();
+                if !inside {
+                    log::error!(
+                        "document chunk: match {range:?} lies outside the passage; left out"
+                    );
+                }
+                inside
+            })
+            .collect();
         assert!(
             matched.windows(2).all(|pair| pair[0].end <= pair[1].start),
             "matches come in order without overlapping"
@@ -313,5 +319,18 @@ impl RenderOnce for DocumentChunkPreview {
                             .with_highlights(self.matched.into_iter().map(|range| (range, wash))),
                     ),
             )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DocumentChunkPreview;
+
+    #[test]
+    fn a_match_outside_the_passage_is_left_out() {
+        let ranges = vec![1..2, 2..3, 3..9];
+        let preview = DocumentChunkPreview::new("guide.md", "p. 2", "éabc", ranges);
+        let kept = 2..3;
+        assert_eq!(preview.matched, [kept]);
     }
 }

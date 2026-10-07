@@ -58,15 +58,25 @@ impl ParameterPanel {
         parameters: impl IntoIterator<Item = Parameter>,
         on_change: impl Fn(&SharedString, f64, &mut Window, &mut App) + 'static,
     ) -> Self {
-        let parameters: Vec<Parameter> = parameters.into_iter().collect();
-        for parameter in &parameters {
+        let mut parameters: Vec<Parameter> = parameters.into_iter().collect();
+        for parameter in &mut parameters {
             assert!(
                 parameter.min < parameter.max
                     && parameter.step > 0.0
-                    && (parameter.min..=parameter.max).contains(&parameter.value),
+                    && parameter.value.is_finite(),
                 "parameter {} has a bad range",
                 parameter.key
             );
+            if !(parameter.min..=parameter.max).contains(&parameter.value) {
+                log::error!(
+                    "parameters: {} at {} lies outside {}..={}; pegged",
+                    parameter.key,
+                    parameter.value,
+                    parameter.min,
+                    parameter.max
+                );
+                parameter.value = parameter.value.clamp(parameter.min, parameter.max);
+            }
         }
         Self {
             id: id.into(),
@@ -309,7 +319,7 @@ impl RenderOnce for SystemPromptEditor {
 
 #[cfg(test)]
 mod tests {
-    use super::{Parameter, cost, places};
+    use super::{Parameter, ParameterPanel, cost, places};
 
     #[test]
     fn cost_counts_tokens_at_their_prices() {
@@ -350,5 +360,22 @@ mod tests {
             1,
             "float noise adds no places"
         );
+    }
+
+    #[test]
+    fn a_value_outside_its_range_pegs() {
+        let knob = |value| Parameter {
+            key: "temperature".into(),
+            label: "Temperature".into(),
+            value,
+            min: 0.0,
+            max: 2.0,
+            step: 0.1,
+            hint: None,
+        };
+        let panel =
+            ParameterPanel::new("knobs", [knob(3.5), knob(-1.0), knob(0.7)], |_, _, _, _| {});
+        let values: Vec<f64> = panel.parameters.iter().map(|knob| knob.value).collect();
+        assert_eq!(values, [2.0, 0.0, 0.7]);
     }
 }

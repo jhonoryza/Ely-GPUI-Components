@@ -308,7 +308,7 @@ impl RenderOnce for MessageEditor {
 #[derive(IntoElement)]
 pub struct BranchNavigator {
     id: ElementId,
-    current: usize,
+    current: Option<usize>,
     total: usize,
     on_change: Pick,
 }
@@ -320,10 +320,12 @@ impl BranchNavigator {
         total: usize,
         on_change: impl Fn(usize, &mut Window, &mut App) + 'static,
     ) -> Self {
-        assert!(current < total, "version {current} of {total}");
+        if current >= total {
+            log::error!("branch navigator: version {current} of {total}; none shown");
+        }
         Self {
             id: id.into(),
-            current,
+            current: (current < total).then_some(current),
             total,
             on_change: Rc::new(on_change),
         }
@@ -355,7 +357,7 @@ impl RenderOnce for BranchNavigator {
                 "back",
                 IconName::ChevronLeft,
                 "Previous version",
-                current.checked_sub(1),
+                current.and_then(|current| current.checked_sub(1)),
             ))
             .child(
                 tabular(
@@ -363,13 +365,30 @@ impl RenderOnce for BranchNavigator {
                         .text_size(theme.text_size(TextSize::Xs))
                         .text_color(theme.colors.fg_muted),
                 )
-                .child(format!("{} / {total}", current + 1)),
+                .child(match current {
+                    Some(current) => format!("{} / {total}", current + 1),
+                    None => format!("– / {total}"),
+                }),
             )
             .child(step(
                 "forward",
                 IconName::ChevronRight,
                 "Next version",
-                (current + 1 < total).then_some(current + 1),
+                current.and_then(|current| (current + 1 < total).then_some(current + 1)),
             ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::BranchNavigator;
+
+    #[test]
+    fn a_version_past_the_branches_shows_none() {
+        let navigator =
+            |current, total| BranchNavigator::new("branch", current, total, |_, _, _| {});
+        assert_eq!(navigator(1, 3).current, Some(1));
+        assert_eq!(navigator(3, 3).current, None);
+        assert_eq!(navigator(0, 0).current, None);
     }
 }
