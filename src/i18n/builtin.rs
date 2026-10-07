@@ -78,6 +78,10 @@ const EN: &[(&str, &str)] = &[
     ("git.changes.unstage", "Unstage"),
     ("git.changes.stage_all", "Stage all"),
     ("git.changes.unstage_all", "Unstage all"),
+    ("git.diff.unified", "Unified"),
+    ("git.diff.split", "Split"),
+    ("git.diff.unchanged.one", "{n} unchanged line"),
+    ("git.diff.unchanged.other", "{n} unchanged lines"),
 ];
 
 const ZH_CN: &[(&str, &str)] = &[
@@ -154,6 +158,10 @@ const ZH_CN: &[(&str, &str)] = &[
     ("git.changes.unstage", "取消暂存"),
     ("git.changes.stage_all", "全部暂存"),
     ("git.changes.unstage_all", "全部取消暂存"),
+    ("git.diff.unified", "行内"),
+    ("git.diff.split", "并排"),
+    ("git.diff.unchanged.one", "{n} 行未改动"),
+    ("git.diff.unchanged.other", "{n} 行未改动"),
 ];
 
 /// Ely's own message for `key` in `locale`, English for a locale Ely does not ship; fails on an unknown key.

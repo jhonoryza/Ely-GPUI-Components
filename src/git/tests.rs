@@ -109,3 +109,67 @@ fn every_section_draws_with_its_own_words(cx: &mut TestAppContext) {
     let (_, cx) = cx.add_window_view(|_, _| Sorted);
     settle(cx);
 }
+
+/// Lines and hunks pressed, from stretches made elsewhere.
+#[derive(Default)]
+struct Picking {
+    lines: Vec<((usize, usize), bool)>,
+    hunks: Vec<usize>,
+}
+
+impl Render for Picking {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let (lines, hunks) = (cx.entity(), cx.entity());
+        let stretches = std::rc::Rc::new(super::diff("a\nb\n", "a\nc\n", 1));
+        div().w(px(480.0)).h(px(320.0)).child(
+            DiffViewer::from_stretches("picking", "a.txt", stretches)
+                .selected([(0, 2)])
+                .on_line(move |place, shift, _, cx| {
+                    lines.update(cx, |picking, _| picking.lines.push((place, shift)))
+                })
+                .hunk_action("Stage", move |hunk, _, cx| {
+                    hunks.update(cx, |picking, _| picking.hunks.push(hunk))
+                }),
+        )
+    }
+}
+
+#[gpui::test]
+fn changed_lines_and_hunks_answer_presses(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        Theme::init(cx);
+        forms::bind_keys(cx);
+        cx.bind_keys([KeyBinding::new("tab", FocusNext, None)]);
+    });
+    let (view, cx) = cx.add_window_view(|_, _| Picking::default());
+    cx.update(|window, _| window.activate_window());
+    settle(cx);
+    let press = |cx: &mut VisualTestContext, key: &str| {
+        cx.simulate_keystrokes(key);
+        settle(cx);
+        cx.simulate_event(KeyUpEvent {
+            keystroke: Keystroke::parse(key).expect("a key"),
+        });
+        settle(cx);
+    };
+    // Past the two layout segments: the hunk's button, then its lines.
+    let next = |cx: &mut VisualTestContext| {
+        cx.update(|window, cx| window.focus_next(cx));
+        settle(cx);
+    };
+    (0..3).for_each(|_| next(cx));
+    press(cx, "enter");
+    next(cx);
+    press(cx, "enter");
+    next(cx);
+    press(cx, "enter");
+    let (lines, hunks) = view.read_with(cx, |picking, _| {
+        (picking.lines.clone(), picking.hunks.clone())
+    });
+    assert_eq!(hunks, [0], "the hunk's button");
+    assert_eq!(
+        lines,
+        [((0, 1), false), ((0, 2), false)],
+        "removed, then added"
+    );
+}

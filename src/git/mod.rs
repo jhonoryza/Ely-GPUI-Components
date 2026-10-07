@@ -18,7 +18,7 @@ pub use badges::{DiffStat, GitStatusBadge};
 pub use blame::{Blame, BlameView, GitBlameAnnotation};
 pub use changes::{ChangeAction, Changed, ChangesList, CommitInput};
 pub use commits::{Commit, CommitItem, CommitList};
-pub use diff::{DiffLine, LineKind, Stretch, diff, pairs, stat};
+pub use diff::{DiffLine, LineKind, Stretch, diff, mark_words, pairs, stat};
 pub use graph::{GraphRow, Half, Stroke, lanes};
 pub use history::FileHistory;
 pub use merge::{ConflictResolver, ThreeWayMerge};

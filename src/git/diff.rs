@@ -124,31 +124,77 @@ pub fn stat(old: &str, new: &str) -> (usize, usize) {
         })
 }
 
-/// A hunk's lines side by side: unchanged lines on both sides, each run of removals beside the additions after it.
-pub fn pairs(lines: &[DiffLine]) -> Vec<(Option<&DiffLine>, Option<&DiffLine>)> {
+/// A hunk's rows side by side, as places in `lines`.
+pub(crate) fn pair_places(lines: &[DiffLine]) -> Vec<(Option<usize>, Option<usize>)> {
     let mut out = Vec::new();
     let mut ix = 0;
     while ix < lines.len() {
         if lines[ix].kind == LineKind::Same {
-            out.push((Some(&lines[ix]), Some(&lines[ix])));
+            out.push((Some(ix), Some(ix)));
             ix += 1;
             continue;
         }
-        let removed: Vec<&DiffLine> = lines[ix..]
-            .iter()
-            .take_while(|line| line.kind == LineKind::Removed)
-            .collect();
-        ix += removed.len();
-        let added: Vec<&DiffLine> = lines[ix..]
-            .iter()
-            .take_while(|line| line.kind == LineKind::Added)
-            .collect();
-        ix += added.len();
+        let run = |from: usize, kind| {
+            from..from
+                + lines[from..]
+                    .iter()
+                    .take_while(|line| line.kind == kind)
+                    .count()
+        };
+        let removed = run(ix, LineKind::Removed);
+        let added = run(removed.end, LineKind::Added);
+        ix = added.end;
         for row in 0..removed.len().max(added.len()) {
-            out.push((removed.get(row).copied(), added.get(row).copied()));
+            let at = |range: &Range<usize>| (row < range.len()).then(|| range.start + row);
+            out.push((at(&removed), at(&added)));
         }
     }
     out
+}
+
+/// A hunk's lines side by side: unchanged lines on both sides, each run of removals beside the additions after it.
+pub fn pairs(lines: &[DiffLine]) -> Vec<(Option<&DiffLine>, Option<&DiffLine>)> {
+    pair_places(lines)
+        .into_iter()
+        .map(|(left, right)| (left.map(|ix| &lines[ix]), right.map(|ix| &lines[ix])))
+        .collect()
+}
+
+/// Marks the words each removal and the addition beside it changed.
+pub fn mark_words(lines: &mut [DiffLine]) {
+    for (left, right) in pair_places(lines) {
+        let (Some(left), Some(right)) = (left, right) else {
+            continue;
+        };
+        if left == right {
+            continue;
+        }
+        let (old, new) = (lines[left].text.clone(), lines[right].text.clone());
+        let diff = TextDiff::from_unicode_words(old.as_ref(), new.as_ref());
+        let (mut at, mut words, mut kept) = ((0, 0), (Vec::new(), Vec::new()), false);
+        for change in diff.iter_all_changes() {
+            let (value, len) = (change.value(), change.value().len());
+            let real = !value.trim().is_empty();
+            match change.tag() {
+                ChangeTag::Equal => {
+                    kept |= real;
+                    at = (at.0 + len, at.1 + len);
+                }
+                ChangeTag::Delete => {
+                    words.0.extend(real.then(|| at.0..at.0 + len));
+                    at.0 += len;
+                }
+                ChangeTag::Insert => {
+                    words.1.extend(real.then(|| at.1..at.1 + len));
+                    at.1 += len;
+                }
+            }
+        }
+        // Lines with nothing in common mark no words.
+        if kept {
+            (lines[left].words, lines[right].words) = words;
+        }
+    }
 }
 
 /// The numbers a side-by-side row shows: the old file's on the left, the new file's on the right.
@@ -218,6 +264,30 @@ mod tests {
             .map(|(left, right)| (left.is_some(), right.is_some()))
             .collect();
         assert_eq!(sides, [(true, true), (true, true), (false, true)]);
+    }
+
+    #[test]
+    fn words_are_marked_on_lines_built_elsewhere() {
+        let line = |kind, text: &str| DiffLine {
+            kind,
+            old: None,
+            new: None,
+            text: text.to_string().into(),
+            words: Vec::new(),
+        };
+        let mut lines = vec![
+            line(LineKind::Removed, "let x = 1;"),
+            line(LineKind::Removed, "abc"),
+            line(LineKind::Added, "let x = 2;"),
+            line(LineKind::Added, "xyz"),
+        ];
+        mark_words(&mut lines);
+        assert_eq!(&lines[0].text[lines[0].words[0].clone()], "1");
+        assert_eq!(&lines[2].text[lines[2].words[0].clone()], "2");
+        assert!(
+            lines[1].words.is_empty() && lines[3].words.is_empty(),
+            "nothing shared"
+        );
     }
 
     #[test]
