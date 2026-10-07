@@ -104,32 +104,26 @@ impl AutoLayout {
 pub struct AutoLayoutControls {
     id: ElementId,
     layout: AutoLayout,
-    on_change: Option<OnEdit<AutoLayout>>,
+    on_change: OnEdit<AutoLayout>,
 }
 
 impl AutoLayoutControls {
-    pub fn new(id: impl Into<ElementId>, layout: AutoLayout) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        layout: AutoLayout,
+        on_change: impl Fn(AutoLayout, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             layout,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(AutoLayout, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for AutoLayoutControls {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("auto layout controls {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (id, layout, on_change) = (self.id, self.layout, &on_change);
         let place = Rc::new(editing(
             "auto layout",

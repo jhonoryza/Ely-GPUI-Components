@@ -9,6 +9,7 @@ use crate::{primitives::FocusNext, theme::Theme};
 
 mod boards;
 mod panels;
+mod stale;
 mod tools;
 
 /// A view that shows one canvas part and keeps the viewports and words it heard.

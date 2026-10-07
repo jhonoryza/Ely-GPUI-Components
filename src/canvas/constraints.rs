@@ -102,24 +102,20 @@ impl Constraints {
 pub struct ConstraintsEditor {
     id: ElementId,
     constraints: Constraints,
-    on_change: Option<OnEdit<Constraints>>,
+    on_change: OnEdit<Constraints>,
 }
 
 impl ConstraintsEditor {
-    pub fn new(id: impl Into<ElementId>, constraints: Constraints) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        constraints: Constraints,
+        on_change: impl Fn(Constraints, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             constraints,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(Constraints, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
@@ -135,9 +131,7 @@ fn hairline(x: f32, y: f32, len: f32, across: bool, color: Hsla) -> gpui::Div {
 
 impl RenderOnce for ConstraintsEditor {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("constraints editor {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (id, now, on_change) = (self.id, self.constraints, &on_change);
         let theme = cx.theme();
         let (lit, rest) = (theme.colors.accent, theme.colors.border);

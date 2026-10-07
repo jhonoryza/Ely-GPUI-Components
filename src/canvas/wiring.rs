@@ -66,6 +66,23 @@ impl Ending {
                 }
             }
             Pull::Wiring { from, lifted, to } => {
+                let kind = self
+                    .nodes
+                    .iter()
+                    .find(|node| node.key == from.node)
+                    .and_then(|node| {
+                        let port = node.outputs.iter().find(|port| port.key == from.port)?;
+                        Some(port.kind.clone())
+                    });
+                let Some(kind) = kind else {
+                    log::error!(
+                        "node graph: the wire's port {}.{} left the graph",
+                        from.node,
+                        from.port
+                    );
+                    return;
+                };
+                let from = Socket { kind, ..from };
                 let target =
                     socket_at(&self.nodes, to, REACH / self.zoom).filter(|to| fits(&from, to));
                 let made = target.map(|to| {

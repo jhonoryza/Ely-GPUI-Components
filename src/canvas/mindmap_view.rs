@@ -117,13 +117,13 @@ impl RenderOnce for MindMap {
         let focus = tab_stop((id.clone(), "focus").into(), true, window, cx);
         let editing =
             window.use_keyed_state((id.clone(), "editing"), cx, |_, _| Editing::default());
-        let selected = self.selected.clone();
-        if let Some(key) = &selected {
-            assert!(
-                placed.iter().any(|topic| topic.key == *key),
-                "mind map {id:?}: no topic {key} to select"
-            );
-        }
+        let selected = self.selected.clone().filter(|key| {
+            let placed = placed.iter().any(|topic| topic.key == *key);
+            if !placed {
+                log::error!("mind map {id:?}: no topic {key}; none selected");
+            }
+            placed
+        });
         let rename = {
             let (editing, placed, on_rename, home) = (
                 editing.clone(),

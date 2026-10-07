@@ -66,12 +66,13 @@ impl ToolPalette {
 
 impl RenderOnce for ToolPalette {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        assert!(
-            self.tools.contains(&self.tool),
-            "tool palette {:?}: {} is not offered",
-            self.id,
-            self.tool.words()
-        );
+        if !self.tools.contains(&self.tool) {
+            log::error!(
+                "tool palette {:?}: {} is not offered; none chosen",
+                self.id,
+                self.tool.words()
+            );
+        }
         let on_change = self.on_change;
         self.tools
             .into_iter()

@@ -25,29 +25,26 @@ const REACH: f64 = 100_000.0;
 pub struct InspectorPanel {
     id: ElementId,
     selection: Vec<Shape>,
-    on_change: Option<OnEdit<Shape>>,
+    on_change: OnEdit<Shape>,
 }
 
 impl InspectorPanel {
-    pub fn new(id: impl Into<ElementId>, selection: impl IntoIterator<Item = Shape>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        selection: impl IntoIterator<Item = Shape>,
+        on_change: impl Fn(Shape, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             selection: selection.into_iter().collect(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(mut self, handler: impl Fn(Shape, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for InspectorPanel {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("inspector panel {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let id = self.id;
         let [shape] = self.selection.as_slice() else {
             let title: SharedString = match self.selection.len() {

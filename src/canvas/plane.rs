@@ -167,15 +167,14 @@ impl RenderOnce for InfiniteCanvas {
             .links
             .iter()
             .filter_map(|link| {
-                let named = |key: &SharedString| {
-                    self.shapes
-                        .iter()
-                        .find(|shape| shape.key == *key)
-                        .unwrap_or_else(|| {
-                            panic!("link {} names {key}, which is not on the canvas", link.key)
-                        })
+                let named = |key: &SharedString| self.shapes.iter().find(|shape| shape.key == *key);
+                let (Some(from), Some(to)) = (named(&link.from), named(&link.to)) else {
+                    log::error!(
+                        "canvas: link {} names a shape gone from the canvas",
+                        link.key
+                    );
+                    return None;
                 };
-                let (from, to) = (named(&link.from), named(&link.to));
                 (!from.hidden && !to.hidden).then(|| {
                     let points = route(&from.frame, &to.frame, link.elbow)
                         .into_iter()

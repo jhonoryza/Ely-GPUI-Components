@@ -70,18 +70,9 @@ impl Node {
         (x, self.at.1 + HEAD + ROW * row as f32 + ROW / 2.0)
     }
 
-    fn row(&self, out: bool, port: &str) -> usize {
+    fn row(&self, out: bool, port: &str) -> Option<usize> {
         let ports = if out { &self.outputs } else { &self.inputs };
-        ports
-            .iter()
-            .position(|each| each.key == port)
-            .unwrap_or_else(|| {
-                panic!(
-                    "node {} has no {} {port}",
-                    self.key,
-                    if out { "output" } else { "input" }
-                )
-            })
+        ports.iter().position(|each| each.key == port)
     }
 }
 
@@ -119,22 +110,26 @@ pub(crate) struct Socket {
     pub kind: SharedString,
 }
 
-fn node<'a>(nodes: &'a [Node], key: &str) -> &'a Node {
-    nodes
-        .iter()
-        .find(|node| node.key == key)
-        .unwrap_or_else(|| panic!("no node {key} in the graph"))
-}
+/// Where a wire starts and ends in canvas units, and the kind it carries.
+pub(crate) type Ends = ((f32, f32), (f32, f32), SharedString);
 
-/// An edge's ends in canvas units and the kind it carries.
-pub(crate) fn ends(nodes: &[Node], edge: &Edge) -> ((f32, f32), (f32, f32), SharedString) {
-    let (from, to) = (node(nodes, &edge.from.0), node(nodes, &edge.to.0));
-    let row = from.row(true, &edge.from.1);
-    (
-        from.socket(true, row),
-        to.socket(false, to.row(false, &edge.to.1)),
-        from.outputs[row].kind.clone(),
-    )
+/// An edge's ends; none when a node or port it names left the graph.
+pub(crate) fn ends(nodes: &[Node], edge: &Edge) -> Option<Ends> {
+    let node = |key: &SharedString| nodes.iter().find(|node| node.key == *key);
+    let ends = node(&edge.from.0)
+        .zip(node(&edge.to.0))
+        .and_then(|(from, to)| {
+            let (out, input) = (from.row(true, &edge.from.1)?, to.row(false, &edge.to.1)?);
+            Some((
+                from.socket(true, out),
+                to.socket(false, input),
+                from.outputs[out].kind.clone(),
+            ))
+        });
+    if ends.is_none() {
+        log::error!("node editor: edge {edge:?} names a node or port gone from the graph");
+    }
+    ends
 }
 
 /// The socket within `reach` of `point`, the topmost node first.
@@ -199,7 +194,8 @@ mod tests {
     #[test]
     fn sockets_sit_on_the_sides_a_row_apart() {
         let nodes = graph();
-        let (from, to, kind) = ends(&nodes, &Edge::new(("load", "image"), ("blur", "image")));
+        let (from, to, kind) =
+            ends(&nodes, &Edge::new(("load", "image"), ("blur", "image"))).expect("both ends");
         assert_eq!(from, (WIDE, HEAD + ROW / 2.0));
         assert_eq!(to, (300.0, HEAD + ROW / 2.0));
         assert_eq!(kind, "image");
@@ -210,6 +206,14 @@ mod tests {
             ("blur", "radius", false)
         );
         assert_eq!(socket_at(&nodes, (150.0, 40.0), 6.0), None);
+        assert_eq!(
+            ends(&nodes, &Edge::new(("load", "image"), ("gone", "image"))),
+            None
+        );
+        assert_eq!(
+            ends(&nodes, &Edge::new(("load", "gone"), ("blur", "image"))),
+            None
+        );
     }
 
     #[test]

@@ -221,18 +221,26 @@ pub fn mind(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 change(&added, cx, |mind| {
                     mind.made += 1;
                     let key = SharedString::from(format!("idea-{}", mind.made));
-                    mind.root = mind.root.adding(parent, Topic::new(key.clone(), "New idea"));
-                    mind.selected = Some(key);
+                    if let Some(root) = mind.root.adding(parent, Topic::new(key.clone(), "New idea")) {
+                        mind.root = root;
+                        mind.selected = Some(key);
+                    }
                 })
             })
             .on_remove(move |key, _, cx| {
                 change(&removed, cx, |mind| {
-                    mind.selected = mind.root.parent_of(key);
-                    mind.root = mind.root.removing(key);
+                    if let Some(root) = mind.root.removing(key) {
+                        mind.selected = mind.root.parent_of(key);
+                        mind.root = root;
+                    }
                 })
             })
             .on_rename(move |key, text, _, cx| {
-                change(&renamed, cx, |mind| mind.root = mind.root.renaming(key, text.clone()))
+                change(&renamed, cx, |mind| {
+                    if let Some(root) = mind.root.renaming(key, text.clone()) {
+                        mind.root = root;
+                    }
+                })
             })
             .on_viewport(move |next, _, cx| change(&viewed, cx, |mind| mind.view = next)),
         cx,

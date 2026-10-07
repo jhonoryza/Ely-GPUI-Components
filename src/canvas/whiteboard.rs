@@ -195,11 +195,11 @@ impl RenderOnce for Whiteboard {
                 let key = key.clone();
                 sized(
                     &|board, _| {
-                        let shape = board
-                            .shapes
-                            .iter_mut()
-                            .find(|shape| shape.key == key)
-                            .expect("a resized shape is on the board");
+                        let Some(shape) = board.shapes.iter_mut().find(|shape| shape.key == key)
+                        else {
+                            log::error!("whiteboard: resized shape {key} left the board");
+                            return;
+                        };
                         shape.frame = frame;
                     },
                     window,
@@ -235,11 +235,11 @@ impl RenderOnce for Whiteboard {
                 let (key, text) = (key.clone(), text.clone());
                 written(
                     &|board, _| {
-                        let shape = board
-                            .shapes
-                            .iter_mut()
-                            .find(|shape| shape.key == key)
-                            .expect("a written shape is on the board");
+                        let Some(shape) = board.shapes.iter_mut().find(|shape| shape.key == key)
+                        else {
+                            log::error!("whiteboard: written shape {key} left the board");
+                            return;
+                        };
                         *shape = shape.written(text.clone());
                     },
                     window,

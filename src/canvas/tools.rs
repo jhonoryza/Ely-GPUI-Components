@@ -228,16 +228,18 @@ impl RenderOnce for ToolLayer {
             Gesture::Stroke { points } if points.len() > 1 => {
                 vec![stroke_shape(points, self.brush.size, self.brush.hue)]
             }
-            Gesture::Linking { from, to } => {
-                let start = shapes
-                    .iter()
-                    .find(|shape| shape.key == *from)
-                    .expect("a link starts on a listed shape")
-                    .frame
-                    .center();
-                let (kind, frame) = drawn(ShapeKind::Arrow(Corner::BottomRight), start, *to, false);
-                vec![Shape::new("+link", "Link", kind, frame)]
-            }
+            Gesture::Linking { from, to } => match shapes.iter().find(|shape| shape.key == *from) {
+                Some(start) => {
+                    let start = start.frame.center();
+                    let (kind, frame) =
+                        drawn(ShapeKind::Arrow(Corner::BottomRight), start, *to, false);
+                    vec![Shape::new("+link", "Link", kind, frame)]
+                }
+                None => {
+                    log::error!("tool layer: the link's shape {from} left the canvas");
+                    Vec::new()
+                }
+            },
             _ if tool == Tool::Pen && pen.len() > 1 => {
                 vec![stroke_shape(&pen, PEN, self.brush.hue)]
             }

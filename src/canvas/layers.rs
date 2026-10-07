@@ -8,30 +8,30 @@ use super::{
 };
 use crate::lists::{DropAt, Tree, TreeNode};
 
-/// The keys in paint order, bottom first, after `dragged` lands `at` `target` in a list drawn top first.
+/// The keys in paint order, bottom first, after `dragged` lands `at` `target` in a list drawn top first; none, logged, when either left the list.
 pub(crate) fn restacked(
     order: &[SharedString],
     dragged: &SharedString,
     target: &SharedString,
     at: DropAt,
-) -> Vec<SharedString> {
-    assert!(order.contains(dragged), "layer {dragged} is not listed");
+) -> Option<Vec<SharedString>> {
     let mut rest: Vec<SharedString> = order
         .iter()
         .filter(|key| *key != dragged)
         .cloned()
         .collect();
-    let under = rest
-        .iter()
-        .position(|key| key == target)
-        .unwrap_or_else(|| panic!("layer {dragged} lands against {target}, which is not listed"));
+    let under = rest.iter().position(|key| key == target);
+    let (true, Some(under)) = (order.contains(dragged), under) else {
+        log::error!("layer panel: {dragged} or {target} left the layers; nothing moves");
+        return None;
+    };
     let ix = match at {
         DropAt::Before => under + 1,
         DropAt::After => under,
         DropAt::Inside => panic!("layer {target} holds no layers"),
     };
     rest.insert(ix, dragged.clone());
-    rest
+    Some(rest)
 }
 
 /// The canvas's layers, topmost first. A box shows or hides each, a press selects and Shift or Command adds, F2 renames, and a drag restacks; a locked layer says so. It fills its box, which the host sizes.
@@ -137,7 +137,9 @@ impl RenderOnce for LayerPanel {
         if let Some(on_restack) = self.on_restack {
             tree = tree.on_move(move |dragged, target, at, window, cx| {
                 log::info!("layer panel: {dragged} {at:?} {target}");
-                on_restack(&restacked(&order, dragged, target, at), window, cx);
+                if let Some(order) = restacked(&order, dragged, target, at) {
+                    on_restack(&order, window, cx);
+                }
             });
         }
         tree
@@ -160,15 +162,15 @@ mod tests {
         let order = keys(&["a", "b", "c"]);
         assert_eq!(
             restacked(&order, &"a".into(), &"c".into(), DropAt::Before),
-            keys(&["b", "c", "a"])
+            Some(keys(&["b", "c", "a"]))
         );
         assert_eq!(
             restacked(&order, &"c".into(), &"a".into(), DropAt::After),
-            keys(&["c", "a", "b"])
+            Some(keys(&["c", "a", "b"]))
         );
         assert_eq!(
             restacked(&order, &"a".into(), &"b".into(), DropAt::After),
-            keys(&["a", "b", "c"]),
+            Some(keys(&["a", "b", "c"])),
             "just under b is where a lies"
         );
     }

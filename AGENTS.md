@@ -204,7 +204,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A box that shows a host's picture takes the picture's shape from the host (`ratio`), so nothing is cropped and a point given as a share lands on the picture. A focusable one keeps its focus border on an outer box, so the picture keeps that shape exactly (`media::ImageCropper`).
 - A default only the component can work out, such as a crop fitted to a picture it decodes, reaches the owner once through `window.defer` after render (`media::ImageUpload`).
 - A ScrubInput shows its number in about 140px beside a short label. In a narrower column a pair hides it, so a long label takes a row of its own (`canvas::TypographyPanel`).
-- Design panels edit a whole value and hand the owner a changed copy through `canvas::panel::editing`, which takes the owner's handler itself: a component without one fails at render. A swatch that opens a picker is `canvas::panel::color_well`.
+- Design panels edit a whole value and hand the owner a changed copy through `canvas::panel::editing`; the owner's handler is an argument of `new`. A swatch that opens a picker is `canvas::panel::color_well`.
 - A press that stops propagation also stops the ancestors' focus on press. A layer that takes keys focuses itself in its own press handler (`canvas::ToolLayer`, `canvas::MindMap`), and a field over it stops its own presses.
 - A button inside a pressable row goes through `lists::row_action`, which keeps its press and its Space or Enter from the row (`devtools::ConnectionManager`).
 - A field opened over a component hands focus back to that component on Enter and Escape, through `forms::Editing`'s `returning` and `give_back` (`canvas::writing`); a blur keeps the words and leaves focus where it went.

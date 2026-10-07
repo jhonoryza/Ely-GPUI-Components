@@ -27,11 +27,12 @@ impl HistoryPanel {
         at: usize,
     ) -> Self {
         let steps: Vec<SharedString> = steps.into_iter().map(Into::into).collect();
-        assert!(
-            at <= steps.len(),
-            "history at {at} of {} steps",
-            steps.len()
-        );
+        if at > steps.len() {
+            log::error!(
+                "history panel: at {at} of {} steps; none current",
+                steps.len()
+            );
+        }
         Self {
             id: id.into(),
             steps,

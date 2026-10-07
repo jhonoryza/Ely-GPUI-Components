@@ -234,17 +234,20 @@ impl RenderOnce for NodeGraph {
                                 let wired = edges
                                     .iter()
                                     .find(|edge| edge.to == (node_key.clone(), port_key.clone()));
-                                match wired {
-                                    Some(edge) => {
-                                        let source = nodes
-                                            .iter()
-                                            .find(|node| node.key == edge.from.0)
-                                            .expect("a wired node");
-                                        let port = source
-                                            .outputs
-                                            .iter()
-                                            .find(|port| port.key == edge.from.1)
-                                            .expect("a wired port");
+                                let source = wired.and_then(|edge| {
+                                    let port = nodes
+                                        .iter()
+                                        .find(|node| node.key == edge.from.0)?
+                                        .outputs
+                                        .iter()
+                                        .find(|port| port.key == edge.from.1);
+                                    if port.is_none() {
+                                        log::error!("node editor: edge {edge:?} starts at a port gone from the graph");
+                                    }
+                                    Some(edge).zip(port)
+                                });
+                                match source {
+                                    Some((edge, port)) => {
                                         Pull::Wiring {
                                             from: Socket {
                                                 node: edge.from.0.clone(),
@@ -330,16 +333,26 @@ impl RenderOnce for NodeGraph {
             let (nodes, edges, hue) = (nodes.clone(), edges.clone(), hue.clone());
             let pending = match &pull {
                 Pull::Wiring { from, to, .. } => {
-                    let source = nodes
-                        .iter()
-                        .find(|node| node.key == from.node)
-                        .expect("a wiring node");
-                    let row = source
-                        .outputs
-                        .iter()
-                        .position(|port| port.key == from.port)
-                        .expect("a wiring port");
-                    Some((source.socket(true, row), *to, from.kind.clone()))
+                    let source = nodes.iter().find(|node| node.key == from.node);
+                    let wiring = source.and_then(|source| {
+                        let row = source
+                            .outputs
+                            .iter()
+                            .position(|port| port.key == from.port)?;
+                        Some((
+                            source.socket(true, row),
+                            *to,
+                            source.outputs[row].kind.clone(),
+                        ))
+                    });
+                    if wiring.is_none() {
+                        log::error!(
+                            "node editor: the wire's port {}.{} left the graph",
+                            from.node,
+                            from.port
+                        );
+                    }
+                    wiring
                 }
                 _ => None,
             };
@@ -353,10 +366,8 @@ impl RenderOnce for NodeGraph {
                     let drawn = edges
                         .iter()
                         .filter(|edge| Some(*edge) != lifted.as_ref())
-                        .map(|edge| {
-                            let (from, to, kind) = ends(&nodes, edge);
-                            (from, to, hue(&kind))
-                        })
+                        .filter_map(|edge| ends(&nodes, edge))
+                        .map(|(from, to, kind)| (from, to, hue(&kind)))
                         .chain(
                             pending
                                 .iter()

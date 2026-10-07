@@ -24,37 +24,40 @@ impl Topic {
         self
     }
 
-    /// The map with `topic` added last under `parent`.
-    pub fn adding(&self, parent: &str, topic: Topic) -> Topic {
+    /// The map with `topic` added last under `parent`; none, logged, when the map holds no `parent`.
+    pub fn adding(&self, parent: &str, topic: Topic) -> Option<Topic> {
         let mut next = self.clone();
-        let under = next
-            .find(parent)
-            .unwrap_or_else(|| panic!("no topic {parent} to add under"));
+        let Some(under) = next.find(parent) else {
+            log::error!("mind map: no topic {parent} to add under");
+            return None;
+        };
         under.children.push(topic);
-        next
+        Some(next)
     }
 
-    /// The map without `key` and what lies under it.
-    pub fn removing(&self, key: &str) -> Topic {
-        assert!(self.key != key, "the root topic {key} stays");
+    /// The map without `key` and what lies under it; none, logged, for the root or a topic the map lacks.
+    pub fn removing(&self, key: &str) -> Option<Topic> {
         let mut next = self.clone();
-        let parent = next
-            .parent_of(key)
-            .unwrap_or_else(|| panic!("no topic {key} to remove"));
+        let Some(parent) = next.parent_of(key) else {
+            log::error!("mind map: no topic {key} below the root to remove");
+            return None;
+        };
         next.find(&parent)
             .expect("the parent is in the map")
             .children
             .retain(|topic| topic.key != key);
-        next
+        Some(next)
     }
 
-    /// The map with `key` reading `text`.
-    pub fn renaming(&self, key: &str, text: impl Into<SharedString>) -> Topic {
+    /// The map with `key` reading `text`; none, logged, when the map holds no `key`.
+    pub fn renaming(&self, key: &str, text: impl Into<SharedString>) -> Option<Topic> {
         let mut next = self.clone();
-        next.find(key)
-            .unwrap_or_else(|| panic!("no topic {key} to rename"))
-            .text = text.into();
-        next
+        let Some(topic) = next.find(key) else {
+            log::error!("mind map: no topic {key} to rename");
+            return None;
+        };
+        topic.text = text.into();
+        Some(next)
     }
 
     fn find(&mut self, key: &str) -> Option<&mut Topic> {
@@ -229,10 +232,15 @@ mod tests {
     fn edits_add_remove_and_rename_by_key() {
         let map = map()
             .adding("b", Topic::new("b1", "Release"))
-            .renaming("c", "Money");
+            .and_then(|map| map.renaming("c", "Money"))
+            .expect("both topics are in the map");
         assert_eq!(map.children[1].children[0].key, "b1");
         assert_eq!(map.children[2].text, "Money");
-        let map = map.removing("a");
+        assert_eq!(map.adding("gone", Topic::new("x", "X")), None);
+        assert_eq!(map.renaming("gone", "X"), None);
+        assert_eq!(map.removing(&map.key), None, "the root stays");
+        assert_eq!(map.removing("gone"), None);
+        let map = map.removing("a").expect("a is in the map");
         assert_eq!(
             map.children
                 .iter()

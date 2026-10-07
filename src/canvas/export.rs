@@ -99,8 +99,8 @@ pub struct ExportPanel {
     id: ElementId,
     name: SharedString,
     settings: Vec<ExportSetting>,
-    on_change: Option<OnEdit<Vec<ExportSetting>>>,
-    on_export: Option<OnEdit<Vec<String>>>,
+    on_change: OnEdit<Vec<ExportSetting>>,
+    on_export: OnEdit<Vec<String>>,
 }
 
 impl ExportPanel {
@@ -109,41 +109,23 @@ impl ExportPanel {
         id: impl Into<ElementId>,
         name: impl Into<SharedString>,
         settings: impl IntoIterator<Item = ExportSetting>,
+        on_change: impl Fn(Vec<ExportSetting>, &mut Window, &mut App) + 'static,
+        on_export: impl Fn(Vec<String>, &mut Window, &mut App) + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
             settings: settings.into_iter().collect(),
-            on_change: None,
-            on_export: None,
+            on_change: Rc::new(on_change),
+            on_export: Rc::new(on_export),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(Vec<ExportSetting>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
-    }
-
-    pub fn on_export(
-        mut self,
-        handler: impl Fn(Vec<String>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_export = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for ExportPanel {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("export panel {:?} has no on_change", self.id));
-        let on_export = self
-            .on_export
-            .unwrap_or_else(|| panic!("export panel {:?} has no on_export", self.id));
+        let on_change = self.on_change;
+        let on_export = self.on_export;
         let (id, settings, on_change) = (self.id, self.settings, &on_change);
         let files = export_files(&self.name, &settings);
         let next = added(&settings);

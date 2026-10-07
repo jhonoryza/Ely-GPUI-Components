@@ -59,9 +59,10 @@ fn places(_: &Stage, owner: Entity<Stage>) -> AnyElement {
         padding: (8.0, 8.0),
         place: (Place::Start, Place::Start),
     };
-    AutoLayoutControls::new("auto", layout)
-        .on_change(move |next, _, cx| say(&owner, format!("{:?}", next.place), cx))
-        .into_any_element()
+    AutoLayoutControls::new("auto", layout, move |next, _, cx| {
+        say(&owner, format!("{:?}", next.place), cx)
+    })
+    .into_any_element()
 }
 
 #[gpui::test]
@@ -89,12 +90,12 @@ fn sizes(_: &Stage, owner: Entity<Stage>) -> AnyElement {
             scale: 1.0,
             format: ExportFormat::Png,
         }],
+        move |next, _, cx| {
+            let scales: Vec<f32> = next.iter().map(|setting| setting.scale).collect();
+            say(&added, format!("sizes {scales:?}"), cx)
+        },
+        move |files, _, cx| say(&sent, format!("files {files:?}"), cx),
     )
-    .on_change(move |next, _, cx| {
-        let scales: Vec<f32> = next.iter().map(|setting| setting.scale).collect();
-        say(&added, format!("sizes {scales:?}"), cx)
-    })
-    .on_export(move |files, _, cx| say(&sent, format!("files {files:?}"), cx))
     .into_any_element()
 }
 

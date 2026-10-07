@@ -23,16 +23,20 @@ pub struct ColorPanel {
     id: ElementId,
     color: Hsla,
     swatches: Vec<(SharedString, Hsla)>,
-    on_change: Option<OnEdit<Hsla>>,
+    on_change: OnEdit<Hsla>,
 }
 
 impl ColorPanel {
-    pub fn new(id: impl Into<ElementId>, color: impl Into<Hsla>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        color: impl Into<Hsla>,
+        on_change: impl Fn(Hsla, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             color: color.into(),
             swatches: Vec::new(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
     }
 
@@ -47,18 +51,11 @@ impl ColorPanel {
             .collect();
         self
     }
-
-    pub fn on_change(mut self, handler: impl Fn(Hsla, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
-    }
 }
 
 impl RenderOnce for ColorPanel {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("color panel {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (picked, chosen) = (on_change.clone(), on_change);
         let report = |on_change: OnEdit<Hsla>| {
             move |color: Hsla, window: &mut Window, cx: &mut App| {
@@ -98,32 +95,26 @@ pub struct Shadow {
 pub struct ShadowEditor {
     id: ElementId,
     shadows: Vec<Shadow>,
-    on_change: Option<OnEdit<Vec<Shadow>>>,
+    on_change: OnEdit<Vec<Shadow>>,
 }
 
 impl ShadowEditor {
-    pub fn new(id: impl Into<ElementId>, shadows: impl IntoIterator<Item = Shadow>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        shadows: impl IntoIterator<Item = Shadow>,
+        on_change: impl Fn(Vec<Shadow>, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             shadows: shadows.into_iter().collect(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(Vec<Shadow>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for ShadowEditor {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("shadow editor {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let lift = cx
             .theme()
             .elevation(Elevation::Floating)
@@ -247,21 +238,20 @@ pub struct Border {
 pub struct BorderEditor {
     id: ElementId,
     border: Border,
-    on_change: Option<OnEdit<Border>>,
+    on_change: OnEdit<Border>,
 }
 
 impl BorderEditor {
-    pub fn new(id: impl Into<ElementId>, border: Border) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        border: Border,
+        on_change: impl Fn(Border, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             border,
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(mut self, handler: impl Fn(Border, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
@@ -269,9 +259,7 @@ const CORNERS: [&str; 4] = ["TL", "TR", "BR", "BL"];
 
 impl RenderOnce for BorderEditor {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("border editor {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (id, border, on_change) = (self.id, self.border, &on_change);
         let parted = window.use_keyed_state((id.clone(), "split"), cx, |_, _| false);
         let uneven = border.radii.iter().any(|radius| *radius != border.radii[0]);

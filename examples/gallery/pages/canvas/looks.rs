@@ -121,9 +121,8 @@ pub fn styles(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .gap_6()
             .child(
                 div().w(px(260.)).child(
-                    ColorPanel::new("canvas-color", color)
-                        .swatches(SWATCHES.map(|(name, hex)| (name, Hsla::from(rgb(hex)))))
-                        .on_change(move |next, _, cx| change(&colored, cx, |look| look.color = next)),
+                    ColorPanel::new("canvas-color", color, move |next, _, cx| change(&colored, cx, |look| look.color = next))
+                        .swatches(SWATCHES.map(|(name, hex)| (name, Hsla::from(rgb(hex))))),
                 ),
             )
             .child(
@@ -137,8 +136,7 @@ pub fn styles(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                             .on_change(move |next, _, cx| change(&graded, cx, |look| look.stops = next.to_vec())),
                     )
                     .child(
-                        ShadowEditor::new("canvas-shadows", shadows)
-                            .on_change(move |next, _, cx| change(&shaded, cx, |look| look.shadows = next)),
+                        ShadowEditor::new("canvas-shadows", shadows, move |next, _, cx| change(&shaded, cx, |look| look.shadows = next)),
                     ),
             )
             .child(
@@ -148,15 +146,13 @@ pub fn styles(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .flex_col()
                     .gap_6()
                     .child(
-                        BorderEditor::new("canvas-border", border)
-                            .on_change(move |next, _, cx| change(&bordered, cx, |look| look.border = next)),
+                        BorderEditor::new("canvas-border", border, move |next, _, cx| change(&bordered, cx, |look| look.border = next)),
                     )
                     .child(div().p_6().child(card)),
             )
             .child(
                 div().w(px(280.)).child(
-                    TypographyPanel::new("canvas-type", style, &search)
-                        .on_change(move |next, _, cx| change(&typed, cx, |look| look.style = next)),
+                    TypographyPanel::new("canvas-type", style, &search, move |next, _, cx| change(&typed, cx, |look| look.style = next)),
                 ),
             ),
     )
@@ -282,8 +278,7 @@ pub fn rules(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .flex_col()
                     .gap_3()
                     .child(
-                        ConstraintsEditor::new("canvas-constraints", constraints)
-                            .on_change(move |next, _, cx| change(&pinned, cx, |rules| rules.constraints = next)),
+                        ConstraintsEditor::new("canvas-constraints", constraints, move |next, _, cx| change(&pinned, cx, |rules| rules.constraints = next)),
                     )
                     .child(pinned_preview),
             )
@@ -294,8 +289,7 @@ pub fn rules(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .flex_col()
                     .gap_3()
                     .child(
-                        AutoLayoutControls::new("canvas-auto-layout", layout)
-                            .on_change(move |next, _, cx| change(&laid, cx, |rules| rules.layout = next)),
+                        AutoLayoutControls::new("canvas-auto-layout", layout, move |next, _, cx| change(&laid, cx, |rules| rules.layout = next)),
                     )
                     .child(laid_preview),
             )
@@ -306,9 +300,7 @@ pub fn rules(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     .flex_col()
                     .gap_3()
                     .child(
-                        ExportPanel::new("canvas-export", "Card", exports)
-                            .on_change(move |next, _, cx| change(&set, cx, |rules| rules.exports = next))
-                            .on_export(move |files, _, cx| change(&sent, cx, |rules| rules.exported = files)),
+                        ExportPanel::new("canvas-export", "Card", exports, move |next, _, cx| change(&set, cx, |rules| rules.exports = next), move |files, _, cx| change(&sent, cx, |rules| rules.exported = files)),
                     )
                     .when(!exported.is_empty(), |panel| {
                         panel.child(note(format!("Exported {}", exported.join(", ")).into()))

@@ -48,34 +48,29 @@ pub struct TypographyPanel {
     id: ElementId,
     style: TypeStyle,
     search: Entity<TextInput>,
-    on_change: Option<OnEdit<TypeStyle>>,
+    on_change: OnEdit<TypeStyle>,
 }
 
 impl TypographyPanel {
     /// `search` is the family field's text, which the owner keeps.
-    pub fn new(id: impl Into<ElementId>, style: TypeStyle, search: &Entity<TextInput>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        style: TypeStyle,
+        search: &Entity<TextInput>,
+        on_change: impl Fn(TypeStyle, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             style,
             search: search.clone(),
-            on_change: None,
+            on_change: Rc::new(on_change),
         }
-    }
-
-    pub fn on_change(
-        mut self,
-        handler: impl Fn(TypeStyle, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_change = Some(Rc::new(handler));
-        self
     }
 }
 
 impl RenderOnce for TypographyPanel {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let on_change = self
-            .on_change
-            .unwrap_or_else(|| panic!("typography panel {:?} has no on_change", self.id));
+        let on_change = self.on_change;
         let (id, style, on_change) = (self.id, self.style, &on_change);
         let theme = cx.theme();
         let family = editing(

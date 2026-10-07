@@ -168,12 +168,11 @@ pub(super) fn commit(
             from,
             to,
         } => {
-            let frame = scene
-                .shapes
-                .iter()
-                .find(|shape| shape.key == key)
-                .expect("the resized shape is listed")
-                .frame;
+            let Some(shape) = scene.shapes.iter().find(|shape| shape.key == key) else {
+                log::error!("tool layer: resized shape {key} left the canvas");
+                return;
+            };
+            let frame = shape.frame;
             let next = resized(frame, handle, (to.0 - from.0, to.1 - from.1), LEAST, square);
             log::info!("tool layer: resize {key} to {next:?}");
             if let Some(on_resize) = &handlers.on_resize {
@@ -191,6 +190,10 @@ pub(super) fn commit(
             }
         }
         Gesture::Linking { from, to } => {
+            if !scene.shapes.iter().any(|shape| shape.key == from) {
+                log::error!("tool layer: the link's shape {from} left the canvas");
+                return;
+            }
             let Some(ix) = hit(&scene.shapes, to, REACH / scene.view.zoom) else {
                 log::info!("tool layer: the link from {from} lands on nothing");
                 return;

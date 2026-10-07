@@ -46,7 +46,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P29 Mail — `src/mail`
 - [x] P30 Calendar — `src/calendar`
 - [x] P31 Project — `src/project`
-- [ ] P32 Canvas & Design — `src/canvas`
+- [x] P32 Canvas & Design — `src/canvas`
 - [ ] P33 DB & Dev Tools — `src/devtools`
 - [ ] P34 Dashboard — `src/dashboard`
 - [ ] P35 Settings — `src/settings`
@@ -97,3 +97,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P29: an open mailbox, ticked label or selected mail no longer listed logs and marks none; a picked moment its zone cannot hold logs and reads as none, so the time dialog's action stays off. Kept: one list's uniqueness, day arithmetic from the owner's now, constant `datetime` patterns, the dialog's action behind its disabled button. Review: 1 round.
 - P30: calendar views step only within jiff's range less a year at each end (`calendar::within`, `stepped`), so every grid around a day fits, and a step past logs and stays; recurrences end where jiff's range ends; the year view's marks stop at an event's last day; the event editor refuses moves, ends, all-day starts and switches to timed that leave jiff's range or a stale painted kind, each with a log; a backward timed draft's days are its first day. Kept: owner dates at jiff's far edges, one list's uniqueness, an event's own order, one organizer, working hours, slots, reminder offsets, constant patterns, picks that always name a value. Review: 2 rounds.
 - P31: a gone assignee logs and shows nobody; a milestone past its count fills, the text real; a roadmap past jiff's range ends inclusively on its last day; the database timeline leaves out and counts tasks due before they start and counts months in `i32`, and its calendar keeps to days `calendar::within` holds; the board's drag and drop take only columns, cards and places this frame holds. Kept: one list's uniqueness, an initiative's and a milestone's own order, shares, month counts, pomodoro lengths, issue keys, lookups over the components' own tables. Review: 3 rounds.
+- P32: the eight design panels take their handlers in `new` (AGENTS.md says so); edges, links, wires, links in progress, resizes, restacks, topics and whiteboard edits that name a node, port, shape, layer or topic gone from this frame log and change nothing; a wire's release fits its source as it now stands; `Topic::adding`, `removing` and `renaming` return `Option`; a mind map's selection, a palette's tool and a history position no longer held mark none. Kept: one-value contracts (alignment counts, frames, zoom, polygon sides, brush hues and type weights among the theme's tables), lookups over the panels' own option tables, button-gated expects. Review: 2 rounds.

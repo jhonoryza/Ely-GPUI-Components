@@ -2,7 +2,7 @@ use gpui::{AnyElement, Entity, IntoElement, TestAppContext, VisualTestContext};
 
 use super::{
     Stage, said, say, settle, stage,
-    tools::{drag, layer, pair, press},
+    tools::{at, drag, layer, pair, press},
 };
 use crate::canvas::{
     Board, Edge, Link, MindMap, Node, NodeGraph, Port, Tool, Topic, Viewport, Whiteboard,
@@ -244,4 +244,135 @@ fn after_writing_on_a_shape_its_board_still_takes_backspace(cx: &mut TestAppCont
         said(&host, cx),
         ["shapes [\"a\", \"b\"] links 1", "shapes [\"a\"] links 0"]
     );
+}
+
+/// Presses at `from` and drags to `to` in four moves.
+fn pull(from: (f32, f32), to: (f32, f32), cx: &mut VisualTestContext) {
+    use gpui::{Modifiers, MouseButton};
+    cx.simulate_mouse_move(at(from.0, from.1), None, Modifiers::none());
+    cx.simulate_mouse_down(at(from.0, from.1), MouseButton::Left, Modifiers::none());
+    for step in 1..=4 {
+        let share = step as f32 / 4.0;
+        let (x, y) = (
+            from.0 + (to.0 - from.0) * share,
+            from.1 + (to.1 - from.1) * share,
+        );
+        cx.simulate_mouse_move(at(x, y), Some(MouseButton::Left), Modifiers::none());
+        settle(cx);
+    }
+}
+
+fn release(to: (f32, f32), cx: &mut VisualTestContext) {
+    let (left, none) = (gpui::MouseButton::Left, gpui::Modifiers::none());
+    cx.simulate_mouse_up(at(to.0, to.1), left, none);
+    settle(cx);
+}
+
+/// The owner changes what it hands the part, mid-gesture.
+fn change(host: &Entity<Stage>, cx: &mut VisualTestContext) {
+    host.update(cx, |stage, cx| {
+        stage.said.push("owner changed".into());
+        cx.notify();
+    });
+    settle(cx);
+}
+
+#[gpui::test]
+fn f2_on_a_selected_topic_that_left_renames_nothing(cx: &mut TestAppContext) {
+    let (_, cx) = stage(
+        |_, _| {
+            let view = Viewport::new(-200.0, -150.0, 1.0);
+            MindMap::new("map", Topic::new("root", "Root"), view)
+                .selected(Some("gone"))
+                .into_any_element()
+        },
+        cx,
+    );
+    press(200.0, 150.0, 1, cx);
+    tap("f2", cx);
+}
+
+/// Two wireable nodes whose source leaves, or changes kind, once the owner changes.
+fn shifting(stage: &Stage, owner: Entity<Stage>, retype: bool) -> AnyElement {
+    let mut current = nodes();
+    if !stage.said.is_empty() {
+        match retype {
+            true => current[0].outputs[0].kind = "number".into(),
+            false => drop(current.remove(0)),
+        }
+    }
+    NodeGraph::new("graph", Viewport::new(0.0, 0.0, 1.0), current, [])
+        .on_connect(move |edge, _, cx| {
+            let words = format!(
+                "connect {}.{} {}.{}",
+                edge.from.0, edge.from.1, edge.to.0, edge.to.1
+            );
+            say(&owner, words, cx)
+        })
+        .into_any_element()
+}
+
+#[gpui::test]
+fn a_wire_whose_source_left_connects_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = stage(|stage, owner| shifting(stage, owner, false), cx);
+    pull((200.0, 46.0), (301.0, 47.0), cx);
+    change(&host, cx);
+    release((301.0, 47.0), cx);
+    assert_eq!(said(&host, cx), ["owner changed"]);
+}
+
+#[gpui::test]
+fn a_wire_whose_source_changed_kind_connects_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = stage(|stage, owner| shifting(stage, owner, true), cx);
+    pull((200.0, 46.0), (301.0, 47.0), cx);
+    change(&host, cx);
+    release((301.0, 47.0), cx);
+    assert_eq!(said(&host, cx), ["owner changed"]);
+}
+
+#[gpui::test]
+fn a_link_whose_shape_left_links_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = stage(
+        |stage, owner| {
+            let mut shapes = pair();
+            if !stage.said.is_empty() {
+                shapes.remove(0);
+            }
+            let view = Viewport::new(0.0, 0.0, 1.0);
+            let tool =
+                crate::canvas::ToolLayer::new("layer", Tool::Connector, view, shapes.clone())
+                    .on_link(move |from, to, _, cx| say(&owner, format!("link {from} {to}"), cx));
+            crate::canvas::InfiniteCanvas::new("plane", view)
+                .shapes(shapes)
+                .layer(tool)
+                .into_any_element()
+        },
+        cx,
+    );
+    pull((50.0, 50.0), (250.0, 60.0), cx);
+    change(&host, cx);
+    release((250.0, 60.0), cx);
+    assert_eq!(said(&host, cx), ["owner changed"]);
+}
+
+#[gpui::test]
+fn a_layer_that_left_mid_drag_restacks_nothing(cx: &mut TestAppContext) {
+    let (host, cx) = stage(
+        |stage, owner| {
+            let mut shapes = pair();
+            if !stage.said.is_empty() {
+                shapes.remove(0);
+            }
+            crate::canvas::LayerPanel::new("layers", shapes)
+                .on_restack(move |keys, _, cx| say(&owner, format!("restack {keys:?}"), cx))
+                .into_any_element()
+        },
+        cx,
+    );
+    let a = cx.debug_bounds("tree-chevron-a").expect("a row").center();
+    let b = cx.debug_bounds("tree-chevron-b").expect("b row").center();
+    pull((100.0, f32::from(a.y)), (100.0, f32::from(b.y)), cx);
+    change(&host, cx);
+    release((100.0, f32::from(b.y)), cx);
+    assert_eq!(said(&host, cx), ["owner changed"]);
 }

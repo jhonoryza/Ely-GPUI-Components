@@ -134,19 +134,18 @@ pub fn arrange(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 studio.record(align.words().into());
             })
         });
-    let inspector =
-        InspectorPanel::new("canvas-inspector", chosen).on_change(move |shape, _, cx| {
-            change(&edited, cx, |studio| {
-                let at = studio
-                    .shapes
-                    .iter()
-                    .position(|each| each.key == shape.key)
-                    .expect("a listed shape");
-                let words = format!("Edit {}", shape.name);
-                studio.shapes[at] = shape;
-                studio.record(words);
-            })
-        });
+    let inspector = InspectorPanel::new("canvas-inspector", chosen, move |shape, _, cx| {
+        change(&edited, cx, |studio| {
+            let at = studio
+                .shapes
+                .iter()
+                .position(|each| each.key == shape.key)
+                .expect("a listed shape");
+            let words = format!("Edit {}", shape.name);
+            studio.shapes[at] = shape;
+            studio.record(words);
+        })
+    });
     let assets = AssetPanel::new("canvas-assets")
         .group("Shapes", shapes())
         .group("Notes", notes())
