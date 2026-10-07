@@ -161,11 +161,12 @@ fn consent_hands_focus_back_to_its_opener(cx: &mut TestAppContext) {
 }
 
 fn cookies() -> AnyElement {
-    CookieBanner::new("cookies", "This page would set cookies.")
-        .kind("Analytics", "Counts visits.")
-        .kind("Marketing", "Shows offers.")
-        .on_choose(|kinds, _, _| say(format!("{kinds:?}")))
-        .into_any_element()
+    CookieBanner::new("cookies", "This page would set cookies.", |kinds, _, _| {
+        say(format!("{kinds:?}"))
+    })
+    .kind("Analytics", "Counts visits.")
+    .kind("Marketing", "Shows offers.")
+    .into_any_element()
 }
 
 /// Accept all names every kind and Reject all none; Choose turns into Save choices on its focus, which names the switches turned on.

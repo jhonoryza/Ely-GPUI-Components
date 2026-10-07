@@ -134,7 +134,8 @@ impl RenderOnce for ImportDialog {
                 nudged: false,
             }
         });
-        if mapping.read(cx).columns != columns {
+        let now = mapping.read(cx);
+        if now.columns != columns || now.picked.len() != fields.len() {
             let picked = matched(&fields, &columns);
             mapping.update(cx, |mapping, _| {
                 *mapping = Mapping {

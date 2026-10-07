@@ -24,7 +24,7 @@ pub struct Poll {
     options: Vec<SharedString>,
     votes: Vec<u64>,
     voted: Option<usize>,
-    on_vote: Option<OnVote>,
+    on_vote: OnVote,
 }
 
 impl Poll {
@@ -32,6 +32,7 @@ impl Poll {
         id: impl Into<ElementId>,
         question: impl Into<SharedString>,
         options: impl IntoIterator<Item = impl Into<SharedString>>,
+        on_vote: impl Fn(Option<usize>, &mut Window, &mut App) + 'static,
     ) -> Self {
         let options: Vec<SharedString> = options.into_iter().map(Into::into).collect();
         Self {
@@ -40,7 +41,7 @@ impl Poll {
             votes: vec![0; options.len()],
             options,
             voted: None,
-            on_vote: None,
+            on_vote: Rc::new(on_vote),
         }
     }
 
@@ -53,15 +54,6 @@ impl Poll {
     /// The option this viewer voted for, as the owner holds it.
     pub fn voted(mut self, option: usize) -> Self {
         self.voted = Some(option);
-        self
-    }
-
-    /// Runs with the option voted for, or none when Change vote takes the vote back.
-    pub fn on_vote(
-        mut self,
-        handler: impl Fn(Option<usize>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_vote = Some(Rc::new(handler));
         self
     }
 }
@@ -77,25 +69,24 @@ impl RenderOnce for Poll {
             "poll {id:?} has {} counts for {count} options",
             self.votes.len()
         );
-        if let Some(voted) = self.voted {
-            assert!(
-                voted < count,
-                "poll {id:?}: vote {voted} of {count} options"
-            );
-        }
-        let on_vote = self
-            .on_vote
-            .unwrap_or_else(|| panic!("poll {id:?} has no on_vote"));
+        let voted = self.voted.filter(|voted| {
+            let held = *voted < count;
+            if !held {
+                log::error!("poll {id:?}: vote {voted} of {count} options; none counted");
+            }
+            held
+        });
+        let on_vote = self.on_vote;
         let pick = window.use_keyed_state((id.clone(), "pick"), cx, |_, _| None::<usize>);
-        if self.voted.is_some() && *pick.read(cx) != self.voted {
-            pick.update(cx, |pick, _| *pick = self.voted);
+        if voted.is_some() && *pick.read(cx) != voted {
+            pick.update(cx, |pick, _| *pick = voted);
         }
         let action = tab_stop((id.clone(), "action").into(), true, window, cx);
         let theme = cx.theme();
         let colors = &theme.colors;
-        let picked = *pick.read(cx);
+        let picked = pick.read(cx).filter(|picked| *picked < count);
         let body =
-            match self.voted {
+            match voted {
                 None => {
                     let choices = self
                         .options
@@ -179,7 +170,7 @@ impl RenderOnce for Poll {
                         .into_any_element()
                 }
             };
-        let button = match self.voted {
+        let button = match voted {
             None => {
                 let (focus, on_vote) = (action.clone(), on_vote.clone());
                 Button::new((id.clone(), "vote"), "Vote")

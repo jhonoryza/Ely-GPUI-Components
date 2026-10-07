@@ -58,6 +58,13 @@ impl RenderOnce for Flashcards {
         let count = self.cards.len();
         assert!(count > 0, "flashcards {id:?} has no cards");
         let deck = window.use_keyed_state((id.clone(), "deck"), cx, |_, _| Deck::default());
+        if deck.read(cx).at >= count {
+            log::error!(
+                "flashcards {id:?}: card {} of {count}; the deck starts over",
+                deck.read(cx).at
+            );
+            deck.update(cx, |deck, _| *deck = Deck::default());
+        }
         let card = tab_stop((id.clone(), "card").into(), true, window, cx);
         let (at, back) = (deck.read(cx).at, deck.read(cx).back);
         let (front_words, back_words) = self.cards[at].clone();

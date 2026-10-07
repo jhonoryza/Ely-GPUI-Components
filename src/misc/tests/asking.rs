@@ -32,9 +32,10 @@ fn show(cx: &mut VisualTestContext) {
 
 fn poll() -> AnyElement {
     let voted = VOTED.get();
-    let poll = Poll::new("poll", "Lunch?", ["Soup", "Tea", "Toast"])
-        .votes([1, u64::from(voted == Some(1)) + 2, 1])
-        .on_vote(|vote, _, _| say(format!("{vote:?}")));
+    let poll = Poll::new("poll", "Lunch?", ["Soup", "Tea", "Toast"], |vote, _, _| {
+        say(format!("{vote:?}"))
+    })
+    .votes([1, u64::from(voted == Some(1)) + 2, 1]);
     match voted {
         Some(vote) => poll.voted(vote),
         None => poll,
@@ -106,8 +107,8 @@ fn survey() -> AnyElement {
             Question::Several("Which parts?".into(), vec!["Forms".into(), "Charts".into()]),
             Question::Text("Anything else?".into()),
         ],
+        |answers, _, _| say(format!("{answers:?}")),
     )
-    .on_submit(|answers, _, _| say(format!("{answers:?}")))
     .into_any_element()
 }
 

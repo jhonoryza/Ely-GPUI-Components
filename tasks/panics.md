@@ -56,7 +56,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P39 Theme — `src/theme`
 - [x] P40 i18n & a11y — `src/i18n`
 - [x] P41 Maps — `src/maps`
-- [ ] P42 Misc — `src/misc`
+- [x] P42 Misc — `src/misc`
 - [ ] P43 Library Tooling — `src/tooling`
 - [ ] P44 Rendering — `src/rendering`
 - [ ] P45 Recount, acceptance table
@@ -107,3 +107,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P39: no change. Kept: palette and syntax tokens named from constant tables, chart hues checked against the fixed eight (the owner's contract). Review: 1 round.
 - P40: no change. Kept, as AGENTS.md says: catalogs checked against each other at construction, message keys and arguments from code, Ely's locale table, the owner's switch over its own catalogs, constant date patterns. Review: 1 round.
 - P41: no change. Kept: finite and unique values, places and zooms in range (the map's own moves clamp and wrap), heat weights, routes of two places, builder misuse, tile sources and zooms, unique pins, ISO codes, the bundled world. Review: 1 round.
+- P42: Captcha, CookieBanner, Poll, QrCodeScanner and Survey take their handlers in `new`; the macOS web view shows wry's build and load failures in its box and logs failed bounds, visibility and focus calls (checked by reading, as Windows cannot build that module; CI builds it); kept state fits lists that changed: cookie switches, export formats, licenses, poll picks and votes, survey sheets, import mappings, quiz and flashcard places; a picture with no frame reads no code. Kept: lists present, a question's right answer, counts per option, unit tables, places from their own choices, Vote behind a pick. Review: 2 rounds.

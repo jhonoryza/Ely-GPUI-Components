@@ -36,34 +36,30 @@ pub struct Captcha {
     picture: ImageSource,
     ratio: f32,
     state: CaptchaState,
-    on_answer: Option<OnAnswer>,
+    on_answer: OnAnswer,
     on_refresh: Option<OnRefresh>,
 }
 
 impl Captcha {
     /// `ratio` is the picture's width over its height.
-    pub fn new(id: impl Into<ElementId>, picture: impl Into<ImageSource>, ratio: f32) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        picture: impl Into<ImageSource>,
+        ratio: f32,
+        on_answer: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             picture: picture.into(),
             ratio: checked_ratio(ratio),
             state: CaptchaState::default(),
-            on_answer: None,
+            on_answer: Rc::new(on_answer),
             on_refresh: None,
         }
     }
 
     pub fn state(mut self, state: CaptchaState) -> Self {
         self.state = state;
-        self
-    }
-
-    /// Runs with the typed answer, trimmed.
-    pub fn on_answer(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_answer = Some(Rc::new(handler));
         self
     }
 
@@ -77,9 +73,7 @@ impl Captcha {
 impl RenderOnce for Captcha {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_answer = self
-            .on_answer
-            .unwrap_or_else(|| panic!("captcha {id:?} has no on_answer"));
+        let on_answer = self.on_answer;
         let field = window.use_keyed_state((id.clone(), "field"), cx, |window, cx| {
             TextInput::new(window, cx).placeholder("Type the characters")
         });

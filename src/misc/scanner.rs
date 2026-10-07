@@ -16,7 +16,10 @@ type OnScan = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
 /// The text of the first QR code that decodes in a frame of gpui's BGRA pixels.
 pub(crate) fn read(frame: &RenderImage) -> Option<String> {
-    let pixels = frame.as_bytes(0).expect("a frame has pixels");
+    let Some(pixels) = frame.as_bytes(0) else {
+        log::error!("qr code scanner: a frame with no pixels");
+        return None;
+    };
     let size = frame.size(0);
     let (width, height) = (size.width.0 as usize, size.height.0 as usize);
     let mut image = rqrr::PreparedImage::prepare_from_greyscale(width, height, |x, y| {
@@ -45,17 +48,21 @@ pub struct QrCodeScanner {
     id: ElementId,
     ratio: f32,
     frame: Option<Arc<RenderImage>>,
-    on_scan: Option<OnScan>,
+    on_scan: OnScan,
 }
 
 impl QrCodeScanner {
     /// `ratio` is the camera's width over its height.
-    pub fn new(id: impl Into<ElementId>, ratio: f32) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        ratio: f32,
+        on_scan: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             ratio,
             frame: None,
-            on_scan: None,
+            on_scan: Rc::new(on_scan),
         }
     }
 
@@ -64,23 +71,12 @@ impl QrCodeScanner {
         self.frame = Some(frame);
         self
     }
-
-    /// Runs with the text of each code read.
-    pub fn on_scan(
-        mut self,
-        handler: impl Fn(&SharedString, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_scan = Some(Rc::new(handler));
-        self
-    }
 }
 
 impl RenderOnce for QrCodeScanner {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let on_scan = self
-            .on_scan
-            .unwrap_or_else(|| panic!("qr code scanner {id:?} has no on_scan"));
+        let on_scan = self.on_scan;
         let scan = window.use_keyed_state((id.clone(), "scan"), cx, |_, _| Scan::default());
         scan.update(cx, |scan, _| scan.on_scan = Some(on_scan));
         let fresh = self.frame.clone().filter(|frame| {
@@ -200,6 +196,11 @@ mod tests {
     use gpui::RenderImage;
 
     use super::{frame_of, read};
+
+    #[test]
+    fn a_picture_with_no_frame_reads_nothing() {
+        assert_eq!(read(&RenderImage::new(Vec::new())), None);
+    }
 
     #[test]
     fn a_frame_reads_as_the_code_it_shows() {

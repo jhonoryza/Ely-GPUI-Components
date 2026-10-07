@@ -66,7 +66,7 @@ impl RenderOnce for WebView {
 mod mac {
     use gpui::{
         AnyElement, App, Bounds, DispatchPhase, ElementId, IntoElement, MouseDownEvent,
-        ParentElement, Pixels, Styled, Window, canvas, div,
+        ParentElement, Pixels, SharedString, Styled, Window, canvas, div,
     };
     use wry::{
         Rect, WebViewBuilder,
@@ -74,11 +74,13 @@ mod mac {
     };
 
     use super::{WebSource, in_view};
+    use crate::theme::ActiveTheme;
 
-    /// The native view and what it shows.
+    /// The native view, what it shows, and why the last load failed.
     struct Page {
         view: wry::WebView,
         shown: WebSource,
+        fault: Option<SharedString>,
     }
 
     impl Drop for Page {
@@ -98,6 +100,20 @@ mod mac {
         }
     }
 
+    /// The words a box shows in place of a page that cannot show.
+    fn fault(why: SharedString, cx: &App) -> AnyElement {
+        let theme = cx.theme();
+        div()
+            .size_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .p_4()
+            .text_color(theme.colors.danger)
+            .child(format!("This page cannot show: {why}"))
+            .into_any_element()
+    }
+
     pub(super) fn page(
         id: ElementId,
         source: WebSource,
@@ -111,24 +127,54 @@ mod mac {
                     WebSource::Url(url) => WebViewBuilder::new().with_url(url.to_string()),
                     WebSource::Html(html) => WebViewBuilder::new().with_html(html.to_string()),
                 };
-                let view = builder
-                    .build_as_child(&*window)
-                    .unwrap_or_else(|error| panic!("web view {id:?}: wry built no view: {error}"));
-                log::info!("web view {id:?}: built");
-                Page {
-                    view,
-                    shown: source,
+                match builder.build_as_child(&*window) {
+                    Ok(view) => {
+                        log::info!("web view {id:?}: built");
+                        Ok(Page {
+                            view,
+                            shown: source,
+                            fault: None,
+                        })
+                    }
+                    Err(error) => {
+                        log::error!("web view {id:?}: wry built no view: {error}");
+                        Err(SharedString::from(error.to_string()))
+                    }
                 }
             }
         });
-        if page.read(cx).shown != source {
+        let loaded = match page.read(cx) {
+            Err(why) => return fault(why.clone(), cx),
+            Ok(built) if built.shown != source => Some(match &source {
+                WebSource::Url(url) => built.view.load_url(url),
+                WebSource::Html(html) => built.view.load_html(html),
+            }),
+            Ok(_) => None,
+        };
+        if let Some(loaded) = loaded {
             log::info!("web view {id:?}: loads anew");
-            let loaded = match &source {
-                WebSource::Url(url) => page.read(cx).view.load_url(url),
-                WebSource::Html(html) => page.read(cx).view.load_html(html),
-            };
-            loaded.unwrap_or_else(|error| panic!("web view {id:?}: load failed: {error}"));
-            page.update(cx, |page, _| page.shown = source);
+            let fault = loaded.err().map(|error| {
+                log::error!("web view {id:?}: load failed: {error}");
+                SharedString::from(error.to_string())
+            });
+            page.update(cx, |page, _| {
+                if let Ok(page) = page {
+                    page.shown = source;
+                    page.fault = fault;
+                }
+            });
+        }
+        if let Ok(Page {
+            fault: Some(why), ..
+        }) = page.read(cx)
+        {
+            let why = why.clone();
+            if let Ok(built) = page.read(cx)
+                && let Err(error) = built.view.set_visible(false)
+            {
+                log::error!("web view {id:?}: visibility: {error}");
+            }
+            return fault(why, cx);
         }
         let pressed = page.clone();
         div()
@@ -137,23 +183,24 @@ mod mac {
             .child(
                 canvas(
                     move |bounds, window, cx| {
-                        let view = &page.read(cx).view;
-                        view.set_bounds(rect(bounds))
-                            .unwrap_or_else(|error| panic!("web view {id:?}: bounds: {error}"));
-                        view.set_visible(in_view(bounds, window.content_mask().bounds))
-                            .unwrap_or_else(|error| panic!("web view {id:?}: visibility: {error}"));
+                        let Ok(built) = page.read(cx) else { return };
+                        if let Err(error) = built.view.set_bounds(rect(bounds)) {
+                            log::error!("web view {id:?}: bounds: {error}");
+                        }
+                        let shown = in_view(bounds, window.content_mask().bounds);
+                        if let Err(error) = built.view.set_visible(shown) {
+                            log::error!("web view {id:?}: visibility: {error}");
+                        }
                     },
                     move |_, _, window, _| {
                         window.on_mouse_event(move |_: &MouseDownEvent, phase, _, cx| {
-                            if phase == DispatchPhase::Capture {
+                            if phase == DispatchPhase::Capture
+                                && let Ok(built) = pressed.read(cx)
+                            {
                                 log::debug!("web view: keys go back to gpui");
-                                pressed
-                                    .read(cx)
-                                    .view
-                                    .focus_parent()
-                                    .unwrap_or_else(|error| {
-                                        panic!("web view: keys stay with the page: {error}")
-                                    });
+                                if let Err(error) = built.view.focus_parent() {
+                                    log::error!("web view: keys stay with the page: {error}");
+                                }
                             }
                         });
                     },

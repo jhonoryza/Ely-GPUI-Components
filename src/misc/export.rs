@@ -97,11 +97,12 @@ impl RenderOnce for ExportDialog {
             .first()
             .unwrap_or_else(|| panic!("export dialog {id:?} has no formats"));
         let chosen = window.use_keyed_state((id.clone(), "chosen"), cx, move |_, _| first);
-        let format = *chosen.read(cx);
-        assert!(
-            self.formats.contains(&format),
-            "export dialog {id:?} lost its format {format:?}"
-        );
+        let mut format = *chosen.read(cx);
+        if !self.formats.contains(&format) {
+            log::error!("export dialog {id:?}: {format:?} left the formats; {first:?} is chosen");
+            format = first;
+            chosen.update(cx, |chosen, _| *chosen = first);
+        }
         let cards = self.formats.iter().map(|&each| {
             let pick = chosen.clone();
             RadioCard::new((id.clone(), each.label()), each == format, each.label())

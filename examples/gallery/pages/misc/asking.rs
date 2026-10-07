@@ -20,19 +20,19 @@ pub fn render(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
         "poll",
         "Which chart should come next?",
         ["Sankey", "Sunburst", "Candlestick"],
+        move |vote, _, cx| {
+            tally.update(cx, |tally, cx| {
+                match (vote, tally.voted) {
+                    (Some(ix), _) => tally.votes[ix] += 1,
+                    (None, Some(ix)) => tally.votes[ix] -= 1,
+                    (None, None) => panic!("gallery poll: no vote to take back"),
+                }
+                tally.voted = vote;
+                cx.notify();
+            })
+        },
     )
-    .votes(votes)
-    .on_vote(move |vote, _, cx| {
-        tally.update(cx, |tally, cx| {
-            match (vote, tally.voted) {
-                (Some(ix), _) => tally.votes[ix] += 1,
-                (None, Some(ix)) => tally.votes[ix] -= 1,
-                (None, None) => panic!("gallery poll: no vote to take back"),
-            }
-            tally.voted = vote;
-            cx.notify();
-        })
-    });
+    .votes(votes);
     let poll = match voted {
         Some(ix) => poll.voted(ix),
         None => poll,
@@ -62,9 +62,7 @@ pub fn render(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                                         vec!["Forms".into(), "Charts".into(), "Tables".into()],
                                     ),
                                     Question::Text("What should we build next?".into()),
-                                ],
-                            )
-                            .on_submit(|answers, _, _| log::info!("gallery: survey {answers:?}")),
+                                ], |answers, _, _| log::info!("gallery: survey {answers:?}")),
                         ),
                         cx,
                     )),

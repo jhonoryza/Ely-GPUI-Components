@@ -132,6 +132,13 @@ impl RenderOnce for Quiz {
         assert!(count > 0, "quiz {id:?} has no questions");
         let sitting =
             window.use_keyed_state((id.clone(), "sitting"), cx, |_, _| Sitting::default());
+        if sitting.read(cx).at >= count {
+            log::error!(
+                "quiz {id:?}: question {} of {count}; it starts over",
+                sitting.read(cx).at
+            );
+            sitting.update(cx, |sitting, _| *sitting = Sitting::default());
+        }
         let action = tab_stop((id.clone(), "action").into(), true, window, cx);
         let theme = cx.theme();
         let colors = &theme.colors;

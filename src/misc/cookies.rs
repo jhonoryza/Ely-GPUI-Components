@@ -26,31 +26,26 @@ pub struct CookieBanner {
     id: ElementId,
     message: SharedString,
     kinds: Vec<(SharedString, SharedString)>,
-    on_choose: Option<OnChoose>,
+    on_choose: OnChoose,
 }
 
 impl CookieBanner {
-    pub fn new(id: impl Into<ElementId>, message: impl Into<SharedString>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        message: impl Into<SharedString>,
+        on_choose: impl Fn(&[SharedString], &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             message: message.into(),
             kinds: Vec::new(),
-            on_choose: None,
+            on_choose: Rc::new(on_choose),
         }
     }
 
     /// A kind the viewer may turn on: its name, and what it is for.
     pub fn kind(mut self, name: impl Into<SharedString>, detail: impl Into<SharedString>) -> Self {
         self.kinds.push((name.into(), detail.into()));
-        self
-    }
-
-    /// Runs with the kinds turned on, by name; necessary cookies go unnamed.
-    pub fn on_choose(
-        mut self,
-        handler: impl Fn(&[SharedString], &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_choose = Some(Rc::new(handler));
         self
     }
 }
@@ -62,19 +57,16 @@ impl RenderOnce for CookieBanner {
             !self.kinds.is_empty(),
             "cookie banner {id:?} has no kinds to choose"
         );
-        let on_choose = self
-            .on_choose
-            .unwrap_or_else(|| panic!("cookie banner {id:?} has no on_choose"));
+        let on_choose = self.on_choose;
         let count = self.kinds.len();
         let choosing = window.use_keyed_state((id.clone(), "choosing"), cx, move |_, _| Choosing {
             open: false,
             on: vec![false; count],
         });
-        assert_eq!(
-            choosing.read(cx).on.len(),
-            count,
-            "cookie banner {id:?} changed its kinds"
-        );
+        if choosing.read(cx).on.len() != count {
+            log::error!("cookie banner {id:?}: its kinds changed; each starts off again");
+            choosing.update(cx, |choosing, _| choosing.on = vec![false; count]);
+        }
         let choose = tab_stop((id.clone(), "choose").into(), true, window, cx);
         let (open, on) = (choosing.read(cx).open, choosing.read(cx).on.clone());
         let theme = cx.theme();

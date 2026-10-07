@@ -56,25 +56,20 @@ struct Sheet {
 pub struct Survey {
     id: ElementId,
     questions: Vec<Question>,
-    on_submit: Option<OnSubmit>,
+    on_submit: OnSubmit,
 }
 
 impl Survey {
-    pub fn new(id: impl Into<ElementId>, questions: impl IntoIterator<Item = Question>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        questions: impl IntoIterator<Item = Question>,
+        on_submit: impl Fn(&[Answer], &mut Window, &mut App) + 'static,
+    ) -> Self {
         Self {
             id: id.into(),
             questions: questions.into_iter().collect(),
-            on_submit: None,
+            on_submit: Rc::new(on_submit),
         }
-    }
-
-    /// Runs with every answer, in the order of the questions.
-    pub fn on_submit(
-        mut self,
-        handler: impl Fn(&[Answer], &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.on_submit = Some(Rc::new(handler));
-        self
     }
 }
 
@@ -102,6 +97,22 @@ fn choices(options: &[SharedString]) -> impl Iterator<Item = Choice> + '_ {
         .map(|(ix, label)| Choice::new(ix.to_string(), label.clone()))
 }
 
+/// A sheet with no answers, a field for each question answered in words.
+fn blank(questions: &[Question], window: &mut Window, cx: &mut App) -> Sheet {
+    Sheet {
+        picked: vec![None; questions.len()],
+        fields: questions
+            .iter()
+            .map(|question| {
+                matches!(question, Question::Text(_))
+                    .then(|| cx.new(|cx| TextInput::new(window, cx).multi_line(2, 5)))
+            })
+            .collect(),
+        sent: false,
+        nudged: false,
+    }
+}
+
 fn place(value: &SharedString) -> usize {
     value.parse().expect("an option's place")
 }
@@ -110,30 +121,24 @@ impl RenderOnce for Survey {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = self.id;
         assert!(!self.questions.is_empty(), "survey {id:?} has no questions");
-        let on_submit = self
-            .on_submit
-            .unwrap_or_else(|| panic!("survey {id:?} has no on_submit"));
+        let on_submit = self.on_submit;
         let questions = Rc::new(self.questions);
         let sheet = window.use_keyed_state((id.clone(), "sheet"), cx, {
             let questions = questions.clone();
-            move |window, cx| Sheet {
-                picked: vec![None; questions.len()],
-                fields: questions
-                    .iter()
-                    .map(|question| {
-                        matches!(question, Question::Text(_))
-                            .then(|| cx.new(|cx| TextInput::new(window, cx).multi_line(2, 5)))
-                    })
-                    .collect(),
-                sent: false,
-                nudged: false,
-            }
+            move |window, cx| blank(&questions, window, cx)
         });
-        assert_eq!(
-            sheet.read(cx).picked.len(),
-            questions.len(),
-            "survey {id:?} changed its questions"
-        );
+        let fits = {
+            let now = sheet.read(cx);
+            now.picked.len() == questions.len()
+                && questions.iter().zip(&now.fields).all(|(question, field)| {
+                    matches!(question, Question::Text(_)) == field.is_some()
+                })
+        };
+        if !fits {
+            log::error!("survey {id:?}: its questions changed; the answers start over");
+            let fresh = blank(&questions, window, cx);
+            sheet.update(cx, |sheet, _| *sheet = fresh);
+        }
         let sent = sheet.read(cx).sent;
         let action = tab_stop((id.clone(), "submit").into(), !sent, window, cx);
         let theme = cx.theme();

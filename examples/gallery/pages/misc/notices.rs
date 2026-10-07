@@ -110,11 +110,7 @@ pub fn render(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                         div().w(px(360.0)).child(
                             CookieBanner::new(
                                 "cookies",
-                                "The help pages set cookies. Necessary ones keep them working; the rest are up to you.",
-                            )
-                            .kind("Analytics", "Counts which pages help, without names.")
-                            .kind("Video", "Lets embedded tutorials play and remember where you stopped.")
-                            .on_choose(move |kinds, _, cx| {
+                                "The help pages set cookies. Necessary ones keep them working; the rest are up to you.", move |kinds, _, cx| {
                                 let words = match kinds.len() {
                                     0 => "Only necessary cookies.".to_string(),
                                     _ => format!("Cookies on: {}.", kinds.join(", ")),
@@ -123,7 +119,9 @@ pub fn render(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                                     *said = words.into();
                                     cx.notify();
                                 })
-                            }),
+                            })
+                            .kind("Analytics", "Counts which pages help, without names.")
+                            .kind("Video", "Lets embedded tutorials play and remember where you stopped."),
                         ),
                     ))
                     .child(

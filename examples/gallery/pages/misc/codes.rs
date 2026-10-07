@@ -53,9 +53,8 @@ pub fn render(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             )
             .child(
                 div().w(px(280.0)).child(
-                    QrCodeScanner::new("scanner", 1.5)
-                        .frame(frame.read(cx).clone())
-                        .on_scan(|text, _, _| log::info!("gallery: scanned {text}")),
+                    QrCodeScanner::new("scanner", 1.5, |text, _, _| log::info!("gallery: scanned {text}"))
+                        .frame(frame.read(cx).clone()),
                 ),
             ),
         )
@@ -68,9 +67,7 @@ pub fn render(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
             .child(probe(
                 "captcha",
                 div().w(px(280.0)).child(
-                    Captcha::new("captcha", picture, 3.0)
-                        .state(state)
-                        .on_answer(move |text, _, cx| {
+                    Captcha::new("captcha", picture, 3.0, move |text, _, cx| {
                             checked.update(cx, |desk, cx| {
                                 desk.1 = match text.eq_ignore_ascii_case(answer) {
                                     true => CaptchaState::Passed,
@@ -79,6 +76,7 @@ pub fn render(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                                 cx.notify();
                             })
                         })
+                        .state(state)
                         .on_refresh(move |_, cx| {
                             refreshed.update(cx, |desk, cx| {
                                 *desk = ((desk.0 + 1) % ANSWERS.len(), CaptchaState::Asking);

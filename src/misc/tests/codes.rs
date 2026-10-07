@@ -29,7 +29,7 @@ fn show(cx: &mut VisualTestContext) {
 }
 
 fn scanner() -> AnyElement {
-    let scanner = QrCodeScanner::new("scanner", 1.0).on_scan(|text, _, _| say(text));
+    let scanner = QrCodeScanner::new("scanner", 1.0, |text, _, _| say(text));
     match FRAME.with(|frame| frame.borrow().clone()) {
         Some(frame) => scanner.frame(frame),
         None => scanner,
@@ -70,9 +70,8 @@ fn a_frame_that_comes_mid_read_is_read_next(cx: &mut TestAppContext) {
 }
 
 fn captcha() -> AnyElement {
-    Captcha::new("captcha", frame_of("W7XK"), 1.0)
+    Captcha::new("captcha", frame_of("W7XK"), 1.0, |text, _, _| say(text))
         .state(STATE.get())
-        .on_answer(|text, _, _| say(text))
         .into_any_element()
 }
 

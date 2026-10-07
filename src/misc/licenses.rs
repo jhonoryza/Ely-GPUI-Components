@@ -59,12 +59,15 @@ impl RenderOnce for LicenseViewer {
             "license viewer {id:?} has no packages"
         );
         let chosen = window.use_keyed_state((id.clone(), "chosen"), cx, |_, _| 0);
-        let at = *chosen.read(cx);
-        assert!(
-            at < self.packages.len(),
-            "license viewer {id:?} lost package {at} of {}",
-            self.packages.len()
-        );
+        let mut at = *chosen.read(cx);
+        if at >= self.packages.len() {
+            log::error!(
+                "license viewer {id:?}: package {at} of {}; the first is shown",
+                self.packages.len()
+            );
+            at = 0;
+            chosen.update(cx, |chosen, _| *chosen = 0);
+        }
         let theme = cx.theme();
         let colors = &theme.colors;
         let list = self.packages.iter().enumerate().fold(
