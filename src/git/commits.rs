@@ -113,7 +113,7 @@ impl RenderOnce for CommitItem {
             // Narrow, the details give way before the subject.
             .child(
                 div()
-                    .flex_shrink()
+                    .flex_shrink(1.0)
                     .min_w_0()
                     .overflow_hidden()
                     .whitespace_nowrap()
