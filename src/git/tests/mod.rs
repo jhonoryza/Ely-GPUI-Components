@@ -4,6 +4,8 @@ use gpui::{
 };
 
 use super::DiffViewer;
+
+mod picking;
 use crate::{forms, primitives::FocusNext, theme::Theme};
 
 /// A diff whose first stretch folds, and folds asked open.

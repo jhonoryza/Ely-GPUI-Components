@@ -204,17 +204,23 @@ pub(super) struct Pick {
     pub run: Run,
 }
 
-/// A row's name, detail, trailing words and hover actions.
-pub(super) fn listed(
-    id: ElementId,
-    icon: IconName,
-    name: AnyElement,
-    detail: SharedString,
-    trailing: Vec<SharedString>,
-    actions: Vec<AnyElement>,
-    pick: Option<Pick>,
-    cx: &App,
-) -> AnyElement {
+/// A row's icon, name, detail, trailing words and hover actions.
+pub(super) struct Entry {
+    pub icon: IconName,
+    pub name: AnyElement,
+    pub detail: SharedString,
+    pub trailing: Vec<SharedString>,
+    pub actions: Vec<AnyElement>,
+}
+
+pub(super) fn listed(id: ElementId, entry: Entry, pick: Option<Pick>, cx: &App) -> AnyElement {
+    let Entry {
+        icon,
+        name,
+        detail,
+        trailing,
+        actions,
+    } = entry;
     let theme = cx.theme();
     let colors = theme.colors.clone();
     div()
@@ -406,15 +412,17 @@ impl RenderOnce for BranchList {
                     .collect();
                 listed(
                     (self.id.clone(), format!("branch-{}", branch.name)).into(),
-                    if branch.current {
-                        IconName::Check
-                    } else {
-                        IconName::GitBranch
+                    Entry {
+                        icon: if branch.current {
+                            IconName::Check
+                        } else {
+                            IconName::GitBranch
+                        },
+                        name,
+                        detail: branch.subject.clone(),
+                        trailing,
+                        actions,
                     },
-                    name,
-                    branch.subject.clone(),
-                    trailing,
-                    actions,
                     bind(&self.on_pick).map(|run| Pick {
                         spoken: branch.name.clone(),
                         selected: self.selected.as_ref() == Some(&branch.name),

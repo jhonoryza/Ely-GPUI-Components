@@ -5,7 +5,7 @@ use gpui::{
     Window, div,
 };
 
-use super::refs::{OnName, Pick, Run, action, listed};
+use super::refs::{Entry, OnName, Pick, Run, action, listed};
 use crate::{
     i18n,
     primitives::IconName,
@@ -70,14 +70,16 @@ impl RenderOnce for TagList {
                 let short: String = tag.commit.chars().take(7).collect();
                 listed(
                     (self.id.clone(), format!("tag-{}", tag.name)).into(),
-                    IconName::Tag,
-                    div()
-                        .text_color(colors.fg)
-                        .child(tag.name.clone())
-                        .into_any_element(),
-                    tag.message.clone().unwrap_or_default(),
-                    vec![short.into(), tag.when.clone()],
-                    Vec::new(),
+                    Entry {
+                        icon: IconName::Tag,
+                        name: div()
+                            .text_color(colors.fg)
+                            .child(tag.name.clone())
+                            .into_any_element(),
+                        detail: tag.message.clone().unwrap_or_default(),
+                        trailing: vec![short.into(), tag.when.clone()],
+                        actions: Vec::new(),
+                    },
                     self.on_pick.clone().map(|pick| {
                         let name = tag.name.clone();
                         Pick {
@@ -197,15 +199,17 @@ impl RenderOnce for StashList {
                 });
                 listed(
                     (self.id.clone(), format!("stash-{ix}")).into(),
-                    IconName::Archive,
-                    div()
-                        .font_family(theme.mono_family.clone())
-                        .text_color(colors.fg)
-                        .child(name)
-                        .into_any_element(),
-                    detail,
-                    vec![stash.when.clone()],
-                    actions,
+                    Entry {
+                        icon: IconName::Archive,
+                        name: div()
+                            .font_family(theme.mono_family.clone())
+                            .text_color(colors.fg)
+                            .child(name)
+                            .into_any_element(),
+                        detail,
+                        trailing: vec![stash.when.clone()],
+                        actions,
+                    },
                     pick,
                     cx,
                 )

@@ -13,22 +13,21 @@ use crate::{
 };
 
 type OnPick = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
+/// A commit with lines added and removed, if counted.
+pub type Counted = (Commit, Option<(usize, usize)>);
 
 /// A file's commits newest first; draws rows in view.
 #[derive(IntoElement)]
 pub struct FileHistory {
     id: ElementId,
-    commits: Rc<Vec<(Commit, Option<(usize, usize)>)>>,
+    commits: Rc<Vec<Counted>>,
     selected: Option<SharedString>,
     on_pick: Option<OnPick>,
 }
 
 impl FileHistory {
     /// Each commit with lines added and removed, if counted.
-    pub fn new(
-        id: impl Into<ElementId>,
-        commits: Rc<Vec<(Commit, Option<(usize, usize)>)>>,
-    ) -> Self {
+    pub fn new(id: impl Into<ElementId>, commits: Rc<Vec<Counted>>) -> Self {
         Self {
             id: id.into(),
             commits,

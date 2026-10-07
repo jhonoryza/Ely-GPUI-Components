@@ -7,7 +7,7 @@ use gpui::{
     TestAppContext, VisualTestContext, Window, div, px,
 };
 
-use super::{
+use crate::git::{
     Blame, BlameView, Branch, BranchList, Commit, CommitList, FileHistory, GitTag, Stash,
     StashList, TagList,
 };
