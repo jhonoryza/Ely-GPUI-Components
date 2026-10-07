@@ -231,6 +231,9 @@ impl RenderOnce for BlameView {
                     let text = lines[line].clone();
                     let styles = code_colors(&text, cx);
                     div()
+                        .id((id.clone(), format!("line-{line}")))
+                        .role(Role::Label)
+                        .aria_label(SharedString::from(format!("{} {text}", line + 1)))
                         .w_full()
                         .flex()
                         .items_center()

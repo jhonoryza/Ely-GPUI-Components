@@ -94,3 +94,30 @@ pub(super) fn code(line: &DiffLine, colors: &Palette, cx: &App) -> StyledText {
     styles.sort_by_key(|(range, _)| range.start);
     StyledText::new(line.text.clone()).with_highlights(stack(styles))
 }
+
+/// A line as assistive tech reads it: number, change, text.
+pub(super) fn spoken(line: &DiffLine) -> SharedString {
+    let (number, sign) = match line.kind {
+        LineKind::Same => (line.new, ""),
+        LineKind::Added => (line.new, "+ "),
+        LineKind::Removed => (line.old, "− "),
+    };
+    let number = number.map_or_else(String::new, |n| format!("{n} "));
+    format!("{number}{sign}{}", line.text).into()
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn a_line_speaks_its_number_change_and_text() {
+        let stretches = super::super::diff::diff("a\nb\n", "a\nc\n", 1);
+        let super::Stretch::Hunk { lines, .. } = &stretches[0] else {
+            panic!("a hunk")
+        };
+        let said: Vec<String> = lines
+            .iter()
+            .map(|line| super::spoken(line).to_string())
+            .collect();
+        assert_eq!(said, ["1 a", "2 − b", "2 + c"]);
+    }
+}

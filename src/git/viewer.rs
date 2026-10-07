@@ -9,7 +9,7 @@ use gpui::{
 use super::{
     badges::DiffStat,
     diff::{DiffLine, LineKind, Stretch, diff, side_numbers},
-    rows::{Place, Shown, code, shown, washes},
+    rows::{Place, Shown, code, shown, spoken, washes},
 };
 use crate::{
     buttons::{Button, ButtonVariant, SegmentedControl},
@@ -228,15 +228,10 @@ impl RenderOnce for DiffViewer {
                     match (&on_line, line.kind) {
                         (Some(on_line), LineKind::Added | LineKind::Removed) => {
                             let on_line = on_line.clone();
-                            let sign = if line.kind == LineKind::Added {
-                                "+"
-                            } else {
-                                "−"
-                            };
                             element
                                 .id((id.clone(), format!("line-{}-{}", place.0, place.1)))
                                 .role(Role::ListItem)
-                                .aria_label(SharedString::from(format!("{sign} {}", line.text)))
+                                .aria_label(spoken(line))
                                 .aria_selected(picked)
                                 .tab_index(0)
                                 .focus_ring(cx)
@@ -248,7 +243,7 @@ impl RenderOnce for DiffViewer {
                                     on_line(place, event.modifiers().shift, window, cx)
                                 })
                         }
-                        _ => element.id(own),
+                        _ => element.id(own).role(Role::Label).aria_label(spoken(line)),
                     }
                 };
                 let side = |line: Option<&(Place, DiffLine)>,
@@ -303,6 +298,8 @@ impl RenderOnce for DiffViewer {
                                         .on_click(move |_, window, cx| run(stretch, window, cx))
                                 });
                                 row.id(ix)
+                                    .role(Role::Heading)
+                                    .aria_label(header.clone())
                                     .bg(colors.hover)
                                     .items_center()
                                     .text_color(colors.fg_muted)
@@ -346,7 +343,23 @@ impl RenderOnce for DiffViewer {
                             }
                             Shown::Fold(stretch, count) => {
                                 let (open, stretch) = (on_open.clone(), *stretch);
+                                let said = i18n::text(
+                                    cx,
+                                    if *count == 1 {
+                                        "git.diff.unchanged.one"
+                                    } else {
+                                        "git.diff.unchanged.other"
+                                    },
+                                    &[("n", &count.to_string())],
+                                );
+                                let role = if open.is_some() {
+                                    Role::Button
+                                } else {
+                                    Role::Label
+                                };
                                 row.id((id.clone(), format!("fold-{stretch}")))
+                                    .role(role)
+                                    .aria_label(said.clone())
                                     .justify_center()
                                     .bg(colors.hover.opacity(0.5))
                                     .text_color(colors.fg_subtle)
@@ -362,18 +375,7 @@ impl RenderOnce for DiffViewer {
                                                 open(stretch, window, cx)
                                             })
                                     })
-                                    .child(format!(
-                                        "⋯ {}",
-                                        i18n::text(
-                                            cx,
-                                            if *count == 1 {
-                                                "git.diff.unchanged.one"
-                                            } else {
-                                                "git.diff.unchanged.other"
-                                            },
-                                            &[("n", &count.to_string())],
-                                        )
-                                    ))
+                                    .child(format!("⋯ {said}"))
                                     .into_any_element()
                             }
                         }
