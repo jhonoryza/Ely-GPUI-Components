@@ -70,19 +70,22 @@ impl DuplicateFinder {
 
     /// The copies marked to remove, by path; each group keeps one.
     pub fn marked(mut self, paths: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
-        let paths: Vec<SharedString> = paths.into_iter().map(Into::into).collect();
-        for path in &paths {
-            assert!(
-                self.groups.iter().any(|group| group.paths.contains(path)),
-                "no copy {path}"
-            );
-        }
+        let mut paths: Vec<SharedString> = paths.into_iter().map(Into::into).collect();
+        paths.retain(|path| {
+            let listed = self.groups.iter().any(|group| group.paths.contains(path));
+            if !listed {
+                log::error!("duplicate finder: no copy {path}; its mark is dropped");
+            }
+            listed
+        });
         for group in &self.groups {
-            assert!(
-                group.paths.iter().any(|path| !paths.contains(path)),
-                "every copy of {} is marked",
-                group.name
-            );
+            if group.paths.iter().all(|path| paths.contains(path)) {
+                log::error!(
+                    "duplicate finder: every copy of {} is marked; none of them stays marked",
+                    group.name
+                );
+                paths.retain(|path| !group.paths.contains(path));
+            }
         }
         self.marked = paths;
         self
@@ -217,5 +220,25 @@ impl RenderOnce for DuplicateFinder {
             .gap_4()
             .child(header)
             .children(groups)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DuplicateFinder, Duplicates};
+
+    #[test]
+    fn marks_on_no_copy_or_on_every_copy_are_dropped() {
+        let group = |name: &str, paths: [&str; 2]| Duplicates {
+            name: name.to_string().into(),
+            size: 1,
+            paths: paths.map(Into::into).to_vec(),
+        };
+        let finder = DuplicateFinder::new(
+            "dupes",
+            [group("a.jpg", ["x", "y"]), group("b.jpg", ["p", "q"])],
+        )
+        .marked(["x", "y", "p", "gone"]);
+        assert_eq!(finder.marked, ["p"]);
     }
 }

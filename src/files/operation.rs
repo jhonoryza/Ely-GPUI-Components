@@ -72,10 +72,10 @@ impl FileOperationProgress {
         (moved, total): (u64, u64),
         state: TransferState,
     ) -> Self {
-        assert!(
-            items > 0 && moved <= total,
-            "{items} items, {moved} of {total} bytes"
-        );
+        assert!(items > 0, "no items, {moved} of {total} bytes");
+        if moved > total {
+            log::error!("file operation: {moved} of {total} bytes; the bar fills");
+        }
         Self {
             id: id.into(),
             operation,

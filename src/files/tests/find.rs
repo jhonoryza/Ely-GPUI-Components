@@ -255,17 +255,6 @@ fn the_last_copy_stays_and_remove_takes_the_marked(cx: &mut TestAppContext) {
     );
 }
 
-#[test]
-#[should_panic(expected = "every copy of a.jpg is marked")]
-fn a_group_keeps_a_copy() {
-    let group = Duplicates {
-        name: "a.jpg".into(),
-        size: 1,
-        paths: vec!["x".into(), "y".into()],
-    };
-    let _ = DuplicateFinder::new("dupes", [group]).marked(["x", "y"]);
-}
-
 /// An archive of four files in two folders, and the files it handed over.
 struct Unpacking {
     opened: Vec<SharedString>,

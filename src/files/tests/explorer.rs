@@ -168,13 +168,6 @@ fn each_folder_on_the_path_is_listed() {
     );
 }
 
-#[test]
-#[should_panic(expected = "no entry Ghost.md")]
-fn the_pick_is_in_the_folder_shown() {
-    let here = vec![DirEntry::file("Brief.md", 10, then())];
-    let _ = FileExplorer::new("explorer", ["Home"], [here], FileView::List).selected("Ghost.md");
-}
-
 /// An explorer that goes where it is sent, over a small tree, and the files it opened.
 struct Walking {
     path: Vec<SharedString>,
@@ -240,17 +233,5 @@ fn a_new_folder_at_a_depth_starts_its_column_fresh(cx: &mut TestAppContext) {
     assert_eq!(
         host.read_with(cx, |host, _| host.opened.clone()),
         ["Contract.docx"]
-    );
-}
-
-#[test]
-#[should_panic(expected = "Projects is no folder in Home")]
-fn each_folder_on_the_path_is_listed_in_its_parent() {
-    let root = vec![DirEntry::file("Projects", 10, then())];
-    let _ = FileExplorer::new(
-        "explorer",
-        ["Home", "Projects"],
-        [root, Vec::new()],
-        FileView::List,
     );
 }

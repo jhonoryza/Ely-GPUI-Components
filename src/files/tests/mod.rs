@@ -9,6 +9,7 @@ use crate::{lists::DirEntry, primitives::FocusNext, theme::Theme};
 
 mod explorer;
 mod find;
+mod stale;
 mod transfers;
 
 pub(super) fn setup(cx: &mut TestAppContext) {
@@ -114,6 +115,20 @@ fn the_arrows_move_by_tile_and_by_row_and_enter_opens(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+fn an_owner_pick_gone_from_the_grid_replaces_the_local_one(cx: &mut TestAppContext) {
+    let (view, cx) = tiled(None, cx);
+    cx.update(|window, cx| window.focus_next(cx));
+    press("right", cx);
+    view.update(cx, |view, cx| {
+        view.selected = Some("Ghost.md".into());
+        cx.notify();
+    });
+    settle(cx);
+    press("enter", cx);
+    assert_eq!(heard(&view, cx).1, Vec::<SharedString>::new());
+}
+
+#[gpui::test]
 fn the_keys_start_from_the_tile_picked(cx: &mut TestAppContext) {
     let (view, cx) = tiled(Some("c"), cx);
     cx.update(|window, cx| window.focus_next(cx));
@@ -153,12 +168,6 @@ fn a_name_is_listed_once() {
         "grid",
         ["a", "a"].map(|name| DirEntry::file(name, 1, then())),
     );
-}
-
-#[test]
-#[should_panic(expected = "no entry z")]
-fn the_pick_is_one_of_the_entries() {
-    let _ = FileGrid::new("grid", [DirEntry::file("a", 1, then())]).selected("z");
 }
 
 /// One tile whose name runs long.

@@ -64,13 +64,12 @@ impl FileExplorer {
             levels.len()
         );
         for (depth, name) in path.iter().enumerate().skip(1) {
-            assert!(
-                levels[depth - 1]
-                    .iter()
-                    .any(|entry| entry.is_folder() && entry.name() == name),
-                "{name} is no folder in {}",
-                path[depth - 1]
-            );
+            let listed = levels[depth - 1]
+                .iter()
+                .any(|entry| entry.is_folder() && entry.name() == name);
+            if !listed {
+                log::error!("file explorer: {name} is no folder in {}", path[depth - 1]);
+            }
         }
         Self {
             id: id.into(),
@@ -89,10 +88,9 @@ impl FileExplorer {
     pub fn selected(mut self, name: impl Into<SharedString>) -> Self {
         let name = name.into();
         let here = self.levels.last().expect("a listed folder");
-        assert!(
-            here.iter().any(|entry| *entry.name() == name),
-            "no entry {name}"
-        );
+        if !here.iter().any(|entry| *entry.name() == name) {
+            log::error!("file explorer: no entry {name}; none selected");
+        }
         self.selected = Some(name);
         self
     }

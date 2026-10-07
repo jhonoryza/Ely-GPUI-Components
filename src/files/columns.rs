@@ -63,7 +63,11 @@ pub(super) fn columns(
                 },
             );
             let lit = match depth < last {
-                true => Some(path[depth + 1].clone()),
+                true => Some(path[depth + 1].clone()).filter(|name| {
+                    entries
+                        .iter()
+                        .any(|entry| entry.is_folder() && entry.name() == name)
+                }),
                 false => selected.clone(),
             };
             let (go, select, path, picked) =

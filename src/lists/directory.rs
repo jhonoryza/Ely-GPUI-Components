@@ -149,20 +149,16 @@ impl DirectoryListing {
         }
     }
 
-    /// The entry picked, by name.
+    /// The entry picked, by name; one no longer listed marks none, yet still replaces a local pick.
     pub fn selected(mut self, name: impl Into<SharedString>) -> Self {
         let name = name.into();
-        self.selected = self
-            .entries
-            .iter()
-            .any(|entry| entry.name == name)
-            .then(|| name.clone());
-        if self.selected.is_none() {
+        if !self.entries.iter().any(|entry| entry.name == name) {
             log::error!(
                 "directory listing {:?}: no entry {name}; none picked",
                 self.id
             );
         }
+        self.selected = Some(name);
         self
     }
 
@@ -356,16 +352,7 @@ impl RenderOnce for DirectoryListing {
 mod tests {
     use jiff::Timestamp;
 
-    use super::{Column, DirEntry, DirectoryListing, sorted};
-
-    #[test]
-    fn a_selected_name_gone_from_the_entries_picks_none() {
-        let entries = || [DirEntry::file("a.txt", 1, Timestamp::UNIX_EPOCH)];
-        let gone = DirectoryListing::new("dir", ["home"], entries()).selected("b.txt");
-        assert_eq!(gone.selected, None);
-        let kept = DirectoryListing::new("dir", ["home"], entries()).selected("a.txt");
-        assert_eq!(kept.selected.as_deref(), Some("a.txt"));
-    }
+    use super::{Column, DirEntry, sorted};
 
     fn names(entries: Vec<DirEntry>) -> Vec<String> {
         entries

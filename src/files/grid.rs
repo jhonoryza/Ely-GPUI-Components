@@ -65,10 +65,9 @@ impl FileGrid {
     /// The entry picked, by name.
     pub fn selected(mut self, name: impl Into<SharedString>) -> Self {
         let name = name.into();
-        assert!(
-            self.entries.iter().any(|entry| *entry.name() == name),
-            "no entry {name}"
-        );
+        if !self.entries.iter().any(|entry| *entry.name() == name) {
+            log::error!("file grid: no entry {name}; none selected");
+        }
         self.selected = Some(name);
         self
     }
