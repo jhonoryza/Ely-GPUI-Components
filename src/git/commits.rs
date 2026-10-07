@@ -106,28 +106,27 @@ impl RenderOnce for CommitItem {
             .child(
                 div()
                     .flex_1()
-                    .min_w_0()
+                    .min_w_24()
                     .text_color(colors.fg)
                     .child(Ellipsis::new(commit.subject)),
             )
+            // Narrow, the details give way before the subject.
             .child(
                 div()
-                    .flex_none()
-                    .text_color(colors.fg_muted)
-                    .child(commit.author),
-            )
-            .child(
-                div()
-                    .flex_none()
-                    .font_family(theme.mono_family.clone())
-                    .text_color(colors.fg_subtle)
-                    .child(short),
-            )
-            .child(
-                div()
-                    .flex_none()
-                    .text_color(colors.fg_subtle)
-                    .child(commit.when),
+                    .flex_shrink()
+                    .min_w_0()
+                    .overflow_hidden()
+                    .whitespace_nowrap()
+                    .flex()
+                    .gap_2()
+                    .child(div().text_color(colors.fg_muted).child(commit.author))
+                    .child(
+                        div()
+                            .font_family(theme.mono_family.clone())
+                            .text_color(colors.fg_subtle)
+                            .child(short),
+                    )
+                    .child(div().text_color(colors.fg_subtle).child(commit.when)),
             )
     }
 }
