@@ -21,8 +21,8 @@ use crate::{
 pub struct Changed {
     pub path: SharedString,
     pub status: GitStatus,
-    pub added: usize,
-    pub removed: usize,
+    /// Added and removed; None when not counted, as for a binary file or a folder.
+    pub lines: Option<(usize, usize)>,
 }
 
 /// What a changes list asks for a file.
@@ -234,10 +234,10 @@ impl ChangesList {
                         },
                     ),
             )
-            .child(
+            .children(file.lines.map(|(added, removed)| {
                 tabular(div().flex_none().text_color(colors.fg_subtle))
-                    .child(format!("+{} −{}", file.added, file.removed)),
-            )
+                    .child(format!("+{added} −{removed}"))
+            }))
             .into_any_element()
     }
 

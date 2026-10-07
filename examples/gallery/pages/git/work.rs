@@ -19,8 +19,7 @@ fn changed(path: &str, status: GitStatus, added: usize, removed: usize) -> Chang
     Changed {
         path: path.to_string().into(),
         status,
-        added,
-        removed,
+        lines: Some((added, removed)),
     }
 }
 

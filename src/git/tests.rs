@@ -85,8 +85,7 @@ impl Render for Sorted {
         let file = |path: &str, status| super::Changed {
             path: path.to_string().into(),
             status,
-            added: 1,
-            removed: 0,
+            lines: Some((1, 0)),
         };
         div().w(px(420.0)).child(
             super::ChangesList::new(
@@ -96,7 +95,10 @@ impl Render for Sorted {
             )
             .conflicted([file("c.rs", GitStatus::Conflicted)])
             .untracked([file("d.rs", GitStatus::Untracked)])
-            .ignored([file("target/", GitStatus::Untracked)]),
+            .ignored([super::Changed {
+                lines: None,
+                ..file("target/", GitStatus::Untracked)
+            }]),
         )
     }
 }
