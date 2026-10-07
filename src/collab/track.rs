@@ -158,9 +158,23 @@ pub fn suggested(base: &str, edited: &str, author: &Peer) -> Vec<Suggestion> {
     found
 }
 
-/// `base` with suggestion `ix` taken, and the others moved to match.
-pub fn accept(base: &str, suggestions: &[Suggestion], ix: usize) -> (String, Vec<Suggestion>) {
-    let taken = &suggestions[ix];
+/// `base` with suggestion `ix` taken, and the others moved to match; none when `ix` or its range left `base`.
+pub fn accept(
+    base: &str,
+    suggestions: &[Suggestion],
+    ix: usize,
+) -> Option<(String, Vec<Suggestion>)> {
+    let Some(taken) = suggestions.get(ix) else {
+        log::error!("track changes: no suggestion {ix} of {}", suggestions.len());
+        return None;
+    };
+    if base.get(taken.range.clone()).is_none() {
+        log::error!(
+            "track changes: suggestion {:?} lies outside the text",
+            taken.range
+        );
+        return None;
+    }
     let text = format!(
         "{}{}{}",
         &base[..taken.range.start],
@@ -181,7 +195,7 @@ pub fn accept(base: &str, suggestions: &[Suggestion], ix: usize) -> (String, Vec
             suggestion
         })
         .collect();
-    (text, rest)
+    Some((text, rest))
 }
 
 /// What a suggestion does, in a line: replace, add or delete, with the words.
@@ -206,6 +220,7 @@ pub struct TrackChanges {
     id: ElementId,
     base: SharedString,
     suggestions: Vec<Suggestion>,
+    kept: Vec<usize>,
     on_decide: Option<OnDecide>,
 }
 
@@ -217,15 +232,22 @@ impl TrackChanges {
         suggestions: impl IntoIterator<Item = Suggestion>,
     ) -> Self {
         let base = base.into();
-        let suggestions: Vec<Suggestion> = suggestions.into_iter().collect();
+        let (kept, suggestions): (Vec<usize>, Vec<Suggestion>) = suggestions
+            .into_iter()
+            .enumerate()
+            .filter(|(_, suggestion)| {
+                let inside = base.get(suggestion.range.clone()).is_some();
+                if !inside {
+                    log::error!(
+                        "track changes: {:?} lies outside the text; left out",
+                        suggestion.range
+                    );
+                }
+                inside
+            })
+            .unzip();
         for suggestion in &suggestions {
             let range = &suggestion.range;
-            assert!(
-                range.end <= base.len()
-                    && base.is_char_boundary(range.start)
-                    && base.is_char_boundary(range.end),
-                "suggestion {range:?} lies outside the text"
-            );
             assert!(
                 !(range.is_empty() && suggestion.text.is_empty()),
                 "suggestion at {range:?} changes nothing"
@@ -241,6 +263,7 @@ impl TrackChanges {
             id: id.into(),
             base,
             suggestions,
+            kept,
             on_decide: None,
         }
     }
@@ -297,8 +320,10 @@ impl RenderOnce for TrackChanges {
         };
         let pending = !self.suggestions.is_empty() && self.on_decide.is_some();
         let rows = self.suggestions.iter().enumerate().map(|(ix, suggestion)| {
-            let id = |what: &str| (self.id.clone(), format!("{what}-{ix}"));
+            let at = self.kept[ix];
+            let id = |what: &str| (self.id.clone(), format!("{what}-{at}"));
             div()
+                .debug_selector(move || format!("suggestion {at}"))
                 .flex()
                 .items_center()
                 .gap_2()
@@ -327,14 +352,14 @@ impl RenderOnce for TrackChanges {
                             .variant(ButtonVariant::Ghost)
                             .size(ControlSize::Sm)
                             .tooltip("Accept")
-                            .on_click(decide(Decision::Accept(ix))),
+                            .on_click(decide(Decision::Accept(at))),
                     )
                     .child(
                         IconButton::new(id("reject"), IconName::X)
                             .variant(ButtonVariant::Ghost)
                             .size(ControlSize::Sm)
                             .tooltip("Reject")
-                            .on_click(decide(Decision::Reject(ix))),
+                            .on_click(decide(Decision::Reject(at))),
                     )
                 })
         });
@@ -430,9 +455,9 @@ mod tests {
             found,
             [suggestion(2..6, "tint"), suggestion(14..14, "every ")]
         );
-        let (text, rest) = accept("A lift blends color toward white.", &found, 0);
+        let (text, rest) = accept("A lift blends color toward white.", &found, 0).unwrap();
         assert_eq!(
-            accept(&text, &rest, 0).0,
+            accept(&text, &rest, 0).unwrap().0,
             "A tint blends every color toward white."
         );
     }
@@ -441,16 +466,29 @@ mod tests {
     fn accepting_one_moves_the_rest() {
         let base = "A lift blends color.";
         let all = [suggestion(2..6, "tint"), suggestion(14..14, "every ")];
-        let (text, rest) = accept(base, &all, 0);
+        let (text, rest) = accept(base, &all, 0).unwrap();
         assert_eq!(text, "A tint blends color.");
         assert_eq!(
             rest,
             [suggestion(14..14, "every ")],
             "same length, same place"
         );
-        let (text, rest) = accept(base, &[suggestion(2..6, "shade of"), all[1].clone()], 0);
+        let (text, rest) =
+            accept(base, &[suggestion(2..6, "shade of"), all[1].clone()], 0).unwrap();
         assert_eq!(text, "A shade of blends color.");
-        let (text, _) = accept(&text, &rest, 0);
+        let (text, _) = accept(&text, &rest, 0).unwrap();
         assert_eq!(text, "A shade of blends every color.");
+    }
+
+    #[test]
+    fn a_suggestion_gone_or_outside_the_text_is_not_taken() {
+        let base = "A lift blends.";
+        let inside = suggestion(2..6, "tint");
+        assert_eq!(accept(base, std::slice::from_ref(&inside), 1), None);
+        assert_eq!(accept("A", std::slice::from_ref(&inside), 0), None);
+        let stale = suggestion(0..40, "");
+        let track = TrackChanges::new("track", base, [stale, inside.clone()]);
+        assert_eq!(track.suggestions, [inside]);
+        assert_eq!(track.kept, [1], "decisions name the owner's index");
     }
 }

@@ -261,7 +261,10 @@ const BASE: &str = "A lift blends color toward white. Half a lift sits midway be
 fn applied(base: &str, suggestions: Vec<Suggestion>) -> String {
     let (mut text, mut left) = (base.to_string(), suggestions);
     while !left.is_empty() {
-        (text, left) = accept(&text, &left, 0);
+        let Some(taken) = accept(&text, &left, 0) else {
+            break;
+        };
+        (text, left) = taken;
     }
     text
 }
@@ -306,11 +309,16 @@ pub fn changes(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                     let pending = suggested(&base_text, field.read(cx).text(), &you());
                     match decision {
                         Decision::Accept(ix) => {
-                            set(&decided, accept(&base_text, &pending, ix).0, cx)
+                            if let Some((text, _)) = accept(&base_text, &pending, ix) {
+                                set(&decided, text, cx)
+                            }
                         }
                         Decision::AcceptAll => set(&decided, applied(&base_text, pending), cx),
                         Decision::Reject(ix) => {
                             let mut rest = pending;
+                            if ix >= rest.len() {
+                                return;
+                            }
                             rest.remove(ix);
                             let text = applied(&base_text, rest);
                             field.update(cx, |input, cx| input.set_text(text, cx));

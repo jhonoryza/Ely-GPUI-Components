@@ -69,9 +69,12 @@ pub(crate) fn from_utf16(text: &str, offset: usize) -> usize {
     text.len()
 }
 
-/// Display offset of a content offset when each grapheme shows as `bullet`.
+/// Display offset of a content offset when each grapheme shows as `bullet`; an offset the text lost clamps into it.
 pub(crate) fn masked_offset(text: &str, offset: usize, bullet: char) -> usize {
-    text[..offset].graphemes(true).count() * bullet.len_utf8()
+    text[..text.floor_char_boundary(offset)]
+        .graphemes(true)
+        .count()
+        * bullet.len_utf8()
 }
 
 /// Content offset of a display offset in masked text.
@@ -182,6 +185,16 @@ mod tests {
         assert_eq!(masked_offset(text, 6, '•'), 9);
         assert_eq!(unmasked_offset(text, 9, '•'), 6);
         assert_eq!(unmasked_offset(text, 12, '•'), text.len());
+        assert_eq!(
+            masked_offset("a", 2, '•'),
+            3,
+            "an offset past the text clamps"
+        );
+        assert_eq!(
+            masked_offset(text, 4, '•'),
+            6,
+            "inside a character, before it"
+        );
     }
 
     #[test]

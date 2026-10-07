@@ -33,7 +33,10 @@ pub fn toggled(reactions: &[Reaction], emoji: &str) -> Vec<Reaction> {
         .position(|reaction| reaction.emoji.as_ref() == emoji)
     {
         Some(ix) if next[ix].mine => {
-            next[ix].count -= 1;
+            if next[ix].count == 0 {
+                log::error!("reactions: {emoji} counts none yet is yours; it comes off");
+            }
+            next[ix].count = next[ix].count.saturating_sub(1);
             next[ix].mine = false;
             if next[ix].count == 0 {
                 next.remove(ix);
@@ -190,6 +193,11 @@ impl RenderOnce for Reactions {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn yours_at_no_count_comes_off() {
+        assert_eq!(toggled(&[reaction("👍", 0, true)], "👍"), []);
+    }
 
     fn reaction(emoji: &str, count: usize, mine: bool) -> Reaction {
         Reaction {

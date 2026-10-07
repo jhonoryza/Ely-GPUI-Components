@@ -26,6 +26,7 @@ pub struct AnnotatedText {
     id: ElementId,
     text: SharedString,
     annotations: Rc<Vec<Annotation>>,
+    kept: Rc<Vec<usize>>,
     picked: Option<usize>,
     on_pick: Option<Pick>,
 }
@@ -38,15 +39,25 @@ impl AnnotatedText {
         annotations: impl IntoIterator<Item = Annotation>,
     ) -> Self {
         let text = text.into();
-        let annotations: Vec<Annotation> = annotations.into_iter().collect();
+        let (kept, annotations): (Vec<usize>, Vec<Annotation>) = annotations
+            .into_iter()
+            .enumerate()
+            .filter(|(_, annotation)| {
+                let inside = text.get(annotation.range.clone()).is_some();
+                if !inside {
+                    log::error!(
+                        "annotated text: {:?} lies outside the text; left out",
+                        annotation.range
+                    );
+                }
+                inside
+            })
+            .unzip();
         for annotation in &annotations {
-            let range = &annotation.range;
             assert!(
-                range.start < range.end
-                    && range.end <= text.len()
-                    && text.is_char_boundary(range.start)
-                    && text.is_char_boundary(range.end),
-                "annotation {range:?} lies outside the text"
+                !annotation.range.is_empty(),
+                "annotation {:?} is empty",
+                annotation.range
             );
         }
         assert!(
@@ -59,6 +70,7 @@ impl AnnotatedText {
             id: id.into(),
             text,
             annotations: Rc::new(annotations),
+            kept: Rc::new(kept),
             picked: None,
             on_pick: None,
         }
@@ -78,6 +90,9 @@ impl AnnotatedText {
 
 impl RenderOnce for AnnotatedText {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        if let Some(picked) = self.picked.filter(|picked| !self.kept.contains(picked)) {
+            log::error!("annotated text: annotation {picked} is not shown; none picked");
+        }
         let thickness = cx.theme().underline_thickness();
         let highlights: Vec<(Range<usize>, HighlightStyle)> = self
             .annotations
@@ -85,7 +100,7 @@ impl RenderOnce for AnnotatedText {
             .enumerate()
             .map(|(ix, annotation)| {
                 let color = annotation.author.color(cx);
-                let wash = if self.picked == Some(ix) {
+                let wash = if self.picked == Some(self.kept[ix]) {
                     PICKED
                 } else {
                     WASH
@@ -123,10 +138,30 @@ impl RenderOnce for AnnotatedText {
         });
         match self.on_pick {
             Some(pick) => text.on_click(ranges, move |ix, window, cx| {
+                let ix = self.kept[ix];
                 log::info!("annotated text: picked {ix}");
                 pick(ix, window, cx)
             }),
             None => text,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AnnotatedText, Annotation};
+    use crate::collab::Peer;
+
+    #[test]
+    fn an_annotation_outside_the_text_is_left_out() {
+        let note = |range| Annotation {
+            range,
+            author: Peer::new("ada", "Ada", 0),
+            note: None,
+        };
+        let text = AnnotatedText::new("text", "éabc", [note(1..2), note(2..3)]);
+        assert_eq!(text.annotations.len(), 1);
+        assert_eq!(text.annotations[0].range, 2..3);
+        assert_eq!(*text.kept, [1], "a pick names the owner's index");
     }
 }

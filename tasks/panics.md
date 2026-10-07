@@ -36,7 +36,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P19 Git — `src/git`
 - [x] P20 Debug — `src/debug`
 - [x] P21 Documents — `src/documents`
-- [ ] P22 Collaboration — `src/collab`
+- [x] P22 Collaboration — `src/collab`
 - [ ] P23 AI Chat — `src/chat`
 - [ ] P24 Agent — `src/agent`
 - [ ] P25 Generative — `src/generative`
@@ -87,3 +87,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - P19: a blame that lags its code draws every line, bare where no owner fits; `git::resolve` returns `Option` for a conflict gone from the text. Kept: diff groups, merge regions, similar's pinned resolutions. Review: 2 rounds.
 - P20: a hex selection off the bytes and a stack frame past the stack select none; a flame focus keeps what the profile holds; the timeline's wheel reports only finite, positive ranges from finite factors; a dump's last byte must have an address; flame paints log. Kept: disassembly patterns, `zoomed`'s contract. Review: 3 rounds.
 - P21: block editor listeners painted for a block, field, cell or kind since gone log and change nothing, a dropped picture drag leaves undo alone; a visual block press or edit over text the owner replaced is dropped; nested images parse; a version or find hit past its list selects none. Review: 4 rounds.
+- P22: annotations and suggestions outside their text log and stay out, picks and decisions keeping the owner's index; `accept` returns `Option`; a gone pick, active thread or followed peer logs; yours at no count comes off; a masked field clamps a stale offset, so remote cursors and selections draw. Kept: a thread's comments, presence max, one list's order, empty marks, constant role and mode tables. Review: 3 rounds.

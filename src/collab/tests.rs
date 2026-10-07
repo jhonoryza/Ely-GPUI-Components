@@ -3,11 +3,11 @@ use gpui::{
     TestAppContext, VisualTestContext, Window, div,
 };
 
-use super::{FollowMode, Peer, Reply};
+use super::{Decision, FollowMode, Peer, Reply, Suggestion, TrackChanges};
 use crate::{
     forms,
     forms::{Input, TextInput},
-    theme::Theme,
+    theme::{ActiveTheme, ControlSize, Theme},
 };
 
 /// A field outside a followed view and one inside it, with what they asked: replies sent, follows stopped.
@@ -144,4 +144,71 @@ fn without_resolving_one_list_takes_keyboard_picks(cx: &mut TestAppContext) {
     cx.simulate_keystrokes("enter");
     let picked = board.read_with(cx, |board, _| board.picked.clone());
     assert_eq!(picked, vec![gpui::SharedString::from("a")]);
+}
+
+/// Two suggestions whose first falls inside a character once the text changes, and the decisions asked.
+struct Changing {
+    changed: bool,
+    decided: Vec<Decision>,
+}
+
+impl Render for Changing {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let owner = cx.entity();
+        let suggestion = |range, text: &str| Suggestion {
+            author: Peer::new("ada", "Ada", 0),
+            range,
+            text: text.to_string().into(),
+        };
+        let (base, second) = match self.changed {
+            false => ("abc", 1..2),
+            true => ("éabc", 2..3),
+        };
+        let pending = [suggestion(0..1, "X"), suggestion(second, "B")];
+        div()
+            .size_full()
+            .child(
+                TrackChanges::new("track", base, pending).on_decide(move |decision, _, cx| {
+                    owner.update(cx, |owner, _| owner.decided.push(decision))
+                }),
+            )
+    }
+}
+
+#[gpui::test]
+fn a_press_on_a_suggestion_left_out_decides_nothing(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (view, cx) = cx.add_window_view(|_, _| Changing {
+        changed: false,
+        decided: Vec::new(),
+    });
+    cx.run_until_parked();
+    let row = cx
+        .debug_bounds("suggestion 0")
+        .expect("the first suggestion");
+    let at = cx.update(|window, cx| {
+        let button = cx
+            .theme()
+            .control_height(ControlSize::Sm)
+            .to_pixels(window.rem_size());
+        let gap = gpui::rems(0.5).to_pixels(window.rem_size());
+        gpui::point(row.right() - button - gap - button / 2.0, row.center().y)
+    });
+    cx.simulate_click(at, gpui::Modifiers::none());
+    assert_eq!(
+        view.read_with(cx, |view, _| view.decided.clone()),
+        [Decision::Accept(0)]
+    );
+    cx.simulate_mouse_down(at, gpui::MouseButton::Left, gpui::Modifiers::none());
+    view.update(cx, |view, cx| {
+        view.changed = true;
+        cx.notify();
+    });
+    cx.run_until_parked();
+    cx.simulate_mouse_up(at, gpui::MouseButton::Left, gpui::Modifiers::none());
+    cx.run_until_parked();
+    assert_eq!(
+        view.read_with(cx, |view, _| view.decided.clone()),
+        [Decision::Accept(0)]
+    );
 }

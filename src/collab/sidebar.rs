@@ -118,6 +118,11 @@ impl RenderOnce for CommentSidebar {
                 })
             })
         });
+        if let Some(active) = &self.active
+            && !self.threads.iter().any(|thread| &thread.key == active)
+        {
+            log::error!("comment sidebar: thread {active} is gone; none active");
+        }
         let shown: Vec<Thread> = self
             .threads
             .into_iter()

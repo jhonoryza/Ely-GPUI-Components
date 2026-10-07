@@ -102,6 +102,11 @@ impl PresenceAvatars {
 
 impl RenderOnce for PresenceAvatars {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        if let Some(following) = &self.following
+            && !self.peers.iter().any(|peer| &peer.key == following)
+        {
+            log::error!("presence: {following} left; following none");
+        }
         let size = AvatarSize::Sm;
         let rest = self.peers.len().saturating_sub(self.max);
         let shown: Vec<AnyElement> = self
