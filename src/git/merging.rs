@@ -139,7 +139,7 @@ pub struct Conflict {
 /// Git's conflict marker width, unless `conflict-marker-size` says otherwise.
 pub const MARKER: usize = 7;
 
-/// A marker line: `size` of `mark` exactly, then a label if `labelled`.
+/// A marker line: exactly `size` of `mark`, maybe labelled.
 fn marker(line: &str, mark: char, size: usize, labelled: bool) -> bool {
     let line = line.trim_end_matches(['\n', '\r']);
     let run = line.chars().take_while(|c| *c == mark).count();
