@@ -33,7 +33,7 @@ type OnIndex = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 type OnLayout = Rc<dyn Fn(DiffLayout, &mut Window, &mut App)>;
 type OnLine = Rc<dyn Fn(Place, bool, &mut Window, &mut App)>;
 
-/// One file's changes, unified or side by side; fills its box.
+/// A file's changes, unified or side by side; fills its box.
 #[derive(IntoElement)]
 pub struct DiffViewer {
     id: ElementId,
@@ -123,7 +123,7 @@ impl DiffViewer {
         self
     }
 
-    /// Leaves the header, path, counts and layout, to the owner.
+    /// Leaves header, path, counts and layout to the owner.
     pub fn headless(mut self) -> Self {
         self.headless = true;
         self
