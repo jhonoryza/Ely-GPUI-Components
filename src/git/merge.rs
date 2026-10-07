@@ -295,7 +295,9 @@ impl RenderOnce for ConflictResolver {
         let on_take: Option<OnTake> = self.on_resolve.map(|on_resolve| {
             Rc::new(
                 move |ix: usize, take: Take, window: &mut Window, cx: &mut App| {
-                    on_resolve(resolve(&text, ix, take), window, cx)
+                    if let Some(settled) = resolve(&text, ix, take) {
+                        on_resolve(settled, window, cx)
+                    }
                 },
             ) as OnTake
         });

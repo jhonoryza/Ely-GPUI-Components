@@ -24,8 +24,8 @@ pub struct Blame {
 }
 
 /// Consecutive lines from one change, as the change's index and the lines.
-pub(crate) fn runs(owners: &[usize]) -> Vec<(usize, Range<usize>)> {
-    let mut out: Vec<(usize, Range<usize>)> = Vec::new();
+pub(crate) fn runs(owners: &[Option<usize>]) -> Vec<(Option<usize>, Range<usize>)> {
+    let mut out: Vec<(Option<usize>, Range<usize>)> = Vec::new();
     for (line, owner) in owners.iter().enumerate() {
         match out.last_mut() {
             Some((last, lines)) if last == owner => lines.end = line + 1,
@@ -69,7 +69,7 @@ type OnCommit = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 pub struct BlameView {
     id: ElementId,
     code: SharedString,
-    owners: Vec<usize>,
+    owners: Vec<Option<usize>>,
     blames: Vec<Blame>,
     current: Option<usize>,
     on_commit: Option<OnCommit>,
@@ -86,15 +86,22 @@ impl BlameView {
         let code: SharedString = code.into();
         let owners: Vec<usize> = owners.into_iter().collect();
         let blames: Vec<Blame> = blames.into_iter().collect();
-        assert_eq!(
-            owners.len(),
-            code.lines().count(),
-            "every line has an owner"
-        );
-        assert!(
-            owners.iter().all(|owner| *owner < blames.len()),
-            "every owner is a blame"
-        );
+        let lines = code.lines().count();
+        if owners.len() != lines || owners.iter().any(|owner| *owner >= blames.len()) {
+            log::error!(
+                "blame view: {} owners for {lines} lines and {} blames; lines without one draw bare",
+                owners.len(),
+                blames.len()
+            );
+        }
+        let owners: Vec<Option<usize>> = (0..lines)
+            .map(|line| {
+                owners
+                    .get(line)
+                    .copied()
+                    .filter(|owner| *owner < blames.len())
+            })
+            .collect();
         Self {
             id: id.into(),
             code,
@@ -129,7 +136,16 @@ impl RenderOnce for BlameView {
         let blocks: Vec<AnyElement> = runs(&self.owners)
             .into_iter()
             .map(|(owner, span)| {
-                let blame = &self.blames[owner];
+                let blame = owner.map(|owner| self.blames[owner].clone());
+                let Some(found) = blame.clone() else {
+                    let bare = div()
+                        .flex_none()
+                        .w_64()
+                        .border_l_2()
+                        .border_color(colors.border);
+                    return (span, bare.into_any_element(), None);
+                };
+                let blame = found;
                 let fade = 1.0 - blame.age.clamp(0.0, 1.0) * 0.8;
                 let pick = self.on_commit.clone();
                 let commit = blame.commit.clone();
@@ -186,6 +202,9 @@ impl RenderOnce for BlameView {
                                     .child(Ellipsis::new(blame.subject.clone())),
                             ),
                     );
+                (span, gutter.into_any_element(), Some(blame))
+            })
+            .map(|(span, gutter, blame)| {
                 let code = div()
                     .flex_1()
                     .min_w_0()
@@ -210,9 +229,10 @@ impl RenderOnce for BlameView {
                                     .child((line + 1).to_string()),
                             )
                             .child(StyledText::new(text).with_highlights(styles))
-                            .when(self.current == Some(line), |row| {
-                                row.child(GitBlameAnnotation::new(blame.clone()))
-                            })
+                            .when_some(
+                                blame.clone().filter(|_| self.current == Some(line)),
+                                |row, blame| row.child(GitBlameAnnotation::new(blame)),
+                            )
                     }));
                 div()
                     .flex()
@@ -239,7 +259,16 @@ mod tests {
 
     #[test]
     fn lines_from_one_change_run_together() {
-        assert_eq!(runs(&[0, 0, 1, 0, 0, 0]), [(0, 0..2), (1, 2..3), (0, 3..6)]);
+        let owned = [Some(0), Some(0), Some(1), None, None, Some(0)];
+        assert_eq!(
+            runs(&owned),
+            [
+                (Some(0), 0..2),
+                (Some(1), 2..3),
+                (None, 3..5),
+                (Some(0), 5..6)
+            ]
+        );
         assert!(runs(&[]).is_empty());
     }
 }

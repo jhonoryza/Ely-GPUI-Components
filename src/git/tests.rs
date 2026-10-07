@@ -50,3 +50,28 @@ fn a_fold_opens_from_the_keyboard(cx: &mut TestAppContext) {
     settle(cx);
     assert_eq!(view.read_with(cx, |folded, _| folded.opened.clone()), [0]);
 }
+
+/// A blame from before the file changed: an owner too few, and one past the blames.
+struct Behind;
+
+impl Render for Behind {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let blame = super::Blame {
+            commit: "a1".into(),
+            author: "Ann".into(),
+            when: "today".into(),
+            subject: "first".into(),
+            age: 0.0,
+        };
+        div().w(px(600.0)).child(
+            super::BlameView::new("blame", "one\ntwo\nthree\nfour", [0, 3, 0], [blame]).current(3),
+        )
+    }
+}
+
+#[gpui::test]
+fn a_blame_that_lags_its_code_draws_every_line(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let (_, cx) = cx.add_window_view(|_, _| Behind);
+    cx.run_until_parked();
+}

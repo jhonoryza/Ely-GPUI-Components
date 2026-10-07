@@ -33,7 +33,7 @@ Each item reads every site in its folders, fixes what the rules name, updates ca
 - [x] P16 Finance — `src/finance`
 - [x] P17 Code Editor — `src/editor`
 - [x] P18 Terminal — `src/terminal`
-- [ ] P19 Git — `src/git`
+- [x] P19 Git — `src/git`
 - [ ] P20 Debug — `src/debug`
 - [ ] P21 Documents — `src/documents`
 - [ ] P22 Collaboration — `src/collab`
@@ -84,3 +84,4 @@ One line per item: what changed, what stayed and why, review rounds.
 - Noted for later items: `chat/params.rs` and `editor/settings.rs` pass `value.abs()` to `decimals`, which asserts a positive step.
 - P17: the editor keeps every owner offset on whole characters of its text (checked on intake, carried through edits by `editor::anchors`, cleared when the whole text changes); stale selections and edit batches are dropped; a painted row whose line the text lost takes no click, drag or IME query; the sticky header reads this frame; a glob too big to compile matches nothing; a missing font advance logs. Kept: owner contracts and construction. Review: 5 rounds, passed on the fifth.
 - P18: row paints and the font advance log gpui faults; a pty side caps at what ConPTY and alacritty's pixel sizes hold; a default shell past the list keeps the one before. Kept: constant regexes, captured matches, keyed rows, non-empty shells. Review: 2 rounds.
+- P19: a blame that lags its code draws every line, bare where no owner fits; `git::resolve` returns `Option` for a conflict gone from the text. Kept: diff groups, merge regions, similar's pinned resolutions. Review: 2 rounds.

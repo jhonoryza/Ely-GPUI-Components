@@ -156,9 +156,12 @@ pub fn conflicts(text: &str) -> Vec<Conflict> {
     found
 }
 
-/// `text` with conflict `ix` settled as taken; every other byte stays.
-pub fn resolve(text: &str, ix: usize, take: Take) -> String {
-    let conflict = conflicts(text)[ix];
+/// `text` with conflict `ix` settled as taken, every other byte kept; none when `text` has no conflict `ix`.
+pub fn resolve(text: &str, ix: usize, take: Take) -> Option<String> {
+    let Some(conflict) = conflicts(text).get(ix).copied() else {
+        log::error!("no conflict {ix} to resolve in this text");
+        return None;
+    };
     let lines = text.tokenize_lines();
     let ours = lines[conflict.start + 1..conflict.middle].concat();
     let theirs = lines[conflict.middle + 1..conflict.end].concat();
@@ -168,12 +171,14 @@ pub fn resolve(text: &str, ix: usize, take: Take) -> String {
         Take::Both => ours + &theirs,
     };
     log::info!("conflict {ix} took {take:?}");
-    [
-        lines[..conflict.start].concat(),
-        kept,
-        lines[conflict.end + 1..].concat(),
-    ]
-    .concat()
+    Some(
+        [
+            lines[..conflict.start].concat(),
+            kept,
+            lines[conflict.end + 1..].concat(),
+        ]
+        .concat(),
+    )
 }
 
 #[cfg(test)]
@@ -210,7 +215,10 @@ mod tests {
         let bare = regions("a", "b", "c");
         assert_eq!(result(&bare, &[Some(Take::Both)]).0, "b\nc");
         let marked = "a\r\n<<<<<<< HEAD\r\nours\r\n=======\r\ntheirs\r\n>>>>>>> topic\r\nz";
-        assert_eq!(resolve(marked, 0, Take::Ours), "a\r\nours\r\nz");
+        assert_eq!(
+            resolve(marked, 0, Take::Ours).as_deref(),
+            Some("a\r\nours\r\nz")
+        );
     }
 
     #[test]
@@ -219,7 +227,8 @@ mod tests {
         assert_eq!(result(&changed, &[]).0, "a\rB\n");
         let held = result(&regions("a\r", "b\r", "c\r"), &[]).0;
         assert_eq!(held, "<<<<<<< ours\rb\r=======\rc\r>>>>>>> theirs\r");
-        assert_eq!(resolve(&held, 0, Take::Theirs), "c\r");
+        assert_eq!(resolve(&held, 0, Take::Theirs).as_deref(), Some("c\r"));
+        assert_eq!(resolve("plain\n", 0, Take::Ours), None, "no conflict left");
     }
 
     #[test]
@@ -239,8 +248,14 @@ mod tests {
                 end: 5
             }]
         );
-        assert_eq!(resolve(marked, 0, Take::Ours), "a\nours\nz\n");
-        assert_eq!(resolve(marked, 0, Take::Both), "a\nours\ntheirs\nz\n");
+        assert_eq!(
+            resolve(marked, 0, Take::Ours).as_deref(),
+            Some("a\nours\nz\n")
+        );
+        assert_eq!(
+            resolve(marked, 0, Take::Both).as_deref(),
+            Some("a\nours\ntheirs\nz\n")
+        );
         assert!(
             conflicts("a\n=======\nb\n").is_empty(),
             "a rule alone is no conflict"
