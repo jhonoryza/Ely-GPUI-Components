@@ -70,12 +70,19 @@ impl Render for Lists {
                     commit: "a1".into(),
                     when: "today".into(),
                 };
-                let tagged = self.heard.clone();
+                let (tagged, switched, deleted) =
+                    (self.heard.clone(), self.heard.clone(), self.heard.clone());
                 frame
                     .child(
                         BranchList::new("branches", [branch("main", true), branch("side", false)])
                             .on_pick(move |name, _, _| {
                                 pick.borrow_mut().picked.push(name.to_string())
+                            })
+                            .on_switch(move |name, _, _| {
+                                switched.borrow_mut().picked.push(format!("switch {name}"))
+                            })
+                            .on_delete(move |name, _, _| {
+                                deleted.borrow_mut().picked.push(format!("delete {name}"))
                             }),
                     )
                     .child(TagList::new("tags", [tag]).on_pick(move |name, _, _| {
@@ -205,5 +212,10 @@ fn branches_and_tags_pick_from_the_keyboard(cx: &mut TestAppContext) {
     assert!(
         picked.contains(&"side".to_string()) && picked.contains(&"v1".to_string()),
         "{picked:?}"
+    );
+    let acted = |what: &str| picked.iter().any(|said| said == what);
+    assert!(
+        acted("switch side") && acted("delete side"),
+        "row actions answer: {picked:?}"
     );
 }

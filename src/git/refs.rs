@@ -248,13 +248,24 @@ pub(super) fn listed(
                 .text_color(colors.fg_subtle)
                 .child(Ellipsis::new(detail)),
         )
-        .children(
-            trailing
-                .into_iter()
-                .map(|words| tabular(div().flex_none().text_color(colors.fg_subtle)).child(words)),
+        // Narrow, the trailing words give way before the actions.
+        .child(
+            div()
+                .flex_shrink(1.0)
+                .min_w_0()
+                .overflow_hidden()
+                .whitespace_nowrap()
+                .flex()
+                .gap_2()
+                .children(
+                    trailing
+                        .into_iter()
+                        .map(|words| tabular(div().text_color(colors.fg_subtle)).child(words)),
+                ),
         )
         .child(
             div()
+                .flex_none()
                 .flex()
                 .opacity(0.)
                 .group_hover(group, |actions| actions.opacity(1.))
