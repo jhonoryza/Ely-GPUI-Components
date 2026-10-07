@@ -7,11 +7,13 @@ use gpui::{
 
 use super::refs::{OnName, Pick, Run, action, listed};
 use crate::{
+    i18n,
     primitives::IconName,
     theme::{ActiveTheme, TextSize},
 };
 
 type OnStash = Rc<dyn Fn(usize, StashAction, &mut Window, &mut App)>;
+type OnAt = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
 /// A tag, its message if annotated, its commit, when.
 #[derive(Clone, Debug, PartialEq)]
@@ -120,6 +122,8 @@ pub struct StashList {
     id: ElementId,
     stashes: Vec<Stash>,
     on_action: Option<OnStash>,
+    selected: Option<usize>,
+    on_pick: Option<OnAt>,
 }
 
 impl StashList {
@@ -128,7 +132,21 @@ impl StashList {
             id: id.into(),
             stashes: stashes.into_iter().collect(),
             on_action: None,
+            selected: None,
+            on_pick: None,
         }
+    }
+
+    /// The stash shown as picked.
+    pub fn selected(mut self, ix: usize) -> Self {
+        self.selected = Some(ix);
+        self
+    }
+
+    /// A press on a row picks its stash.
+    pub fn on_pick(mut self, handler: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
+        self.on_pick = Some(Rc::new(handler));
+        self
     }
 
     pub fn on_action(
@@ -149,35 +167,46 @@ impl RenderOnce for StashList {
             .iter()
             .enumerate()
             .map(|(ix, stash)| {
-                let act = |key: &str, icon, words: &'static str, what: StashAction| {
-                    let run = self.on_action.clone().map(|on_action| {
-                        Rc::new(move |window: &mut Window, cx: &mut App| {
-                            on_action(ix, what, window, cx)
-                        }) as Run
-                    });
-                    action(
-                        (self.id.clone(), format!("{key}-{ix}")).into(),
-                        icon,
-                        words,
-                        run,
-                    )
-                };
+                let name = SharedString::from(format!("stash@{{{ix}}}"));
+                // Only actions the owner handles are drawn.
+                let actions: Vec<AnyElement> = [
+                    ("apply", IconName::Download, StashAction::Apply),
+                    ("pop", IconName::ArrowUp, StashAction::Pop),
+                    ("drop", IconName::Trash2, StashAction::Drop),
+                ]
+                .into_iter()
+                .filter_map(|(key, icon, what)| {
+                    let on_action = self.on_action.clone()?;
+                    let run = Rc::new(move |window: &mut Window, cx: &mut App| {
+                        on_action(ix, what, window, cx)
+                    }) as Run;
+                    let words = i18n::text(cx, &format!("git.stash.{key}"), &[]);
+                    let id = (self.id.clone(), format!("{key}-{ix}")).into();
+                    Some(action(id, icon, words, Some(run)))
+                })
+                .collect();
+                let detail = i18n::text(
+                    cx,
+                    "git.stash.on",
+                    &[("message", &stash.message), ("branch", &stash.branch)],
+                );
+                let pick = self.on_pick.clone().map(|pick| Pick {
+                    spoken: format!("{name} {detail}").into(),
+                    selected: self.selected == Some(ix),
+                    run: Rc::new(move |window: &mut Window, cx: &mut App| pick(ix, window, cx)),
+                });
                 listed(
                     (self.id.clone(), format!("stash-{ix}")).into(),
                     IconName::Archive,
                     div()
                         .font_family(theme.mono_family.clone())
                         .text_color(colors.fg)
-                        .child(format!("stash@{{{ix}}}"))
+                        .child(name)
                         .into_any_element(),
-                    format!("{} · on {}", stash.message, stash.branch).into(),
+                    detail,
                     vec![stash.when.clone()],
-                    vec![
-                        act("apply", IconName::Download, "Apply", StashAction::Apply),
-                        act("pop", IconName::ArrowUp, "Pop", StashAction::Pop),
-                        act("drop", IconName::Trash2, "Drop", StashAction::Drop),
-                    ],
-                    None,
+                    actions,
+                    pick,
                     cx,
                 )
             })

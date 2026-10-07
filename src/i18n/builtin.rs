@@ -96,6 +96,10 @@ const EN: &[(&str, &str)] = &[
     ("git.merge.accept_current", "Accept current"),
     ("git.merge.accept_incoming", "Accept incoming"),
     ("git.merge.accept_both", "Accept both"),
+    ("git.stash.apply", "Apply"),
+    ("git.stash.pop", "Pop"),
+    ("git.stash.drop", "Drop"),
+    ("git.stash.on", "{message} · on {branch}"),
 ];
 
 const ZH_CN: &[(&str, &str)] = &[
@@ -190,6 +194,10 @@ const ZH_CN: &[(&str, &str)] = &[
     ("git.merge.accept_current", "接受当前"),
     ("git.merge.accept_incoming", "接受传入"),
     ("git.merge.accept_both", "接受两者"),
+    ("git.stash.apply", "应用"),
+    ("git.stash.pop", "弹出"),
+    ("git.stash.drop", "删除"),
+    ("git.stash.on", "{message} · 在 {branch}"),
 ];
 
 /// Ely's message for `key`; English if unshipped, fails if unknown.

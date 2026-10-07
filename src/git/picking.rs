@@ -8,7 +8,8 @@ use gpui::{
 };
 
 use super::{
-    Blame, BlameView, Branch, BranchList, Commit, CommitList, FileHistory, GitTag, TagList,
+    Blame, BlameView, Branch, BranchList, Commit, CommitList, FileHistory, GitTag, Stash,
+    StashList, TagList,
 };
 use crate::{forms, primitives::FocusNext, theme::Theme};
 
@@ -88,6 +89,24 @@ impl Render for Lists {
                     .child(TagList::new("tags", [tag]).on_pick(move |name, _, _| {
                         tagged.borrow_mut().picked.push(name.to_string())
                     }))
+            }
+            "stashes" => {
+                let stash = |message: &str| Stash {
+                    message: message.to_string().into(),
+                    branch: "main".into(),
+                    when: "today".into(),
+                };
+                let acted = self.heard.clone();
+                frame
+                    .child(StashList::new("bare", [stash("unhandled")]))
+                    .child(
+                        StashList::new("stashes", [stash("one"), stash("two")])
+                            .selected(1)
+                            .on_pick(move |ix, _, _| pick.borrow_mut().picked.push(format!("{ix}")))
+                            .on_action(move |ix, what, _, _| {
+                                acted.borrow_mut().picked.push(format!("{what:?} {ix}"))
+                            }),
+                    )
             }
             _ => {
                 let blame = |commit: &str| Blame {
@@ -217,5 +236,18 @@ fn branches_and_tags_pick_from_the_keyboard(cx: &mut TestAppContext) {
     assert!(
         acted("switch side") && acted("delete side"),
         "row actions answer: {picked:?}"
+    );
+}
+
+#[gpui::test]
+fn stashes_pick_and_act_from_the_keyboard(cx: &mut TestAppContext) {
+    let (heard, cx) = shown(cx, 0, "stashes");
+    for _ in 0..4 {
+        press_first(cx);
+    }
+    assert_eq!(
+        heard.borrow().picked,
+        ["0", "Apply 0", "Pop 0", "Drop 0"],
+        "a list with no owner draws no stops"
     );
 }
