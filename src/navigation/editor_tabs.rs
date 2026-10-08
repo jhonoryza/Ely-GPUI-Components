@@ -234,10 +234,11 @@ impl RenderOnce for EditorTabs {
                             div()
                                 .absolute()
                                 .size_full()
+                                // Clear, not hidden: it still takes a press.
                                 .when(hidden, |cover| {
                                     cover
-                                        .invisible()
-                                        .group_hover(group.clone(), |style| style.visible())
+                                        .opacity(0.)
+                                        .group_hover(group.clone(), |style| style.opacity(1.))
                                 })
                                 .child(close_button),
                         )
