@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Div, ElementId, FontWeight, IntoElement,
-    ParentElement, RenderOnce, SharedString, Styled, Window, div, prelude::*,
+    ParentElement, RenderOnce, Role, SharedString, Styled, Window, div, prelude::*,
 };
 use smallvec::SmallVec;
 
@@ -159,8 +159,15 @@ impl RenderOnce for Banner {
         let theme = cx.theme();
         let colors = &theme.colors;
         let (link, close) = ((self.id.clone(), "action"), (self.id.clone(), "dismiss"));
+        // Assistive tech reads the message; danger interrupts.
+        let role = match self.severity {
+            Severity::Danger | Severity::Warning => Role::Alert,
+            Severity::Info | Severity::Success => Role::Status,
+        };
         div()
             .id(self.id)
+            .role(role)
+            .aria_label(self.message.clone())
             .relative()
             .flex()
             .items_center()
