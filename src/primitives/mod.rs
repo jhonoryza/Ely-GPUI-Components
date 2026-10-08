@@ -9,6 +9,7 @@ mod image;
 mod layer;
 mod measure;
 mod pressable;
+mod retired;
 mod severity;
 mod tooltip;
 
@@ -31,5 +32,6 @@ pub(crate) use image::{checked_ratio, framed};
 pub use layer::{Raised, raise};
 pub use measure::{IntersectionObserver, Measure};
 pub use pressable::Pressable;
+pub use retired::Retired;
 pub use severity::Severity;
 pub use tooltip::{HelpTooltip, Tooltip, TooltipTrigger};

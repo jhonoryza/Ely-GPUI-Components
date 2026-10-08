@@ -217,8 +217,48 @@ fn f6_leaves_a_field_that_keeps_tab(cx: &mut TestAppContext) {
     let after = view.read_with(cx, |kept, _| kept.after.clone());
     cx.simulate_keystrokes("f6");
     assert_eq!(view.read_with(cx, |kept, _| kept.indents), 1, "Tab stayed in the field");
-    cx.update(|window, cx| assert!(after.is_focused(window), "F6 moved on"));
+    cx.update(|window, _| assert!(after.is_focused(window), "F6 moved on"));
     cx.simulate_keystrokes("shift-f6");
     let field = view.read_with(cx, |kept, _| kept.field.clone());
     cx.update(|window, _| assert!(field.is_focused(window), "Shift-F6 came back"));
+}
+
+/// A view that paints one image until told to retire it.
+struct Painted {
+    image: Option<std::sync::Arc<gpui::RenderImage>>,
+    retired: super::Retired,
+}
+
+impl Render for Painted {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let view = cx.entity();
+        gpui::canvas(
+            |_, _, _| {},
+            move |bounds, _, window, cx| {
+                view.update(cx, |painted, _| {
+                    painted.retired.release(window);
+                    if let Some(image) = painted.image.clone() {
+                        window.paint_image(bounds, bounds, Default::default(), image, 0, false).expect("paints");
+                    }
+                })
+            },
+        )
+        .size(px(10.0))
+    }
+}
+
+#[gpui::test]
+fn a_retired_image_is_freed_at_the_next_paint(cx: &mut TestAppContext) {
+    cx.update(Theme::init);
+    let pixels = image::RgbaImage::from_pixel(2, 2, image::Rgba([1, 2, 3, 255]));
+    let image = std::sync::Arc::new(gpui::RenderImage::new([image::Frame::new(pixels)]));
+    let (view, cx) = cx.add_window_view(|_, _| Painted { image: Some(image), retired: super::Retired::default() });
+    cx.run_until_parked();
+    view.update(cx, |painted, cx| {
+        let old = painted.image.take().expect("painted");
+        painted.retired.push(old);
+        cx.notify();
+    });
+    cx.run_until_parked();
+    assert!(view.read_with(cx, |painted, _| painted.retired.is_empty()), "the old image was freed");
 }
