@@ -9,6 +9,7 @@ use crate::{
     buttons::{IconButton, SegmentedControl},
     canvas::color_well,
     forms::{ColorPalette, Slider},
+    i18n,
     primitives::IconName,
     theme::{ActiveTheme, Density, Mode, TextSize},
 };
@@ -22,10 +23,11 @@ pub enum Appearance {
 }
 
 impl Appearance {
+    /// Each with its value, catalog key and icon.
     const ALL: [(Appearance, &'static str, IconName); 3] = [
-        (Appearance::Light, "Light", IconName::Sun),
-        (Appearance::Dark, "Dark", IconName::Moon),
-        (Appearance::System, "System", IconName::Monitor),
+        (Appearance::Light, "theme.light", IconName::Sun),
+        (Appearance::Dark, "theme.dark", IconName::Moon),
+        (Appearance::System, "theme.system", IconName::Monitor),
     ];
 
     /// The mode it shows when the system is in `system`.
@@ -63,7 +65,7 @@ impl ThemeSelector {
 }
 
 impl RenderOnce for ThemeSelector {
-    fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let on_change = self.on_change;
         let (_, words, _) = Appearance::ALL
             .iter()
@@ -73,7 +75,7 @@ impl RenderOnce for ThemeSelector {
             .iter()
             .fold(
                 SegmentedControl::new(self.id, *words),
-                |control, (_, words, icon)| control.segment(*words, *words, Some(*icon)),
+                |control, (_, words, icon)| control.segment(*words, i18n::text(cx, words, &[]), Some(*icon)),
             )
             .on_change(move |value, window, cx| {
                 let (chosen, _, _) = Appearance::ALL

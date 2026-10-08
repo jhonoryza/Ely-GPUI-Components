@@ -100,6 +100,9 @@ const EN: &[(&str, &str)] = &[
     ("git.stash.pop", "Pop"),
     ("git.stash.drop", "Drop"),
     ("git.stash.on", "{message} · on {branch}"),
+    ("theme.light", "Light"),
+    ("theme.dark", "Dark"),
+    ("theme.system", "System"),
 ];
 
 const ZH_CN: &[(&str, &str)] = &[
@@ -198,6 +201,9 @@ const ZH_CN: &[(&str, &str)] = &[
     ("git.stash.pop", "弹出"),
     ("git.stash.drop", "删除"),
     ("git.stash.on", "{message} · 在 {branch}"),
+    ("theme.light", "浅色"),
+    ("theme.dark", "深色"),
+    ("theme.system", "跟随系统"),
 ];
 
 /// Ely's message for `key`; English if unshipped, fails if unknown.
