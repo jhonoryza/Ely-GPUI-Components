@@ -102,7 +102,8 @@ impl Toaster {
     pub fn push(&mut self, toast: Toast, cx: &mut Context<Self>) -> u64 {
         let id = self.next;
         self.next += 1;
-        log::info!("toast {id}: {}", toast.title);
+        // Titles may quote user content: never logged.
+        log::info!("toast {id}: {:?}", toast.severity);
         let mut live = Live {
             id,
             left: toast.stay.unwrap_or_default(),
