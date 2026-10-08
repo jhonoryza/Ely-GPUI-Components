@@ -97,7 +97,7 @@ fn the_viewer_names_each_token_with_its_value(cx: &mut TestAppContext) {
     });
     cx.run_until_parked();
     assert!(
-        shown("token-colors.fg_subtle-#94928f", cx),
+        shown("token-colors.fg_subtle-#acaaa8", cx),
         "the dark palette"
     );
     let compact = cx.update(|window, cx| {

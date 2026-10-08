@@ -159,7 +159,7 @@ pub(crate) fn color_blind_chart(mode: Mode) -> [Hsla; 8] {
             0x0240b1, 0x08a399, 0xcd8017, 0x844954, 0xa276e3, 0x184606, 0xb84f10, 0x20789d,
         ]),
         Mode::Dark => c8([
-            0x3471e3, 0x57b6b2, 0xf6a537, 0xde545a, 0x695a91, 0xc4ecb7, 0xa93d0e, 0x52dafe,
+            0x3471e3, 0x57b6b2, 0xf6a537, 0xde545a, 0x9d8dec, 0xc4ecb7, 0xffd93d, 0x52dafe,
         ]),
     }
 }
@@ -245,22 +245,23 @@ impl Palette {
     }
 
     pub fn dark(high_contrast: bool) -> Self {
+        // Soft greys, never black: the base is #252525.
         let mut palette = Self {
-            bg: c(0x131110),
-            surface: c(0x1b1917),
-            sunken: c(0x0e0d0b),
-            overlay: c(0x201f1d),
-            hover: c(0x252422),
-            active: c(0x2c2b29),
-            border: c(0x2c2b29),
-            border_strong: c(0x413f3d),
+            bg: c(0x252525),
+            surface: c(0x2c2c2c),
+            sunken: c(0x202020),
+            overlay: c(0x323232),
+            hover: c(0x383838),
+            active: c(0x3f3f3f),
+            border: c(0x3f3f3f),
+            border_strong: c(0x555555),
             fg: c(0xf3f1f0),
-            fg_muted: c(0xafadab),
-            fg_subtle: c(0x94928f),
+            fg_muted: c(0xc4c2c0),
+            fg_subtle: c(0xacaaa8),
             fg_disabled: c(0x5c5a58),
             accent: c(0xf3f1f0),
             accent_hover: c(0xd9d7d5),
-            on_accent: c(0x131110),
+            on_accent: c(0x252525),
             on_media: c(0xffffff),
             focus: c(0x69a1e8),
             link: c(0x7eb1f3),
@@ -276,9 +277,9 @@ impl Palette {
             backdrop: rgba(0x00000080).into(),
             media_backdrop: rgba(0x000000f8).into(),
             shimmer: rgba(0xffffff10).into(),
-            glass: rgba(0x131110b8).into(),
+            glass: rgba(0x252525b8).into(),
             shadow: c(0x000000),
-            tooltip_bg: c(0x373533),
+            tooltip_bg: c(0x4a4a4a),
             tooltip_fg: c(0xf3f1f0),
             paper: c(0xf3f1f0),
             ink: c(0x181613),
@@ -286,14 +287,14 @@ impl Palette {
                 0x79a7e2, 0x4eb9ad, 0xcd995c, 0xdc8a90, 0xa998dd, 0x7cb57d, 0xd9906f, 0x56b2d4,
             ]),
             ansi: c8([
-                0x2c2b29, 0xe1897f, 0x6fb880, 0xc99d4e, 0x74a7e8, 0xc38ecf, 0x35b9c0, 0xafadab,
+                0x3f3f3f, 0xe1897f, 0x6fb880, 0xc99d4e, 0x74a7e8, 0xc38ecf, 0x35b9c0, 0xafadab,
                 0x5c5a58, 0xfda297, 0x89d298, 0xe3b667, 0x8dc1ff, 0xdda7ea, 0x56d3da, 0xf3f1f0,
             ]),
             syntax: Syntax {
                 keyword: c(0xbba3e8),
                 string: c(0x8ac596),
                 number: c(0xeaab78),
-                comment: c(0x94928f),
+                comment: c(0xacaaa8),
                 function: c(0x85b6e9),
                 type_name: c(0x84c9c8),
                 constant: c(0xeda382),
