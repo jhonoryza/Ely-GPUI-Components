@@ -261,4 +261,17 @@ fn a_retired_image_is_freed_at_the_next_paint(cx: &mut TestAppContext) {
     });
     cx.run_until_parked();
     assert!(view.read_with(cx, |painted, _| painted.retired.is_empty()), "the old image was freed");
+    // One still held elsewhere waits until it is let go.
+    let pixels = image::RgbaImage::from_pixel(2, 2, image::Rgba([4, 5, 6, 255]));
+    let shared = std::sync::Arc::new(gpui::RenderImage::new([image::Frame::new(pixels)]));
+    view.update(cx, |painted, cx| {
+        painted.retired.push(shared.clone());
+        cx.notify();
+    });
+    cx.run_until_parked();
+    assert!(!view.read_with(cx, |painted, _| painted.retired.is_empty()), "a held image waits");
+    drop(shared);
+    view.update(cx, |_, cx| cx.notify());
+    cx.run_until_parked();
+    assert!(view.read_with(cx, |painted, _| painted.retired.is_empty()), "then it is freed");
 }

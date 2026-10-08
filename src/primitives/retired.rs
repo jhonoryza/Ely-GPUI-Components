@@ -14,9 +14,12 @@ impl Retired {
         self.0.push(image);
     }
 
-    /// Frees every retired image; call while painting.
+    /// Frees images no one else holds; call while painting.
     pub fn release(&mut self, window: &mut Window) {
-        for image in self.0.drain(..) {
+        // A shared image may still be drawn; it waits.
+        let (free, held): (Vec<_>, Vec<_>) = self.0.drain(..).partition(|image| Arc::strong_count(image) == 1);
+        self.0 = held;
+        for image in free {
             if let Err(error) = window.drop_image(image) {
                 log::error!("images: a retired image stayed: {error}");
             }
