@@ -5,13 +5,18 @@ use std::sync::Arc;
 use gpui::{RenderImage, Window};
 
 /// Images to free; GPUI keeps each painted image until told.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Retired(Vec<Arc<RenderImage>>);
 
 impl Retired {
     /// An image no longer drawn; freed at the next paint.
     pub fn push(&mut self, image: Arc<RenderImage>) {
         self.0.push(image);
+    }
+
+    /// Takes over another owner's waiting images.
+    pub fn append(&mut self, mut other: Retired) {
+        self.0.append(&mut other.0);
     }
 
     /// Frees images no one else holds; call while painting.
