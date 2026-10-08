@@ -1,8 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, IntoElement, ParentElement, RenderOnce, SharedString,
-    Styled, Window, div,
+    AnyElement, App, ElementId, FontWeight, InteractiveElement as _, IntoElement, ParentElement,
+    RenderOnce, Role, SharedString, StatefulInteractiveElement as _, Styled, Window, div,
+    prelude::FluentBuilder as _,
 };
 
 use crate::{
@@ -179,7 +180,15 @@ impl SettingsRow {
 impl RenderOnce for SettingsRow {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
+        // The row names its control for assistive tech.
+        let id = SharedString::from(format!("settings-row-{}", self.title));
         div()
+            .id(id)
+            .role(Role::Group)
+            .aria_label(self.title.clone())
+            .when_some(self.description.clone(), |row, text| {
+                row.aria_description(text)
+            })
             .flex()
             .flex_wrap()
             .items_center()
