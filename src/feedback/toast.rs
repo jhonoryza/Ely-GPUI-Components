@@ -3,7 +3,7 @@ use std::{rc::Rc, time::Duration};
 use gpui::{
     Anchor, Animation, AnimationExt, AnyElement, App, ClickEvent, Context, ElementId, Entity,
     FontWeight, HoverListenerMode, InteractiveElement, IntoElement, ParentElement, Pixels,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Task, Window, anchored, canvas,
+    RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled, Task, Window, anchored, canvas,
     div, point, prelude::*, relative,
 };
 use web_time::Instant;
@@ -275,8 +275,16 @@ fn card(
     };
     let theme = cx.theme();
     let colors = &theme.colors;
+    // Read aloud: alerts interrupt, other notes wait their turn.
+    let role = match toast.severity {
+        Some(Severity::Danger | Severity::Warning) => Role::Alert,
+        _ => Role::Status,
+    };
     let card = div()
         .id(key.clone())
+        .role(role)
+        .aria_label(toast.title.clone())
+        .when_some(toast.body.clone(), |card, body| card.aria_description(body))
         .relative()
         .flex()
         .items_center()
