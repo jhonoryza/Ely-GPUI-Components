@@ -171,3 +171,54 @@ fn a_deeper_context_keeps_its_own_tab_whatever_init_ran_last(cx: &mut TestAppCon
     cx.simulate_keystrokes("tab");
     assert_eq!(view.read_with(cx, |field, _| field.indents), 1);
 }
+
+/// A field that keeps Tab, and a stop after it.
+struct Kept {
+    root: FocusHandle,
+    field: FocusHandle,
+    after: FocusHandle,
+    indents: usize,
+}
+
+impl Render for Kept {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let view = cx.entity();
+        FocusScope::new(&self.root)
+            .root()
+            .size_full()
+            .child(
+                div()
+                    .key_context("HostField")
+                    .track_focus(&self.field)
+                    .size(px(100.0))
+                    .on_action(move |_: &Indent, _, cx| view.update(cx, |kept, _| kept.indents += 1)),
+            )
+            .child(div().track_focus(&self.after).size(px(100.0)))
+    }
+}
+
+#[gpui::test]
+fn f6_leaves_a_field_that_keeps_tab(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        cx.bind_keys([KeyBinding::new("tab", Indent, Some("HostField"))]);
+        crate::init_for_tests(cx);
+    });
+    let (view, cx) = cx.add_window_view(|_, cx| Kept {
+        root: cx.focus_handle(),
+        field: cx.focus_handle().tab_stop(true),
+        after: cx.focus_handle().tab_stop(true),
+        indents: 0,
+    });
+    cx.update(|window, cx| {
+        let field = view.read(cx).field.clone();
+        window.focus(&field, cx);
+    });
+    cx.simulate_keystrokes("tab");
+    let after = view.read_with(cx, |kept, _| kept.after.clone());
+    cx.simulate_keystrokes("f6");
+    assert_eq!(view.read_with(cx, |kept, _| kept.indents), 1, "Tab stayed in the field");
+    cx.update(|window, cx| assert!(after.is_focused(window), "F6 moved on"));
+    cx.simulate_keystrokes("shift-f6");
+    let field = view.read_with(cx, |kept, _| kept.field.clone());
+    cx.update(|window, _| assert!(field.is_focused(window), "Shift-F6 came back"));
+}

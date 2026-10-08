@@ -79,6 +79,9 @@ fn setup(cx: &mut App) {
     cx.bind_keys([
         KeyBinding::new("tab", FocusNext, Some(FOCUS_CONTEXT)),
         KeyBinding::new("shift-tab", FocusPrev, Some(FOCUS_CONTEXT)),
+        // Out of a field that keeps Tab, such as a document.
+        KeyBinding::new("f6", FocusNext, Some(FOCUS_CONTEXT)),
+        KeyBinding::new("shift-f6", FocusPrev, Some(FOCUS_CONTEXT)),
     ]);
     forms::bind_keys(cx);
     editor::bind_keys(cx);
