@@ -31,6 +31,15 @@ impl Retired {
         }
     }
 
+    /// Frees every image: one copy per window that drew it.
+    pub fn release_all(&mut self, window: &mut Window) {
+        for image in self.0.drain(..) {
+            if let Err(error) = window.drop_image(image) {
+                log::error!("images: a retired image stayed: {error}");
+            }
+        }
+    }
+
     /// Whether nothing waits to be freed.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
