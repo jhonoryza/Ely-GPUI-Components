@@ -182,18 +182,30 @@ impl RenderOnce for Banner {
             .text_size(theme.text_size(TextSize::Base))
             .text_color(colors.fg)
             .child(
-                Icon::new(self.severity.icon())
-                    .size(IconSize::Sm)
-                    .color(self.severity.color(colors)),
+                div().flex_none().child(
+                    Icon::new(self.severity.icon())
+                        .size(IconSize::Sm)
+                        .color(self.severity.color(colors)),
+                ),
             )
-            .child(self.message)
-            .when_some(self.action, |banner, (label, run)| {
-                banner.child(
-                    Button::new(link, label)
-                        .variant(ButtonVariant::Link)
-                        .on_click(move |_, window, cx| run(window, cx)),
-                )
-            })
+            // Narrow, the message wraps and the action goes below it.
+            .child(
+                div()
+                    .flex()
+                    .flex_wrap()
+                    .flex_shrink_1()
+                    .min_w_0()
+                    .items_center()
+                    .gap_x_2()
+                    .child(div().min_w_0().child(self.message))
+                    .when_some(self.action, |text, (label, run)| {
+                        text.child(
+                            Button::new(link, label)
+                                .variant(ButtonVariant::Link)
+                                .on_click(move |_, window, cx| run(window, cx)),
+                        )
+                    }),
+            )
             .when_some(self.on_dismiss, |banner, run| {
                 banner.child(
                     div()

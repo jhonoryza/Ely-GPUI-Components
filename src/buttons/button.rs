@@ -9,7 +9,10 @@ use crate::{
     motion::Spinner,
     primitives::{FocusRing, Icon, IconName},
     theme::{ActiveTheme, ControlSize, IconSize, Mix, Palette, Platform, Radius, TextSize},
-    typography::keys::{keystroke, keystroke_labels},
+    typography::{
+        Ellipsis,
+        keys::{keystroke, keystroke_labels},
+    },
 };
 
 pub(crate) type ClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -237,10 +240,13 @@ impl RenderOnce for Button {
         let name = self.label.clone();
         let parts = div()
             .flex()
+            .min_w_0()
             .items_center()
             .gap_1p5()
             .when_some(self.icon, |el, name| el.child(icon(name)))
-            .when(!self.label.is_empty(), |el| el.child(self.label))
+            .when(!self.label.is_empty(), |el| {
+                el.child(div().min_w_0().child(Ellipsis::new(self.label)))
+            })
             .when_some(self.trailing_icon, |el, name| el.child(icon(name)))
             .when_some(hint, |el, hint| {
                 el.child(
@@ -257,7 +263,10 @@ impl RenderOnce for Button {
             .role(Role::Button)
             .when(!name.is_empty(), |el| el.aria_label(name))
             .flex()
-            .flex_none()
+            // Never grows; shrinks only when a row cannot wrap.
+            .flex_grow_0()
+            .flex_shrink_1()
+            .min_w_0()
             .items_center()
             .justify_center()
             .gap_1p5()

@@ -19,6 +19,7 @@ pub struct Switch {
     id: ElementId,
     on: bool,
     label: Option<SharedString>,
+    name: Option<SharedString>,
     disabled: bool,
     on_change: Option<OnFlag>,
 }
@@ -29,6 +30,7 @@ impl Switch {
             id: id.into(),
             on,
             label: None,
+            name: None,
             disabled: false,
             on_change: None,
         }
@@ -36,6 +38,12 @@ impl Switch {
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
+        self
+    }
+
+    /// Names it for assistive technology, drawing nothing.
+    pub fn name(mut self, name: impl Into<SharedString>) -> Self {
+        self.name = Some(name.into());
         self
     }
 
@@ -121,7 +129,7 @@ impl RenderOnce for Switch {
             .id(self.id)
             .role(Role::Switch)
             .aria_toggled(self.on.into())
-            .when_some(self.label.clone(), |row, label| row.aria_label(label))
+            .when_some(self.label.clone().or(self.name), |row, label| row.aria_label(label))
             .when(self.disabled, |row| {
                 row.aria_description(i18n::text(cx, "state.unavailable", &[]))
             })

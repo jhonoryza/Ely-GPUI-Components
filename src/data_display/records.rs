@@ -229,7 +229,7 @@ impl RenderOnce for PropertyGrid {
                                             .child(
                                                 div()
                                                     .flex_none()
-                                                    .w(theme.label_width() * 0.75)
+                                                    .w(theme.label_width() * 0.65)
                                                     .text_color(colors.fg_muted)
                                                     .child(name),
                                             )

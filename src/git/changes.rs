@@ -433,9 +433,10 @@ impl RenderOnce for CommitInput {
             .child(
                 div()
                     .flex()
+                    .flex_wrap()
                     .items_center()
                     .gap_2()
-                    .child(div().flex_1().child(amend))
+                    .child(div().flex_1().min_w_0().child(amend))
                     .child(
                         Button::new((self.id.clone(), "commit"), label)
                             .variant(ButtonVariant::Primary)
