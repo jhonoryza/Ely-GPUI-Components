@@ -8,8 +8,9 @@ use gpui::{
 
 use crate::{
     forms::{Choice, Pick, step},
+    layout::{measure_width, text_width},
     motion::{self, Axis, Marker, glide, measure_item, measure_origin, slide},
-    primitives::{Icon, tab_stop},
+    primitives::{Icon, Tooltip, tab_stop},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
 };
 
@@ -120,6 +121,14 @@ impl RenderOnce for Tabs {
                 }
             })
         };
+        // Last frame's strip width decides icons only.
+        let strip_width =
+            window.use_keyed_state((self.id.clone(), "strip-width"), cx, |_, _| Pixels::ZERO);
+        let shown = *strip_width.read(cx);
+        let compact = axis == Axis::Horizontal
+            && tabs.iter().all(|tab| tab.icon.is_some())
+            && shown > Pixels::ZERO
+            && shown < natural(&tabs, window, cx);
         let theme = cx.theme();
         let colors = &theme.colors;
         let (thickness, duration) = (theme.tab_indicator(), motion::duration(motion::SLOW, cx));
@@ -209,8 +218,9 @@ impl RenderOnce for Tabs {
                     .when_some(tab.icon, |item, icon| {
                         item.child(Icon::new(icon).size(IconSize::Sm).color(fg))
                     })
-                    .child(tab.label.clone())
-                    .when_some(tab.note.clone(), |item, note| {
+                    .when(compact, |item| item.tooltip(Tooltip::text(tab.label.clone())))
+                    .when(!compact, |item| item.child(tab.label.clone()))
+                    .when_some(tab.note.clone().filter(|_| !compact), |item, note| {
                         item.child(div().text_color(colors.fg_subtle).child(note))
                     })
                     .child(measure_item(state.clone(), ix, axis))
@@ -258,6 +268,7 @@ impl RenderOnce for Tabs {
                     key_pick(to, window, cx);
                 }
             })
+            .child(measure_width(strip_width))
             .child(measure_origin(state, axis))
             .children(indicator)
             .children(items);
@@ -276,4 +287,19 @@ impl RenderOnce for Tabs {
             TabPlacement::Left => frame.child(strip).children(panel),
         }
     }
+}
+
+/// Every tab's icon, label and note in full: the width that cuts none.
+fn natural(tabs: &[Choice], window: &Window, cx: &App) -> Pixels {
+    let theme = cx.theme();
+    let rem = window.rem_size();
+    let pad = gpui::rems(0.75).to_pixels(rem) * 2.0 + gpui::px(2.0);
+    let glyph = theme.icon_size(IconSize::Sm).to_pixels(rem) + gpui::rems(0.375).to_pixels(rem);
+    let gap = gpui::rems(0.25).to_pixels(rem);
+    tabs.iter().fold(Pixels::ZERO, |sum, tab| {
+        let text = |text: &SharedString| text_width(text, TextSize::Sm, FontWeight::MEDIUM, window, cx);
+        let note = tab.note.as_ref().map_or(Pixels::ZERO, |note| text(note) + gpui::rems(0.375).to_pixels(rem));
+        let icon = if tab.icon.is_some() { glyph } else { Pixels::ZERO };
+        sum + pad + icon + text(&tab.label) + note + gap
+    })
 }

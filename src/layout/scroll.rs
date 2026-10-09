@@ -227,6 +227,7 @@ pub struct ScrollArea {
     id: ElementId,
     base: Div,
     shadows: bool,
+    vertical: bool,
     body: SmallVec<[AnyElement; 2]>,
 }
 
@@ -236,6 +237,7 @@ impl ScrollArea {
             id: id.into(),
             base: div(),
             shadows: false,
+            vertical: false,
             body: SmallVec::new(),
         }
     }
@@ -243,6 +245,12 @@ impl ScrollArea {
     /// Soft edges where content continues.
     pub fn shadows(mut self) -> Self {
         self.shadows = true;
+        self
+    }
+
+    /// Scrolls down only; content keeps the area's width.
+    pub fn vertical(mut self) -> Self {
+        self.vertical = true;
         self
     }
 }
@@ -300,12 +308,21 @@ impl RenderOnce for ScrollArea {
                 div()
                     .id("scroll-body")
                     .size_full()
-                    .overflow_scroll()
+                    .when(self.vertical, |body| body.overflow_y_scroll().overflow_x_hidden())
+                    .when(!self.vertical, |body| body.overflow_scroll())
                     .track_scroll(&handle)
-                    .children(self.body),
+                    .map(|body| match self.vertical {
+                        // Children fill and never widen, so rows wrap.
+                        true => body.flex().flex_col().children(
+                            self.body.into_iter().map(|child| div().w_full().min_w_0().child(child)),
+                        ),
+                        false => body.children(self.body),
+                    }),
             )
             .when(self.shadows, |area| area.child(ScrollShadow::new(&handle)))
             .child(Scrollbar::new("scrollbar-y", &handle, Axis::Vertical).presence(presence))
-            .child(Scrollbar::new("scrollbar-x", &handle, Axis::Horizontal).presence(presence))
+            .when(!self.vertical, |area| {
+                area.child(Scrollbar::new("scrollbar-x", &handle, Axis::Horizontal).presence(presence))
+            })
     }
 }

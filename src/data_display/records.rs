@@ -215,11 +215,15 @@ impl RenderOnce for PropertyGrid {
                                 div()
                                     .pb_1()
                                     .children(rows.into_iter().map(|(name, editor)| {
+                                        // Too narrow for both: the editor goes below.
                                         div()
                                             .flex()
+                                            .flex_wrap()
                                             .items_center()
-                                            .gap_3()
+                                            .gap_x_3()
+                                            .gap_y_1()
                                             .min_h(row_height)
+                                            .py_0p5()
                                             .pl_6()
                                             .pr_2()
                                             .child(
@@ -229,7 +233,12 @@ impl RenderOnce for PropertyGrid {
                                                     .text_color(colors.fg_muted)
                                                     .child(name),
                                             )
-                                            .child(div().flex_1().min_w_0().child(editor))
+                                            .child(
+                                                div()
+                                                    .flex_1()
+                                                    .min_w(theme.label_width() * 0.85)
+                                                    .child(editor),
+                                            )
                                     })),
                             ),
                         )

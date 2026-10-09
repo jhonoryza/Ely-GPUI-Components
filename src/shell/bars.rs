@@ -6,6 +6,7 @@ use gpui::{
 use smallvec::SmallVec;
 
 use crate::{
+    typography::Ellipsis,
     primitives::{Icon, IconName, Tooltip},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
 };
@@ -143,7 +144,8 @@ impl Styled for StatusBar {
 impl RenderOnce for StatusBar {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
-        let side = || div().flex().items_center().gap_0p5().h_full();
+        // Narrow, both sides shrink and labels end in an ellipsis.
+        let side = || div().flex().items_center().gap_0p5().h_full().min_w_0().overflow_hidden();
         self.base
             .flex()
             .flex_none()
@@ -156,8 +158,9 @@ impl RenderOnce for StatusBar {
             .border_color(theme.colors.border)
             .text_size(theme.text_size(TextSize::Xs))
             .text_color(theme.colors.fg_muted)
-            .child(side().children(self.left))
-            .child(side().children(self.right))
+            .gap_2()
+            .child(side().flex_shrink_1().children(self.left))
+            .child(side().flex_shrink_1().justify_end().children(self.right))
     }
 }
 
@@ -228,6 +231,8 @@ impl RenderOnce for StatusBarItem {
         div()
             .id(self.id)
             .flex()
+            .flex_shrink_1()
+            .min_w_0()
             .items_center()
             .gap_1()
             .h_full()
@@ -241,7 +246,9 @@ impl RenderOnce for StatusBarItem {
                         .color(theme.colors.fg_muted),
                 )
             })
-            .when_some(self.label, |item, label| item.child(label))
+            .when_some(self.label, |item, label| {
+                item.child(div().min_w_0().child(Ellipsis::new(label)))
+            })
             .when_some(self.tooltip, |item, text| item.tooltip(Tooltip::text(text)))
             .when_some(self.on_click, |item, handler| {
                 let item = item.role(Role::Button);

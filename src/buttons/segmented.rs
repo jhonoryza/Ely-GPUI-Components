@@ -2,22 +2,23 @@ use std::rc::Rc;
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, FocusHandle, FontWeight,
-    InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, Role, ScrollHandle,
-    SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce, Role,
+    ScrollHandle, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*, px,
+    rems,
 };
 
 use super::button::label_size;
 use crate::{
-    layout::{on_axis, reveal_when_focused},
+    layout::{measure_width, on_axis, reveal_when_focused, text_width},
     motion::{self, Axis, Marker, glide, measure_item, measure_origin, slide},
-    primitives::{FocusRing, Icon, IconName, tab_stop},
+    primitives::{FocusRing, Icon, IconName, Tooltip, tab_stop},
     theme::{ActiveTheme, ControlSize, Elevation, Radius},
     typography::Ellipsis,
 };
 
 type OnChange = Rc<dyn Fn(&SharedString, &mut Window, &mut App)>;
 
-/// Mutually exclusive segments. A thumb slides to the chosen one. Narrow, the segments give way and their labels end in an ellipsis, down to twice a control's height each; narrower still, the strip scrolls sideways and a focused segment comes into view.
+/// Mutually exclusive segments. A thumb slides to the chosen one. Too narrow for every label in full, segments that all have icons show only their icons, each label a tooltip; otherwise labels end in an ellipsis, down to twice a control's height each. Narrower still, the strip scrolls sideways and a focused segment comes into view.
 #[derive(IntoElement)]
 pub struct SegmentedControl {
     id: ElementId,
@@ -94,10 +95,17 @@ impl RenderOnce for SegmentedControl {
                 (focus, reveal.into_any_element())
             })
             .collect();
+        // Last frame's strip width decides icons only.
+        let strip = window.use_keyed_state((self.id.clone(), "strip-width"), cx, |_, _| Pixels::ZERO);
+        let shown = *strip.read(cx);
+        let compact = self.segments.iter().all(|(_, _, icon)| icon.is_some())
+            && shown > Pixels::ZERO
+            && shown < natural(&self.segments, self.size, window, cx);
         let theme = cx.theme();
         let colors = &theme.colors;
         let (text, icon_size) = label_size(self.size);
-        let (least, count) = (theme.control_height(self.size) * 2.0, values.len());
+        let each = if compact { 1.0 } else { 2.0 };
+        let (least, count) = (theme.control_height(self.size) * each, values.len());
         let duration = motion::duration(motion::SLOW, cx);
         let thumb = marker.map(
             |Marker {
@@ -181,7 +189,8 @@ impl RenderOnce for SegmentedControl {
                     .when_some(icon, |segment, icon| {
                         segment.child(Icon::new(icon).size(icon_size).color(fg))
                     })
-                    .when(!label.is_empty(), |segment| {
+                    .when(compact, |segment| segment.tooltip(Tooltip::text(label.clone())))
+                    .when(!label.is_empty() && !compact, |segment| {
                         segment.child(
                             div()
                                 .min_w_0()
@@ -221,6 +230,26 @@ impl RenderOnce for SegmentedControl {
                 .border_1()
                 .border_color(colors.border),
         )
+        .relative()
+        .child(measure_width(strip))
         .child(control)
     }
+}
+
+/// Every label and icon in full, with padding: the width that cuts none.
+fn natural(
+    segments: &[(SharedString, SharedString, Option<IconName>)],
+    size: ControlSize,
+    window: &Window,
+    cx: &App,
+) -> Pixels {
+    let theme = cx.theme();
+    let rem = window.rem_size();
+    let (text, icon) = label_size(size);
+    let pad = theme.control_padding(size).to_pixels(rem) * 2.0 + px(2.0);
+    let glyph = theme.icon_size(icon).to_pixels(rem) + rems(0.375).to_pixels(rem);
+    segments.iter().fold(px(6.0), |sum, (_, label, icon)| {
+        let width = text_width(label, text, FontWeight::SEMIBOLD, window, cx);
+        sum + pad + width + if icon.is_some() { glyph } else { Pixels::ZERO }
+    })
 }
