@@ -11,8 +11,8 @@ mod view;
 use std::{collections::HashMap, rc::Rc};
 
 use gpui::{
-    App, AppContext as _, Context, Entity, EventEmitter, Focusable, Global, SharedString,
-    Subscription, Window,
+    App, AppContext as _, Context, Entity, EntityId, EventEmitter, Focusable, Global, ScrollHandle,
+    SharedString, Subscription, Window,
 };
 
 pub use kind::{Align, BlockKind, Media};
@@ -71,7 +71,7 @@ struct Snapshot {
     caret: Option<(u64, usize, std::ops::Range<usize>)>,
 }
 
-/// A document of blocks, Notion-like: prose, lists and to-dos, quotes and callouts, toggles, code, math, diagrams, dividers, tables, media, columns and synced blocks. Markdown at a paragraph's start changes its kind; `/` offers every kind; `@` and `:` suggest people and emoji; blocks drag by their handle. Undo covers text and structure alike.
+/// A document of blocks, Notion-like, that fills its box and scrolls, keeping the caret in view: prose, lists and to-dos, quotes and callouts, toggles, code, math, diagrams, dividers, tables, media, columns and synced blocks. Markdown at a paragraph's start changes its kind; `/` offers every kind; `@` and `:` suggest people and emoji; blocks drag by their handle. Undo covers text and structure alike.
 pub struct BlockEditor {
     pub(crate) blocks: Vec<Block>,
     next: u64,
@@ -83,6 +83,9 @@ pub struct BlockEditor {
     typed_from: Option<(u64, usize, std::ops::Range<usize>)>,
     pub(crate) people: Vec<SharedString>,
     pub(crate) diagram: Option<RenderDiagram>,
+    scroll: ScrollHandle,
+    /// The caret last brought into view: field, selection and length.
+    revealed: Option<(EntityId, std::ops::Range<usize>, usize)>,
     _synced: Subscription,
 }
 
@@ -103,6 +106,8 @@ impl BlockEditor {
             typed_from: None,
             people: Vec::new(),
             diagram: None,
+            scroll: ScrollHandle::new(),
+            revealed: None,
             _synced: synced,
         };
         for data in blocks {

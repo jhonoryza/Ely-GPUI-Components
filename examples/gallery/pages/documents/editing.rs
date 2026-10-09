@@ -202,7 +202,10 @@ pub fn editing(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 "Blocks like a notebook's. Hover one for its handle: drag it to move the block, press it to turn, copy or delete it. / on an empty line lists every kind, and an empty line says so. Undo covers text and blocks alike.",
                 cx,
             )
-            .child(probe("doc-blocks", div().w(px(760.)).child(notes))),
+            .child(probe(
+                "doc-blocks",
+                div().w(px(760.)).h(px(360.)).child(notes),
+            )),
         )
         .child(
             section(
@@ -210,7 +213,7 @@ pub fn editing(window: &mut Window, cx: &mut App) -> impl IntoElement + use<> {
                 "Code colored as code, math set as it is typed, diagrams the app draws from their source, dividers, tables that grow and merge cells, pictures to resize and align, pages to open, columns, and synced copies that change together.",
                 cx,
             )
-            .child(div().w(px(760.)).child(kinds)),
+            .child(div().w(px(760.)).h(px(560.)).child(kinds)),
         )
         .child(
             section(

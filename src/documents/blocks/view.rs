@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, Context, ElementId, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, Rems, Render, SharedString, Styled, Window, div, prelude::*,
+    AnyElement, App, Axis, Context, ElementId, InteractiveElement, IntoElement, MouseButton,
+    ParentElement, Rems, Render, SharedString, Styled, Window, canvas, div, prelude::*,
 };
 
 use super::{Block, BlockData, BlockEditor, BlockKind, matching};
@@ -11,6 +11,7 @@ use crate::{
     documents::suggest::{Offer, offers},
     forms::replace_trigger,
     forms::{Backspace, Choice, Down, Enter, Pick, Redo, Submit, Undo, Up},
+    layout::{ScrollArea, bring_into_view},
     menus::{Menu, MenuItem, OverflowMenu},
     motion::Reorder,
     primitives::IconName,
@@ -141,6 +142,34 @@ impl BlockEditor {
             .into_any_element()
     }
 
+    /// Scrolls the focused caret into view once each time it moves; a wheel moves freely past a still one.
+    fn reveal_caret(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some((key, ix)) = self.focused(window, cx) else {
+            self.revealed = None;
+            return;
+        };
+        let Some(block) = self.index(key).map(|at| &self.blocks[at]) else {
+            return;
+        };
+        let field = block.fields[ix].read(cx);
+        let at = (
+            block.fields[ix].entity_id(),
+            field.selection(),
+            field.text().len(),
+        );
+        if self.revealed.as_ref() == Some(&at) {
+            return;
+        }
+        let Some(caret) = field.caret_bounds() else {
+            return;
+        };
+        self.revealed = Some(at);
+        if bring_into_view(&self.scroll, caret, Axis::Vertical) {
+            log::debug!("block editor: the caret came into view");
+            window.request_animation_frame();
+        }
+    }
+
     /// The handle's menu: turn into another kind, duplicate or delete.
     fn menu(&self, key: u64, cx: &mut Context<Self>) -> Menu {
         let entity = cx.entity();
@@ -255,9 +284,13 @@ impl Render for BlockEditor {
             }),
             |list, (key, row)| list.row(key, row),
         );
-        let start = cx.entity();
-        div()
-            .id(id.clone())
+        let (start, editor) = (cx.entity(), cx.entity());
+        let caret = canvas(
+            move |_, window, cx| editor.update(cx, |editor, cx| editor.reveal_caret(window, cx)),
+            |_, _, _, _| {},
+        )
+        .absolute();
+        let column = div()
             .flex()
             .flex_col()
             .capture_action(cx.listener(|editor, _: &Undo, window, cx| {
@@ -271,7 +304,7 @@ impl Render for BlockEditor {
             .child(list)
             .child(
                 div()
-                    .id((id, "end"))
+                    .id((id.clone(), "end"))
                     .min_h_8()
                     .cursor_text()
                     .text_color(colors.fg_subtle)
@@ -289,5 +322,10 @@ impl Render for BlockEditor {
                         });
                     }),
             )
+            .child(caret);
+        ScrollArea::new(id)
+            .size_full()
+            .track_scroll(&self.scroll)
+            .child(column)
     }
 }

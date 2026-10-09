@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use gpui::{
     AnyElement, App, AppContext, Axis, Bounds, Context, InteractiveElement, IntoElement, Modifiers,
-    MouseButton, ParentElement, Pixels, Point, Render, Styled, TestAppContext, VisualTestContext,
-    Window, div, point, px,
+    MouseButton, ParentElement, Pixels, Point, Render, StatefulInteractiveElement, Styled,
+    TestAppContext, VisualTestContext, Window, div, point, px,
 };
 
 use super::{Drawer, PaneGroup, SplitPane};
@@ -253,4 +253,51 @@ fn invalid_sizes_after_a_drag_split_evenly(cx: &mut TestAppContext) {
     let first = cx.debug_bounds("first").expect("first").size.width;
     let second = cx.debug_bounds("second").expect("second").size.width;
     assert_eq!(first, second);
+}
+
+/// A ScrollArea of `inner` content, 100px tall, in a page that scrolls.
+struct Nested(Pixels, gpui::ScrollHandle);
+
+impl Render for Nested {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .id("page")
+            .size_full()
+            .overflow_y_scroll()
+            .track_scroll(&self.1)
+            .child(
+                super::ScrollArea::new("area")
+                    .h(px(100.0))
+                    .child(div().h(self.0)),
+            )
+            .child(div().h(px(2000.0)))
+    }
+}
+
+fn wheel_page(inner: Pixels, cx: &mut TestAppContext) -> Pixels {
+    cx.update(Theme::init);
+    let page = gpui::ScrollHandle::new();
+    let (_, cx) = cx.add_window_view({
+        let page = page.clone();
+        move |_, _| Nested(inner, page)
+    });
+    cx.run_until_parked();
+    cx.simulate_event(gpui::ScrollWheelEvent {
+        position: point(px(50.0), px(50.0)),
+        delta: gpui::ScrollDelta::Pixels(point(px(0.0), px(-40.0))),
+        modifiers: Modifiers::none(),
+        touch_phase: gpui::TouchPhase::Moved,
+    });
+    cx.run_until_parked();
+    page.offset().y
+}
+
+#[gpui::test]
+fn a_scroll_area_keeps_a_wheel_it_can_use(cx: &mut TestAppContext) {
+    assert_eq!(wheel_page(px(500.0), cx), px(0.0));
+}
+
+#[gpui::test]
+fn a_scroll_area_with_no_room_passes_the_wheel_on(cx: &mut TestAppContext) {
+    assert_eq!(wheel_page(px(50.0), cx), px(-40.0));
 }

@@ -182,7 +182,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A shell in the gallery starts without startup files and with a fixed prompt, so captures show no user or host.
 - gpui has no `(ElementId, usize)` id. A child id names its index: `(self.id.clone(), format!("row-{ix}"))`.
 - Clippy's `single_range_in_vec_init` rejects `[a..b]` and `vec![a..b]`; bind the range first.
-- A component built on `lists::Tree` fills its box; the host gives it a height. A fixed-width column beside a `flex_1` one takes `flex_none`, or it shrinks.
+- A component built on `lists::Tree` fills its box; the host gives it a height. So does `documents::BlockEditor`, which scrolls in a `ScrollArea` through its own handle (`ScrollArea::track_scroll`) and brings the caret into view each time it moves, not each frame, so a wheel moves past a still caret. A fixed-width column beside a `flex_1` one takes `flex_none`, or it shrinks.
 - Editor rows read their text through `CodeEditor::row_text`: a multi-line ghost cuts its line, and the rest follows the ghost's last line.
 - gpui clears `debug_bounds` each frame: a test sees an element leave as well as appear.
 - Time reads `web_time::Instant`: std's compiles for wasm32 and panics in the browser. `scripts/check.sh` refuses std's in `src` and the gallery.
@@ -202,7 +202,7 @@ Ely GPUI Component. A component library for GPUI, in light and dark.
 - A header that holds a name beside counts and actions wraps: `flex_wrap`, the name `flex_1` with `min_w(label_width)`, the rest one `flex_none` group that drops below.
 - Every header, row and strip works at 280px: a name keeps its minimum width, the rest wraps below or scrolls, and nothing draws past its box.
 - gpui takes a scroll box's reach from its direct children's bounds, and a block child stretches to the box. Content that scrolls sideways sets its least width on that child (`tables::body::least`).
-- gpui turns a wheel along the other axis onto a box that scrolls one way, and the page around it scrolls too. A box inside a scrolling page keeps its wheel to its axis with `layout::on_axis`, and so does the page.
+- gpui turns a wheel along the other axis onto a box that scrolls one way, and the page around it scrolls too. A box inside a scrolling page keeps its wheel to its axis with `layout::on_axis`, and so does the page. gpui also hands a wheel to every scroll box under the pointer, so a `ScrollArea` stops a wheel along an axis it has room on and passes one it cannot use, and a floating option list occludes (`forms::options::Popup`).
 - The focus color belongs to the focus ring. A chosen or shown item takes accent, as `forms::picks` and `lists::ListItem` do.
 - A box that shows a host's picture takes the picture's shape from the host (`ratio`), so nothing is cropped and a point given as a share lands on the picture. A focusable one keeps its focus border on an outer box, so the picture keeps that shape exactly (`media::ImageCropper`).
 - A default only the component can work out, such as a crop fitted to a picture it decodes, reaches the owner once through `window.defer` after render (`media::ImageUpload`).

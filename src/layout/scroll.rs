@@ -228,6 +228,7 @@ pub struct ScrollArea {
     base: Div,
     shadows: bool,
     vertical: bool,
+    handle: Option<ScrollHandle>,
     body: SmallVec<[AnyElement; 2]>,
 }
 
@@ -238,8 +239,15 @@ impl ScrollArea {
             base: div(),
             shadows: false,
             vertical: false,
+            handle: None,
             body: SmallVec::new(),
         }
+    }
+
+    /// Scrolls through the owner's handle, so the owner can move it.
+    pub fn track_scroll(mut self, handle: &ScrollHandle) -> Self {
+        self.handle = Some(handle.clone());
+        self
     }
 
     /// Soft edges where content continues.
@@ -267,8 +275,13 @@ impl ParentElement for ScrollArea {
     }
 }
 
-fn track_activity(state: &Entity<Activity>, window: &mut Window, cx: &mut App) -> f32 {
-    let offset = state.read(cx).handle.offset();
+fn track_activity(
+    state: &Entity<Activity>,
+    handle: &ScrollHandle,
+    window: &mut Window,
+    cx: &mut App,
+) -> f32 {
+    let offset = handle.offset();
     if state.read(cx).last != offset {
         state.update(cx, |activity, _| {
             activity.last = offset;
@@ -291,8 +304,11 @@ impl RenderOnce for ScrollArea {
             active_at: None,
             hovered: false,
         });
-        let handle = state.read(cx).handle.clone();
-        let presence = track_activity(&state, window, cx);
+        let handle = match self.handle {
+            Some(handle) => handle,
+            None => state.read(cx).handle.clone(),
+        };
+        let presence = track_activity(&state, &handle, window, cx);
         self.base
             .id(self.id)
             .relative()
@@ -308,13 +324,28 @@ impl RenderOnce for ScrollArea {
                 div()
                     .id("scroll-body")
                     .size_full()
-                    .when(self.vertical, |body| body.overflow_y_scroll().overflow_x_hidden())
+                    .when(self.vertical, |body| {
+                        body.overflow_y_scroll().overflow_x_hidden()
+                    })
                     .when(!self.vertical, |body| body.overflow_scroll())
                     .track_scroll(&handle)
+                    .on_scroll_wheel({
+                        let handle = handle.clone();
+                        move |event, window, cx| {
+                            let delta = event.delta.pixel_delta(window.line_height());
+                            let reach = handle.max_offset();
+                            let vertical = delta.y != Pixels::ZERO && reach.y > Pixels::ZERO;
+                            if vertical || (delta.x != Pixels::ZERO && reach.x > Pixels::ZERO) {
+                                cx.stop_propagation();
+                            }
+                        }
+                    })
                     .map(|body| match self.vertical {
                         // Children fill and never widen, so rows wrap.
                         true => body.flex().flex_col().children(
-                            self.body.into_iter().map(|child| div().w_full().min_w_0().child(child)),
+                            self.body
+                                .into_iter()
+                                .map(|child| div().w_full().min_w_0().child(child)),
                         ),
                         false => body.children(self.body),
                     }),
@@ -322,7 +353,9 @@ impl RenderOnce for ScrollArea {
             .when(self.shadows, |area| area.child(ScrollShadow::new(&handle)))
             .child(Scrollbar::new("scrollbar-y", &handle, Axis::Vertical).presence(presence))
             .when(!self.vertical, |area| {
-                area.child(Scrollbar::new("scrollbar-x", &handle, Axis::Horizontal).presence(presence))
+                area.child(
+                    Scrollbar::new("scrollbar-x", &handle, Axis::Horizontal).presence(presence),
+                )
             })
     }
 }
