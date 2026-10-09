@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, IntoElement, ParentElement, RenderOnce,
@@ -165,15 +165,32 @@ fn step(current: u32, direction: i8) -> Option<u32> {
     }
 }
 
-/// Minus, percentage, plus. Scales the window's rem size, and all it holds.
+/// A press on a `ZoomControl` its owner handles.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ZoomStep {
+    Out,
+    In,
+    Reset,
+}
+
+type OnZoom = Rc<dyn Fn(ZoomStep, &mut Window, &mut App)>;
+
+/// Minus, percentage, plus. Scales the window's rem size, and all it holds, unless an owner zooms its own content.
 #[derive(IntoElement)]
 pub struct ZoomControl {
     id: ElementId,
+    owned: Option<(u32, OnZoom)>,
 }
 
 impl ZoomControl {
     pub fn new(id: impl Into<ElementId>) -> Self {
-        Self { id: id.into() }
+        Self { id: id.into(), owned: None }
+    }
+
+    /// Shows `percent` and hands each press to `on_zoom`.
+    pub fn owned(mut self, percent: u32, on_zoom: impl Fn(ZoomStep, &mut Window, &mut App) + 'static) -> Self {
+        self.owned = Some((percent, Rc::new(on_zoom)));
+        self
     }
 }
 
@@ -187,6 +204,9 @@ fn apply(percent: u32, window: &mut Window, cx: &mut App) {
 impl RenderOnce for ZoomControl {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
+        if let Some((percent, on_zoom)) = self.owned {
+            return owned(self.id, percent, on_zoom, cx).into_any_element();
+        }
         let percent = (window.rem_size() / theme.base_rem() * 100.0).round() as u32;
         let (down, up) = (step(percent, -1), step(percent, 1));
         div()
@@ -226,7 +246,40 @@ impl RenderOnce for ZoomControl {
                         button.on_click(move |_, window, cx| apply(next, window, cx))
                     }),
             )
+            .into_any_element()
     }
+}
+
+/// The owner's zoom: its percent, its steps.
+fn owned(id: ElementId, percent: u32, on_zoom: OnZoom, cx: &App) -> impl IntoElement {
+    let theme = cx.theme();
+    let press = |step: ZoomStep| {
+        let on_zoom = on_zoom.clone();
+        move |_: &gpui::ClickEvent, window: &mut Window, cx: &mut App| on_zoom(step, window, cx)
+    };
+    div()
+        .id(id)
+        .flex()
+        .flex_none()
+        .items_center()
+        .gap_0p5()
+        .child(IconButton::new("zoom-out", IconName::ZoomOut).size(ControlSize::Sm).on_click(press(ZoomStep::Out)))
+        .child(
+            div()
+                .id("zoom-reset")
+                .flex()
+                .items_center()
+                .justify_center()
+                .min_w(theme.control_height(ControlSize::Lg) * 1.5)
+                .h(theme.control_height(ControlSize::Sm))
+                .rounded_full()
+                .cursor_pointer()
+                .hover(|style| style.bg(theme.colors.hover))
+                .on_click(press(ZoomStep::Reset))
+                .child(AnimatedNumber::new("zoom-value", percent as f64).size(TextSize::Sm))
+                .child(div().text_size(theme.text_size(TextSize::Sm)).child("%")),
+        )
+        .child(IconButton::new("zoom-in", IconName::ZoomIn).size(ControlSize::Sm).on_click(press(ZoomStep::In)))
 }
 
 #[cfg(test)]
