@@ -12,7 +12,9 @@ use gpui::{
     Subscription, Task, Window, WrappedLine,
 };
 
-pub(crate) use actions::{Backspace, Down, Enter, Redo, Submit, Undo, Up, bind_keys};
+pub(crate) use actions::{
+    Backspace, Copy, Cut, Delete, DeleteWordLeft, Down, Enter, Redo, Submit, Undo, Up, bind_keys,
+};
 pub use edit::History;
 use edit::Snapshot;
 pub(crate) use edit::{from_utf16, to_utf16};
@@ -66,6 +68,8 @@ pub struct TextInput {
     history: History<Snapshot>,
     /// The selection the last edit replaced.
     edited_from: Range<usize>,
+    /// Edits applied, text changed or not.
+    edits: u64,
     pub(crate) layout: Option<Layout>,
     pub(crate) scroll: Point<Pixels>,
     selecting: bool,
@@ -120,6 +124,7 @@ impl TextInput {
             disabled: false,
             history: History::default(),
             edited_from: 0..0,
+            edits: 0,
             layout: None,
             scroll: Point::default(),
             selecting: false,
@@ -311,6 +316,11 @@ impl TextInput {
         self.edited_from.clone()
     }
 
+    /// How many edits it took, and whether an input method is composing.
+    pub(crate) fn edits(&self) -> (u64, bool) {
+        (self.edits, self.marked.is_some())
+    }
+
     pub(crate) fn replace(
         &mut self,
         range: Range<usize>,
@@ -332,6 +342,7 @@ impl TextInput {
         if incoming.is_empty() && range.is_empty() {
             return;
         }
+        self.edits += 1;
         let composed = self.composing.take();
         let before = composed.clone().unwrap_or_else(|| self.snapshot());
         let caret = match &self.fit {

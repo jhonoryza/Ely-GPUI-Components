@@ -2,15 +2,19 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, Axis, Context, ElementId, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, Rems, Render, SharedString, Styled, Window, canvas, div, prelude::*,
+    MouseDownEvent, ParentElement, Rems, Render, SharedString, Styled, Window, canvas, div,
+    prelude::*,
 };
 
-use super::{Block, BlockData, BlockEditor, BlockKind, matching};
+use super::{Block, BlockData, BlockEditor, BlockKind, matching, span::Put};
 use crate::{
     buttons::{ButtonVariant, IconButton},
     documents::suggest::{Offer, offers},
     forms::replace_trigger,
-    forms::{Backspace, Choice, Down, Enter, Pick, Redo, Submit, Undo, Up},
+    forms::{
+        Backspace, Choice, Copy, Cut, Delete, DeleteWordLeft, Down, Enter, Pick, Redo, Submit,
+        Undo, Up,
+    },
     layout::{ScrollArea, bring_into_view},
     menus::{Menu, MenuItem, OverflowMenu},
     motion::Reorder,
@@ -95,12 +99,17 @@ impl BlockEditor {
         let keys = div()
             .w_full()
             .capture_action(cx.listener(move |editor, _: &Enter, window, cx| {
+                if editor.collapse_span(Put::Break, window, cx).is_some() {
+                    return cx.stop_propagation();
+                }
                 if editor.on_enter(key, ix, window, cx) {
                     cx.stop_propagation();
                 }
             }))
             .capture_action(cx.listener(move |editor, _: &Backspace, window, cx| {
-                if editor.on_backspace(key, ix, window, cx) {
+                if editor.collapse_span(Put::Nothing, window, cx).is_some()
+                    || editor.on_backspace(key, ix, window, cx)
+                {
                     cx.stop_propagation();
                 }
             }))
@@ -118,7 +127,13 @@ impl BlockEditor {
                 cx.stop_propagation();
                 editor.on_submit(key, window, cx);
             }))
-            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(move |editor, event: &MouseDownEvent, window, cx| {
+                    editor.pressed(key, ix, event, window, cx);
+                    cx.stop_propagation();
+                }),
+            )
             .child(field.clone());
         let slash = move |query: &str, at: usize, caret: usize| -> (Vec<Choice>, Pick) {
             let kinds = matching(query);
@@ -211,6 +226,7 @@ impl Render for BlockEditor {
         let look = Look::new(cx);
         let colors = look.colors.clone();
         let focused = self.focused(window, cx).map(|(key, _)| key);
+        let washed = self.washed().unwrap_or_default();
         let mut number = 0;
         let mut rows: Vec<(SharedString, AnyElement)> = Vec::new();
         for ix in 0..self.blocks.len() {
@@ -262,6 +278,9 @@ impl Render for BlockEditor {
                 .group(group.clone())
                 .relative()
                 .pl_16()
+                .when(washed.contains(&ix), |row| {
+                    row.bg(colors.selection).rounded(look.radius)
+                })
                 .py_0p5()
                 .child(content)
                 .child(
@@ -293,6 +312,27 @@ impl Render for BlockEditor {
         let column = div()
             .flex()
             .flex_col()
+            .capture_action(cx.listener(|editor, _: &Copy, _, cx| {
+                if editor.copy_span(cx) {
+                    cx.stop_propagation();
+                }
+            }))
+            .capture_action(cx.listener(|editor, _: &Cut, window, cx| {
+                if editor.copy_span(cx) {
+                    cx.stop_propagation();
+                    editor.collapse_span(Put::Nothing, window, cx);
+                }
+            }))
+            .capture_action(cx.listener(|editor, _: &Delete, window, cx| {
+                if editor.collapse_span(Put::Nothing, window, cx).is_some() {
+                    cx.stop_propagation();
+                }
+            }))
+            .capture_action(cx.listener(|editor, _: &DeleteWordLeft, window, cx| {
+                if editor.collapse_span(Put::Nothing, window, cx).is_some() {
+                    cx.stop_propagation();
+                }
+            }))
             .capture_action(cx.listener(|editor, _: &Undo, window, cx| {
                 cx.stop_propagation();
                 editor.undo(window, cx);
@@ -322,7 +362,10 @@ impl Render for BlockEditor {
                         });
                     }),
             )
-            .child(caret);
+            .child(caret)
+            .when(self.pressing(), |column| {
+                column.child(self.drag_listener(cx))
+            });
         ScrollArea::new(id)
             .size_full()
             .track_scroll(&self.scroll)

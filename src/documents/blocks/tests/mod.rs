@@ -5,6 +5,7 @@ use crate::{forms, theme::Theme};
 
 mod markdown;
 mod scroll;
+mod span;
 mod stale;
 
 fn open(

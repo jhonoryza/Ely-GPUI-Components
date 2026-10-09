@@ -114,7 +114,8 @@ pub use structure::{
 pub use switch::Switch;
 pub use tags::TagInput;
 pub(crate) use text::{
-    Backspace, Down, Enter, Redo, Submit, Undo, Up, bind_keys, from_utf16, to_utf16,
+    Backspace, Copy, Cut, Delete, DeleteWordLeft, Down, Enter, Redo, Submit, Undo, Up, bind_keys,
+    from_utf16, to_utf16,
 };
 pub use text::{Highlight, History, InputEvent, TextInput};
 pub use transfer::TransferList;

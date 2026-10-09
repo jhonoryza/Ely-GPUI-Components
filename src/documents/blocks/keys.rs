@@ -39,7 +39,7 @@ impl BlockEditor {
     }
 
     /// The fields in reading order, as `(block, field)`: a closed toggle hides its body.
-    fn reading_order(&self) -> Vec<(u64, usize)> {
+    pub(super) fn reading_order(&self) -> Vec<(u64, usize)> {
         self.blocks
             .iter()
             .flat_map(|block| {

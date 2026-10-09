@@ -5,6 +5,7 @@ mod import;
 mod keys;
 mod kind;
 mod media;
+mod span;
 mod table;
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
@@ -86,6 +87,7 @@ pub struct BlockEditor {
     pub(crate) people: Vec<SharedString>,
     pub(crate) diagram: Option<RenderDiagram>,
     scroll: ScrollHandle,
+    across: span::Across,
     /// The caret last brought into view: field, selection and length.
     revealed: Option<(EntityId, std::ops::Range<usize>, usize)>,
     _synced: Subscription,
@@ -109,6 +111,7 @@ impl BlockEditor {
             people: Vec::new(),
             diagram: None,
             scroll: ScrollHandle::new(),
+            across: span::Across::default(),
             revealed: None,
             _synced: synced,
         };
@@ -268,6 +271,10 @@ impl BlockEditor {
         };
         match event {
             InputEvent::Changed => {
+                let at = self.blocks[ix].fields.iter().position(|each| each == field);
+                if at.is_some_and(|at| self.span_takes(key, at, window, cx)) {
+                    return;
+                }
                 let typed = field.focus_handle(cx).is_focused(window);
                 if typed
                     && self.blocks[ix].kind == BlockKind::Paragraph

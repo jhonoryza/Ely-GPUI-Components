@@ -76,6 +76,7 @@ impl BlockEditor {
     }
 
     pub(crate) fn undo(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.clear_span(window, cx);
         self.settle(true, cx);
         if let Some(previous) = self.history.undo(self.now(cx)) {
             log::info!("block editor: undo");
@@ -84,6 +85,7 @@ impl BlockEditor {
     }
 
     pub(crate) fn redo(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.clear_span(window, cx);
         if let Some(next) = self.history.redo(self.now(cx)) {
             log::info!("block editor: redo");
             self.restore(next, window, cx);
