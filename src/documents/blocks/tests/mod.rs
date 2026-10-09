@@ -3,6 +3,7 @@ use gpui::{AppContext as _, Entity, Focusable, TestAppContext, VisualTestContext
 use super::{BlockData, BlockEditor, BlockKind};
 use crate::{forms, theme::Theme};
 
+mod markdown;
 mod scroll;
 mod stale;
 
