@@ -22,4 +22,4 @@
 - [x] G14 Issue #7: BlockEditor scrolls in its own `ScrollArea` with its scrollbar and keeps the caret in view as blocks are added; tested
 - [x] G15 Issue #7: BlockEditor turns into Markdown and back; tested. Five reviews, the cap: the fifth finding (a slash ended an unquoted HTML value) is fixed and tested, unreviewed
 - [x] G16 Issue #7: a selection across blocks: drag or Shift-press selects, copy, cut, delete and typing act on it, undo restores; tested
-- [ ] G17 Push, reply on #7 and #12
+- [x] G17 Push, reply on #7 and #12
