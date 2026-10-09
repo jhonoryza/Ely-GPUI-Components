@@ -12,6 +12,7 @@ use super::{
     links::Target,
     view::Terminal,
 };
+use crate::primitives::caret_bar;
 
 /// How a terminal paints: font and cell, ink, and the colors of what it marks.
 pub(crate) struct Look {
@@ -161,10 +162,11 @@ pub(crate) fn grid(
                     (CursorShape::HollowBlock, _) | (_, false) => {
                         outline(Bounds::new(origin, cell), look.caret, BorderStyle::Solid)
                     }
-                    (CursorShape::Beam, true) => fill(
-                        Bounds::new(origin, size(look.caret_width, cell.height)),
-                        look.caret,
-                    ),
+                    (CursorShape::Beam, true) => {
+                        let scale = window.scale_factor();
+                        let bar = caret_bar(origin, look.caret_width, cell.height, scale);
+                        fill(bar, look.caret)
+                    }
                     (CursorShape::Underline, true) => fill(
                         Bounds::new(
                             origin + point(Pixels::ZERO, cell.height - look.caret_width),

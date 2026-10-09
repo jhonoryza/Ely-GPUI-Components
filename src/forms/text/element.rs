@@ -8,7 +8,10 @@ use gpui::{
 };
 
 use super::{Highlight, Layout, TextInput};
-use crate::theme::ActiveTheme;
+use crate::{
+    primitives::{caret_bar, caret_width},
+    theme::ActiveTheme,
+};
 
 pub(crate) struct TextElement {
     input: Entity<TextInput>,
@@ -214,7 +217,10 @@ impl Element for TextElement {
     ) -> Prepaint {
         let theme = cx.theme();
         let (selection_color, caret_color) = (theme.colors.selection, theme.colors.focus);
-        let caret_width = theme.caret_width().to_pixels(window.rem_size());
+        let caret_width = caret_width(
+            theme.caret_width().to_pixels(window.rem_size()),
+            window.scale_factor(),
+        );
         let input = self.input.read(cx);
         let (text, placeholder, runs) = shown_runs(input, window, cx);
         let font_size = window.text_style().font_size.to_pixels(window.rem_size());
@@ -262,7 +268,10 @@ impl Element for TextElement {
         };
         let caret = caret_at
             .filter(|_| focused && caret_on && selection.is_empty())
-            .map(|at| Bounds::new(bounds.origin + at - scroll, size(caret_width, line_height)));
+            .map(|at| {
+                let at = bounds.origin + at - scroll;
+                caret_bar(at, caret_width, line_height, window.scale_factor())
+            });
         self.input.update(cx, |input, _| input.scroll = scroll);
         Prepaint {
             lines,

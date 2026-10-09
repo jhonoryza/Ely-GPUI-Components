@@ -8,6 +8,7 @@ use gpui::{
 use super::peers::Peer;
 use crate::{
     forms::TextInput,
+    primitives::caret_bar,
     theme::{ActiveTheme, Radius, TextSize},
     typography::LEADING,
 };
@@ -61,10 +62,9 @@ impl RenderOnce for RemoteCursor {
                     return;
                 }
                 window.with_content_mask(Some(ContentMask { bounds }), |window| {
-                    window.paint_quad(fill(
-                        gpui::Bounds::new(caret.origin, size(bar, caret.size.height)),
-                        color,
-                    ));
+                    let scale = window.scale_factor();
+                    let bar = caret_bar(caret.origin, bar, caret.size.height, scale);
+                    window.paint_quad(fill(bar, color));
                 });
                 let font = gpui::Font {
                     weight: FontWeight::MEDIUM,
