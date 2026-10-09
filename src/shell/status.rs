@@ -184,11 +184,18 @@ pub struct ZoomControl {
 
 impl ZoomControl {
     pub fn new(id: impl Into<ElementId>) -> Self {
-        Self { id: id.into(), owned: None }
+        Self {
+            id: id.into(),
+            owned: None,
+        }
     }
 
     /// Shows `percent` and hands each press to `on_zoom`.
-    pub fn owned(mut self, percent: u32, on_zoom: impl Fn(ZoomStep, &mut Window, &mut App) + 'static) -> Self {
+    pub fn owned(
+        mut self,
+        percent: u32,
+        on_zoom: impl Fn(ZoomStep, &mut Window, &mut App) + 'static,
+    ) -> Self {
         self.owned = Some((percent, Rc::new(on_zoom)));
         self
     }
@@ -263,7 +270,11 @@ fn owned(id: ElementId, percent: u32, on_zoom: OnZoom, cx: &App) -> impl IntoEle
         .flex_none()
         .items_center()
         .gap_0p5()
-        .child(IconButton::new("zoom-out", IconName::ZoomOut).size(ControlSize::Sm).on_click(press(ZoomStep::Out)))
+        .child(
+            IconButton::new("zoom-out", IconName::ZoomOut)
+                .size(ControlSize::Sm)
+                .on_click(press(ZoomStep::Out)),
+        )
         .child(
             div()
                 .id("zoom-reset")
@@ -279,7 +290,11 @@ fn owned(id: ElementId, percent: u32, on_zoom: OnZoom, cx: &App) -> impl IntoEle
                 .child(AnimatedNumber::new("zoom-value", percent as f64).size(TextSize::Sm))
                 .child(div().text_size(theme.text_size(TextSize::Sm)).child("%")),
         )
-        .child(IconButton::new("zoom-in", IconName::ZoomIn).size(ControlSize::Sm).on_click(press(ZoomStep::In)))
+        .child(
+            IconButton::new("zoom-in", IconName::ZoomIn)
+                .size(ControlSize::Sm)
+                .on_click(press(ZoomStep::In)),
+        )
 }
 
 #[cfg(test)]

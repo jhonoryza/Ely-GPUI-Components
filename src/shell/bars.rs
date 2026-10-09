@@ -6,9 +6,9 @@ use gpui::{
 use smallvec::SmallVec;
 
 use crate::{
-    typography::Ellipsis,
     primitives::{Icon, IconName, Tooltip},
     theme::{ActiveTheme, ControlSize, IconSize, Radius, TextSize},
+    typography::Ellipsis,
 };
 
 /// A row of tools, grouped and divided.
@@ -145,7 +145,15 @@ impl RenderOnce for StatusBar {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = cx.theme();
         // Narrow, both sides shrink and labels end in an ellipsis.
-        let side = || div().flex().items_center().gap_0p5().h_full().min_w_0().overflow_hidden();
+        let side = || {
+            div()
+                .flex()
+                .items_center()
+                .gap_0p5()
+                .h_full()
+                .min_w_0()
+                .overflow_hidden()
+        };
         self.base
             .flex()
             .flex_none()

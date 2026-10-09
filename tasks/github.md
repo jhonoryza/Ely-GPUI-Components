@@ -15,7 +15,7 @@
 
 # GitHub round, 2026-10-08
 
-- [x] G10 CI: `cargo fmt` on the files the last commits left unformatted
+- [x] G10 CI: `cargo fmt` on the files the last commits left unformatted; then the narrow-layout commits: fmt, and `Theme::hairline` for their raw px
 - [x] G11 Issue #7: a caret is a whole number of device pixels wide at a device pixel, so it never shows thin then thick; tested
 - [x] G12 Issue #7: an IME asks for its candidate box past the laid-out text; the box clamps to the last layout, as `bounds_for` does; tested
 - [x] G13 Issue #12: a floating option list occludes, so the wheel scrolls the list and not the page under it; tested

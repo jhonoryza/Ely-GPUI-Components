@@ -218,7 +218,9 @@ impl RenderOnce for Tabs {
                     .when_some(tab.icon, |item, icon| {
                         item.child(Icon::new(icon).size(IconSize::Sm).color(fg))
                     })
-                    .when(compact, |item| item.tooltip(Tooltip::text(tab.label.clone())))
+                    .when(compact, |item| {
+                        item.tooltip(Tooltip::text(tab.label.clone()))
+                    })
                     .when(!compact, |item| item.child(tab.label.clone()))
                     .when_some(tab.note.clone().filter(|_| !compact), |item, note| {
                         item.child(div().text_color(colors.fg_subtle).child(note))
@@ -293,13 +295,20 @@ impl RenderOnce for Tabs {
 fn natural(tabs: &[Choice], window: &Window, cx: &App) -> Pixels {
     let theme = cx.theme();
     let rem = window.rem_size();
-    let pad = gpui::rems(0.75).to_pixels(rem) * 2.0 + gpui::px(2.0);
+    let pad = (gpui::rems(0.75).to_pixels(rem) + theme.hairline()) * 2.0;
     let glyph = theme.icon_size(IconSize::Sm).to_pixels(rem) + gpui::rems(0.375).to_pixels(rem);
     let gap = gpui::rems(0.25).to_pixels(rem);
     tabs.iter().fold(Pixels::ZERO, |sum, tab| {
-        let text = |text: &SharedString| text_width(text, TextSize::Sm, FontWeight::MEDIUM, window, cx);
-        let note = tab.note.as_ref().map_or(Pixels::ZERO, |note| text(note) + gpui::rems(0.375).to_pixels(rem));
-        let icon = if tab.icon.is_some() { glyph } else { Pixels::ZERO };
+        let text =
+            |text: &SharedString| text_width(text, TextSize::Sm, FontWeight::MEDIUM, window, cx);
+        let note = tab.note.as_ref().map_or(Pixels::ZERO, |note| {
+            text(note) + gpui::rems(0.375).to_pixels(rem)
+        });
+        let icon = if tab.icon.is_some() {
+            glyph
+        } else {
+            Pixels::ZERO
+        };
         sum + pad + icon + text(&tab.label) + note + gap
     })
 }

@@ -3,8 +3,7 @@ use std::rc::Rc;
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ElementId, FocusHandle, FontWeight,
     InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce, Role,
-    ScrollHandle, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*, px,
-    rems,
+    ScrollHandle, SharedString, StatefulInteractiveElement, Styled, Window, div, prelude::*, rems,
 };
 
 use super::button::label_size;
@@ -96,7 +95,8 @@ impl RenderOnce for SegmentedControl {
             })
             .collect();
         // Last frame's strip width decides icons only.
-        let strip = window.use_keyed_state((self.id.clone(), "strip-width"), cx, |_, _| Pixels::ZERO);
+        let strip =
+            window.use_keyed_state((self.id.clone(), "strip-width"), cx, |_, _| Pixels::ZERO);
         let shown = *strip.read(cx);
         let compact = self.segments.iter().all(|(_, _, icon)| icon.is_some())
             && shown > Pixels::ZERO
@@ -189,7 +189,9 @@ impl RenderOnce for SegmentedControl {
                     .when_some(icon, |segment, icon| {
                         segment.child(Icon::new(icon).size(icon_size).color(fg))
                     })
-                    .when(compact, |segment| segment.tooltip(Tooltip::text(label.clone())))
+                    .when(compact, |segment| {
+                        segment.tooltip(Tooltip::text(label.clone()))
+                    })
                     .when(!label.is_empty() && !compact, |segment| {
                         segment.child(
                             div()
@@ -246,9 +248,10 @@ fn natural(
     let theme = cx.theme();
     let rem = window.rem_size();
     let (text, icon) = label_size(size);
-    let pad = theme.control_padding(size).to_pixels(rem) * 2.0 + px(2.0);
+    let pad = (theme.control_padding(size).to_pixels(rem) + theme.hairline()) * 2.0;
     let glyph = theme.icon_size(icon).to_pixels(rem) + rems(0.375).to_pixels(rem);
-    segments.iter().fold(px(6.0), |sum, (_, label, icon)| {
+    let strip = (rems(0.125).to_pixels(rem) + theme.hairline()) * 2.0;
+    segments.iter().fold(strip, |sum, (_, label, icon)| {
         let width = text_width(label, text, FontWeight::SEMIBOLD, window, cx);
         sum + pad + width + if icon.is_some() { glyph } else { Pixels::ZERO }
     })

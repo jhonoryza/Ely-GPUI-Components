@@ -18,13 +18,19 @@ pub(crate) fn text_width(
     let font_size = cx.theme().text_size(size).to_pixels(window.rem_size());
     let run = TextRun {
         len: text.len(),
-        font: Font { weight, ..window.text_style().font() },
+        font: Font {
+            weight,
+            ..window.text_style().font()
+        },
         color: Hsla::default(),
         background_color: None,
         underline: None,
         strikethrough: None,
     };
-    window.text_system().shape_line(text.clone(), font_size, &[run], None).width
+    window
+        .text_system()
+        .shape_line(text.clone(), font_size, &[run], None)
+        .width
 }
 
 /// Keeps `width` at the parent's width; a change redraws once.
