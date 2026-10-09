@@ -18,7 +18,7 @@
 - [x] G10 CI: `cargo fmt` on the files the last commits left unformatted
 - [x] G11 Issue #7: a caret is a whole number of device pixels wide at a device pixel, so it never shows thin then thick; tested
 - [x] G12 Issue #7: an IME asks for its candidate box past the laid-out text; the box clamps to the last layout, as `bounds_for` does; tested
-- [ ] G13 Issue #12: a floating option list occludes, so the wheel scrolls the list and not the page under it; tested
+- [x] G13 Issue #12: a floating option list occludes, so the wheel scrolls the list and not the page under it; tested
 - [ ] G14 Issue #7: BlockEditor scrolls in its own `ScrollArea` with its scrollbar and keeps the caret in view as blocks are added; tested
 - [ ] G15 Issue #7: BlockEditor turns into Markdown and back; tested
 - [ ] G16 Issue #7: a selection across blocks: drag or Shift-press selects, copy, cut, delete and typing act on it, undo restores; tested
