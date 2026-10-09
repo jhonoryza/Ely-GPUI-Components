@@ -191,7 +191,9 @@ impl Render for Kept {
                     .key_context("HostField")
                     .track_focus(&self.field)
                     .size(px(100.0))
-                    .on_action(move |_: &Indent, _, cx| view.update(cx, |kept, _| kept.indents += 1)),
+                    .on_action(move |_: &Indent, _, cx| {
+                        view.update(cx, |kept, _| kept.indents += 1)
+                    }),
             )
             .child(div().track_focus(&self.after).size(px(100.0)))
     }
@@ -216,7 +218,11 @@ fn f6_leaves_a_field_that_keeps_tab(cx: &mut TestAppContext) {
     cx.simulate_keystrokes("tab");
     let after = view.read_with(cx, |kept, _| kept.after.clone());
     cx.simulate_keystrokes("f6");
-    assert_eq!(view.read_with(cx, |kept, _| kept.indents), 1, "Tab stayed in the field");
+    assert_eq!(
+        view.read_with(cx, |kept, _| kept.indents),
+        1,
+        "Tab stayed in the field"
+    );
     cx.update(|window, _| assert!(after.is_focused(window), "F6 moved on"));
     cx.simulate_keystrokes("shift-f6");
     let field = view.read_with(cx, |kept, _| kept.field.clone());
@@ -238,7 +244,9 @@ impl Render for Painted {
                 view.update(cx, |painted, _| {
                     painted.retired.release(window);
                     if let Some(image) = painted.image.clone() {
-                        window.paint_image(bounds, bounds, Default::default(), image, 0, false).expect("paints");
+                        window
+                            .paint_image(bounds, bounds, Default::default(), image, 0, false)
+                            .expect("paints");
                     }
                 })
             },
@@ -252,7 +260,10 @@ fn a_retired_image_is_freed_at_the_next_paint(cx: &mut TestAppContext) {
     cx.update(Theme::init);
     let pixels = image::RgbaImage::from_pixel(2, 2, image::Rgba([1, 2, 3, 255]));
     let image = std::sync::Arc::new(gpui::RenderImage::new([image::Frame::new(pixels)]));
-    let (view, cx) = cx.add_window_view(|_, _| Painted { image: Some(image), retired: super::Retired::default() });
+    let (view, cx) = cx.add_window_view(|_, _| Painted {
+        image: Some(image),
+        retired: super::Retired::default(),
+    });
     cx.run_until_parked();
     view.update(cx, |painted, cx| {
         let old = painted.image.take().expect("painted");
@@ -260,7 +271,10 @@ fn a_retired_image_is_freed_at_the_next_paint(cx: &mut TestAppContext) {
         cx.notify();
     });
     cx.run_until_parked();
-    assert!(view.read_with(cx, |painted, _| painted.retired.is_empty()), "the old image was freed");
+    assert!(
+        view.read_with(cx, |painted, _| painted.retired.is_empty()),
+        "the old image was freed"
+    );
     // One still held elsewhere waits until it is let go.
     let pixels = image::RgbaImage::from_pixel(2, 2, image::Rgba([4, 5, 6, 255]));
     let shared = std::sync::Arc::new(gpui::RenderImage::new([image::Frame::new(pixels)]));
@@ -269,9 +283,15 @@ fn a_retired_image_is_freed_at_the_next_paint(cx: &mut TestAppContext) {
         cx.notify();
     });
     cx.run_until_parked();
-    assert!(!view.read_with(cx, |painted, _| painted.retired.is_empty()), "a held image waits");
+    assert!(
+        !view.read_with(cx, |painted, _| painted.retired.is_empty()),
+        "a held image waits"
+    );
     drop(shared);
     view.update(cx, |_, cx| cx.notify());
     cx.run_until_parked();
-    assert!(view.read_with(cx, |painted, _| painted.retired.is_empty()), "then it is freed");
+    assert!(
+        view.read_with(cx, |painted, _| painted.retired.is_empty()),
+        "then it is freed"
+    );
 }

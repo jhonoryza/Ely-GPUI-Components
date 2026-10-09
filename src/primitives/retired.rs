@@ -22,7 +22,10 @@ impl Retired {
     /// Frees images no one else holds; call while painting.
     pub fn release(&mut self, window: &mut Window) {
         // A shared image may still be drawn; it waits.
-        let (free, held): (Vec<_>, Vec<_>) = self.0.drain(..).partition(|image| Arc::strong_count(image) == 1);
+        let (free, held): (Vec<_>, Vec<_>) = self
+            .0
+            .drain(..)
+            .partition(|image| Arc::strong_count(image) == 1);
         self.0 = held;
         for image in free {
             if let Err(error) = window.drop_image(image) {

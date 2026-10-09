@@ -75,7 +75,9 @@ impl RenderOnce for ThemeSelector {
             .iter()
             .fold(
                 SegmentedControl::new(self.id, *words),
-                |control, (_, words, icon)| control.segment(*words, i18n::text(cx, words, &[]), Some(*icon)),
+                |control, (_, words, icon)| {
+                    control.segment(*words, i18n::text(cx, words, &[]), Some(*icon))
+                },
             )
             .on_change(move |value, window, cx| {
                 let (chosen, _, _) = Appearance::ALL

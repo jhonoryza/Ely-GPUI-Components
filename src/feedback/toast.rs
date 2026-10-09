@@ -3,8 +3,8 @@ use std::{rc::Rc, time::Duration};
 use gpui::{
     Anchor, Animation, AnimationExt, AnyElement, App, ClickEvent, Context, ElementId, Entity,
     FontWeight, HoverListenerMode, InteractiveElement, IntoElement, ParentElement, Pixels,
-    RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled, Task, Window, anchored, canvas,
-    div, point, prelude::*, relative,
+    RenderOnce, Role, SharedString, StatefulInteractiveElement, Styled, Task, Window, anchored,
+    canvas, div, point, prelude::*, relative,
 };
 use web_time::Instant;
 

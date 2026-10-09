@@ -12,3 +12,14 @@
 - [x] G7 Issue #6: `shell::ColumnShell`, a sidebar that runs to the window's top with the traffic lights, beside one or two panes that bring their own headers; tested
 - [x] G8 Issue #6: a Layout story, `stories.json`, AGENTS.md and the PRD line; the story runs live on the site
 - [x] G9 Push, deploy, reply on #6 and #7, close #6
+
+# GitHub round, 2026-10-08
+
+- [x] G10 CI: `cargo fmt` on the files the last commits left unformatted
+- [ ] G11 Issue #7: a caret is a whole number of device pixels wide at a device pixel, so it never shows thin then thick; tested
+- [ ] G12 Issue #7: an IME asks for its candidate box past the laid-out text; the box clamps to the last layout, as `bounds_for` does; tested
+- [ ] G13 Issue #12: a floating option list occludes, so the wheel scrolls the list and not the page under it; tested
+- [ ] G14 Issue #7: BlockEditor scrolls in its own `ScrollArea` with its scrollbar and keeps the caret in view as blocks are added; tested
+- [ ] G15 Issue #7: BlockEditor turns into Markdown and back; tested
+- [ ] G16 Issue #7: a selection across blocks: drag or Shift-press selects, copy, cut, delete and typing act on it, undo restores; tested
+- [ ] G17 Push, reply on #7 and #12
