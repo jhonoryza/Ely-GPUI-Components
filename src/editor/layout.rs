@@ -256,13 +256,13 @@ mod tests {
 
     #[test]
     fn a_wide_line_becomes_one_row_per_segment_when_wrapping() {
-        let buffer = Buffer::new("abc".into());
+        let buffer = Buffer::new("abc".to_string());
         // 5 columns wraps a 3-char line once; the rest stay single rows.
         assert_eq!(
             rows(&buffer, &[false; 1], &Marks::default(), 5),
             [Row::Line(0, 0)]
         );
-        let wide = Buffer::new("abcdefghij".into());
+        let wide = Buffer::new("abcdefghij".to_string());
         assert_eq!(
             rows(&wide, &[false; 1], &Marks::default(), 5),
             [Row::Line(0, 0), Row::Line(0, 1)]

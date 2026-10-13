@@ -343,3 +343,41 @@ fn escape_in_the_find_query_closes_the_box(cx: &mut TestAppContext) {
     cx.simulate_keystrokes("escape");
     assert!(closed.get(), "escape closes the find box");
 }
+
+#[gpui::test]
+fn moving_past_the_right_edge_shifts_the_rows_left(cx: &mut TestAppContext) {
+    let wide = "x".repeat(200);
+    let (editor, cx) = editor(&wide, cx);
+    editor.update(cx, |editor, cx| {
+        // Pretend the viewport is 100 columns wide and a char is 1px.
+        editor.metrics.viewport_x = gpui::px(100.0);
+        editor.frame.advance = gpui::px(1.0);
+        assert_eq!(editor.metrics.scroll_x, gpui::px(0.0));
+        // Move the caret to the end of the 200-char line.
+        editor.select([200..200], cx);
+        assert!(
+            editor.metrics.scroll_x > gpui::px(0.0),
+            "the rows shift so the caret stays visible, got {:?}",
+            editor.metrics.scroll_x
+        );
+        // Back to the start unshifts them.
+        editor.select([0..0], cx);
+        assert_eq!(editor.metrics.scroll_x, gpui::px(0.0));
+    });
+}
+
+#[gpui::test]
+fn a_wrapped_line_draws_one_row_per_segment(cx: &mut TestAppContext) {
+    let wide = "x".repeat(200);
+    let (editor, cx) = editor(&wide, cx);
+    editor.update(cx, |editor, _| {
+        editor.options.wrap = 80;
+        let hide = super::layout::hidden(1, &[], &std::collections::BTreeSet::new());
+        let rows = super::layout::rows(&editor.buffer, &hide, &editor.marks, 80);
+        assert_eq!(
+            rows.len(),
+            3,
+            "200 chars at 80 columns is 3 rows, got {rows:?}"
+        );
+    });
+}
