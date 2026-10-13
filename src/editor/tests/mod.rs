@@ -381,3 +381,18 @@ fn a_wrapped_line_draws_one_row_per_segment(cx: &mut TestAppContext) {
         );
     });
 }
+
+#[gpui::test]
+fn a_wrapped_row_draws_without_panicking(cx: &mut TestAppContext) {
+    // A segment's first column is 0 after the shift, so drawing it must not
+    // subtract past zero.
+    let wide = "x".repeat(200);
+    let (editor, cx) = editor(&wide, cx);
+    editor.update(cx, |editor, cx| {
+        editor.options.wrap = 80;
+        cx.notify();
+    });
+    cx.run_until_parked();
+    let rows = editor.read_with(cx, |editor, _| editor.frame.rows.clone());
+    assert_eq!(rows.len(), 3, "200 chars at 80 columns is 3 rows");
+}

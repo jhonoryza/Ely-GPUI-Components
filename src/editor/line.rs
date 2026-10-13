@@ -153,7 +153,7 @@ impl CodeEditor {
         // this segment starts, and clip the text to it.
         let wrap = self.options.wrap;
         let start = if wrap > 0 { seg * wrap } else { 0 };
-        let x = |column: usize| advance * (column + 1 - start) as f32;
+        let x = |column: usize| advance * (column + 1).saturating_sub(start) as f32;
         // Slice the drawn text to this segment so a row never runs past the edge.
         // Everything is in bytes: a style range that starts before the segment
         // keeps only the part that lands inside it.
