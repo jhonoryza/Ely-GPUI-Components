@@ -59,7 +59,7 @@ impl CodeEditor {
         self.frame.rows[first.min(self.frame.rows.len().saturating_sub(1))..]
             .iter()
             .find_map(|row| match row {
-                Row::Line(line) => Some(*line),
+                Row::Line(line, _) => Some(*line),
                 _ => None,
             })
     }
@@ -136,7 +136,7 @@ impl CodeEditor {
             .rows
             .iter()
             .map(|row| match row {
-                Row::Line(at) => {
+                Row::Line(at, _) => {
                     let text = self.buffer.line(*at);
                     syntax::colors(
                         self.language_name(),
@@ -272,7 +272,7 @@ impl Render for CodeEditor {
         shown.extend(rows(&self.buffer, &hide, &self.marks));
         shown.extend(std::iter::repeat_n(Row::Room, self.pad));
         self.frame = Frame {
-            rows: shown,
+            rows: rows(&self.buffer, &hide, &self.marks, self.options.wrap),
             folds: found,
             brackets: found_brackets,
             advance,
@@ -390,5 +390,6 @@ impl Render for CodeEditor {
         listen(root, cx)
     }
 }
+
 
 

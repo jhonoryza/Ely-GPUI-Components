@@ -63,13 +63,8 @@ pub(crate) struct Options {
     pub sticky: bool,
     pub read_only: bool,
     pub tab: usize,
-    pub highlighter: Option<super::prose::LineHighlighter>,
-    /// Text size against the theme's.
-    pub scale: f32,
-    /// Lines but the caret's fade.
-    pub focus_line: bool,
-    /// The caret's line stays mid-view.
-    pub typewriter: bool,
+    /// Break long lines instead of clipping them; 0 means no wrap.
+    pub wrap: usize,
 }
 
 /// What the owner lays over the code.
@@ -206,10 +201,7 @@ impl CodeEditor {
                 sticky: false,
                 read_only: false,
                 tab: 4,
-                highlighter: None,
-                scale: 1.0,
-                focus_line: false,
-                typewriter: false,
+                wrap: 0,
             },
             marks: Marks::default(),
             marked: None,
@@ -287,6 +279,17 @@ impl CodeEditor {
         assert!(size > 0, "a tab spans at least one column");
         self.options.tab = size;
         self
+    }
+
+    /// Break lines wider than `columns`; 0 wraps off (the default).
+    pub fn soft_wrap(mut self, columns: usize) -> Self {
+        self.options.wrap = columns;
+        self
+    }
+
+    /// Whether long lines break into the row below.
+    pub fn wraps(&self) -> bool {
+        self.options.wrap > 0
     }
 
     pub fn text(&self) -> &str {
@@ -528,4 +531,5 @@ impl CodeEditor {
         !self.options.read_only
     }
 }
+
 

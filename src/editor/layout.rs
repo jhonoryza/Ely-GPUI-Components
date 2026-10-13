@@ -10,7 +10,8 @@ pub(crate) const CHAT_ROWS: usize = 3;
 /// One row the editor draws, all the same height.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Row {
-    Line(usize),
+    /// A line, and which wrapped segment of it this row draws (0 when unwrapped).
+    Line(usize, usize),
     /// A code lens, by its place among the lenses.
     Lens(usize),
     /// A removed line of a diff hunk: the hunk, then the line within it.
@@ -39,7 +40,15 @@ pub(crate) fn hidden(
 }
 
 /// The rows in order: lenses and removed lines above their line, ghost lines and the chat below it, nothing a fold hides.
-pub(crate) fn rows(buffer: &Buffer, hidden: &[bool], marks: &Marks) -> Vec<Row> {
+///
+/// With `wrap` columns or more, a line wider than that becomes one row per
+/// segment, so no row ever runs past the right edge.
+pub(crate) fn rows(
+    buffer: &Buffer,
+    hidden: &[bool],
+    marks: &Marks,
+    wrap: usize,
+) -> Vec<Row> {
     let ghost = marks.ghost.as_ref().map(|ghost| {
         let extra = ghost.text.split('\n').count() - 1;
         (buffer.line_of(ghost.offset), extra)
@@ -62,7 +71,16 @@ pub(crate) fn rows(buffer: &Buffer, hidden: &[bool], marks: &Marks) -> Vec<Row> 
         {
             out.extend((0..hunk.removed.len()).map(|at| Row::Removed(ix, at)));
         }
-        out.push(Row::Line(line));
+        let segments = if wrap > 0 {
+            // Every char is a column of its own here; tab stops only matter to
+            // the indented lines a wrap usually breaks, and undercounting a row
+            // costs one extra wrap, not a wrong layout.
+            let width = buffer.line(line).chars().count();
+            width.div_ceil(wrap).max(1)
+        } else {
+            1
+        };
+        out.extend((0..segments).map(|seg| Row::Line(line, seg)));
         if let Some((at, extra)) = ghost
             && at == line
         {
@@ -223,17 +241,32 @@ mod tests {
         };
         let hide = hidden(5, &[(0, 2)], &BTreeSet::from([0]));
         assert_eq!(
-            rows(&buffer, &hide, &marks),
+            rows(&buffer, &hide, &marks, 0),
             [
-                Row::Line(0),
+                Row::Line(0, 0),
                 Row::Ghost(1),
                 Row::Lens(0),
-                Row::Line(3),
+                Row::Line(3, 0),
                 Row::Removed(0, 0),
-                Row::Line(4)
+                Row::Line(4, 0)
             ]
         );
         assert_eq!(around(&[(0, 4), (1, 2)], 2, 3), [0, 1]);
+    }
+
+    #[test]
+    fn a_wide_line_becomes_one_row_per_segment_when_wrapping() {
+        let buffer = Buffer::new("abc".into());
+        // 5 columns wraps a 3-char line once; the rest stay single rows.
+        assert_eq!(
+            rows(&buffer, &[false; 1], &Marks::default(), 5),
+            [Row::Line(0, 0)]
+        );
+        let wide = Buffer::new("abcdefghij".into());
+        assert_eq!(
+            rows(&wide, &[false; 1], &Marks::default(), 5),
+            [Row::Line(0, 0), Row::Line(0, 1)]
+        );
     }
 
     #[test]

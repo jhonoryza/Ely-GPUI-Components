@@ -139,16 +139,47 @@ impl CodeEditor {
         base: Stateful<gpui::Div>,
         row: usize,
         line: usize,
+        seg: usize,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let theme = cx.theme();
-        let colors = theme.colors.clone();
+        let colors = cx.theme().colors.clone();
         let (advance, height) = (self.frame.advance, self.frame.line);
         let text = self.row_text(line);
         let range = self.row_range(line);
         let shown = Shown::new(text, self.notes(line, cx), self.styles(line, cx));
-        let x = |column: usize| advance * (column + 1) as f32;
+        // A wrapped line draws one segment per row: shift every column by where
+        // this segment starts, and clip the text to it.
+        let wrap = self.options.wrap;
+        let start = if wrap > 0 { seg * wrap } else { 0 };
+        let x = |column: usize| advance * (column + 1 - start) as f32;
+        // Slice the drawn text to this segment so a row never runs past the edge.
+        // Everything is in bytes: a style range that starts before the segment
+        // keeps only the part that lands inside it.
+        let drawn = &shown.text;
+        let byte_start: usize = drawn
+            .char_indices()
+            .nth(start)
+            .map_or(drawn.len(), |(at, _)| at);
+        let byte_end: usize = if wrap > 0 {
+            drawn
+                .char_indices()
+                .nth(start + wrap)
+                .map_or(drawn.len(), |(at, _)| at)
+        } else {
+            drawn.len()
+        };
+        let seg_text = drawn[byte_start..byte_end].to_string();
+        let seg_styles: Vec<(Range<usize>, HighlightStyle)> = shown
+            .styles
+            .iter()
+            .filter_map(|(range, style)| {
+                let begin = range.start.max(byte_start).saturating_sub(byte_start);
+                let end = range.end.min(byte_end).saturating_sub(byte_start);
+                (end > begin).then(|| (begin..end, style.clone()))
+            })
+            .collect();
         let focused = self.focus.is_focused(window);
         let primary = self.primary();
         let current = primary.is_empty() && self.buffer.line_of(primary.head) == line;
@@ -311,7 +342,7 @@ impl CodeEditor {
                     .whitespace_nowrap()
                     .text_color(colors.syntax.variable)
                     .child(
-                        StyledText::new(shown.text.clone()).with_highlights(shown.styles.clone()),
+                        StyledText::new(seg_text.clone()).with_highlights(seg_styles.clone()),
                     ),
             )
             .children(dots)

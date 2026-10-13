@@ -80,10 +80,13 @@ impl CodeEditor {
         let scrolled = -self.scroll.0.borrow().base_handle.offset().y;
         let row = ((position.y - metrics.top + scrolled) / metrics.line).floor();
         let row = self.frame.rows.get(row.max(0.0) as usize)?;
-        let Row::Line(line) = *row else {
+        let Row::Line(line, seg) = *row else {
             return None;
         };
-        self.offset_in(line, position.x, cx)
+        // A wrapped line is several rows: undo the segment offset before
+        // turning x into a column.
+        let shifted = position.x - metrics.advance * seg as f32;
+        self.offset_in(line, shifted, cx)
     }
 
     /// The offset nearest window x on a line; none for a line the text has since lost.
@@ -217,14 +220,24 @@ impl EntityInputHandler for CodeEditor {
             .frame
             .rows
             .iter()
-            .position(|row| *row == Row::Line(line))?;
+            .position(|row| matches!(row, Row::Line(at, _) if *at == line))?;
+        let seg = self
+            .frame
+            .rows
+            .iter()
+            .find(|row| matches!(row, Row::Line(at, _) if *at == line))
+            .map(|row| match row {
+                Row::Line(_, seg) => *seg,
+                _ => 0,
+            })
+            .unwrap_or(0);
         let text = self.row_text(line);
         let shown = Shown::new(text, self.notes(line, cx), Vec::new());
         let column = shown.column(text, self.buffer.point(range.start).1.min(text.len()));
         let metrics = self.metrics;
         let scrolled = -self.scroll.0.borrow().base_handle.offset().y;
         let origin = point(
-            metrics.left + metrics.advance * column as f32,
+            metrics.left + metrics.advance * column as f32 - metrics.advance * seg as f32,
             metrics.top + metrics.line * row as f32 - scrolled,
         );
         Some(Bounds::new(

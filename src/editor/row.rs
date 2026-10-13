@@ -28,10 +28,7 @@ impl CodeEditor {
             _ => base,
         };
         match self.frame.rows[ix] {
-            Row::Line(line) if self.options.focus_line && line != caret => {
-                self.line_row(base.opacity(FADED), ix, line, window, cx)
-            }
-            Row::Line(line) => self.line_row(base, ix, line, window, cx),
+            Row::Line(line, seg) => self.line_row(base, ix, line, seg, window, cx),
             Row::Lens(at) => self.lens_row(base, ix, at, cx),
             Row::Removed(hunk, at) => self.removed_row(base, ix, hunk, at, cx),
             Row::Ghost(at) => self.ghost_row(base, ix, at, cx),
@@ -191,4 +188,5 @@ impl CodeEditor {
         .into_any_element()
     }
 }
+
 

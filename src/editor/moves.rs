@@ -171,9 +171,9 @@ impl CodeEditor {
     pub(crate) fn primary_row(&self) -> usize {
         let line = self.buffer.line_of(self.primary().head);
         let hide = hidden(self.buffer.lines(), &folds(&self.buffer), &self.folded);
-        rows(&self.buffer, &hide, &self.marks)
+        rows(&self.buffer, &hide, &self.marks, 0)
             .iter()
-            .rposition(|row| matches!(row, Row::Line(shown) if *shown <= line))
+            .rposition(|row| matches!(row, Row::Line(shown, _) if *shown <= line))
             .unwrap_or(0)
             + self.pad
     }

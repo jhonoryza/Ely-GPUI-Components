@@ -265,7 +265,7 @@ impl CodeEditor {
             &super::syntax::folds(&self.buffer),
             &self.folded,
         );
-        super::layout::rows(&self.buffer, &hide, &self.marks).contains(&Row::Line(line))
+        super::layout::rows(&self.buffer, &hide, &self.marks, 0).contains(&Row::Line(line, 0))
     }
 }
 
