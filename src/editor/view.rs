@@ -328,17 +328,11 @@ impl Render for CodeEditor {
             .children(sticky)
             .child(
                 canvas(
-                    move |bounds, window, cx| {
-                        let resized = top.update(cx, |editor, _| {
+                    move |bounds, _, cx| {
+                        top.update(cx, |editor, _| {
                             editor.metrics.top = bounds.origin.y;
-                            let resized = editor.metrics.height != bounds.size.height;
-                            editor.metrics.height = bounds.size.height;
-                            resized
+                            editor.metrics.viewport_x = bounds.size.width;
                         });
-                        // A new height centers the caret again.
-                        if resized {
-                            window.request_animation_frame();
-                        }
                     },
                     |_, _, _, _| {},
                 )
@@ -396,4 +390,5 @@ impl Render for CodeEditor {
         listen(root, cx)
     }
 }
+
 

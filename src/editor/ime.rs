@@ -93,7 +93,9 @@ impl CodeEditor {
         }
         let text = self.row_text(line);
         let shown = Shown::new(text, self.notes(line, cx), Vec::new());
-        let column = ((x - self.metrics.left) / self.metrics.advance)
+        // Rows are drawn shifted left by `scroll_x`, so undo it to recover the
+        // column the pointer is actually over.
+        let column = ((x - self.metrics.left + self.metrics.scroll_x) / self.metrics.advance)
             .round()
             .max(0.0) as usize;
         Some(self.buffer.offset(line, shown.back(text, column)))

@@ -289,7 +289,7 @@ impl CodeEditor {
             .iter()
             .any(|hunk| (hunk.line..hunk.line + hunk.added).contains(&line));
         let entity = cx.entity();
-        let left = x(0);
+        let left = x(0) - self.metrics.scroll_x;
         let code = div()
             .id(("code", row))
             .relative()

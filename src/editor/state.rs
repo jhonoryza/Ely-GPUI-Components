@@ -102,8 +102,10 @@ pub(crate) struct Metrics {
     pub top: Pixels,
     pub advance: Pixels,
     pub line: Pixels,
-    /// The view's height.
-    pub height: Pixels,
+    /// How far the rows are shifted left, so columns past the right edge stay visible.
+    pub scroll_x: Pixels,
+    /// The width of the viewport, in pixels: the bound `scroll_x` scrolls within.
+    pub viewport_x: Pixels,
 }
 
 const BLINK: Duration = Duration::from_millis(530);
@@ -429,7 +431,41 @@ impl CodeEditor {
     pub(crate) fn set_selections(&mut self, selections: Vec<Selection>, cx: &mut Context<Self>) {
         self.selections = merged(selections);
         self.unfold_cursors();
+        self.reveal_horizontally(cx);
         self.restart_blink(cx);
+    }
+
+    /// Keep the primary cursor inside the viewport horizontally: a column past
+    /// the right edge shifts the rows left, one off the left edge shifts back.
+    /// Without this, typing past the edge hid the caret behind `overflow_hidden`.
+    fn reveal_horizontally(&mut self, cx: &mut Context<Self>) {
+        let advance = self.frame.advance;
+        let viewport = self.metrics.viewport_x;
+        if advance <= Pixels::ZERO || viewport <= Pixels::ZERO {
+            return;
+        }
+        let line = self.buffer.line_of(self.primary().head);
+        let column = self
+            .buffer
+            .point(self.primary().head)
+            .1
+            .min(self.buffer.line(line).chars().count());
+        let caret = advance * (column + 1) as f32;
+        // Leave a margin of one column so the caret is never flush against the edge.
+        let margin = advance;
+        let max = viewport - margin;
+        let scrolled = self.metrics.scroll_x;
+        let next = if caret > scrolled + max {
+            caret - max
+        } else if caret - margin < scrolled {
+            (caret - margin).max(Pixels::ZERO)
+        } else {
+            scrolled
+        };
+        if next != scrolled {
+            self.metrics.scroll_x = next;
+            cx.notify();
+        }
     }
 
     pub(crate) fn snapshot(&self) -> Snapshot {
@@ -492,3 +528,4 @@ impl CodeEditor {
         !self.options.read_only
     }
 }
+
