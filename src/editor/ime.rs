@@ -67,7 +67,6 @@ impl CodeEditor {
             && start.text != self.buffer.text()
         {
             self.history.record(start, false);
-            self.cap_history();
         }
     }
 
@@ -96,9 +95,11 @@ impl CodeEditor {
         }
         let text = self.row_text(line);
         let shown = Shown::new(text, self.notes(line, cx), Vec::new());
-        // Rows are drawn shifted left by `scroll_x`, so undo it to recover the
-        // column the pointer is actually over.
-        let column = ((x - self.metrics.left + self.metrics.scroll_x) / self.metrics.advance)
+        // Rows are drawn shifted left by `scroll_x`, so undo it when
+        // recovering the column from a window coordinate.
+        // `metrics.left = bounds.origin.x + advance - scroll_x`, so
+        // `x - metrics.left = x - code_x - advance + scroll_x`.
+        let column = ((x - self.metrics.left) / self.metrics.advance)
             .round()
             .max(0.0) as usize;
         Some(self.buffer.offset(line, shown.back(text, column)))
@@ -109,7 +110,7 @@ impl CodeEditor {
         to_utf16(text, range.start)..to_utf16(text, range.end)
     }
 
-    pub(crate) fn byte_range(&self, range: &Range<usize>) -> Range<usize> {
+    fn byte_range(&self, range: &Range<usize>) -> Range<usize> {
         let text = self.buffer.text();
         from_utf16(text, range.start)..from_utf16(text, range.end)
     }
