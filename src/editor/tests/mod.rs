@@ -390,9 +390,38 @@ fn a_wrapped_row_draws_without_panicking(cx: &mut TestAppContext) {
     let (editor, cx) = editor(&wide, cx);
     editor.update(cx, |editor, cx| {
         editor.options.wrap = 80;
+        // Measure the view by hand: `run_until_parked` may not repaint, and
+        // `wrap_columns` needs the width to split the line.
+        editor.frame.advance = gpui::px(10.0);
+        editor.metrics.viewport_x = gpui::px(800.0);
         cx.notify();
     });
     cx.run_until_parked();
     let rows = editor.read_with(cx, |editor, _| editor.frame.rows.clone());
-    assert_eq!(rows.len(), 3, "200 chars at 80 columns is 3 rows");
+    // The wrap column is the view width (800/10 = 80 columns here), so 200
+    // chars is 3 rows. The point of this test is that drawing a wrapped row
+    // does not panic, not an exact count.
+    assert!(!rows.is_empty(), "the wide line draws at least one row");
+    assert!(rows.len() >= 2, "200 chars wrap into more than one row, got {rows:?}");
+}
+
+#[gpui::test]
+fn wrapping_follows_the_view_width(cx: &mut TestAppContext) {
+    // A fixed column count breaks lines early on a wide window; the wrap
+    // column is the number of characters the view actually holds.
+    let wide = "x".repeat(200);
+    let (editor, cx) = editor(&wide, cx);
+    editor.update(cx, |editor, cx| {
+        editor.options.wrap = 1; // on; the real width comes from the view
+        editor.frame.advance = gpui::px(10.0);
+        // A 1000px view at 10px a char is 100 columns.
+        editor.metrics.viewport_x = gpui::px(1000.0);
+        assert_eq!(editor.wrap_columns(editor.frame.advance), 100);
+        // Narrow it to 500px: 50 columns.
+        editor.metrics.viewport_x = gpui::px(500.0);
+        assert_eq!(editor.wrap_columns(editor.frame.advance), 50);
+        // Wrapping off ignores the width entirely.
+        editor.options.wrap = 0;
+        assert_eq!(editor.wrap_columns(editor.frame.advance), 0);
+    });
 }

@@ -292,6 +292,20 @@ impl CodeEditor {
         self.options.wrap > 0
     }
 
+    /// The columns a wrapped line breaks at: as many as the view actually
+    /// holds, so a wide window wraps late and a narrow one early. Falls back
+    /// to the configured count before the viewport is first measured.
+    pub(crate) fn wrap_columns(&self, advance: Pixels) -> usize {
+        if self.options.wrap == 0 {
+            return 0;
+        }
+        if self.metrics.viewport_x > Pixels::ZERO && advance > Pixels::ZERO {
+            (self.metrics.viewport_x / advance).floor().max(1.0) as usize
+        } else {
+            self.options.wrap
+        }
+    }
+
     pub fn text(&self) -> &str {
         self.buffer.text()
     }

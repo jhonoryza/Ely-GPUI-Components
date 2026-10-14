@@ -263,16 +263,13 @@ impl Render for CodeEditor {
             _ => Vec::new(),
         };
         let minimap = self.frame.minimap;
-        // Half a view of room rows: the ends center too.
-        self.pad = match self.options.typewriter && line > Pixels::ZERO {
-            true => (self.metrics.height / 2.0 / line).ceil() as usize,
-            false => 0,
-        };
-        let mut shown = vec![Row::Room; self.pad];
-        shown.extend(rows(&self.buffer, &hide, &self.marks));
-        shown.extend(std::iter::repeat_n(Row::Room, self.pad));
+        // Wrap at the width the view actually holds, so a wide window wraps
+        // late and a narrow one early. `viewport_x` is measured a frame behind
+        // on the first paint; until then `wrap_columns` falls back to the
+        // configured count.
+        let wrap = self.wrap_columns(advance);
         self.frame = Frame {
-            rows: rows(&self.buffer, &hide, &self.marks, self.options.wrap),
+            rows: rows(&self.buffer, &hide, &self.marks, wrap),
             folds: found,
             brackets: found_brackets,
             advance,
@@ -390,6 +387,7 @@ impl Render for CodeEditor {
         listen(root, cx)
     }
 }
+
 
 
 

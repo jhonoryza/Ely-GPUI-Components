@@ -151,7 +151,7 @@ impl CodeEditor {
         let shown = Shown::new(text, self.notes(line, cx), self.styles(line, cx));
         // A wrapped line draws one segment per row: shift every column by where
         // this segment starts, and clip the text to it.
-        let wrap = self.options.wrap;
+        let wrap = self.wrap_columns(advance);
         let start = if wrap > 0 { seg * wrap } else { 0 };
         let x = |column: usize| advance * (column + 1).saturating_sub(start) as f32;
         // Slice the drawn text to this segment so a row never runs past the edge.
