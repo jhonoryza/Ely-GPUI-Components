@@ -4,6 +4,7 @@ use gpui::{
     AnyElement, Bounds, Context, ElementInputHandler, InteractiveElement, IntoElement, MouseButton,
     MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Render, ScrollDelta, ScrollWheelEvent, Styled, StyledText, Window,
     canvas, div, fill, font, point, size, uniform_list,
+    ScrollStrategy,
 };
 
 use super::{

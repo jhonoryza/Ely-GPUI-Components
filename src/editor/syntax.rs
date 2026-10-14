@@ -4,7 +4,7 @@ use std::rc::Rc;
 use gpui::{App, Global, HighlightStyle};
 
 use super::buffer::Buffer;
-use crate::forms::{Kind, Syntax, code_highlights_with, lex};
+use crate::forms::{Kind, Syntax, code_highlights, code_highlights_with, lex};
 
 /// A host-installed syntax highlighter, consulted before the built-in
 /// one-pass highlighter.

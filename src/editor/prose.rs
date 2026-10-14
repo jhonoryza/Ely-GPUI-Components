@@ -59,7 +59,7 @@ impl CodeEditor {
     /// A line's colors, as the owner or as code.
     pub(crate) fn line_colors(&self, text: &str, cx: &App) -> Vec<(Range<usize>, HighlightStyle)> {
         let Some(LineHighlighter(highlight)) = &self.options.highlighter else {
-            return syntax::colors(text, cx);
+            return syntax::code_colors(text, cx);
         };
         let rule = crate::theme::ActiveTheme::theme(cx).underline_thickness();
         highlight(text, cx)

@@ -10,6 +10,7 @@ use super::{
     buffer::Buffer,
     cursor::{Selection, merged},
     decor::{CodeLens, Diagnostic, DiffHunk, GhostText, GitMark, InlayHint},
+    prose::LineHighlighter,
     view::{Frame, MINIMAP},
 };
 use crate::{
@@ -65,6 +66,10 @@ pub(crate) struct Options {
     pub tab: usize,
     /// Break long lines instead of clipping them; 0 means no wrap.
     pub wrap: usize,
+    pub focus_line: bool,
+    pub typewriter: bool,
+    pub scale: f32,
+    pub highlighter: Option<LineHighlighter>,
 }
 
 /// What the owner lays over the code.
@@ -101,6 +106,8 @@ pub(crate) struct Metrics {
     pub scroll_x: Pixels,
     /// The width of the viewport, in pixels: the bound `scroll_x` scrolls within.
     pub viewport_x: Pixels,
+    /// The height of the viewport, in pixels.
+    pub height: Pixels,
 }
 
 const BLINK: Duration = Duration::from_millis(530);
@@ -202,6 +209,10 @@ impl CodeEditor {
                 read_only: false,
                 tab: 4,
                 wrap: 0,
+                focus_line: false,
+                typewriter: false,
+                scale: 1.0,
+                highlighter: None,
             },
             marks: Marks::default(),
             marked: None,

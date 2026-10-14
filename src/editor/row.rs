@@ -24,7 +24,7 @@ impl CodeEditor {
             .flex();
         let caret = self.buffer.line_of(self.primary().head);
         let base = match self.frame.rows[ix] {
-            Row::Line(line) => base.debug_selector(move || format!("editor-line-{line}")),
+            Row::Line(line, _seg) => base.debug_selector(move || format!("editor-line-{line}")),
             _ => base,
         };
         match self.frame.rows[ix] {
@@ -129,7 +129,7 @@ impl CodeEditor {
             let line = self.buffer.line_of(ghost.offset);
             let rest =
                 self.buffer.text()[ghost.offset..self.buffer.line_range(line).end].to_string();
-            let styles = syntax::colors(
+            let styles = super::syntax::colors(
                 self.language_name(),
                 ghost.offset..self.buffer.line_range(line).end,
                 self.buffer.text(),

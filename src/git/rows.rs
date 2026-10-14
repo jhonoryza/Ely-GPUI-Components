@@ -9,7 +9,7 @@ use super::{
     viewer::DiffLayout,
 };
 use crate::{
-    editor::{code_colors_with, stack},
+    editor::{code_colors, stack},
     forms::Syntax,
     theme::Palette,
 };
@@ -85,7 +85,7 @@ pub(super) fn colors_of(
     syntax: Option<&Syntax>,
     cx: &App,
 ) -> Vec<(Range<usize>, HighlightStyle)> {
-    syntax.map_or_else(Vec::new, |syntax| code_colors_with(text, syntax, cx))
+    syntax.map_or_else(Vec::new, |syntax| code_colors(text, cx))
 }
 
 /// A line colored as its file reads, changed words washed.

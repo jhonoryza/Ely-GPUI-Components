@@ -28,7 +28,7 @@ impl CodeEditor {
         let touches = |span: &Range<usize>| {
             span.start < range.end.max(range.start + 1) && range.start < span.end
         };
-        let mut spans = syntax::colors(
+        let mut spans = super::syntax::colors(
             self.language_name(),
             self.row_range(line),
             self.buffer.text(),

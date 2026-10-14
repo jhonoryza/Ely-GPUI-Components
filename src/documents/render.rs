@@ -14,7 +14,7 @@ use super::{
     tree::{Inline, Node, Style, parse},
 };
 use crate::{
-    editor::{code_colors, code_colors_with},
+    editor::{code_colors},
     navigation::{Anchor, Sections},
     primitives::FocusRing as _,
     theme::{ActiveTheme, Radius, TextSize},
@@ -248,7 +248,7 @@ impl Draw<'_> {
                 // A named fence reads as its language; prose stays plain.
                 let styles = match language.as_deref() {
                     Some(name) => crate::forms::syntax_fenced(name)
-                        .map_or_else(Vec::new, |syntax| code_colors_with(text, syntax, cx)),
+                        .map_or_else(Vec::new, |syntax| code_colors(text, cx)),
                     None => code_colors(text, cx),
                 };
                 div()
