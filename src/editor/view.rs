@@ -2,8 +2,8 @@ use std::ops::Range;
 
 use gpui::{
     AnyElement, Bounds, Context, ElementInputHandler, InteractiveElement, IntoElement, MouseButton,
-    MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Render, ScrollStrategy, Styled,
-    StyledText, Window, canvas, div, fill, font, point, size, uniform_list,
+    MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Render, ScrollDelta, ScrollWheelEvent, Styled, StyledText, Window,
+    canvas, div, fill, font, point, size, uniform_list,
 };
 
 use super::{
@@ -384,9 +384,31 @@ impl Render for CodeEditor {
                 .left_0()
                 .size_full(),
             );
+        let root = root
+            .on_scroll_wheel(cx.listener(
+                |editor: &mut CodeEditor, event: &ScrollWheelEvent, _window, cx| {
+                    // When wrap is on, scroll_x is not useful (rows are already
+                    // broken within the viewport). Only scroll horizontally when
+                    // lines run past the right edge unbroken.
+                    if !editor.wraps() {
+                        let dx = match event.delta {
+                            gpui::ScrollDelta::Pixels(d) => d.x,
+                            gpui::ScrollDelta::Lines(ref l) => l.x * editor.metrics.advance * 3.0,
+                        };
+                        if dx != gpui::Pixels::ZERO {
+                            let next = (editor.metrics.scroll_x - dx).max(gpui::Pixels::ZERO);
+                            if next != editor.metrics.scroll_x {
+                                editor.metrics.scroll_x = next;
+                                cx.notify();
+                            }
+                        }
+                    }
+                },
+            ));
         listen(root, cx)
     }
 }
+
 
 
 
