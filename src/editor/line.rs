@@ -260,8 +260,17 @@ impl CodeEditor {
             .iter()
             .filter(|selection| self.buffer.line_of(selection.head) == line)
             .filter(|_| focused && self.caret_on)
+            // Only the seg that contains the cursor's column paints it,
+            // otherwise every seg of a wrapped line renders a copy and the
+            // excess spills off the left or right as invisible fragments.
+            .filter(|selection| {
+                wrap == 0 || {
+                    let col = self.buffer.point(selection.head).1.min(text.len());
+                    col >= start && col < start + wrap
+                }
+            })
             .map(|selection| {
-                let left = x(column_of(selection.head));
+                let left = x(column_of(selection.head)) - self.metrics.scroll_x;
                 let caret = theme.caret_width().to_pixels(window.rem_size());
                 let mark = div().absolute().left(left);
                 match self.options.cursor {
