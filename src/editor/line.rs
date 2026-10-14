@@ -338,7 +338,11 @@ impl CodeEditor {
             // shifted left by scroll_x, so a column past the right edge is
             // laid out beyond this box and only becomes visible once shifted
             // in. Clipping here would discard it before the shift. The editor
-            // root already clips, so nothing spills out of the window.
+            // root already clips at the window edge, so right-side overflow
+            // is fine. But the left side must NOT bleed into the gutter:
+            // without clipping, text shifted left by scroll_x draws on top
+            // of the line numbers ("bertabrakan").
+            .overflow_hidden()
             .h_full()
             .when(current && focused, |code| code.bg(colors.hover))
             .when(added, |code| code.bg(colors.success.opacity(0.08)))
