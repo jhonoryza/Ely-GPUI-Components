@@ -34,7 +34,7 @@ const LEADING: f32 = 1.6;
 /// Blocks the sticky header shows at most.
 const STICKY: usize = 3;
 /// Columns the minimap spans, in code characters.
-const MINIMAP: f32 = 12.0;
+pub(crate) const MINIMAP: f32 = 12.0;
 
 impl CodeEditor {
     /// The text the primary selection or its word gives, for highlighting where else it appears.

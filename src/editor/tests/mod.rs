@@ -349,7 +349,9 @@ fn moving_past_the_right_edge_shifts_the_rows_left(cx: &mut TestAppContext) {
     let wide = "x".repeat(200);
     let (editor, cx) = editor(&wide, cx);
     editor.update(cx, |editor, cx| {
-        // Pretend the viewport is 100 columns wide and a char is 1px.
+        // Pretend the viewport is 100 columns wide and a char is 1px. The
+        // gutter is part of that width but the code scrolls only in what is
+        // left of it, so account for it.
         editor.metrics.viewport_x = gpui::px(100.0);
         editor.frame.advance = gpui::px(1.0);
         assert_eq!(editor.metrics.scroll_x, gpui::px(0.0));
@@ -358,6 +360,14 @@ fn moving_past_the_right_edge_shifts_the_rows_left(cx: &mut TestAppContext) {
         assert!(
             editor.metrics.scroll_x > gpui::px(0.0),
             "the rows shift so the caret stays visible, got {:?}",
+            editor.metrics.scroll_x
+        );
+        // The shift must clear the gutter: the caret lands inside the code
+        // area, not a gutter-width short of the right edge.
+        let gutter = editor.frame.advance * (editor.gutter_columns() + 1) as f32;
+        assert!(
+            editor.metrics.scroll_x + 100.0 - gutter >= 200.0 - editor.frame.advance,
+            "the caret reaches the right edge past the gutter, scroll_x={:?}",
             editor.metrics.scroll_x
         );
         // Back to the start unshifts them.

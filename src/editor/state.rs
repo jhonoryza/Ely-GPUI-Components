@@ -10,7 +10,7 @@ use super::{
     buffer::Buffer,
     cursor::{Selection, merged},
     decor::{CodeLens, Diagnostic, DiffHunk, GhostText, GitMark, InlayHint},
-    view::Frame,
+    view::{Frame, MINIMAP},
 };
 use crate::{
     forms::{History, InputEvent, TextInput},
@@ -461,6 +461,17 @@ impl CodeEditor {
         if advance <= Pixels::ZERO || viewport <= Pixels::ZERO {
             return;
         }
+        // `viewport_x` is the whole editor body, gutter and minimap included,
+        // but the code scrolls inside what is left of them. Subtract both, or
+        // the caret stops a gutter-width short of the right edge and never
+        // comes fully into view.
+        let gutter = advance * (self.gutter_columns() + 1) as f32;
+        let minimap = if self.options.minimap {
+            advance * MINIMAP
+        } else {
+            Pixels::ZERO
+        };
+        let usable = (viewport - gutter - minimap).max(advance);
         let line = self.buffer.line_of(self.primary().head);
         let column = self
             .buffer
@@ -470,7 +481,7 @@ impl CodeEditor {
         let caret = advance * (column + 1) as f32;
         // Leave a margin of one column so the caret is never flush against the edge.
         let margin = advance;
-        let max = viewport - margin;
+        let max = usable - margin;
         let scrolled = self.metrics.scroll_x;
         let next = if caret > scrolled + max {
             caret - max
