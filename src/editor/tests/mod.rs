@@ -363,12 +363,15 @@ fn moving_past_the_right_edge_shifts_the_rows_left(cx: &mut TestAppContext) {
             editor.metrics.scroll_x
         );
         // The shift must clear the gutter: the caret lands inside the code
-        // area, not a gutter-width short of the right edge.
-        let gutter = editor.frame.advance * (editor.gutter_columns() + 1) as f32;
-        assert!(
-            editor.metrics.scroll_x + 100.0 - gutter >= 200.0 - editor.frame.advance,
-            "the caret reaches the right edge past the gutter, scroll_x={:?}",
-            editor.metrics.scroll_x
+        // area, not a gutter-width short of the right edge. The caret sits at
+        // column+1 and the shift is caret - (usable - one margin column).
+        let gutter_cols = editor.gutter_columns() + 1;
+        let usable = 100.0 - gutter_cols as f32;
+        let caret = 201.0;
+        let expected = gpui::px(caret - (usable - 1.0));
+        assert_eq!(
+            editor.metrics.scroll_x, expected,
+            "the caret reaches the code area's right edge, past the gutter"
         );
         // Back to the start unshifts them.
         editor.select([0..0], cx);
@@ -418,18 +421,25 @@ fn a_wrapped_row_draws_without_panicking(cx: &mut TestAppContext) {
 #[gpui::test]
 fn wrapping_follows_the_view_width(cx: &mut TestAppContext) {
     // A fixed column count breaks lines early on a wide window; the wrap
-    // column is the number of characters the view actually holds.
+    // column is the number of characters the code area actually holds.
     let wide = "x".repeat(200);
     let (editor, cx) = editor(&wide, cx);
     editor.update(cx, |editor, cx| {
         editor.options.wrap = 1; // on; the real width comes from the view
         editor.frame.advance = gpui::px(10.0);
-        // A 1000px view at 10px a char is 100 columns.
+        // A 1000px body at 10px a char is 100 columns, less the gutter.
         editor.metrics.viewport_x = gpui::px(1000.0);
-        assert_eq!(editor.wrap_columns(editor.frame.advance), 100);
-        // Narrow it to 500px: 50 columns.
+        let wide_cols = editor.wrap_columns(editor.frame.advance);
+        let gutter_cols = editor.gutter_columns() + 1;
+        let expected = (100.0 - gutter_cols as f32).floor() as usize;
+        assert_eq!(
+            wide_cols, expected,
+            "the code area's width, not the whole body"
+        );
+        // Narrow it to 500px: fewer columns, still past the gutter.
         editor.metrics.viewport_x = gpui::px(500.0);
-        assert_eq!(editor.wrap_columns(editor.frame.advance), 50);
+        let narrow = editor.wrap_columns(editor.frame.advance);
+        assert!(narrow < wide_cols, "a narrow view wraps earlier");
         // Wrapping off ignores the width entirely.
         editor.options.wrap = 0;
         assert_eq!(editor.wrap_columns(editor.frame.advance), 0);

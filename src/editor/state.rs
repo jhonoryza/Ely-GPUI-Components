@@ -292,15 +292,24 @@ impl CodeEditor {
         self.options.wrap > 0
     }
 
-    /// The columns a wrapped line breaks at: as many as the view actually
-    /// holds, so a wide window wraps late and a narrow one early. Falls back
-    /// to the configured count before the viewport is first measured.
+    /// The columns a wrapped line breaks at: as many as the code area actually
+    /// holds, so a wide window wraps late and a narrow one early. The gutter
+    /// and minimap are part of `viewport_x` but not of the code area, so they
+    /// come off first. Falls back to the configured count before the viewport
+    /// is first measured.
     pub(crate) fn wrap_columns(&self, advance: Pixels) -> usize {
         if self.options.wrap == 0 {
             return 0;
         }
         if self.metrics.viewport_x > Pixels::ZERO && advance > Pixels::ZERO {
-            (self.metrics.viewport_x / advance).floor().max(1.0) as usize
+            let gutter = advance * (self.gutter_columns() + 1) as f32;
+            let minimap = if self.options.minimap {
+                advance * MINIMAP
+            } else {
+                Pixels::ZERO
+            };
+            let usable = (self.metrics.viewport_x - gutter - minimap).max(advance);
+            (usable / advance).floor().max(1.0) as usize
         } else {
             self.options.wrap
         }
