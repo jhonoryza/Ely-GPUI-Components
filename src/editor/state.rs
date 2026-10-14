@@ -465,6 +465,12 @@ impl CodeEditor {
         cx.notify();
     }
 
+    /// Set the horizontal scroll offset, used by tests to position the viewport.
+    pub fn set_scroll_x(&mut self, x: Pixels, cx: &mut Context<Self>) {
+        self.metrics.scroll_x = x;
+        cx.notify();
+    }
+
     pub(crate) fn set_selections(&mut self, selections: Vec<Selection>, cx: &mut Context<Self>) {
         self.selections = merged(selections);
         self.unfold_cursors();
