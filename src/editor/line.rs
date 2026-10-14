@@ -325,8 +325,12 @@ impl CodeEditor {
             .id(("code", row))
             .relative()
             .flex_1()
+            // No overflow_hidden here: the row's text is drawn absolute and
+            // shifted left by scroll_x, so a column past the right edge is
+            // laid out beyond this box and only becomes visible once shifted
+            // in. Clipping here would discard it before the shift. The editor
+            // root already clips, so nothing spills out of the window.
             .h_full()
-            .overflow_hidden()
             .when(current && focused, |code| code.bg(colors.hover))
             .when(added, |code| code.bg(colors.success.opacity(0.08)))
             .children(selections)
