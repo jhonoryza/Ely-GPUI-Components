@@ -482,6 +482,10 @@ impl CodeEditor {
     /// the right edge shifts the rows left, one off the left edge shifts back.
     /// Without this, typing past the edge hid the caret behind `overflow_hidden`.
     fn reveal_horizontally(&mut self, cx: &mut Context<Self>) {
+        if self.wraps() {
+            // Wrap ON: text wraps within the viewport, no horizontal scroll needed.
+            return;
+        }
         let advance = self.frame.advance;
         let viewport = self.metrics.viewport_x;
         if advance <= Pixels::ZERO || viewport <= Pixels::ZERO {
